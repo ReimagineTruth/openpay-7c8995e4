@@ -84,6 +84,7 @@ import BrandLogo from "./components/BrandLogo";
 import AppLanguageTranslate from "./components/AppLanguageTranslate";
 import SupportWidget from "./components/SupportWidget";
 import { CookieConsentProvider } from "./contexts/CookieConsentContext";
+import PageTransition from "./components/PageTransition";
 
 const queryClient = new QueryClient();
 
@@ -117,7 +118,8 @@ const AppRoutes = () => {
 
   return (
     <>
-      <Routes>
+      <PageTransition key={location.pathname}>
+        <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<PiAuthPage />} />
         <Route path="/setup-profile" element={<SetupProfilePage />} />
@@ -197,6 +199,7 @@ const AppRoutes = () => {
         <Route path="/confirm-pin" element={<ConfirmPinPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </PageTransition>
       <AppSecurityGate />
       {location.pathname !== "/support" ? <AppFooter /> : null}
       {!showRouteSplash ? <SupportWidget /> : null}

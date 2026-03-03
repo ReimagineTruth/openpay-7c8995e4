@@ -34,5 +34,18 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script>
+      (function () {
+        try {
+          if (window.Pi && typeof window.Pi.init === "function") {
+            var host = window.location.hostname || "";
+            var isLocal = host === "localhost" || host.endsWith(".local") || host.endsWith(".test");
+            window.Pi.init({ version: "2.0", sandbox: isLocal });
+          }
+        } catch (e) {
+          console.warn("Pi SDK init failed:", e);
+        }
+      })();
+    </script>
   </body>
 </html>

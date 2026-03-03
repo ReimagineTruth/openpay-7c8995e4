@@ -54,10 +54,18 @@ const PiAdsPage = () => {
     try {
       await window.Pi.authenticate(["username"]);
 
-      if (window.Pi.nativeFeaturesList) {
+      if (typeof window.Pi?.nativeFeaturesList === "function") {
         const features = await window.Pi.nativeFeaturesList();
-        if (!features.includes("ad_network")) {
-          throw new Error("Pi Ad Network is not supported on this Pi Browser version");
+        if (!Array.isArray(features) || !features.includes("ad_network")) {
+          throw new Error("Ads not supported. Update Pi Browser to latest and try again.");
+        }
+      }
+
+      if (typeof window.Pi?.Ads?.requestAd === "function") {
+        try {
+          await window.Pi.Ads.requestAd("rewarded");
+        } catch {
+          // ignore prefetch errors; we'll attempt showAd anyway
         }
       }
 
@@ -83,7 +91,13 @@ const PiAdsPage = () => {
         navigate(decodeURIComponent(returnTo), { replace: true });
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Rewarded ad flow failed");
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof (error as { message?: unknown })?.message === "string"
+            ? String((error as { message: string }).message)
+            : "Rewarded ad flow failed";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -97,6 +111,30 @@ const PiAdsPage = () => {
     }
   }, [searchParams]);
 
+  // Diagnostics panel data
+  const [diag, setDiag] = useState<{ sdk: boolean; ad: boolean | null; sandbox: boolean; returnTo?: string }>({
+    sdk: !!window.Pi,
+    ad: null,
+    sandbox,
+    returnTo: searchParams.get("returnTo") || undefined
+  });
+  const runDiagnostics = async () => {
+    const hasSdk = !!window.Pi;
+    let adSupported: boolean | null = null;
+    try {
+      if (hasSdk && typeof window.Pi?.nativeFeaturesList === "function") {
+        const features = await window.Pi.nativeFeaturesList();
+        adSupported = Array.isArray(features) ? features.includes("ad_network") : false;
+      }
+    } catch {
+      adSupported = null;
+    }
+    setDiag({ sdk: hasSdk, ad: adSupported, sandbox, returnTo: searchParams.get("returnTo") || undefined });
+  };
+  useEffect(() => {
+    void runDiagnostics();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background px-4 pt-4">
       <div className="flex items-center gap-3">
@@ -104,6 +142,21 @@ const PiAdsPage = () => {
           <ArrowLeft className="h-6 w-6 text-foreground" />
         </button>
         <h1 className="text-lg font-semibold text-paypal-dark">Pi Ad Network</h1>
+      </div>
+
+      <div id="problems_and_diagnostics" className="mt-4 rounded-2xl border border-border bg-white p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">Problems & Diagnostics</p>
+          <Button variant="outline" className="h-8 rounded-lg px-3 text-xs" onClick={runDiagnostics}>
+            Refresh
+          </Button>
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+          <div className="rounded-lg bg-secondary/30 p-2">SDK: <span className="font-semibold">{diag.sdk ? "loaded" : "missing"}</span></div>
+          <div className="rounded-lg bg-secondary/30 p-2">Ad Network: <span className="font-semibold">{diag.ad === null ? "unknown" : diag.ad ? "supported" : "not supported"}</span></div>
+          <div className="rounded-lg bg-secondary/30 p-2">Sandbox: <span className="font-semibold">{String(diag.sandbox)}</span></div>
+          <div className="rounded-lg bg-secondary/30 p-2">Return To: <span className="font-semibold">{diag.returnTo || "-"}</span></div>
+        </div>
       </div>
 
       <div className="paypal-surface mt-8 rounded-3xl p-6">

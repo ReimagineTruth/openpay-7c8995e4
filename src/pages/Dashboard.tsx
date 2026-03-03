@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Bell, Check, ChevronDown, ChevronUp, CircleDollarSign, Copy, CreditCard, Eye, EyeOff, ExternalLink, FileText, HandCoins, PiggyBank, QrCode, RefreshCw, Settings, Store, TrendingUp, Users, Pickaxe, LayoutGrid } from "lucide-react";
-import { format } from "date-fns";
+import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import BrandLogo from "@/components/BrandLogo";
@@ -97,6 +97,15 @@ interface SavingsDashboard {
   savings_balance: number;
   apy: number;
 }
+
+const formatHMS = (seconds: number) => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s
+    .toString()
+    .padStart(2, "0")}`;
+};
 
 interface SavingsTransferActivity {
   id: string;
@@ -278,6 +287,46 @@ const Dashboard = () => {
     live: null,
   });
   const [merchantActivity, setMerchantActivity] = useState<MerchantActivityEntry[]>([]);
+  const [miningActive, setMiningActive] = useState(false);
+  const [miningTimeLeft, setMiningTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadMiningSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setMiningActive(false);
+        setMiningTimeLeft(null);
+        return;
+      }
+      const { data: session } = await (supabase.from("mining_sessions" as any) as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (!session) {
+        setMiningActive(false);
+        setMiningTimeLeft(null);
+        return;
+      }
+      const update = () => {
+        const now = new Date();
+        const expiry = new Date((session as any).expires_at);
+        const diff = differenceInSeconds(expiry, now);
+        if (diff > 0) {
+          setMiningActive(true);
+          setMiningTimeLeft(diff);
+        } else {
+          setMiningActive(false);
+          setMiningTimeLeft(0);
+        }
+      };
+      update();
+      const id = setInterval(update, 1000);
+      return () => clearInterval(id);
+    };
+    void loadMiningSession();
+  }, []);
   const [merchantSavingsAmount, setMerchantSavingsAmount] = useState("");
   const [merchantWithdrawAmount, setMerchantWithdrawAmount] = useState("");
   const [movingMerchantToSavings, setMovingMerchantToSavings] = useState(false);
@@ -299,7 +348,6 @@ const Dashboard = () => {
   // Mining state
   const [miningBalance, setMiningBalance] = useState(0);
   const [activeMiningSession, setActiveMiningSession] = useState<any>(null);
-  const [miningTimeLeft, setMiningTimeLeft] = useState<number>(0);
   
   // Analytics state
   const [personalAnalytics, setPersonalAnalytics] = useState<any>(null);
@@ -2798,7 +2846,11 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-foreground">Mining</p>
-                    <p className="text-xs text-muted-foreground">Earn 0.10 OPEN daily</p>
+                    <p className="text-xs text-muted-foreground">
+                      {miningActive && typeof miningTimeLeft === "number"
+                        ? `Active · ${formatHMS(Math.max(miningTimeLeft, 0))} left`
+                        : "Earn 0.10 OPEN daily"}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -2810,7 +2862,11 @@ const Dashboard = () => {
                 </button>
               </div>
               <div className="mt-3 flex items-center justify-center rounded-xl bg-white/5 p-3 text-center">
-                <p className="text-xs text-muted-foreground">Mining active for 24h. <span className="font-semibold text-paypal-blue">Start now.</span></p>
+                <p className="text-xs text-muted-foreground">
+                  {miningActive && typeof miningTimeLeft === "number"
+                    ? <>Session running. <span className="font-semibold text-paypal-blue">{formatHMS(Math.max(miningTimeLeft, 0))}</span> left</>
+                    : <>Mining active for 24h. <span className="font-semibold text-paypal-blue">Start now.</span></>}
+                </p>
               </div>
             </div>
 
