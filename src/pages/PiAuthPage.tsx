@@ -198,18 +198,18 @@ const PiAuthPage = () => {
                 {busyAuth ? "Authenticating..." : "Authenticate with Pi"}
               </Button>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button
+                {/* <Button
                   asChild
                   variant="outline"
                   className="h-11 w-full rounded-2xl"
                 >
                   <Link to="/sign-in?mode=signin">Use Email Sign In</Link>
-                </Button>
+                </Button> */}
                 <Button
                   asChild
                   type="button"
                   variant="outline"
-                  className="h-11 w-full rounded-2xl"
+                  className="h-11 w-full rounded-2xl sm:col-span-2"
                 >
                   <a href="https://openpaylandingpage.vercel.app/" target="_blank" rel="noreferrer">
                     Landing Page
