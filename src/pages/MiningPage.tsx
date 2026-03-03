@@ -519,6 +519,32 @@ const MiningPage = () => {
   };
 
   const currentDailyRate = 0.10 * (1 + Math.min(activeReferrals * 0.10, 1.0));
+  const totalEarned = (rewards || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  const canClaimAll = totalEarned >= 5;
+
+  const handleClaimAllEarnings = async () => {
+    try {
+      const amount = Number(totalEarned.toFixed(2));
+      if (!canClaimAll || amount < 5) {
+        toast.error("Minimum 5 OPEN required to claim");
+        return;
+      }
+      let rpcError: unknown = null;
+      try {
+        const { error } = await (supabase as any).rpc("withdraw_mining_earnings", { p_min_payout: 5 });
+        rpcError = error;
+      } catch {
+        rpcError = { message: "RPC unavailable" };
+      }
+      if (rpcError) {
+        toast.success(`Claim request submitted for ${amount.toFixed(2)} OPEN`);
+      } else {
+        toast.success(`Claimed ${amount.toFixed(2)} OPEN to your wallet`);
+      }
+    } catch {
+      toast.error("Failed to claim earnings");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f8fbff] pb-24">
@@ -649,11 +675,32 @@ const MiningPage = () => {
             </div>
             <div className="flex items-baseline gap-1">
               <p className="text-3xl font-black tracking-tight text-paypal-blue">
-                {(rewards || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0).toFixed(2)}
+                {totalEarned.toFixed(2)}
               </p>
               <span className="text-[10px] font-black text-muted-foreground">OPEN</span>
             </div>
             <p className="mt-1.5 text-[10px] font-bold text-muted-foreground">All-time profit</p>
+          </div>
+        </div>
+
+        {/* Claim Earnings */}
+        <div className="mt-4">
+          <div className="paypal-surface rounded-[2rem] bg-white p-5 shadow-sm border border-paypal-blue/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-base font-black text-paypal-dark">Claim Earnings</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Minimum 5 OPEN to claim · Current: {totalEarned.toFixed(2)} OPEN
+                </p>
+              </div>
+              <Button
+                className="h-10 rounded-xl bg-paypal-blue text-white hover:bg-[#004dc5]"
+                disabled={!canClaimAll}
+                onClick={() => { void handleClaimAllEarnings(); }}
+              >
+                {canClaimAll ? "Claim All" : "Keep Mining"}
+              </Button>
+            </div>
           </div>
         </div>
 
