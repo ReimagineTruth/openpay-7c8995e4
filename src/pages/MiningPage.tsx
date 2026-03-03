@@ -486,7 +486,7 @@ const MiningPage = () => {
         setClaimableSession(null);
 
         if (!isAuto) {
-          toast.success(`Claimed ${baseReward.toFixed(2)} OPEN!`);
+          toast.success(`Claimed ${baseReward.toFixed(2)} OUSD!`);
         }
         localStorage.removeItem("mining_session");
         await loadMiningData();
@@ -497,7 +497,7 @@ const MiningPage = () => {
       } else {
         const result = data as any;
         if (!isAuto) {
-          toast.success(`Claimed ${(result?.total_reward || 0).toFixed(2)} OPEN!`);
+          toast.success(`Claimed ${(result?.total_reward || 0).toFixed(2)} OUSD!`);
         }
         localStorage.removeItem("mining_session");
         await loadMiningData();
@@ -526,7 +526,7 @@ const MiningPage = () => {
     try {
       const amount = Number(totalEarned.toFixed(2));
       if (!canClaimAll || amount < 5) {
-        toast.error("Minimum 5 OPEN required to claim");
+        toast.error("Minimum 5 OUSD required to claim");
         return;
       }
       let rpcError: unknown = null;
@@ -537,9 +537,9 @@ const MiningPage = () => {
         rpcError = { message: "RPC unavailable" };
       }
       if (rpcError) {
-        toast.success(`Claim request submitted for ${amount.toFixed(2)} OPEN`);
+        toast.success(`Claim request submitted for ${amount.toFixed(2)} OUSD`);
       } else {
-        toast.success(`Claimed ${amount.toFixed(2)} OPEN to your wallet`);
+        toast.success(`Claimed ${amount.toFixed(2)} OUSD to your wallet`);
       }
     } catch {
       toast.error("Failed to claim earnings");
@@ -690,7 +690,7 @@ const MiningPage = () => {
               <div>
                 <p className="text-base font-black text-paypal-dark">Claim Earnings</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Minimum 5 OPEN to claim · Current: {totalEarned.toFixed(2)} OPEN
+                  Minimum 5 OUSD to claim · Current: {totalEarned.toFixed(2)} OUSD
                 </p>
               </div>
               <Button
