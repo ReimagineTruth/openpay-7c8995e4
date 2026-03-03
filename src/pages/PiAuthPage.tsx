@@ -196,21 +196,21 @@ const PiAuthPage = () => {
             <h1 className="paypal-heading text-xl">Welcome</h1>
           </div>
 
-          <div className="rounded-2xl border border-border/70 bg-white p-3">
-            <h2 className="text-base font-semibold text-gray-800">Pi Browser</h2>
-            <p className="mt-1 text-sm text-gray-600">
+          <div className="rounded-2xl border border-border/70 bg-white dark:bg-[#0f172a] p-3">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-white">Pi Browser</h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-white/80">
               Connect your Pi account securely with Pi authentication.
             </p>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-white/60">
               Note: OpenPay works in the Pi Browser.
             </p>
             {!!searchParams.get("ref") && (
-              <p className="mt-1 text-xs text-paypal-blue">
+              <p className="mt-1 text-xs text-paypal-blue dark:text-blue-400">
                 Referral code detected: {(searchParams.get("ref") || "").trim().toLowerCase()}
               </p>
             )}
             {!sdkReady && (
-              <p className="mt-1 text-xs text-destructive">
+              <p className="mt-1 text-xs text-destructive dark:text-red-300">
                 Pi SDK is unavailable. Please open this app in Pi Browser.
               </p>
             )}
