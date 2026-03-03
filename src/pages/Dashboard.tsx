@@ -724,7 +724,25 @@ const Dashboard = () => {
         } else {
           setMiningBalance(0);
         }
-        setActiveMiningSession(miningSession || null);
+        let session: any = miningSession || null;
+        if (!session && typeof window !== "undefined") {
+          const localSessionStr = localStorage.getItem("mining_session");
+          if (localSessionStr) {
+            try {
+              const localSession = JSON.parse(localSessionStr);
+              if (localSession.user_id === user.id && localSession.is_active && new Date(localSession.expires_at) > new Date()) {
+                session = localSession;
+              } else {
+                localStorage.removeItem("mining_session");
+              }
+            } catch {
+              localStorage.removeItem("mining_session");
+            }
+          }
+        } else if (session && typeof window !== "undefined") {
+          localStorage.setItem("mining_session", JSON.stringify(session));
+        }
+        setActiveMiningSession(session);
       } catch (miningErr) {
         console.warn("Mining info load error:", miningErr);
         setMiningBalance(0);

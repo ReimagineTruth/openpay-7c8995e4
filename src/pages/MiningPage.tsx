@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, Timer, TrendingUp, Users, History, AlertCircle, CheckCircle2, Zap, Cpu, CircleDollarSign, ShieldCheck, Pickaxe } from "lucide-react";
 // Forced refresh to clear stale state
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format, differenceInSeconds, addHours } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { isPiBrowserUserAgent } from "@/lib/appSecurity";
 import BrandLogo from "@/components/BrandLogo";
 
@@ -27,6 +28,13 @@ interface MiningReward {
   created_at: string;
 }
 
+type AdVerifyResult = {
+  identifier: string;
+  mediator_ack_status: "granted" | "revoked" | "failed" | null;
+  mediator_granted_at: string | null;
+  mediator_revoked_at: string | null;
+};
+
 const MiningPage = () => {
   const navigate = useNavigate();
   const { format: formatCurrency } = useCurrency();
@@ -39,6 +47,12 @@ const MiningPage = () => {
   const [rewards, setRewards] = useState<MiningReward[]>([]);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [activeReferrals, setActiveReferrals] = useState(0);
+  const autoRestartRef = useRef(false);
+
+  const persistLocalSession = (session: MiningSession) => {
+    if (!session?.user_id || !session?.expires_at) return;
+    localStorage.setItem("mining_session", JSON.stringify(session));
+  };
 
   const loadMiningData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -63,6 +77,9 @@ const MiningPage = () => {
         .maybeSingle();
 
       setActiveSession(session as any);
+      if (session) {
+        persistLocalSession(session as MiningSession);
+      }
 
       // If no database session, check localStorage fallback
       if (!session) {
@@ -195,6 +212,23 @@ const MiningPage = () => {
     return () => clearInterval(interval);
   }, [activeSession]);
 
+  useEffect(() => {
+    if (starting || loading) return;
+    if (timeLeft > 0) return;
+    if (!claimableSession) return;
+    if (autoRestartRef.current) return;
+
+    autoRestartRef.current = true;
+    void (async () => {
+      try {
+        await handleClaimReward({ auto: true });
+        await handleStartMining({ auto: true });
+      } finally {
+        autoRestartRef.current = false;
+      }
+    })();
+  }, [timeLeft, claimableSession, starting, loading]);
+
   const sandbox = String(import.meta.env.VITE_PI_SANDBOX || "false").toLowerCase() === "true";
 
   const initPi = () => {
@@ -210,10 +244,10 @@ const MiningPage = () => {
     const { data, error } = await supabase.functions.invoke("pi-platform", {
       body: { action: "ad_verify", adId },
     });
-    if (error) throw new Error(error.message || "Pi ad verification failed");
+    if (error) throw new Error(await getFunctionErrorMessage(error, "Pi ad verification failed"));
 
     const payload = data as
-      | { success?: boolean; data?: any; rewarded?: boolean; error?: string }
+      | { success?: boolean; data?: AdVerifyResult; rewarded?: boolean; error?: string }
       | null;
     if (!payload?.success || !payload.data) {
       throw new Error(payload?.error || "Pi ad verification failed");
@@ -222,56 +256,66 @@ const MiningPage = () => {
     return payload;
   };
 
-  const handleStartMining = async () => {
+  const runRewardedAd = async () => {
+    if (!initPi() || !window.Pi?.Ads?.showAd) return false;
+
+    await window.Pi.authenticate(["username"]);
+
+    if (window.Pi.nativeFeaturesList) {
+      const features = await window.Pi.nativeFeaturesList();
+      if (!features.includes("ad_network")) {
+        throw new Error("Pi Ad Network is not supported on this Pi Browser version");
+      }
+    }
+
+    const adResult = await window.Pi.Ads.showAd("rewarded");
+
+    if (adResult.result !== "AD_REWARDED") {
+      throw new Error(`Ad result: ${adResult.result}. You must watch the full video to start mining.`);
+    }
+
+    if (!adResult.adId) {
+      throw new Error("Rewarded ad returned no adId. Verification is required before granting rewards.");
+    }
+
+    const verification = await verifyRewardedAd(adResult.adId);
+    if (!verification.rewarded) {
+      throw new Error(`Ad verification status: ${verification.data.mediator_ack_status ?? "null"}`);
+    }
+
+    return true;
+  };
+
+  const handleStartMining = async (options?: { auto?: boolean }) => {
+    const isAuto = Boolean(options?.auto);
     setStarting(true);
     try {
       // Enhanced Pi Ad Network integration for Pi Browser
       if (isPiBrowserUserAgent()) {
-        if (!initPi() || !window.Pi?.Ads?.showAd) {
-          setStarting(false);
-          return;
-        }
-
         try {
-          await window.Pi.authenticate(["username"]);
-
-          if (window.Pi.nativeFeaturesList) {
-            const features = await window.Pi.nativeFeaturesList();
-            if (!features.includes("ad_network")) {
-              throw new Error("Pi Ad Network is not supported on this Pi Browser version");
-            }
+          await runRewardedAd();
+          if (!isAuto) {
+            toast.success("Rewarded ad verified successfully! Starting mining...");
           }
-
-          const adResult = await window.Pi.Ads.showAd("rewarded");
-
-          if (adResult.result !== "AD_REWARDED") {
-            throw new Error(`Ad result: ${adResult.result}. You must watch the full video to start mining.`);
-          }
-
-          if (!adResult.adId) {
-            throw new Error("Rewarded ad returned no adId. Verification is required before granting rewards.");
-          }
-
-          const verification = await verifyRewardedAd(adResult.adId);
-          if (!verification.rewarded) {
-            throw new Error(`Ad verification status: ${verification.data.mediator_ack_status ?? "null"}`);
-          }
-
-          toast.success("Rewarded ad verified successfully! Starting mining...");
-          
         } catch (adError) {
           console.error("Pi Ad Network error:", adError);
-          toast.error(adError instanceof Error ? adError.message : "Ad Network error. Please try again.");
+          if (!isAuto) {
+            toast.error(adError instanceof Error ? adError.message : "Ad Network error. Please try again.");
+          }
           setStarting(false);
           return;
         }
       } else {
         // Not in Pi Browser - show info about Pi Browser benefits
-        toast.info("For enhanced mining rewards, use Pi Browser!");
+        if (!isAuto) {
+          toast.info("For enhanced mining rewards, use Pi Browser!");
+        }
       }
 
       // Basic anti-cheat: in a real app, use a proper fingerprinting library
       const deviceFingerprint = navigator.userAgent; 
+      const piBrowserUsed = isPiBrowserUserAgent();
+      const adVerified = piBrowserUsed;
       
       // Try database function first
       let data, error;
@@ -279,8 +323,8 @@ const MiningPage = () => {
         const result = await supabase.rpc("start_mining_session" as any, {
           p_device_fingerprint: deviceFingerprint,
           p_ip_address: "client-side-ip",
-          p_ad_verified: true, // Ad was verified via Pi Network
-          p_pi_browser_used: isPiBrowserUserAgent()
+          p_ad_verified: adVerified,
+          p_pi_browser_used: piBrowserUsed
         });
         data = result.data;
         error = result.error;
@@ -293,7 +337,9 @@ const MiningPage = () => {
         // Client-side fallback when database functions are not available
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          toast.error("User not authenticated");
+          if (!isAuto) {
+            toast.error("User not authenticated");
+          }
           return;
         }
 
@@ -308,8 +354,8 @@ const MiningPage = () => {
           expires_at: expiresAt,
           is_active: true,
           created_at: new Date().toISOString(),
-          ad_verified: true, // Track that ad was verified
-          pi_browser_used: isPiBrowserUserAgent(),
+          ad_verified: adVerified,
+          pi_browser_used: piBrowserUsed,
           last_sync_at: new Date().toISOString()
         };
 
@@ -317,24 +363,33 @@ const MiningPage = () => {
         localStorage.setItem('mining_session', JSON.stringify(mockSession));
         
         const bonusText = isPiBrowserUserAgent() ? " with Pi Browser bonus!" : "!";
-        toast.success(`Mining started${bonusText} Check back in 24 hours to claim your reward.`);
-        loadMiningData();
+        if (!isAuto) {
+          toast.success(`Mining started${bonusText} Check back in 24 hours to claim your reward.`);
+        }
+        await loadMiningData();
       } else if (data && (data as any).error) {
-        toast.error((data as any).error);
+        if (!isAuto) {
+          toast.error((data as any).error);
+        }
       } else {
         const bonusText = isPiBrowserUserAgent() ? " with Pi Browser bonus!" : "!";
-        toast.success(`Mining started${bonusText} Check back in 24 hours to claim your reward.`);
-        loadMiningData();
+        if (!isAuto) {
+          toast.success(`Mining started${bonusText} Check back in 24 hours to claim your reward.`);
+        }
+        await loadMiningData();
       }
     } catch (error) {
       console.error("Mining start error:", error);
-      toast.error("Failed to start mining");
+      if (!isAuto) {
+        toast.error("Failed to start mining");
+      }
     } finally {
       setStarting(false);
     }
   };
 
-  const handleClaimReward = async () => {
+  const handleClaimReward = async (options?: { auto?: boolean }) => {
+    const isAuto = Boolean(options?.auto);
     setStarting(true);
     try {
       // Try database function first
@@ -352,20 +407,26 @@ const MiningPage = () => {
         // Client-side fallback when database functions are not available
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          toast.error("User not authenticated");
+          if (!isAuto) {
+            toast.error("User not authenticated");
+          }
           return;
         }
 
         // Check for localStorage session
         const localSessionStr = localStorage.getItem('mining_session');
         if (!localSessionStr) {
-          toast.error("No mining session found to claim");
+          if (!isAuto) {
+            toast.error("No mining session found to claim");
+          }
           return;
         }
 
         const localSession = JSON.parse(localSessionStr);
         if (localSession.user_id !== user.id) {
-          toast.error("Invalid mining session");
+          if (!isAuto) {
+            toast.error("Invalid mining session");
+          }
           return;
         }
 
@@ -373,7 +434,9 @@ const MiningPage = () => {
         const expiresAt = new Date(localSession.expires_at);
         
         if (now < expiresAt) {
-          toast.error("Mining session hasn't expired yet");
+          if (!isAuto) {
+            toast.error("Mining session hasn't expired yet");
+          }
           return;
         }
 
@@ -394,17 +457,27 @@ const MiningPage = () => {
         setActiveSession(null);
         setClaimableSession(null);
 
-        toast.success(`Claimed ${baseReward.toFixed(2)} OPEN!`);
-        loadMiningData();
+        if (!isAuto) {
+          toast.success(`Claimed ${baseReward.toFixed(2)} OPEN!`);
+        }
+        localStorage.removeItem("mining_session");
+        await loadMiningData();
       } else if (data && (data as any).error) {
-        toast.error((data as any).error);
+        if (!isAuto) {
+          toast.error((data as any).error);
+        }
       } else {
         const result = data as any;
-        toast.success(`Claimed ${(result?.total_reward || 0).toFixed(2)} OPEN!`);
-        loadMiningData();
+        if (!isAuto) {
+          toast.success(`Claimed ${(result?.total_reward || 0).toFixed(2)} OPEN!`);
+        }
+        localStorage.removeItem("mining_session");
+        await loadMiningData();
       }
     } catch (error) {
-      toast.error("Failed to claim reward");
+      if (!isAuto) {
+        toast.error("Failed to claim reward");
+      }
     } finally {
       setStarting(false);
     }
