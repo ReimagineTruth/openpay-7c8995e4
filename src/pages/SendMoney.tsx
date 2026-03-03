@@ -302,12 +302,99 @@ const SendMoney = () => {
           p_receiver_currency_code: "OUSD",
         });
 
-        if (rpcError) {
-          console.error('Bulk transfer RPC error:', rpcError);
-          throw new Error(rpcError.message || "Bulk transfer failed");
-        }
+        let result = rpcData as any;
 
-        const result = rpcData as any;
+        if (rpcError) {
+          const rpcMessage =
+            typeof (rpcError as { message?: unknown })?.message === "string"
+              ? (rpcError as { message: string }).message
+              : "Bulk transfer failed";
+          const shouldTryLegacy =
+            /schema cache|bulk_transfer_funds|function.*not\s+found/i.test(rpcMessage);
+
+          if (!shouldTryLegacy) {
+            console.error('Bulk transfer RPC error:', rpcError);
+            throw new Error(rpcMessage);
+          }
+
+          const { data: legacyData, error: legacyError } = await (supabase as any).rpc("bulk_transfer_funds", {
+            p_recipients: recipientIds,
+            p_amounts: amounts,
+            p_notes: notes,
+          });
+
+          if (!legacyError) {
+            result = legacyData as any;
+          } else {
+            const legacyMessage =
+              typeof (legacyError as { message?: unknown })?.message === "string"
+                ? (legacyError as { message: string }).message
+                : "Bulk transfer failed";
+            const shouldFallbackToSingle =
+              /schema cache|bulk_transfer_funds|function.*not\s+found/i.test(legacyMessage);
+
+            if (!shouldFallbackToSingle) {
+              console.error('Bulk transfer legacy RPC error:', legacyError);
+              throw new Error(legacyMessage);
+            }
+
+            const transferSingle = async (recipientId: string, noteText: string) => {
+              const { data: txId, error: txError } = await supabase.rpc("transfer_funds_authenticated", {
+                p_receiver_id: recipientId,
+                p_amount: usdAmountPerUser,
+                p_note: noteText || "",
+                p_currency_code: currency.code,
+                p_sender_amount: parsedAmount,
+                p_sender_currency_code: currency.code,
+                p_receiver_amount: usdAmountPerUser,
+                p_receiver_currency_code: "OUSD",
+              });
+
+              if (!txError) return String(txId || "");
+
+              const txMessage =
+                typeof (txError as { message?: unknown })?.message === "string"
+                  ? (txError as { message: string }).message
+                  : "Transfer failed";
+              const shouldTryLegacyTx =
+                /schema cache|transfer_funds_authenticated|function.*not\s+found/i.test(txMessage);
+
+              if (!shouldTryLegacyTx) {
+                throw new Error(txMessage);
+              }
+
+              const { data: legacyTxId, error: legacyTxError } = await supabase.rpc("transfer_funds_authenticated", {
+                p_receiver_id: recipientId,
+                p_amount: usdAmountPerUser,
+                p_note: noteText || "",
+              });
+
+              if (legacyTxError) {
+                const legacyTxMessage =
+                  typeof (legacyTxError as { message?: unknown })?.message === "string"
+                    ? (legacyTxError as { message: string }).message
+                    : "Transfer failed";
+                throw new Error(legacyTxMessage);
+              }
+
+              return String(legacyTxId || "");
+            };
+
+            const txIds: string[] = [];
+            for (let i = 0; i < recipientIds.length; i += 1) {
+              const recipientId = recipientIds[i];
+              const noteText = notes[i] || "";
+              const txId = await transferSingle(recipientId, noteText);
+              txIds.push(txId);
+            }
+
+            result = {
+              success: true,
+              transaction_ids: txIds,
+              total_amount: totalUsdAmount,
+            };
+          }
+        }
         if (result.error) {
           console.error('Bulk transfer result error:', result.error);
           throw new Error(result.error);
@@ -375,14 +462,38 @@ const SendMoney = () => {
           p_receiver_amount: usdAmountPerUser,
           p_receiver_currency_code: "OUSD",
         });
-        if (rpcError) {
-          const rpcMessage =
-            typeof (rpcError as { message?: unknown })?.message === "string"
-              ? (rpcError as { message: string }).message
-              : "Fallback transfer failed";
+
+        if (!rpcError) {
+          return String(txId || "");
+        }
+
+        const rpcMessage =
+          typeof (rpcError as { message?: unknown })?.message === "string"
+            ? (rpcError as { message: string }).message
+            : "Fallback transfer failed";
+
+        const shouldTryLegacy =
+          /schema cache|transfer_funds_authenticated|function.*not\s+found/i.test(rpcMessage);
+
+        if (!shouldTryLegacy) {
           throw new Error(rpcMessage);
         }
-        return String(txId || "");
+
+        const { data: legacyTxId, error: legacyError } = await supabase.rpc("transfer_funds_authenticated", {
+          p_receiver_id: activeUser!.id,
+          p_amount: usdAmountPerUser,
+          p_note: activeNote || "",
+        });
+
+        if (legacyError) {
+          const legacyMessage =
+            typeof (legacyError as { message?: unknown })?.message === "string"
+              ? (legacyError as { message: string }).message
+              : "Fallback transfer failed";
+          throw new Error(legacyMessage);
+        }
+
+        return String(legacyTxId || "");
       };
 
       let txId = "";
