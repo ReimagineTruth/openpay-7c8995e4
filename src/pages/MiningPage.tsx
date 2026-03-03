@@ -5,6 +5,7 @@ import { ArrowLeft, Play, Timer, TrendingUp, Users, History, AlertCircle, CheckC
 import { toast } from "sonner";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { format, differenceInSeconds, addHours } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -42,6 +43,9 @@ const MiningPage = () => {
   const [piSdkInitialized, setPiSdkInitialized] = useState(false);
   const [starting, setStarting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [adModalOpen, setAdModalOpen] = useState(false);
+  const [adCountdown, setAdCountdown] = useState(5);
+  const adResolveRef = useRef<((v: boolean) => void) | null>(null);
   const [activeSession, setActiveSession] = useState<MiningSession | null>(null);
   const [claimableSession, setClaimableSession] = useState<MiningSession | null>(null);
   const [rewards, setRewards] = useState<MiningReward[]>([]);
@@ -286,11 +290,27 @@ const MiningPage = () => {
     return true;
   };
 
+  const runSimulatedAd = async () => {
+    setAdCountdown(5);
+    setAdModalOpen(true);
+    return await new Promise<boolean>((resolve) => {
+      adResolveRef.current = resolve;
+      let seconds = 5;
+      const timer = setInterval(() => {
+        seconds -= 1;
+        setAdCountdown(seconds);
+        if (seconds <= 0) {
+          clearInterval(timer);
+        }
+      }, 1000);
+    });
+  };
+
   const handleStartMining = async (options?: { auto?: boolean }) => {
     const isAuto = Boolean(options?.auto);
     setStarting(true);
     try {
-      // Enhanced Pi Ad Network integration for Pi Browser
+      // Always require an ad step before mining
       if (isPiBrowserUserAgent()) {
         try {
           await runRewardedAd();
@@ -306,9 +326,10 @@ const MiningPage = () => {
           return;
         }
       } else {
-        // Not in Pi Browser - show info about Pi Browser benefits
-        if (!isAuto) {
-          toast.info("For enhanced mining rewards, use Pi Browser!");
+        const ok = await runSimulatedAd();
+        if (!ok) {
+          setStarting(false);
+          return;
         }
       }
 
@@ -565,7 +586,7 @@ const MiningPage = () => {
                   <p className="text-2xl font-black">CLAIM REWARDS</p>
                 </div>
                 <Button 
-                  onClick={handleClaimReward} 
+                  onClick={() => { void handleClaimReward(); }} 
                   disabled={starting || loading}
                   className="h-16 w-full rounded-[1.25rem] bg-white text-lg font-black uppercase tracking-wider text-[#003087] hover:bg-white/90 shadow-[0_8px_20px_rgba(255,255,255,0.3)] transition-all active:scale-95"
                 >
@@ -574,7 +595,7 @@ const MiningPage = () => {
               </div>
             ) : (
               <Button 
-                onClick={handleStartMining} 
+                onClick={() => { void handleStartMining(); }} 
                 disabled={starting || loading}
                 className="group relative mt-8 h-16 w-full max-w-[260px] overflow-hidden rounded-[1.25rem] bg-white text-lg font-black uppercase tracking-wider text-[#003087] hover:bg-white/90 shadow-[0_8px_20px_rgba(255,255,255,0.3)] transition-all active:scale-95"
               >
@@ -585,7 +606,7 @@ const MiningPage = () => {
 
             {!activeSession && !loading && !claimableSession && (rewards || []).length > 0 && (
               <Button
-                onClick={handleClaimReward}
+                onClick={() => { void handleClaimReward(); }}
                 variant="outline"
                 className="mt-6 border-white/20 bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/70 hover:bg-white/10 hover:text-white"
               >
@@ -750,6 +771,38 @@ const MiningPage = () => {
       </div>
 
       <BottomNav active="menu" />
+      <Dialog open={adModalOpen} onOpenChange={(open) => {
+        setAdModalOpen(open);
+        if (!open && adResolveRef.current) {
+          adResolveRef.current(false);
+          adResolveRef.current = null;
+        }
+      }}>
+        <DialogContent className="rounded-2xl">
+          <DialogTitle>Watch Ad to Start Mining</DialogTitle>
+          <div className="mt-2 text-sm text-muted-foreground">
+            Please watch this short ad to unlock your mining session.
+          </div>
+          <div className="mt-4 h-32 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground">
+            Ad playing... {adCountdown}s
+          </div>
+          <div className="mt-4">
+            <Button
+              className="w-full rounded-2xl"
+              disabled={adCountdown > 0}
+              onClick={() => {
+                setAdModalOpen(false);
+                if (adResolveRef.current) {
+                  adResolveRef.current(true);
+                  adResolveRef.current = null;
+                }
+              }}
+            >
+              Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
