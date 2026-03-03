@@ -53,7 +53,6 @@ const MiningPage = () => {
   const [rewards, setRewards] = useState<MiningReward[]>([]);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [activeReferrals, setActiveReferrals] = useState(0);
-  const autoRestartRef = useRef(false);
 
   const persistLocalSession = (session: MiningSession) => {
     if (!session?.user_id || !session?.expires_at) return;
@@ -218,22 +217,7 @@ const MiningPage = () => {
     return () => clearInterval(interval);
   }, [activeSession]);
 
-  useEffect(() => {
-    if (starting || loading) return;
-    if (timeLeft > 0) return;
-    if (!claimableSession) return;
-    if (autoRestartRef.current) return;
 
-    autoRestartRef.current = true;
-    void (async () => {
-      try {
-        await handleClaimReward({ auto: true });
-        await handleStartMining({ auto: true });
-      } finally {
-        autoRestartRef.current = false;
-      }
-    })();
-  }, [timeLeft, claimableSession, starting, loading]);
 
   const sandbox = String(import.meta.env.VITE_PI_SANDBOX || "false").toLowerCase() === "true";
 
@@ -299,7 +283,8 @@ const MiningPage = () => {
     return true;
   };
 
-  const runSimulatedAd = async () => {
+  const runAdGate = async (options?: { usePiAd?: boolean }) => {
+    const usePiAd = Boolean(options?.usePiAd);
     setAdCountdown(5);
     setAdModalOpen(true);
     return await new Promise<boolean>((resolve) => {
@@ -312,6 +297,26 @@ const MiningPage = () => {
           clearInterval(timer);
         }
       }, 1000);
+
+      const originalResolver = adResolveRef.current;
+      adResolveRef.current = async (ok) => {
+        if (!ok) {
+          originalResolver?.(false);
+          return;
+        }
+        if (!usePiAd) {
+          originalResolver?.(true);
+          return;
+        }
+        try {
+          await runRewardedAd();
+          originalResolver?.(true);
+        } catch (adError) {
+          console.error("Pi Ad Network error:", adError);
+          toast.error(adError instanceof Error ? adError.message : "Ad Network error. Please try again.");
+          originalResolver?.(false);
+        }
+      };
     });
   };
 
@@ -319,25 +324,26 @@ const MiningPage = () => {
     const isAuto = Boolean(options?.auto);
     setStarting(true);
     try {
+      if (activeSession && timeLeft > 0) {
+        if (!isAuto) {
+          toast.error("Mining already active. Please wait for the 24-hour timer to finish.");
+        }
+        return;
+      }
+      if (!activeSession && claimableSession && timeLeft <= 0) {
+        if (!isAuto) {
+          toast.error("Mining session complete. Claim rewards before starting again.");
+        }
+        return;
+      }
       // Always require an ad step before mining unless already verified
       const skipAd = (searchParams.get("ad") || "").toLowerCase() === "rewarded";
-      if (isPiBrowserUserAgent() && !skipAd) {
-        try {
-          await runRewardedAd();
-          if (!isAuto) {
-            toast.success("Rewarded ad verified successfully! Starting mining...");
-          }
-        } catch (adError) {
-          console.error("Pi Ad Network error:", adError);
-          if (!isAuto) {
-            toast.error(adError instanceof Error ? adError.message : "Ad Network error. Please try again.");
-          }
-          setStarting(false);
-          return;
-        }
-      } else if (!skipAd) {
-        const ok = await runSimulatedAd();
+      if (!skipAd) {
+        const ok = await runAdGate({ usePiAd: isPiBrowserUserAgent() });
         if (!ok) { setStarting(false); return; }
+        if (isPiBrowserUserAgent() && !isAuto) {
+          toast.success("Rewarded ad verified successfully! Starting mining...");
+        }
       }
 
       // Basic anti-cheat: in a real app, use a proper fingerprinting library
@@ -877,13 +883,11 @@ const MiningPage = () => {
               className="w-full rounded-2xl"
               disabled={adCountdown > 0}
               onClick={() => {
-                const ret = encodeURIComponent("/mining?ad=rewarded");
                 setAdModalOpen(false);
                 if (adResolveRef.current) {
-                  adResolveRef.current(false);
+                  adResolveRef.current(true);
                   adResolveRef.current = null;
                 }
-                navigate(`/pi-ads?from=mining&auto=1&returnTo=${ret}`, { replace: true });
               }}
             >
               Continue

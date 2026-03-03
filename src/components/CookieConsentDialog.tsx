@@ -68,6 +68,14 @@ const CookieConsentDialog = ({ open, onOpenChange }: CookieConsentDialogProps) =
     setConsent(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && open && !hasAcceptedCookies()) {
+      // Persist current choice so the dialog doesn't reappear after dismiss.
+      saveCookieConsent(consent);
+    }
+    onOpenChange(nextOpen);
+  };
+
   const cookieCategories = [
     {
       key: 'necessary' as keyof CookieConsentOptions,
@@ -100,7 +108,7 @@ const CookieConsentDialog = ({ open, onOpenChange }: CookieConsentDialogProps) =
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
         <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex items-center gap-3">
@@ -110,7 +118,7 @@ const CookieConsentDialog = ({ open, onOpenChange }: CookieConsentDialogProps) =
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
             className="h-8 w-8 rounded-full p-0"
           >
             <X className="h-4 w-4" />

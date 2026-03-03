@@ -289,44 +289,31 @@ const Dashboard = () => {
   const [merchantActivity, setMerchantActivity] = useState<MerchantActivityEntry[]>([]);
   const [miningActive, setMiningActive] = useState(false);
   const [miningTimeLeft, setMiningTimeLeft] = useState<number | null>(null);
+  const [miningBalance, setMiningBalance] = useState(0);
+  const [activeMiningSession, setActiveMiningSession] = useState<any>(null);
 
   useEffect(() => {
-    const loadMiningSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+    if (!activeMiningSession?.expires_at) {
+      setMiningActive(false);
+      setMiningTimeLeft(null);
+      return;
+    }
+    const update = () => {
+      const now = new Date();
+      const expiry = new Date(activeMiningSession.expires_at);
+      const diff = differenceInSeconds(expiry, now);
+      if (diff > 0) {
+        setMiningActive(true);
+        setMiningTimeLeft(diff);
+      } else {
         setMiningActive(false);
-        setMiningTimeLeft(null);
-        return;
+        setMiningTimeLeft(0);
       }
-      const { data: session } = await (supabase.from("mining_sessions" as any) as any)
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
-      if (!session) {
-        setMiningActive(false);
-        setMiningTimeLeft(null);
-        return;
-      }
-      const update = () => {
-        const now = new Date();
-        const expiry = new Date((session as any).expires_at);
-        const diff = differenceInSeconds(expiry, now);
-        if (diff > 0) {
-          setMiningActive(true);
-          setMiningTimeLeft(diff);
-        } else {
-          setMiningActive(false);
-          setMiningTimeLeft(0);
-        }
-      };
-      update();
-      const id = setInterval(update, 1000);
-      return () => clearInterval(id);
     };
-    void loadMiningSession();
-  }, []);
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [activeMiningSession]);
   const [merchantSavingsAmount, setMerchantSavingsAmount] = useState("");
   const [merchantWithdrawAmount, setMerchantWithdrawAmount] = useState("");
   const [movingMerchantToSavings, setMovingMerchantToSavings] = useState(false);
@@ -346,8 +333,6 @@ const Dashboard = () => {
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
   
   // Mining state
-  const [miningBalance, setMiningBalance] = useState(0);
-  const [activeMiningSession, setActiveMiningSession] = useState<any>(null);
   
   // Analytics state
   const [personalAnalytics, setPersonalAnalytics] = useState<any>(null);
@@ -1085,7 +1070,9 @@ const Dashboard = () => {
   }, [userId]);
 
   useEffect(() => {
-    const sandbox = String(import.meta.env.VITE_PI_SANDBOX || "false").toLowerCase() === "true";
+    const envSandbox = String(import.meta.env.VITE_PI_SANDBOX || "false").toLowerCase() === "true";
+    const host = typeof window !== "undefined" ? window.location.hostname : "";
+    const sandbox = envSandbox && /(^|\.)sandbox\.minepi\.com$/i.test(host);
     const inPiBrowser =
       typeof navigator !== "undefined" &&
       /pi\s?browser/i.test(navigator.userAgent || "");
