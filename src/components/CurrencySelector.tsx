@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { ChevronDown, Search } from "lucide-react";
 import {
   Dialog,
@@ -30,7 +30,7 @@ const CurrencySelector = () => {
   };
   const getPiNameLabel = (code: string, name: string) => {
     if (code === "PI") return "Pure Pi";
-    if (code === "OUSD") return "OpenPay USD Stablecoin (1 USD value)";
+    if (code === "OUSD") return `OpenPay USD Stablecoin (1 PI = ${PI_TO_USD.toFixed(2)} OUSD)`;
     return `PI ${name}`;
   };
   const getDisplaySymbol = (code: string, symbol: string) => (code === "PI" ? "π" : symbol);

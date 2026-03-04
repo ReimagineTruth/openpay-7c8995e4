@@ -5,7 +5,7 @@ import { CheckCircle2, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SplashScreen from "@/components/SplashScreen";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const db = supabase as any;
@@ -92,7 +92,8 @@ const MerchantCheckoutThankYouPage = () => {
 
   const amountInUsd = useMemo(() => {
     const rate = currencies.find((c) => c.code === mergedCurrency)?.rate ?? 1;
-    return Number(mergedAmount || 0) / (rate || 1);
+    if (!rate) return 0;
+    return (Number(mergedAmount || 0) / rate) * PI_TO_USD;
   }, [currencies, mergedAmount, mergedCurrency]);
 
   useEffect(() => {

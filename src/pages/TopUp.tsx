@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -34,6 +34,7 @@ const TopUp = () => {
   const sandbox = String(import.meta.env.VITE_PI_SANDBOX || "false").toLowerCase() === "true";
   const parsedAmount = Number(amount);
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
+  const piAmount = safeAmount > 0 ? safeAmount / PI_TO_USD : 0;
   const linkAccountNumber = (searchParams.get("account_number") || "").trim().toUpperCase();
   const linkUsername = (searchParams.get("username") || "")
     .trim()
@@ -179,12 +180,12 @@ const TopUp = () => {
         let completed = false;
         window.Pi!.createPayment(
           {
-            amount: parsedAmount,
+            amount: piAmount,
             memo: "OpenPay wallet top up (PI to USD)",
             metadata: {
               feature: "top_up",
-              amount_pi: parsedAmount,
-              amount_usd: parsedAmount,
+              amount_pi: piAmount,
+              amount_usd: safeAmount,
               requestedAt: new Date().toISOString(),
             },
           },
@@ -201,8 +202,8 @@ const TopUp = () => {
               const creditResult = await invokeTopUpAction(
                 {
                   action: "credit",
-                  amount: parsedAmount,
-                  amountUsd: parsedAmount,
+                  amount: safeAmount,
+                  amountUsd: safeAmount,
                   paymentId,
                   txid,
                   targetAccountNumber: linkAccountNumber || userAccountNumber || undefined,
@@ -234,7 +235,7 @@ const TopUp = () => {
         transactionId: receiptTransactionId,
         ledgerTransactionId: isUuid(creditedTransactionId) ? creditedTransactionId : undefined,
         type: "topup",
-        amount: parsedAmount,
+        amount: safeAmount,
         note: "Pi Network top up (PI -> OPEN USD)",
         date: new Date(),
       });
@@ -291,10 +292,10 @@ const TopUp = () => {
       <div className="paypal-surface mt-8 rounded-3xl p-6">
         <p className="text-center text-sm text-muted-foreground">Amount to pay</p>
         <p className="mt-1 text-center text-5xl font-bold text-foreground">
-          {usdCurrency.symbol}{safeAmount.toFixed(2)}
+          π{piAmount.toFixed(4)}
         </p>
         <p className="mt-1 text-center text-xs text-muted-foreground">
-          You will receive {safeAmount.toFixed(2)} OPEN USD (1 OPEN USD = 1 PI)
+          You will receive {safeAmount.toFixed(2)} OPEN USD (1 PI = {PI_TO_USD.toFixed(2)} OPEN USD)
         </p>
         <p className="mt-2 text-center text-sm font-semibold text-foreground">
           OPEN USD to receive: {safeAmount.toFixed(2)} OPEN USD
@@ -313,7 +314,7 @@ const TopUp = () => {
             />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            OpenPay uses a stable in-app value: 1 Pi = 1 OPEN USD.
+            OpenPay uses a stable in-app value: 1 PI = {PI_TO_USD.toFixed(2)} OPEN USD.
           </p>
         </div>
 

@@ -7,7 +7,7 @@ import { SlideToConfirm } from "@/components/ui/slide-to-confirm";
 import { ArrowLeft, Search, Info, ScanLine, Bookmark, BookmarkCheck, Loader2, FileText, Users, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import CurrencySelector from "@/components/CurrencySelector";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
@@ -267,8 +267,8 @@ const SendMoney = () => {
     const isActuallyMultiSend = activeIsMultiSend && activeUsers.length > 0;
     const totalAmount = isActuallyMultiSend ? (parsedAmount * activeUsers.length) : parsedAmount;
     const rate = Number(currency?.rate || 1);
-    const usdAmountPerUser = parsedAmount / (rate > 0 ? rate : 1);
-    const totalUsdAmount = totalAmount / (rate > 0 ? rate : 1);
+    const usdAmountPerUser = rate > 0 ? (parsedAmount / rate) * PI_TO_USD : 0;
+    const totalUsdAmount = rate > 0 ? (totalAmount / rate) * PI_TO_USD : 0;
     
     if (totalUsdAmount > balance) { 
       toast.error("Amount exceeds your available balance"); 
@@ -911,7 +911,7 @@ const SendMoney = () => {
       return;
     }
     const totalAmount = isMultiSend ? parsedAmount * selectedUsers.length : parsedAmount;
-    const usdAmount = totalAmount / (currency?.rate || 1);
+    const usdAmount = ((currency?.rate || 1) > 0 ? (totalAmount / (currency?.rate || 1)) * PI_TO_USD : 0);
     if (usdAmount > balance) {
       toast.error("Amount exceeds your available balance");
       return;
@@ -1150,8 +1150,8 @@ const SendMoney = () => {
                 <span className="text-muted-foreground">Converted (USD)</span>
                 <span className="font-semibold text-foreground">
                   {isMultiSend 
-                    ? `$${(Number(amount || 0) * selectedUsers.length / (currency.rate || 1)).toFixed(2)} total`
-                    : `$${(Number(amount || 0) / (currency.rate || 1)).toFixed(2)}`}
+                  ? `$${((Number(amount || 0) * selectedUsers.length / (currency.rate || 1)) * PI_TO_USD).toFixed(2)} total`
+                    : `$${((Number(amount || 0) / (currency.rate || 1)) * PI_TO_USD).toFixed(2)}`}
                 </span>
               </p>
               {note.trim() && (

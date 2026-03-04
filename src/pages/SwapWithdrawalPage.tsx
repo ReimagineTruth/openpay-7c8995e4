@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import BrandLogo from "@/components/BrandLogo";
 import { loadAppSecuritySettings, isPinSetupCompleted } from "@/lib/appSecurity";
 import { playGoogleWalletSuccessSound } from "@/lib/soundEffects";
+import { PI_TO_USD } from "@/contexts/CurrencyContext";
 
 type SwapWithdrawalRow = {
   id: string;
@@ -26,8 +27,6 @@ const SETTLEMENT_ACCOUNT_NUMBER = "OPEA68BB7A9F964994A199A15786D680FA";
 const SETTLEMENT_USERNAME = "@openpay";
 const PI_LOGO_URL = "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
 const WITHDRAWAL_FEE_RATE = 0.02;
-const COINGECKO_PI_PRICE_URL = "https://api.coingecko.com/api/v3/simple/price?ids=pi-network&vs_currencies=usd&include_last_updated_at=true";
-const COINGECKO_API_KEY = String(import.meta.env.VITE_COINGECKO_API_KEY || "");
 const PIN_ACTION_KEY = "openpay_pin_action_swap_v1";
 
 const normalizeUsername = (value: string) => value.trim().replace(/^@+/, "").toLowerCase();
@@ -84,24 +83,20 @@ const SwapWithdrawalPage = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [history, setHistory] = useState<SwapWithdrawalRow[]>([]);
-  const [piPriceUsd, setPiPriceUsd] = useState<number | null>(null);
-  const [piPriceUpdatedAt, setPiPriceUpdatedAt] = useState<number | null>(null);
+  const [piPriceUsd] = useState<number>(PI_TO_USD);
 
   const parsedAmount = Number(amount);
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
   const meetsMinimum = safeAmount >= 10;
   const feeAmount = safeAmount > 0 ? Number((safeAmount * WITHDRAWAL_FEE_RATE).toFixed(2)) : 0;
   const payoutAmount = safeAmount > 0 ? Number((safeAmount - feeAmount).toFixed(2)) : 0;
+  const payoutPiAmount = payoutAmount > 0 ? payoutAmount / PI_TO_USD : 0;
 
   const normalizedUsername = useMemo(() => normalizeUsername(openpayUsername), [openpayUsername]);
-  const formattedPiPrice = useMemo(() => {
-    if (piPriceUsd === null) return "Unavailable";
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 6 }).format(piPriceUsd);
-  }, [piPriceUsd]);
-  const piPriceUpdatedLabel = useMemo(() => {
-    if (!piPriceUpdatedAt) return "Not updated";
-    return new Date(piPriceUpdatedAt * 1000).toLocaleString();
-  }, [piPriceUpdatedAt]);
+  const formattedPiPrice = useMemo(
+    () => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 6 }).format(piPriceUsd),
+    [piPriceUsd],
+  );
 
   const loadIdentity = async () => {
     const { data, error } = await supabase.rpc("upsert_my_user_account");
@@ -156,45 +151,12 @@ const SwapWithdrawalPage = () => {
     }
   };
 
-  const loadPiPrice = async () => {
-    try {
-      const headers: HeadersInit = { accept: "application/json" };
-      if (COINGECKO_API_KEY) {
-        headers["x-cg-demo-api-key"] = COINGECKO_API_KEY;
-      }
-      const response = await fetch(COINGECKO_PI_PRICE_URL, { headers });
-      if (!response.ok) {
-        throw new Error("Failed to load Pi price");
-      }
-      const payload = (await response.json()) as {
-        "pi-network"?: { usd?: number; last_updated_at?: number };
-      };
-      const price = payload["pi-network"]?.usd;
-      const updatedAt = payload["pi-network"]?.last_updated_at;
-      if (typeof price === "number") {
-        setPiPriceUsd(price);
-      }
-      if (typeof updatedAt === "number") {
-        setPiPriceUpdatedAt(updatedAt);
-      }
-    } catch {
-      setPiPriceUsd(null);
-      setPiPriceUpdatedAt(null);
-    }
-  };
-
   useEffect(() => {
     const boot = async () => {
-      await Promise.all([loadIdentity(), loadHistory(), loadPiPrice()]);
+      await Promise.all([loadIdentity(), loadHistory()]);
       setIsInitialLoadDone(true);
     };
     void boot();
-    const timer = window.setInterval(() => {
-      void loadPiPrice();
-    }, 60 * 1000);
-    return () => {
-      window.clearInterval(timer);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -345,13 +307,13 @@ const SwapWithdrawalPage = () => {
             <p className="font-semibold text-foreground">How this works</p>
             <p className="mt-2">1. Fill in your OpenPay identity and mainnet PI wallet address.</p>
             <p>2. When you submit, your OpenUSD is moved to the settlement account {SETTLEMENT_USERNAME} ({SETTLEMENT_ACCOUNT_NUMBER}).</p>
-            <p>3. After admin approval, you receive PI to your mainnet wallet. Rate is always 1 OPEN USD = 1 PI.</p>
+            <p>3. After admin approval, you receive PI to your mainnet wallet. Rate is always 1 PI = 3.14 OPEN USD.</p>
             <p>4. A 2% processing fee applies to withdrawals.</p>
             <div className="mt-3 rounded-xl border border-border/60 bg-secondary/30 p-3 text-xs text-foreground">
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-2">
                   <img src={PI_LOGO_URL} alt="Pi" className="h-4 w-4" />
-                  Pi market price (CoinGecko)
+                  Pi fixed rate
                 </span>
                 <span className="inline-flex items-center gap-1 font-semibold">
                   <img src={PI_LOGO_URL} alt="Pi" className="h-4 w-4" />
@@ -359,10 +321,10 @@ const SwapWithdrawalPage = () => {
                   <span>{formattedPiPrice}</span>
                 </span>
               </div>
-              <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Last updated</span>
-                <span>{piPriceUpdatedLabel}</span>
-              </div>
+                <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>Fixed</span>
+                  <span>1 PI = {PI_TO_USD.toFixed(2)} OPEN USD</span>
+                </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
               Processing may be delayed due to high transaction volume or network congestion.
@@ -443,7 +405,7 @@ const SwapWithdrawalPage = () => {
               <span className="font-semibold">You will receive</span>
               <span className="inline-flex items-center gap-2 font-semibold text-paypal-blue">
                 <img src={PI_LOGO_URL} alt="Pi" className="h-5 w-5" />
-                {payoutAmount.toFixed(2)} PI
+                {payoutPiAmount.toFixed(4)} PI
               </span>
             </div>
           </div>
@@ -557,7 +519,7 @@ const SwapWithdrawalPage = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">You will receive</span>
-              <span className="font-semibold">{payoutAmount.toFixed(2)} PI</span>
+              <span className="font-semibold">{payoutPiAmount.toFixed(4)} PI</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">PI wallet</span>

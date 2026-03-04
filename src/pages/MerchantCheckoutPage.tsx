@@ -7,7 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import SplashScreen from "@/components/SplashScreen";
@@ -397,11 +397,11 @@ const MerchantCheckoutPage = () => {
   const sessionCurrencyRate = currencies.find((c) => c.code === currency)?.rate ?? 1;
   const selectedPayCurrency = currencies.find((c) => c.code === payCurrencyCode) ?? currencies[0];
   const selectedPayCurrencyRate = selectedPayCurrency?.rate ?? 1;
-  const amountInUsd = amount / (sessionCurrencyRate || 1);
-  const amountInSelectedCurrency = amountInUsd * selectedPayCurrencyRate;
-  const subtotalInSelectedCurrency = (subtotalAmount / (sessionCurrencyRate || 1)) * selectedPayCurrencyRate;
-  const feeInSelectedCurrency = (checkoutFeeAmount / (sessionCurrencyRate || 1)) * selectedPayCurrencyRate;
-  const settlementInSelectedCurrency = (merchantSettlementAmount / (sessionCurrencyRate || 1)) * selectedPayCurrencyRate;
+  const amountInUsd = sessionCurrencyRate ? (amount / sessionCurrencyRate) * PI_TO_USD : 0;
+  const amountInSelectedCurrency = sessionCurrencyRate ? (amount / sessionCurrencyRate) * selectedPayCurrencyRate : 0;
+  const subtotalInSelectedCurrency = sessionCurrencyRate ? (subtotalAmount / sessionCurrencyRate) * selectedPayCurrencyRate : 0;
+  const feeInSelectedCurrency = sessionCurrencyRate ? (checkoutFeeAmount / sessionCurrencyRate) * selectedPayCurrencyRate : 0;
+  const settlementInSelectedCurrency = sessionCurrencyRate ? (merchantSettlementAmount / sessionCurrencyRate) * selectedPayCurrencyRate : 0;
   const convertedAmountLabel = `${selectedPayCurrency?.symbol || ""}${amountInSelectedCurrency.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${getPiCodeLabel(selectedPayCurrency?.code || "PI")}`;
   const showConvertedHint = (selectedPayCurrency?.code || "PI") !== currency;
   const checkoutMemo = isSessionCheckout

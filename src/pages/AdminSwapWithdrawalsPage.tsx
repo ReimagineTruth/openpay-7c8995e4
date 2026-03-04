@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { PI_TO_USD } from "@/contexts/CurrencyContext";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import { playGoogleWalletSuccessSound } from "@/lib/soundEffects";
@@ -214,7 +215,7 @@ const AdminSwapWithdrawalsPage = () => {
                   <p>OpenPay username: @{row.openpay_account_username}</p>
                   <p>Account number: {row.openpay_account_number}</p>
                   <p className="sm:col-span-2">
-                    PI to send: {(row.amount * (1 - WITHDRAWAL_FEE_RATE)).toFixed(2)} PI (after 2% fee)
+                    PI to send: {((row.amount * (1 - WITHDRAWAL_FEE_RATE)) / PI_TO_USD).toFixed(4)} PI (after 2% fee)
                   </p>
                   <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
                     <span>PI wallet: {row.pi_wallet_address}</span>

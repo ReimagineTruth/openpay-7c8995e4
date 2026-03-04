@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowUpDown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 const OPENPAY_ICON_URL = "/openpay-o.svg";
@@ -26,8 +26,9 @@ const CurrencyConverterPage = () => {
 
   const parsedAmount = Number(amount);
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount >= 0 ? parsedAmount : 0;
-  const usdAmount = fromCurrency?.rate ? safeAmount / fromCurrency.rate : 0;
-  const converted = usdAmount * (toCurrency?.rate ?? 1);
+  const piAmount = fromCurrency?.rate ? safeAmount / fromCurrency.rate : 0;
+  const usdAmount = piAmount * PI_TO_USD;
+  const converted = piAmount * (toCurrency?.rate ?? 1);
   const unitRate = fromCurrency?.rate ? (toCurrency?.rate ?? 1) / fromCurrency.rate : 0;
   const formattedUpdatedAt = ratesUpdatedAt
     ? new Date(ratesUpdatedAt).toLocaleString(undefined, {
@@ -54,6 +55,9 @@ const CurrencyConverterPage = () => {
         </div>
 
         <div className="paypal-surface rounded-3xl p-5">
+          <p className="mb-3 text-xs font-semibold text-muted-foreground">
+            Base rate: 1 PI = {PI_TO_USD.toFixed(2)} OUSD
+          </p>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amount</p>
           <Input
             type="number"
@@ -127,7 +131,7 @@ const CurrencyConverterPage = () => {
               1 {fromCurrency?.code} = {unitRate.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} {toCurrency?.code}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Live rates are USD-based and PI is fixed at 1 PI = 1 USD.
+              Rates are PI-based with a fixed conversion: 1 PI = {PI_TO_USD.toFixed(2)} OUSD.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Last updated: {formattedUpdatedAt}

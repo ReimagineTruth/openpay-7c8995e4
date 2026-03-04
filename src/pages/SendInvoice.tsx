@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { Info } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -261,7 +261,7 @@ const SendInvoice = () => {
     setLoading(true);
     const payMeta = currencies.find((c) => c.code === payCurrencyCode);
     const rate = payMeta?.rate ?? 1;
-    const senderAmount = Number(invoice.amount || 0) * rate;
+    const senderAmount = rate ? (Number(invoice.amount || 0) / PI_TO_USD) * rate : 0;
     const { data, error } = await supabase.functions.invoke("send-money", {
       body: {
         receiver_id: invoice.sender_id,

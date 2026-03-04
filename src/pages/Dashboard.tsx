@@ -5,7 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import { Bell, Check, ChevronDown, ChevronUp, CircleDollarSign, Copy, CreditCard, Eye, EyeOff, ExternalLink, FileText, HandCoins, PiggyBank, QrCode, RefreshCw, Settings, Store, TrendingUp, Users, Pickaxe, LayoutGrid } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import BrandLogo from "@/components/BrandLogo";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { loadAppSecuritySettings } from "@/lib/appSecurity";
@@ -91,6 +91,8 @@ const TRANSFI_ICON_URL = "https://logo.clearbit.com/transfi.com";
 const ONRAMP_MONEY_ICON_URL = "https://logo.clearbit.com/onramp.money";
 const BANXA_ICON_URL = "https://logo.clearbit.com/banxa.com";
 const E_WALLET_PHP_PER_OUSD = 57;
+const PI_TO_OUSD = PI_TO_USD;
+const OUSD_TO_PI = 1 / PI_TO_OUSD;
 
 interface SavingsDashboard {
   wallet_balance: number;
@@ -235,6 +237,20 @@ const formatCurrencyValue = (
     maximumFractionDigits: 2,
   }).format(abs);
   return `${symbol}${formatted}`;
+};
+
+const normalizeAmountInput = (value: string, maxDecimals = 2) => {
+  const cleaned = value.replace(/,/g, "").replace(/[^\d.]/g, "");
+  const [intPart, decPart] = cleaned.split(".");
+  if (decPart === undefined) return intPart;
+  return `${intPart}.${decPart.slice(0, maxDecimals)}`;
+};
+
+const formatAmountInput = (value: string) => {
+  if (!value) return "";
+  const [intPart, decPart] = value.split(".");
+  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return decPart !== undefined && decPart.length > 0 ? `${withCommas}.${decPart}` : withCommas;
 };
 
 const Dashboard = () => {
@@ -1459,7 +1475,7 @@ const Dashboard = () => {
         ? "1 USDC = 1 OPEN USD"
         : isUsdFiatBuyFlow
           ? "1 USD = 1 OPEN USD"
-          : "1 PI = 1 OPEN USD";
+          : `1 PI = ${PI_TO_OUSD.toFixed(2)} OPEN USD`;
   const buyOpenUsdRateText = isUsdtBuyFlow
     ? "1 USDT = 1 OPEN USD"
     : isUsdcBuyFlow
@@ -1468,9 +1484,9 @@ const Dashboard = () => {
         ? `${E_WALLET_PHP_PER_OUSD.toFixed(2)} PHP = 1 OPEN USD`
         : isUsdFiatBuyFlow
           ? "1 USD = 1 OPEN USD"
-          : "1 PI = 1 OPEN USD";
+          : `1 OPEN USD = ${OUSD_TO_PI.toFixed(5)} PI`;
   const onrampRates: Record<BuyOnrampProvider, number> = {
-    "Pi Payment": 1,
+    "Pi Payment": OUSD_TO_PI,
     "Ewallet QR PH": 1,
     "USDT": 1,
     "USDC": 1,
@@ -1537,7 +1553,9 @@ const Dashboard = () => {
       ? 0
       : isEwalletBuyFlow
         ? safeBuySpend / E_WALLET_PHP_PER_OUSD
-        : safeBuySpend;
+        : buyPaymentMethod === "Pi Payment"
+          ? safeBuySpend * PI_TO_OUSD
+          : safeBuySpend;
   const buyOpenUsdDisplay =
     buyOpenUsdAmount > 0
       ? buyOpenUsdAmount.toFixed(isEwalletBuyFlow ? 6 : 2)
@@ -1726,7 +1744,15 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">Display currency: {currencyTag}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Display currency: <span className="font-semibold text-paypal-blue">{currencyTag}</span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Rate: <span className="font-semibold text-paypal-blue">1 PI = {PI_TO_OUSD.toFixed(2)} OUSD</span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Rate: <span className="font-semibold text-paypal-blue">1 USD = 1 OUSD</span>
+          </p>
       </div>
 
       {activeSection === "savings" && (
@@ -1779,14 +1805,28 @@ const Dashboard = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-border/70 p-3">
                 <p className="mb-2 text-sm font-semibold">Move wallet to savings</p>
-                <input value={savingsAmount} onChange={(e) => setSavingsAmount(e.target.value)} type="number" min="0" step="0.01" placeholder={`Amount (${currencyLabel})`} className="mb-2 h-10 w-full rounded-xl border border-border px-3" />
+                <input
+                  value={formatAmountInput(savingsAmount)}
+                  onChange={(e) => setSavingsAmount(normalizeAmountInput(e.target.value))}
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={`Amount (${currencyLabel})`}
+                  className="mb-2 h-10 w-full rounded-xl border border-border px-3"
+                />
                 <button disabled={movingToSavings} onClick={() => handleProtectedAction(handleMoveWalletToSavings, "handleMoveWalletToSavings")} className="h-10 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white">
                   {movingToSavings ? "Moving..." : "Move to Savings"}
                 </button>
               </div>
               <div className="rounded-2xl border border-border/70 p-3">
                 <p className="mb-2 text-sm font-semibold text-foreground">Move savings to wallet</p>
-                <input value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} type="number" min="0" step="0.01" placeholder={`Amount (${currencyLabel})`} className="mb-2 h-10 w-full rounded-xl border border-border px-3" />
+                <input
+                  value={formatAmountInput(withdrawAmount)}
+                  onChange={(e) => setWithdrawAmount(normalizeAmountInput(e.target.value))}
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={`Amount (${currencyLabel})`}
+                  className="mb-2 h-10 w-full rounded-xl border border-border px-3"
+                />
                 <button disabled={movingToWallet} onClick={() => handleProtectedAction(handleMoveSavingsToWallet, "handleMoveSavingsToWallet")} className="h-10 w-full rounded-xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue">
                   {movingToWallet ? "Moving..." : "Move to Wallet"}
                 </button>
@@ -1950,11 +1990,10 @@ const Dashboard = () => {
               </div>
 
               <input
-                value={loanAmount}
-                onChange={(e) => setLoanAmount(e.target.value)}
-                type="number"
-                min="0"
-                step="0.01"
+                value={formatAmountInput(loanAmount)}
+                onChange={(e) => setLoanAmount(normalizeAmountInput(e.target.value))}
+                type="text"
+                inputMode="decimal"
                 placeholder={`Enter loan amount (${currencyLabel})`}
                 className="mt-4 h-12 w-full rounded-xl border border-border px-3 text-sm text-foreground"
               />
@@ -1982,7 +2021,14 @@ const Dashboard = () => {
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1 text-xs text-muted-foreground">
                   <span>Loan amount ({currencyLabel})</span>
-                  <input value={loanAmount} onChange={(e) => setLoanAmount(e.target.value)} type="number" min="0" step="0.01" placeholder="e.g. 500" className="h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground" />
+                  <input
+                    value={formatAmountInput(loanAmount)}
+                    onChange={(e) => setLoanAmount(normalizeAmountInput(e.target.value))}
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="e.g. 500"
+                    className="h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground"
+                  />
                 </label>
                 <label className="space-y-1 text-xs text-muted-foreground">
                   <span>Term months (1 - 60)</span>
@@ -2031,7 +2077,14 @@ const Dashboard = () => {
           )}
           <div className="mt-3 rounded-2xl border border-border/70 p-3">
             <p className="mb-2 text-sm font-semibold">Pay monthly installment</p>
-            <input value={loanPaymentAmount} onChange={(e) => setLoanPaymentAmount(e.target.value)} type="number" min="0" step="0.01" placeholder={`Default: ${loan ? formatCompactCurrency(loan.monthly_payment_amount) : `monthly due (${currencyLabel})`}`} className="h-10 w-full rounded-xl border border-border px-3" />
+            <input
+              value={formatAmountInput(loanPaymentAmount)}
+              onChange={(e) => setLoanPaymentAmount(normalizeAmountInput(e.target.value))}
+              type="text"
+              inputMode="decimal"
+              placeholder={`Default: ${loan ? formatCompactCurrency(loan.monthly_payment_amount) : `monthly due (${currencyLabel})`}`}
+              className="h-10 w-full rounded-xl border border-border px-3"
+            />
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -2205,11 +2258,10 @@ const Dashboard = () => {
                 </p>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <input
-                    value={buySpendAmount}
-                    onChange={(e) => setBuySpendAmount(e.target.value)}
-                    type="number"
-                    min="1"
-                    step="0.01"
+                    value={formatAmountInput(buySpendAmount)}
+                    onChange={(e) => setBuySpendAmount(normalizeAmountInput(e.target.value))}
+                    type="text"
+                    inputMode="decimal"
                     placeholder={isEwalletBuyFlow ? "Custom amount in PHP (min 57)" : "Custom amount (min 1)"}
                     className="h-10 w-full bg-transparent text-4xl font-semibold text-foreground outline-none"
                   />
@@ -2325,7 +2377,7 @@ const Dashboard = () => {
                   : "Purchase flow uses OpenPay OPEN USD to PI balance."}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Stable mode enabled: 1 PI = 1 OPEN USD.
+              Stable mode enabled: 1 PI = {PI_TO_OUSD.toFixed(2)} OPEN USD.
             </p>
           </div>
         </div>
@@ -2743,11 +2795,10 @@ const Dashboard = () => {
             <div className="rounded-2xl border border-border/70 p-3">
               <p className="mb-2 text-sm font-semibold">Move merchant balance to savings</p>
               <input
-                value={merchantSavingsAmount}
-                onChange={(e) => setMerchantSavingsAmount(e.target.value)}
-                type="number"
-                min="0"
-                step="0.01"
+                value={formatAmountInput(merchantSavingsAmount)}
+                onChange={(e) => setMerchantSavingsAmount(normalizeAmountInput(e.target.value))}
+                type="text"
+                inputMode="decimal"
                 placeholder={`Amount (${currencyLabel})`}
                 className="mb-2 h-10 w-full rounded-xl border border-border px-3"
               />
@@ -2762,11 +2813,10 @@ const Dashboard = () => {
             <div className="rounded-2xl border border-border/70 p-3">
               <p className="mb-2 text-sm font-semibold">Move merchant balance to wallet</p>
               <input
-                value={merchantWithdrawAmount}
-                onChange={(e) => setMerchantWithdrawAmount(e.target.value)}
-                type="number"
-                min="0"
-                step="0.01"
+                value={formatAmountInput(merchantWithdrawAmount)}
+                onChange={(e) => setMerchantWithdrawAmount(normalizeAmountInput(e.target.value))}
+                type="text"
+                inputMode="decimal"
                 placeholder={`Amount (${currencyLabel})`}
                 className="mb-2 h-10 w-full rounded-xl border border-border px-3"
               />
@@ -3221,7 +3271,7 @@ const Dashboard = () => {
             Select the provider for your OpenUSD buy quote.
           </DialogDescription>
           <p className="mt-1 text-center text-xs font-medium text-foreground">
-            Conversion: 1 OPEN USD to PI
+            Conversion: 1 OPEN USD = {OUSD_TO_PI.toFixed(5)} PI
           </p>
           <div className="mt-3 space-y-3">
             {onrampRows.map((row) => {
@@ -3244,7 +3294,7 @@ const Dashboard = () => {
                       ? `${targetOpenUsdAmount.toFixed(2)} USDC`
                   : usdOnrampProviders.includes(row.key)
                     ? `${targetOpenUsdAmount.toFixed(2)} USD`
-                    : `${targetOpenUsdAmount.toFixed(5)} PI`;
+                    : `${(targetOpenUsdAmount * OUSD_TO_PI).toFixed(5)} PI`;
               const selected = buyOnrampProvider === row.key;
               return (
                 <button

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
@@ -438,7 +438,7 @@ const RequestMoney = () => {
     setLoading(true);
     const payMeta = currencies.find((c) => c.code === payCurrencyCode);
     const rate = payMeta?.rate ?? 1;
-    const senderAmount = Number(request.amount || 0) * rate;
+    const senderAmount = rate ? (Number(request.amount || 0) / PI_TO_USD) * rate : 0;
     const { data, error } = await supabase.functions.invoke("send-money", {
       body: {
         receiver_id: request.requester_id,

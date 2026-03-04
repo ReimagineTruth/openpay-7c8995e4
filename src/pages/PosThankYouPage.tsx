@@ -5,7 +5,7 @@ import { CheckCircle2, ReceiptText, User, Mail, Phone, Calendar, DollarSign } fr
 import { Button } from "@/components/ui/button";
 import SplashScreen from "@/components/SplashScreen";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -142,7 +142,8 @@ const PosThankYouPage = () => {
   const amountInUsd = useMemo(() => {
     if (!sessionData) return 0;
     const rate = currencies.find((c) => c.code === sessionData.currency)?.rate ?? 1;
-    return Number(sessionData.amount || 0) / (rate || 1);
+    if (!rate) return 0;
+    return (Number(sessionData.amount || 0) / rate) * PI_TO_USD;
   }, [currencies, sessionData]);
 
   useEffect(() => {
