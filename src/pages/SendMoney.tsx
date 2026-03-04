@@ -143,6 +143,21 @@ const SendMoney = () => {
     if (cleaned.length <= head + tail + 3) return cleaned;
     return `${cleaned.slice(0, head)}...${cleaned.slice(-tail)}`;
   };
+  const formatAmountWithCommas = (value: number, maximumFractionDigits = 2) => {
+    if (!Number.isFinite(value)) return "0";
+    return new Intl.NumberFormat("en-US", {
+      maximumFractionDigits,
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
+  const formatCompactAmount = (value: number, maximumFractionDigits = 2) => {
+    if (!Number.isFinite(value)) return "0";
+    return new Intl.NumberFormat("en-US", {
+      notation: "compact",
+      compactDisplay: "short",
+      maximumFractionDigits,
+    }).format(value);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -971,6 +986,14 @@ const SendMoney = () => {
   }
 
   if (step === "amount") {
+    const parsedAmount = Number(amount || 0);
+    const safeAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+    const totalAmount = safeAmount * selectedUsers.length;
+    const displayAmount = formatAmountWithCommas(safeAmount);
+    const compactAmount = safeAmount >= 1000 ? formatCompactAmount(safeAmount) : "";
+    const compactTotal = totalAmount >= 1000 ? formatCompactAmount(totalAmount) : "";
+    const showCompactLegend = Boolean(compactAmount || compactTotal);
+
     return (
       <div className="min-h-screen bg-paypal-blue flex flex-col">
         {/* Header */}
@@ -1006,8 +1029,18 @@ const SendMoney = () => {
         <div className="flex flex-1 flex-col items-center justify-center text-white">
           <div className="mb-2 flex items-center text-8xl font-medium tracking-tight">
             <span>{currency.symbol}</span>
-            <span>{amount || "0"}</span>
+            <span>{displayAmount}</span>
           </div>
+          {safeAmount > 0 && showCompactLegend && (
+            <div className="flex flex-col items-center gap-1 text-sm font-medium text-white/70">
+              {compactAmount && (
+                <span>
+                  {compactAmount} {currency.code}
+                </span>
+              )}
+              <span className="text-[11px] uppercase tracking-widest text-white/55">K = Thousand · M = Million · B = Billion</span>
+            </div>
+          )}
           
           {isMultiSend && selectedUsers.length > 0 ? (
             <div className="flex flex-col items-center gap-2">
@@ -1028,7 +1061,7 @@ const SendMoney = () => {
                 ))}
               </div>
               <p className="text-sm font-medium text-white/80">
-                Total: {currency.symbol}{(Number(amount || 0) * selectedUsers.length).toFixed(2)} ({formatCurrency(balance)} available)
+                Total: {currency.symbol}{formatAmountWithCommas(totalAmount)}{compactTotal ? ` (${compactTotal})` : ""} ({formatCurrency(balance)} available)
               </p>
             </div>
           ) : selectedUser ? (
@@ -1138,20 +1171,24 @@ const SendMoney = () => {
             <div className="mt-4 space-y-2 rounded-2xl border border-border p-3 text-base">
               <p className="flex items-center justify-between">
                 <span className="text-muted-foreground">{isMultiSend ? "Amount per person" : "Amount"}</span>
-                <span className="font-semibold text-foreground">{currency.symbol}{Number(amount || 0).toFixed(2)} ({currency.code})</span>
+                <span className="font-semibold text-foreground">
+                  {currency.symbol}{formatAmountWithCommas(Number(amount || 0))} ({currency.code})
+                </span>
               </p>
               {isMultiSend && (
                 <p className="flex items-center justify-between border-t border-border pt-2 mt-2">
                   <span className="text-foreground font-bold">Total Amount</span>
-                  <span className="font-bold text-paypal-blue">{currency.symbol}{(Number(amount || 0) * selectedUsers.length).toFixed(2)}</span>
+                  <span className="font-bold text-paypal-blue">
+                    {currency.symbol}{formatAmountWithCommas((Number(amount || 0) * selectedUsers.length))}
+                  </span>
                 </p>
               )}
               <p className="flex items-center justify-between">
                 <span className="text-muted-foreground">Converted (USD)</span>
                 <span className="font-semibold text-foreground">
                   {isMultiSend 
-                  ? `$${((Number(amount || 0) * selectedUsers.length / (currency.rate || 1)) * PI_TO_USD).toFixed(2)} total`
-                    : `$${((Number(amount || 0) / (currency.rate || 1)) * PI_TO_USD).toFixed(2)}`}
+                  ? `$${formatAmountWithCommas(((Number(amount || 0) * selectedUsers.length / (currency.rate || 1)) * PI_TO_USD))} total`
+                    : `$${formatAmountWithCommas(((Number(amount || 0) / (currency.rate || 1)) * PI_TO_USD))}`}
                 </span>
               </p>
               {note.trim() && (

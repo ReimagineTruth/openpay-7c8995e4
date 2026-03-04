@@ -31,6 +31,8 @@ interface PaymentRequest {
   requester_id: string;
   payer_id: string;
   amount: number;
+  original_amount?: number | null;
+  original_currency_code?: string | null;
   note: string | null;
   status: string;
   created_at: string;
@@ -70,7 +72,7 @@ const RequestMoney = () => {
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [confirmAction, setConfirmAction] = useState<
-    | { type: "create"; payer: Profile; amount: number; note: string }
+    | { type: "create"; payer: Profile; amount: number; note: string; currencyCode: string }
     | { type: "pay"; request: PaymentRequest; requester: Profile | null }
     | { type: "reject"; request: PaymentRequest; requester: Profile | null }
     | null
@@ -105,7 +107,7 @@ const RequestMoney = () => {
 
     const { data: requestRows } = await supabase
       .from("payment_requests")
-      .select("id, requester_id, payer_id, amount, note, status, created_at")
+      .select("id, requester_id, payer_id, amount, original_amount, original_currency_code, note, status, created_at")
       .or(`requester_id.eq.${user.id},payer_id.eq.${user.id}`)
       .order("created_at", { ascending: false });
 
@@ -410,12 +412,16 @@ const RequestMoney = () => {
     }
 
     setLoading(true);
-    const currencyNote = `Currency: ${getPiCodeLabel(createCurrencyCode)}`;
-    const fullNote = [note.trim(), currencyNote].filter(Boolean).join(" | ");
+    const createMeta = currencies.find((c) => c.code === createCurrencyCode);
+    const createRate = createMeta?.rate ?? 1;
+    const ousdAmount = createRate ? (parsedAmount / createRate) * PI_TO_USD : parsedAmount;
+    const fullNote = note.trim();
     const { error } = await supabase.from("payment_requests").insert({
       requester_id: userId,
       payer_id: payerId,
-      amount: parsedAmount,
+      amount: Number(ousdAmount.toFixed(2)),
+      original_amount: Number(parsedAmount.toFixed(2)),
+      original_currency_code: createCurrencyCode,
       note: fullNote || "",
       status: "pending",
     });
@@ -436,19 +442,46 @@ const RequestMoney = () => {
 
   const submitPay = async (request: PaymentRequest, requester?: Profile | null) => {
     setLoading(true);
+
+    const parseOriginalAmount = (text?: string | null) => {
+      if (!text) return null;
+      const match = text.match(/Original amount:\s*([0-9.,]+)\s*([A-Za-z]{2,6})/i);
+      if (!match) return null;
+      const rawAmount = match[1].replace(/,/g, "");
+      const code = match[2].toUpperCase();
+      const amountNum = Number(rawAmount);
+      if (!Number.isFinite(amountNum) || amountNum <= 0) return null;
+      return { amount: amountNum, code };
+    };
+
+    const originalFromColumns = request.original_currency_code && request.original_amount
+      ? { amount: Number(request.original_amount), code: String(request.original_currency_code) }
+      : null;
+    const original = originalFromColumns || parseOriginalAmount(request.note);
+
+    let requestOusdAmount = Number(request.amount || 0);
+    if (original) {
+      const meta = currencies.find((c) => c.code === original.code);
+      const rate = meta?.rate ?? 1;
+      const computedOusd = rate ? (original.amount / rate) * PI_TO_USD : original.amount;
+      if (Number.isFinite(computedOusd) && Math.abs(computedOusd - requestOusdAmount) > 0.01) {
+        requestOusdAmount = computedOusd;
+      }
+    }
+
     const payMeta = currencies.find((c) => c.code === payCurrencyCode);
     const rate = payMeta?.rate ?? 1;
-    const senderAmount = rate ? (Number(request.amount || 0) / PI_TO_USD) * rate : 0;
+    const senderAmount = rate ? (requestOusdAmount / PI_TO_USD) * rate : 0;
     const { data, error } = await supabase.functions.invoke("send-money", {
       body: {
         receiver_id: request.requester_id,
         receiver_email: "__by_id__",
-        amount: request.amount,
+        amount: Number(requestOusdAmount.toFixed(2)),
         note: request.note || "Payment request",
         currency_code: payCurrencyCode,
         sender_amount: senderAmount,
         sender_currency_code: payCurrencyCode,
-        receiver_amount: request.amount,
+        receiver_amount: Number(requestOusdAmount.toFixed(2)),
         receiver_currency_code: "OUSD",
       },
     });
@@ -475,7 +508,7 @@ const RequestMoney = () => {
       transactionId: txId || request.id,
       ledgerTransactionId: txId || undefined,
       type: "send",
-      amount: request.amount,
+      amount: Number(requestOusdAmount.toFixed(2)),
       otherPartyName: requester?.full_name || "OpenPay User",
       otherPartyUsername: requester?.username || undefined,
       note: request.note || "Payment request",
@@ -502,6 +535,7 @@ const RequestMoney = () => {
       payer: selectedPayer,
       amount: parsedAmount,
       note: note.trim(),
+      currencyCode: createCurrencyCode,
     });
     setConfirmModalOpen(true);
   };
@@ -797,6 +831,11 @@ const RequestMoney = () => {
           {incoming.length === 0 && <p className="text-sm text-muted-foreground">No incoming requests</p>}
           {incoming.map((request) => {
             const requester = profileMap.get(request.requester_id);
+            const originalCurrency = request.original_currency_code
+              ? String(request.original_currency_code)
+              : parseOriginalAmount(request.note)?.code;
+            const originalAmount = request.original_amount ?? parseOriginalAmount(request.note)?.amount;
+            const originalMeta = originalCurrency ? currencies.find((c) => c.code === originalCurrency) : null;
             return (
               <div key={request.id} className="border border-border rounded-xl p-3">
                 <div className="flex items-center gap-2">
@@ -814,6 +853,11 @@ const RequestMoney = () => {
                 </div>
                 <p className="text-sm text-muted-foreground">{format(new Date(request.created_at), "MMM d, yyyy")}</p>
                 <p className="font-semibold mt-1">{formatCurrency(request.amount)}</p>
+                {originalCurrency && Number.isFinite(Number(originalAmount)) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Original: {originalMeta?.symbol || ""}{Number(originalAmount).toFixed(2)} {originalCurrency}
+                  </p>
+                )}
                 {request.note && <p className="text-sm text-muted-foreground mt-1">{request.note}</p>}
                 <p className="text-sm mt-1 capitalize">Status: {request.status}</p>
                 {request.status === "pending" && (
@@ -841,6 +885,11 @@ const RequestMoney = () => {
           {outgoing.length === 0 && <p className="text-sm text-muted-foreground">No requests sent yet</p>}
           {outgoing.map((request) => {
             const payer = profileMap.get(request.payer_id);
+            const originalCurrency = request.original_currency_code
+              ? String(request.original_currency_code)
+              : parseOriginalAmount(request.note)?.code;
+            const originalAmount = request.original_amount ?? parseOriginalAmount(request.note)?.amount;
+            const originalMeta = originalCurrency ? currencies.find((c) => c.code === originalCurrency) : null;
             return (
               <div key={request.id} className="border border-border rounded-xl p-3">
                 <div className="flex items-center gap-2">
@@ -858,6 +907,11 @@ const RequestMoney = () => {
                 </div>
                 <p className="text-sm text-muted-foreground">{format(new Date(request.created_at), "MMM d, yyyy")}</p>
                 <p className="font-semibold mt-1">{formatCurrency(request.amount)}</p>
+                {originalCurrency && Number.isFinite(Number(originalAmount)) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Original: {originalMeta?.symbol || ""}{Number(originalAmount).toFixed(2)} {originalCurrency}
+                  </p>
+                )}
                 {request.note && <p className="text-sm text-muted-foreground mt-1">{request.note}</p>}
                 <p className="text-sm mt-1 capitalize">Status: {request.status}</p>
               </div>
@@ -949,7 +1003,11 @@ const RequestMoney = () => {
               <span className="text-muted-foreground">Amount</span>
               <span className="font-semibold text-foreground">
                 {confirmAction?.type === "create"
-                  ? formatCurrency(confirmAction.amount)
+                  ? (() => {
+                    const meta = currencies.find((c) => c.code === confirmAction.currencyCode);
+                    const symbol = meta?.symbol ?? "";
+                    return `${symbol}${confirmAction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${confirmAction.currencyCode}`;
+                  })()
                   : confirmAction?.type === "pay" || confirmAction?.type === "reject"
                     ? formatCurrency(confirmAction.request.amount)
                     : "-"}
@@ -959,7 +1017,12 @@ const RequestMoney = () => {
               <span className="text-muted-foreground">Converted (USD)</span>
               <span className="font-semibold text-foreground">
                 ${confirmAction?.type === "create"
-                  ? confirmAction.amount.toFixed(2)
+                  ? (() => {
+                    const meta = currencies.find((c) => c.code === confirmAction.currencyCode);
+                    const rate = meta?.rate ?? 1;
+                    const ousd = rate ? (confirmAction.amount / rate) * PI_TO_USD : confirmAction.amount;
+                    return ousd.toFixed(2);
+                  })()
                   : confirmAction?.type === "pay" || confirmAction?.type === "reject"
                     ? Number(confirmAction.request.amount || 0).toFixed(2)
                     : "0.00"}

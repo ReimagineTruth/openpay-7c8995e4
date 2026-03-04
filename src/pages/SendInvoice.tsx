@@ -29,6 +29,8 @@ interface Invoice {
   sender_id: string;
   recipient_id: string;
   amount: number;
+  original_amount?: number | null;
+  original_currency_code?: string | null;
   description: string | null;
   due_date: string | null;
   status: string;
@@ -66,7 +68,7 @@ const SendInvoice = () => {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   const [confirmAction, setConfirmAction] = useState<
-    | { type: "create"; recipient: Profile; amount: number; description: string; dueDate: string | null }
+    | { type: "create"; recipient: Profile; amount: number; description: string; dueDate: string | null; currencyCode: string }
     | { type: "pay"; invoice: Invoice; sender: Profile | null }
     | { type: "reject"; invoice: Invoice; sender: Profile | null }
     | null
@@ -96,7 +98,7 @@ const SendInvoice = () => {
 
     const { data: invoiceRows } = await supabase
       .from("invoices")
-      .select("id, sender_id, recipient_id, amount, description, due_date, status, created_at")
+      .select("id, sender_id, recipient_id, amount, original_amount, original_currency_code, description, due_date, status, created_at")
       .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
       .order("created_at", { ascending: false });
 
@@ -231,12 +233,16 @@ const SendInvoice = () => {
     }
 
     setLoading(true);
-    const currencyNote = `Currency: ${getPiCodeLabel(invoiceCurrencyCode)}`;
-    const fullDescription = [description.trim(), currencyNote].filter(Boolean).join(" | ");
+    const invoiceMeta = currencies.find((c) => c.code === invoiceCurrencyCode);
+    const invoiceRate = invoiceMeta?.rate ?? 1;
+    const ousdAmount = invoiceRate ? (parsedAmount / invoiceRate) * PI_TO_USD : parsedAmount;
+    const fullDescription = description.trim();
     const { error } = await supabase.from("invoices").insert({
       sender_id: userId,
       recipient_id: recipientId,
-      amount: parsedAmount,
+      amount: Number(ousdAmount.toFixed(2)),
+      original_amount: Number(parsedAmount.toFixed(2)),
+      original_currency_code: invoiceCurrencyCode,
       description: fullDescription || "",
       due_date: dueDate || null,
       status: "pending",
@@ -259,19 +265,46 @@ const SendInvoice = () => {
 
   const submitPay = async (invoice: Invoice, sender?: Profile | null) => {
     setLoading(true);
+
+    const parseOriginalAmount = (text?: string | null) => {
+      if (!text) return null;
+      const match = text.match(/Original amount:\s*([0-9.,]+)\s*([A-Za-z]{2,6})/i);
+      if (!match) return null;
+      const rawAmount = match[1].replace(/,/g, "");
+      const code = match[2].toUpperCase();
+      const amountNum = Number(rawAmount);
+      if (!Number.isFinite(amountNum) || amountNum <= 0) return null;
+      return { amount: amountNum, code };
+    };
+
+    const originalFromColumns = invoice.original_currency_code && invoice.original_amount
+      ? { amount: Number(invoice.original_amount), code: String(invoice.original_currency_code) }
+      : null;
+    const original = originalFromColumns || parseOriginalAmount(invoice.description);
+
+    let invoiceOusdAmount = Number(invoice.amount || 0);
+    if (original) {
+      const meta = currencies.find((c) => c.code === original.code);
+      const rate = meta?.rate ?? 1;
+      const computedOusd = rate ? (original.amount / rate) * PI_TO_USD : original.amount;
+      if (Number.isFinite(computedOusd) && Math.abs(computedOusd - invoiceOusdAmount) > 0.01) {
+        invoiceOusdAmount = computedOusd;
+      }
+    }
+
     const payMeta = currencies.find((c) => c.code === payCurrencyCode);
     const rate = payMeta?.rate ?? 1;
-    const senderAmount = rate ? (Number(invoice.amount || 0) / PI_TO_USD) * rate : 0;
+    const senderAmount = rate ? (invoiceOusdAmount / PI_TO_USD) * rate : 0;
     const { data, error } = await supabase.functions.invoke("send-money", {
       body: {
         receiver_id: invoice.sender_id,
         receiver_email: "__by_id__",
-        amount: invoice.amount,
+        amount: Number(invoiceOusdAmount.toFixed(2)),
         note: invoice.description || "Invoice payment",
         currency_code: payCurrencyCode,
         sender_amount: senderAmount,
         sender_currency_code: payCurrencyCode,
-        receiver_amount: invoice.amount,
+        receiver_amount: Number(invoiceOusdAmount.toFixed(2)),
         receiver_currency_code: "OUSD",
       },
     });
@@ -298,7 +331,7 @@ const SendInvoice = () => {
       transactionId: txId || invoice.id,
       ledgerTransactionId: txId || undefined,
       type: "send",
-      amount: invoice.amount,
+      amount: Number(invoiceOusdAmount.toFixed(2)),
       otherPartyName: sender?.full_name || "OpenPay User",
       otherPartyUsername: sender?.username || undefined,
       note: invoice.description || "Invoice payment",
@@ -327,6 +360,7 @@ const SendInvoice = () => {
       amount: parsedAmount,
       description: description.trim(),
       dueDate: dueDate || null,
+      currencyCode: invoiceCurrencyCode,
     });
     setConfirmModalOpen(true);
   };
@@ -598,6 +632,11 @@ const SendInvoice = () => {
           {received.length === 0 && <p className="text-sm text-muted-foreground">No received invoices</p>}
           {received.map((invoice) => {
             const sender = profileMap.get(invoice.sender_id);
+            const originalCurrency = invoice.original_currency_code
+              ? String(invoice.original_currency_code)
+              : parseOriginalAmount(invoice.description)?.code;
+            const originalAmount = invoice.original_amount ?? parseOriginalAmount(invoice.description)?.amount;
+            const originalMeta = originalCurrency ? currencies.find((c) => c.code === originalCurrency) : null;
             return (
               <div key={invoice.id} className="border border-border rounded-xl p-3">
                 <div className="flex items-center gap-2">
@@ -612,6 +651,11 @@ const SendInvoice = () => {
                 </div>
                 <p className="text-sm text-muted-foreground">{format(new Date(invoice.created_at), "MMM d, yyyy")}</p>
                 <p className="font-semibold mt-1">{formatCurrency(invoice.amount)}</p>
+                {originalCurrency && Number.isFinite(Number(originalAmount)) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Original: {originalMeta?.symbol || ""}{Number(originalAmount).toFixed(2)} {originalCurrency}
+                  </p>
+                )}
                 {invoice.description && <p className="text-sm text-muted-foreground mt-1">{invoice.description}</p>}
                 {invoice.due_date && <p className="text-sm text-muted-foreground mt-1">Due: {invoice.due_date}</p>}
                 <p className="text-sm mt-1 capitalize">Status: {invoice.status}</p>
@@ -641,6 +685,11 @@ const SendInvoice = () => {
           {sent.length === 0 && <p className="text-sm text-muted-foreground">No sent invoices</p>}
           {sent.map((invoice) => {
             const recipient = profileMap.get(invoice.recipient_id);
+            const originalCurrency = invoice.original_currency_code
+              ? String(invoice.original_currency_code)
+              : parseOriginalAmount(invoice.description)?.code;
+            const originalAmount = invoice.original_amount ?? parseOriginalAmount(invoice.description)?.amount;
+            const originalMeta = originalCurrency ? currencies.find((c) => c.code === originalCurrency) : null;
             return (
               <div key={invoice.id} className="border border-border rounded-xl p-3">
                 <div className="flex items-center gap-2">
@@ -655,6 +704,11 @@ const SendInvoice = () => {
                 </div>
                 <p className="text-sm text-muted-foreground">{format(new Date(invoice.created_at), "MMM d, yyyy")}</p>
                 <p className="font-semibold mt-1">{formatCurrency(invoice.amount)}</p>
+                {originalCurrency && Number.isFinite(Number(originalAmount)) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Original: {originalMeta?.symbol || ""}{Number(originalAmount).toFixed(2)} {originalCurrency}
+                  </p>
+                )}
                 {invoice.description && <p className="text-sm text-muted-foreground mt-1">{invoice.description}</p>}
                 {invoice.due_date && <p className="text-sm text-muted-foreground mt-1">Due: {invoice.due_date}</p>}
                 <p className="text-sm mt-1 capitalize">Status: {invoice.status}</p>
@@ -717,7 +771,11 @@ const SendInvoice = () => {
               <span className="text-muted-foreground">Amount</span>
               <span className="font-semibold text-foreground">
                 {confirmAction?.type === "create"
-                  ? formatCurrency(confirmAction.amount)
+                  ? (() => {
+                    const meta = currencies.find((c) => c.code === confirmAction.currencyCode);
+                    const symbol = meta?.symbol ?? "";
+                    return `${symbol}${confirmAction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${confirmAction.currencyCode}`;
+                  })()
                   : confirmAction?.type === "pay" || confirmAction?.type === "reject"
                     ? formatCurrency(confirmAction.invoice.amount)
                     : "-"}
@@ -727,7 +785,12 @@ const SendInvoice = () => {
               <span className="text-muted-foreground">Converted (USD)</span>
               <span className="font-semibold text-foreground">
                 ${confirmAction?.type === "create"
-                  ? confirmAction.amount.toFixed(2)
+                  ? (() => {
+                    const meta = currencies.find((c) => c.code === confirmAction.currencyCode);
+                    const rate = meta?.rate ?? 1;
+                    const ousd = rate ? (confirmAction.amount / rate) * PI_TO_USD : confirmAction.amount;
+                    return ousd.toFixed(2);
+                  })()
                   : confirmAction?.type === "pay" || confirmAction?.type === "reject"
                     ? Number(confirmAction.invoice.amount || 0).toFixed(2)
                     : "0.00"}

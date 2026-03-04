@@ -59,7 +59,7 @@ serve(async (req: Request) => {
     if (!receiverId) throw new Error("No recipient specified");
     if (receiverId === user.id) throw new Error("Cannot send to yourself");
 
-    const { data: transactionId, error: transferError } = await supabase.rpc("transfer_funds", {
+    const transferPayload = {
       p_sender_id: user.id,
       p_receiver_id: receiverId,
       p_amount: parsedAmount,
@@ -69,8 +69,38 @@ serve(async (req: Request) => {
       p_sender_currency_code: typeof sender_currency_code === "string" ? sender_currency_code : null,
       p_receiver_amount: typeof receiver_amount === "number" ? receiver_amount : null,
       p_receiver_currency_code: typeof receiver_currency_code === "string" ? receiver_currency_code : null,
-    });
-    if (transferError) throw transferError;
+    };
+
+    let transactionId: unknown = null;
+    let transferError: unknown = null;
+
+    const primary = await supabase.rpc("transfer_funds", transferPayload);
+    transactionId = primary.data;
+    transferError = primary.error;
+
+    if (transferError) {
+      const msg = (transferError as { message?: string })?.message || "";
+      const shouldFallback =
+        /function transfer_funds|does not exist|schema cache/i.test(msg);
+      if (shouldFallback) {
+        const legacy = await supabase.rpc("transfer_funds", {
+          p_sender_id: user.id,
+          p_receiver_id: receiverId,
+          p_amount: parsedAmount,
+          p_note: note || "",
+        });
+        transactionId = legacy.data;
+        transferError = legacy.error;
+      }
+    }
+
+    if (transferError) {
+      const msg =
+        (transferError as { message?: string })?.message ||
+        (transferError as { details?: string })?.details ||
+        "Transfer failed";
+      throw new Error(msg);
+    }
 
     return jsonResponse({ success: true, transaction_id: transactionId });
   } catch (error: unknown) {
