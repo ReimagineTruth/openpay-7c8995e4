@@ -219,6 +219,24 @@ const toPreviewText = (value: string, max = 68) => {
   return `${tokenShortened.slice(0, max - 3)}...`;
 };
 
+const formatCurrencyValue = (
+  amount: number,
+  code: string,
+  currencies: Array<{ code: string; symbol?: string }>,
+  mode: "compact" | "comma",
+) => {
+  const upper = String(code || "OUSD").toUpperCase();
+  const meta = currencies.find((c) => c.code === upper);
+  const symbol = meta?.symbol || (upper === "PI" ? "π" : "$");
+  const abs = Math.abs(Number(amount || 0));
+  const formatted = new Intl.NumberFormat(undefined, {
+    notation: mode === "compact" ? "compact" : "standard",
+    minimumFractionDigits: mode === "compact" ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(abs);
+  return `${symbol}${formatted}`;
+};
+
 const Dashboard = () => {
   const remittanceUiEnabled = isRemittanceUiEnabled();
   const [balance, setBalance] = useState<number>(0);
@@ -334,6 +352,11 @@ const Dashboard = () => {
   const [buyPaymentMethod, setBuyPaymentMethod] = useState<BuyPaymentMethod>("Pi Payment");
   const [showOnrampPicker, setShowOnrampPicker] = useState(false);
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
+  const [amountFormat, setAmountFormat] = useState<"compact" | "comma">(() => {
+    if (typeof window === "undefined") return "compact";
+    const saved = localStorage.getItem("openpay_amount_format");
+    return saved === "comma" ? "comma" : "compact";
+  });
   
   // Mining state
   
@@ -343,11 +366,13 @@ const Dashboard = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { format: formatCurrency, currency, currencies } = useCurrency();
+  const { currency, currencies } = useCurrency();
   const currencyLabel = currency.code === "OUSD" ? "OPEN USD" : currency.code;
   const piCurrencyLabel = currency.code === "OUSD" ? "OPEN USD" : `PI ${currency.code}`;
   const cardCurrencyLabel = currency.code === "PI" ? "PI" : currency.code === "OUSD" ? "OPEN USD" : `PI ${currency.code}`;
   const currencyTag = currency.code === "PI" ? "PI" : `${currencyLabel} (Pi rate)`;
+  const formatCompactCurrency = (amount: number, codeOverride?: string) =>
+    formatCurrencyValue(amount, codeOverride || currency.code, currencies, amountFormat);
   const getPiCodeLabel = (code: string) => {
     const upper = String(code || "").toUpperCase();
     if (upper === "PI") return "PI";
@@ -420,6 +445,12 @@ const Dashboard = () => {
   useEffect(() => {
     localStorage.setItem("dashboard_openapp_banner_visible", JSON.stringify(showOpenAppBanner));
   }, [showOpenAppBanner]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("openpay_amount_format", amountFormat);
+    }
+  }, [amountFormat]);
 
   useEffect(() => {
     const checkPinVerification = async () => {
@@ -1701,22 +1732,31 @@ const Dashboard = () => {
       {activeSection === "savings" && (
         <div className="mx-4 mt-4 space-y-4">
           <div className="rounded-3xl border border-white/30 bg-gradient-to-br from-paypal-blue to-[#0073e6] p-6 shadow-xl shadow-[#004bba]/25">
-            <div className="flex items-center gap-3 text-white">
+          <div className="flex items-center justify-between text-white">
+            <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
                 <PiggyBank className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-3xl font-bold">{balanceHidden ? "****" : formatCurrency(savings?.savings_balance ?? 0)}</p>
+                <p className="text-3xl font-bold">{balanceHidden ? "****" : formatCompactCurrency(savings?.savings_balance ?? 0)}</p>
                 <p className="text-base text-white/85">Savings balance</p>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+              className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white hover:bg-white/25"
+            >
+              {amountFormat === "compact" ? "Compact" : "Comma"}
+            </button>
+          </div>
             <div className="mt-4 rounded-2xl bg-white p-4 text-paypal-dark">
               <p className="text-sm text-muted-foreground">Wallet balance</p>
-              <p className="mt-1 text-base font-semibold">{balanceHidden ? "****" : formatCurrency(savings?.wallet_balance ?? balance)}</p>
+              <p className="mt-1 text-base font-semibold">{balanceHidden ? "****" : formatCompactCurrency(savings?.wallet_balance ?? balance)}</p>
             </div>
             <div className="mt-4 rounded-2xl bg-white p-4 text-paypal-dark">
               <p className="text-sm text-muted-foreground">Savings balance</p>
-              <p className="mt-1 text-base font-semibold">{balanceHidden ? "****" : formatCurrency(savings?.savings_balance ?? 0)}</p>
+              <p className="mt-1 text-base font-semibold">{balanceHidden ? "****" : formatCompactCurrency(savings?.savings_balance ?? 0)}</p>
             </div>
             <div className="mt-4 rounded-2xl bg-white p-4 text-paypal-dark">
               <p className="text-sm text-muted-foreground">Estimated APY</p>
@@ -1772,7 +1812,7 @@ const Dashboard = () => {
                           {entry.note && <p className="text-xs text-muted-foreground">{entry.note}</p>}
                         </div>
                         <p className={`text-sm font-semibold ${isWalletToSavings ? "text-paypal-success" : "text-paypal-blue"}`}>
-                          {balanceHidden ? "****" : `${isWalletToSavings ? "+" : "-"}${formatCurrency(entry.amount)}`}
+                          {balanceHidden ? "****" : `${isWalletToSavings ? "+" : "-"}${formatCompactCurrency(entry.amount)}`}
                         </p>
                       </div>
                     );
@@ -1886,14 +1926,14 @@ const Dashboard = () => {
             <div className="rounded-2xl border border-border/70 p-4">
               <div className="rounded-2xl bg-gradient-to-br from-paypal-blue to-[#3b79ef] p-5 text-white">
                 <p className="text-sm text-white/85">Available to borrow</p>
-                <p className="mt-1 text-3xl font-bold">{balanceHidden ? "****" : formatCurrency(availableToBorrow)}</p>
+                <p className="mt-1 text-3xl font-bold">{balanceHidden ? "****" : formatCompactCurrency(availableToBorrow)}</p>
                 <p className="mt-1 text-sm text-white/85">Based on your wallet & savings balance</p>
               </div>
 
               <div className="mt-4 space-y-3">
                 <div className="flex items-center justify-between rounded-xl bg-secondary/40 px-4 py-3">
                   <span className="text-base text-muted-foreground">Loan amount</span>
-                  <span className="text-xl font-semibold text-foreground">{formatCurrency(previewLoanAmount)}</span>
+                  <span className="text-xl font-semibold text-foreground">{formatCompactCurrency(previewLoanAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-secondary/40 px-4 py-3">
                   <span className="text-base text-muted-foreground">Interest rate</span>
@@ -1905,7 +1945,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-paypal-blue/35 bg-paypal-blue/5 px-4 py-3">
                   <span className="text-lg font-semibold text-foreground">Total repayment</span>
-                  <span className="text-xl font-semibold text-paypal-blue">{formatCurrency(previewRepayment)}</span>
+                  <span className="text-xl font-semibold text-paypal-blue">{formatCompactCurrency(previewRepayment)}</span>
                 </div>
               </div>
 
@@ -1991,7 +2031,7 @@ const Dashboard = () => {
           )}
           <div className="mt-3 rounded-2xl border border-border/70 p-3">
             <p className="mb-2 text-sm font-semibold">Pay monthly installment</p>
-            <input value={loanPaymentAmount} onChange={(e) => setLoanPaymentAmount(e.target.value)} type="number" min="0" step="0.01" placeholder={`Default: ${loan ? formatCurrency(loan.monthly_payment_amount) : `monthly due (${currencyLabel})`}`} className="h-10 w-full rounded-xl border border-border px-3" />
+            <input value={loanPaymentAmount} onChange={(e) => setLoanPaymentAmount(e.target.value)} type="number" min="0" step="0.01" placeholder={`Default: ${loan ? formatCompactCurrency(loan.monthly_payment_amount) : `monthly due (${currencyLabel})`}`} className="h-10 w-full rounded-xl border border-border px-3" />
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -2032,11 +2072,11 @@ const Dashboard = () => {
                 {loanPaymentHistory.map((entry) => (
                   <div key={entry.id} className="px-3 py-2">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium">{formatCurrency(entry.amount)}</p>
+                      <p className="text-sm font-medium">{formatCompactCurrency(entry.amount)}</p>
                       <p className="text-xs uppercase text-muted-foreground">{entry.payment_method}</p>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Principal {formatCurrency(entry.principal_component)} | Fee {formatCurrency(entry.fee_component)}
+                      Principal {formatCompactCurrency(entry.principal_component)} | Fee {formatCompactCurrency(entry.fee_component)}
                     </p>
                     {entry.payment_reference && <p className="text-xs text-muted-foreground">Ref: {toPreviewText(entry.payment_reference, 44)}</p>}
                     <p className="text-xs text-muted-foreground">{entry.created_at ? format(new Date(entry.created_at), "MMM d, yyyy h:mm a") : "-"}</p>
@@ -2137,7 +2177,7 @@ const Dashboard = () => {
                     <p className="text-xs text-muted-foreground">{format(new Date(tx.created_at), "MMM d, yyyy h:mm a")}</p>
                   </div>
                   <p className={`ml-3 text-sm font-semibold ${tx.is_sent && !tx.is_topup ? "text-red-500" : "text-paypal-success"}`}>
-                    {balanceHidden ? "****" : `${tx.is_sent && !tx.is_topup ? "-" : "+"}${formatCurrency(tx.amount)}`}
+                    {balanceHidden ? "****" : `${tx.is_sent && !tx.is_topup ? "-" : "+"}${formatCompactCurrency(tx.amount)}`}
                   </p>
                 </div>
               ))}
@@ -2399,33 +2439,33 @@ const Dashboard = () => {
                 <div className="paypal-surface rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-2">
                     <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
-                      <span className="text-red-600 font-bold text-sm">↑</span>
+                      <span className="text-red-600 font-bold text-sm">â†‘</span>
                     </div>
                     <span className="text-xs text-red-600 font-medium">+12.5%</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{formatCurrency(personalAnalytics.summary.total_sent)}</p>
+                  <p className="text-2xl font-bold text-foreground">{formatCompactCurrency(personalAnalytics.summary.total_sent)}</p>
                   <p className="text-sm text-muted-foreground">Total Sent</p>
                 </div>
                 
                 <div className="paypal-surface rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-2">
                     <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                      <span className="text-green-600 font-bold text-sm">↓</span>
+                      <span className="text-green-600 font-bold text-sm">â†“</span>
                     </div>
                     <span className="text-xs text-green-600 font-medium">+8.2%</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{formatCurrency(personalAnalytics.summary.total_received)}</p>
+                  <p className="text-2xl font-bold text-foreground">{formatCompactCurrency(personalAnalytics.summary.total_received)}</p>
                   <p className="text-sm text-muted-foreground">Total Received</p>
                 </div>
                 
                 <div className="paypal-surface rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-2">
                     <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <span className="text-blue-600 font-bold text-sm">↔</span>
+                      <span className="text-blue-600 font-bold text-sm">â†”</span>
                     </div>
                     <span className="text-xs text-blue-600 font-medium">+5.1%</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{formatCurrency(personalAnalytics.summary.net_balance)}</p>
+                  <p className="text-2xl font-bold text-foreground">{formatCompactCurrency(personalAnalytics.summary.net_balance)}</p>
                   <p className="text-sm text-muted-foreground">Net Balance</p>
                 </div>
                 
@@ -2488,11 +2528,11 @@ const Dashboard = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center pb-3 border-b border-border/50">
                       <span className="text-sm text-muted-foreground">Avg Transaction</span>
-                      <span className="text-sm font-semibold">{formatCurrency(personalAnalytics.detailed_metrics.avg_transaction_value)}</span>
+                      <span className="text-sm font-semibold">{formatCompactCurrency(personalAnalytics.detailed_metrics.avg_transaction_value)}</span>
                     </div>
                     <div className="flex justify-between items-center pb-3 border-b border-border/50">
                       <span className="text-sm text-muted-foreground">Avg Top-up</span>
-                      <span className="text-sm font-semibold">{formatCurrency(personalAnalytics.detailed_metrics.avg_topup_amount)}</span>
+                      <span className="text-sm font-semibold">{formatCompactCurrency(personalAnalytics.detailed_metrics.avg_topup_amount)}</span>
                     </div>
                     <div className="flex justify-between items-center pb-3 border-b border-border/50">
                       <span className="text-sm text-muted-foreground">Most Used Currency</span>
@@ -2538,7 +2578,7 @@ const Dashboard = () => {
                                   {activity.type === 'transaction' ? 'T' : 
                                    activity.type === 'payment_request' ? 'R' : 
                                    activity.type === 'invoice' ? 'I' :
-                                   activity.type === 'topup' ? '↑' : '•'}
+                                   activity.type === 'topup' ? 'â†‘' : 'â€¢'}
                                 </div>
                                 <span className="text-sm font-medium capitalize">{activity?.type?.replace('_', ' ') || 'Activity'}</span>
                                 {activity.type === 'transaction' && (
@@ -2562,11 +2602,11 @@ const Dashboard = () => {
                                     const amt = Number(amtRaw || 0);
                                     const code = String((isOut ? activity.sender_currency_code : activity.receiver_currency_code) || activity.currency_code || 'OUSD').toUpperCase();
                                     const meta = currencies.find((c) => c.code === code);
-                                    const symbol = meta?.symbol || (code === 'PI' ? 'π' : '$');
+                                    const symbol = meta?.symbol || (code === 'PI' ? 'Ï€' : '$');
                                     const sign = isOut ? '-' : '+';
                                     return `${sign}${symbol}${amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                                   }
-                                  return activity.amount ? formatCurrency(activity.amount) : '-';
+                                  return activity.amount ? formatCompactCurrency(activity.amount) : '-';
                                 })()}
                               </span>
                             </td>
@@ -2593,7 +2633,8 @@ const Dashboard = () => {
       {activeSection === "wallet" && (
       <>
       <div className="mx-4 mt-4 rounded-3xl border border-white/30 bg-gradient-to-br from-paypal-blue to-[#0073e6] p-6 shadow-xl shadow-[#004bba]/25">
-        <div className="mb-4 inline-flex rounded-full bg-white/15 p-1">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-full bg-white/15 p-1">
           <button
             type="button"
             onClick={() => setWalletView("personal")}
@@ -2611,6 +2652,14 @@ const Dashboard = () => {
             }`}
           >
             Merchant wallet
+          </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+            className="ml-auto rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white hover:bg-white/25"
+          >
+            {amountFormat === "compact" ? "Compact" : "Comma"}
           </button>
         </div>
 
@@ -2650,7 +2699,7 @@ const Dashboard = () => {
         <div className="flex items-center gap-3 text-white">
           <BrandLogo className="h-8 w-8" />
           <div>
-            <p className="text-3xl font-bold">{balanceHidden ? "****" : formatCurrency(walletCardAmount)}</p>
+            <p className="text-3xl font-bold">{balanceHidden ? "****" : formatCompactCurrency(walletCardAmount)}</p>
             <p className="text-sm text-white/85">
               {walletView === "personal"
                 ? `Balance - ${currency.code === "PI" ? "PI" : piCurrencyLabel}`
@@ -2663,15 +2712,15 @@ const Dashboard = () => {
           <div className="mt-4 grid gap-2 text-white/90 sm:grid-cols-3">
             <div className="rounded-xl bg-white/10 px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-white/80">Incoming</p>
-              <p className="text-sm font-semibold">{balanceHidden ? "****" : formatCurrency(Number(selectedMerchantBalance?.gross_volume ?? 0))}</p>
+              <p className="text-sm font-semibold">{balanceHidden ? "****" : formatCompactCurrency(Number(selectedMerchantBalance?.gross_volume ?? 0))}</p>
             </div>
             <div className="rounded-xl bg-white/10 px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-white/80">Refunded</p>
-              <p className="text-sm font-semibold">{balanceHidden ? "****" : formatCurrency(Number(selectedMerchantBalance?.refunded_total ?? 0))}</p>
+              <p className="text-sm font-semibold">{balanceHidden ? "****" : formatCompactCurrency(Number(selectedMerchantBalance?.refunded_total ?? 0))}</p>
             </div>
             <div className="rounded-xl bg-white/10 px-3 py-2">
               <p className="text-[11px] uppercase tracking-wide text-white/80">Transferred out</p>
-              <p className="text-sm font-semibold">{balanceHidden ? "****" : formatCurrency(Number(selectedMerchantBalance?.transferred_total ?? 0))}</p>
+              <p className="text-sm font-semibold">{balanceHidden ? "****" : formatCompactCurrency(Number(selectedMerchantBalance?.transferred_total ?? 0))}</p>
             </div>
           </div>
         )}
@@ -2759,14 +2808,14 @@ const Dashboard = () => {
                         <div className="flex items-start justify-between gap-3 sm:justify-start">
                           <p className="text-sm font-medium text-foreground">{label}</p>
                           <p className={`text-sm font-semibold ${isOutflow ? "text-paypal-blue" : "text-paypal-success"} sm:hidden`}>
-                            {balanceHidden ? "****" : `${isOutflow ? "-" : "+"}${formatCurrency(entry.amount)}`}
+                            {balanceHidden ? "****" : `${isOutflow ? "-" : "+"}${formatCompactCurrency(entry.amount)}`}
                           </p>
                         </div>
                         <p className="text-xs text-muted-foreground">{entry.created_at ? format(new Date(entry.created_at), "MMM d, yyyy h:mm a") : "-"}</p>
                         {previewDetail && <p className="text-xs text-muted-foreground break-words">{previewDetail}</p>}
                       </div>
                       <p className={`hidden text-sm font-semibold sm:block ${isOutflow ? "text-paypal-blue" : "text-paypal-success"}`}>
-                        {balanceHidden ? "****" : `${isOutflow ? "-" : "+"}${formatCurrency(entry.amount)}`}
+                        {balanceHidden ? "****" : `${isOutflow ? "-" : "+"}${formatCompactCurrency(entry.amount)}`}
                       </p>
                     </div>
                   );
@@ -2873,7 +2922,7 @@ const Dashboard = () => {
                     <p className="text-sm font-semibold text-foreground">Mining</p>
                     <p className="text-xs text-muted-foreground">
                       {miningActive && typeof miningTimeLeft === "number"
-                        ? `Active · ${formatHMS(Math.max(miningTimeLeft, 0))} left`
+                        ? `Active Â· ${formatHMS(Math.max(miningTimeLeft, 0))} left`
                         : "Earn 0.10 OPEN daily"}
                     </p>
                   </div>
@@ -2926,11 +2975,11 @@ const Dashboard = () => {
         <div className="mx-4 mt-4 grid gap-3 sm:grid-cols-3">
           <div className="paypal-surface rounded-2xl p-3">
             <p className="text-xs text-muted-foreground">Remittance fee income</p>
-            <p className="mt-1 text-xl font-bold text-foreground">{balanceHidden ? "****" : formatCurrency(remittanceFeeIncome)}</p>
+            <p className="mt-1 text-xl font-bold text-foreground">{balanceHidden ? "****" : formatCompactCurrency(remittanceFeeIncome)}</p>
           </div>
           <div className="paypal-surface rounded-2xl p-3">
             <p className="text-xs text-muted-foreground">This month</p>
-            <p className="mt-1 text-xl font-bold text-foreground">{balanceHidden ? "****" : formatCurrency(remittanceMonthIncome)}</p>
+            <p className="mt-1 text-xl font-bold text-foreground">{balanceHidden ? "****" : formatCompactCurrency(remittanceMonthIncome)}</p>
           </div>
           <button
             onClick={() => navigate("/remittance-merchant")}
@@ -2991,7 +3040,7 @@ const Dashboard = () => {
                       const amt = Number(amtRaw || 0);
                       const code = String((isOut ? tx.sender_currency_code : tx.receiver_currency_code) || tx.currency_code || 'OUSD').toUpperCase();
                       const meta = currencies.find((c) => c.code === code);
-                      const sym = meta?.symbol || (code === 'PI' ? 'π' : '$');
+                      const sym = meta?.symbol || (code === 'PI' ? 'Ï€' : '$');
                       const sign = isOut ? '-' : '+';
                       return `${sign}${sym}${amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                     })()}
