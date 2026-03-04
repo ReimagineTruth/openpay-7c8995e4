@@ -274,6 +274,16 @@ const PiAuthPage = () => {
                   variant="outline"
                   className="h-11 w-full rounded-2xl"
                 >
+                  <a href="https://minepi.com/" target="_blank" rel="noreferrer">
+                    Download Pi Browser
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full rounded-2xl"
+                >
                   <a href="https://openpaylandingpage.vercel.app/" target="_blank" rel="noreferrer">
                     OpenPay Website
                   </a>
