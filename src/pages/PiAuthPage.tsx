@@ -267,14 +267,7 @@ const PiAuthPage = () => {
                   )}
                 </div>
               </Button>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="h-11 w-full rounded-2xl"
-                >
-                  <Link to="/sign-in?mode=signin">Use Email Sign In</Link>
-                </Button>
+              <div className="grid grid-cols-1 gap-2">
                 <Button
                   asChild
                   type="button"
@@ -288,7 +281,7 @@ const PiAuthPage = () => {
               </div>
             </div>
             <p className="mt-2 text-xs text-gray-600">
-              Use Email Sign In when using OpenPay App, Desktop, Tablet, or Browser. Enjoy full-screen experience, notifications, POS, Merchant Portal access, and more.
+              Enjoy full-screen experience, notifications, POS, Merchant Portal access, and more.
             </p>
             {piUser && (
               <p className="mt-3 text-sm text-gray-800">
