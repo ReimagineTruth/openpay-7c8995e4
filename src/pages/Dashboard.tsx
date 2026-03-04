@@ -1518,7 +1518,7 @@ const Dashboard = () => {
 
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background pb-28">
+    <div className="min-h-screen overflow-x-hidden bg-background pb-56">
       <div className="flex items-center justify-between px-4 pt-5">
         <div className="flex items-center gap-2">
           <CurrencySelector />
@@ -2964,7 +2964,7 @@ const Dashboard = () => {
         )}
       </div>
 
-      <div className="fixed bottom-24 left-0 right-0 overflow-x-hidden px-4 pb-1">
+      <div className="fixed bottom-24 left-0 right-0 z-40 overflow-x-hidden px-4 pb-1">
         <div className="flex gap-3">
           <button
             onClick={() => navigate("/contacts")}
