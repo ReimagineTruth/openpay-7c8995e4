@@ -7,27 +7,14 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import TopUpAccountDetails from "@/components/TopUpAccountDetails";
 
 const PAYPAL_ICON_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/1920px-PayPal.svg.png";
-const PAYPAL_CLIENT_ID = (import.meta.env.VITE_PAYPAL_CLIENT_ID as string | undefined) ??
-  "BAAdLEfq1F-RmW-y3CQDG09Y7C-0ktDr4zT2ZKCO3hc8-nt3nlaUqbu8CSKDlVzqFzgdZENMPrILIxlrtk";
-const PAYPAL_HOSTED_BUTTON_ID =
-  (import.meta.env.VITE_PAYPAL_HOSTED_BUTTON_ID as string | undefined) ?? "RCB6J7C6BBHBE";
+const PAYPAL_CLIENT_ID = "BAABvvC7_J4mukHtbKyyIkmPBX7N1UzqgAkCmei4q0NbUxp4nBMiCxVLKir2SdQ68p5hbosDBWF8pvLFdE";
+const PAYPAL_HOSTED_BUTTON_ID = "22Y6YDQAUV6B2";
+const PAYPAL_DIRECT_URL = "https://www.paypal.com/ncp/payment/22Y6YDQAUV6B2";
 
 declare global {
   interface Window {
     paypal?: {
-      Buttons: (options: {
-        fundingSource?: string;
-        style?: { layout?: "vertical" | "horizontal" };
-        createOrder: (data: unknown, actions: { order: { create: (payload: unknown) => Promise<string> } }) => Promise<string>;
-        onApprove: (
-          data: { orderID: string },
-          actions: { order: { capture: () => Promise<unknown> } }
-        ) => Promise<void> | void;
-        onError?: (err: unknown) => void;
-      }) => { render: (container: HTMLElement) => Promise<void>; isEligible: () => boolean };
-      FUNDING: { PAYPAL: string; VENMO: string; PAYLATER: string; CREDIT: string; CARD: string };
       HostedButtons: (options: { hostedButtonId: string }) => { render: (selector: string) => Promise<void> };
-      getFundingSources?: () => string[];
     };
   }
 }
@@ -49,7 +36,7 @@ const TopUpPaypal = () => {
   const usdDisplay = safeUsdAmount > 0 ? safeUsdAmount.toFixed(2) : "0.00";
   const paypalAmount = Number(usdDisplay);
   const openUsdDisplay = usdDisplay;
-  const paypalCheckoutUrl = "https://www.paypal.com";
+  const paypalCheckoutUrl = PAYPAL_DIRECT_URL;
 
   const handleCopyPaypalLink = async () => {
     try {
@@ -75,7 +62,6 @@ const TopUpPaypal = () => {
 
   useEffect(() => {
     if (!safeUsdAmount || !safetyAccepted || !paypalButtonRef.current) return;
-    if (!PAYPAL_CLIENT_ID) return;
 
     const scriptId = "paypal-js-sdk";
     const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
@@ -89,7 +75,7 @@ const TopUpPaypal = () => {
         script.id = scriptId;
         script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(
           PAYPAL_CLIENT_ID
-        )}&components=hosted-buttons&enable-funding=venmo&currency=USD`;
+        )}&components=hosted-buttons&disable-funding=venmo&currency=USD`;
         script.async = true;
         script.crossOrigin = "anonymous";
         script.onload = () => resolve();
@@ -108,20 +94,16 @@ const TopUpPaypal = () => {
           });
         }
         if (!window.paypal || !paypalButtonRef.current) return;
-        if (paypalButtonRef.current.getAttribute("data-rendered-amount") === String(safeUsdAmount)) {
+        if (paypalButtonRef.current.getAttribute("data-rendered") === "true") {
           return;
         }
 
         paypalButtonRef.current.innerHTML = "";
-        paypalButtonRef.current.setAttribute("data-rendered-amount", String(safeUsdAmount));
+        paypalButtonRef.current.setAttribute("data-rendered", "true");
         const containerId = `paypal-container-${PAYPAL_HOSTED_BUTTON_ID}`;
         const container = document.createElement("div");
         container.id = containerId;
         paypalButtonRef.current.appendChild(container);
-
-        if (!PAYPAL_HOSTED_BUTTON_ID) {
-          throw new Error("Missing hosted button ID.");
-        }
 
         if (!window.paypal?.HostedButtons) {
           throw new Error("PayPal Hosted Buttons is unavailable.");
@@ -137,7 +119,6 @@ const TopUpPaypal = () => {
 
     void renderButton();
   }, [safeUsdAmount, safetyAccepted]);
-
 
   return (
     <div className="min-h-screen bg-background px-4 pt-4">
@@ -178,14 +159,7 @@ const TopUpPaypal = () => {
                 </button>
               </div>
             ) : (
-              <>
-                {!PAYPAL_CLIENT_ID && (
-                  <p className="mt-2 text-center text-xs text-muted-foreground">
-                    PayPal button requires `VITE_PAYPAL_CLIENT_ID`.
-                  </p>
-                )}
-                <div ref={paypalButtonRef} className="mt-3 w-full sm:max-w-md sm:mx-auto" />
-              </>
+              <div ref={paypalButtonRef} className="mt-3 w-full sm:max-w-md sm:mx-auto" />
             )}
           </div>
         )}
@@ -243,6 +217,15 @@ const TopUpPaypal = () => {
         >
           <Copy className="mr-2 h-4 w-4" />
           Copy PayPal Link
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-2 h-11 w-full rounded-2xl"
+          onClick={() => window.open(PAYPAL_DIRECT_URL, "_blank")}
+        >
+          Open PayPal Link
         </Button>
 
         <Button

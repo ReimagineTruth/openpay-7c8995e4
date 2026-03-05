@@ -16,6 +16,7 @@ import { Info } from "lucide-react";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { loadAppSecuritySettings, isPinSetupCompleted } from "@/lib/appSecurity";
 import SplashScreen from "@/components/SplashScreen";
+import { playUiSound } from "@/lib/appSounds";
 
 const PIN_ACTION_KEY = "openpay_pin_action_v1";
 
@@ -518,6 +519,7 @@ const RequestMoney = () => {
     });
     setReceiptOpen(true);
     toast.success("Request paid");
+    playUiSound("send");
     await loadData();
   };
 

@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { loadAppSecuritySettings, isPinSetupCompleted } from "@/lib/appSecurity";
 import SplashScreen from "@/components/SplashScreen";
+import { playUiSound } from "@/lib/appSounds";
 
 const PIN_ACTION_KEY = "openpay_pin_action_v1";
 
@@ -341,6 +342,7 @@ const SendInvoice = () => {
     });
     setReceiptOpen(true);
     toast.success("Invoice paid");
+    playUiSound("send");
     await loadData();
   };
 

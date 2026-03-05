@@ -38,8 +38,10 @@ serve(async (req: Request) => {
     const txid = (body as any).txid;
     const targetAccountNumber = String((body as any).targetAccountNumber || "").trim().toUpperCase();
     const targetUsername = String((body as any).targetUsername || "").trim().replace(/^@+/, "").toLowerCase();
-    const parsedAmount = Number(amount);
-    const parsedAmountUsd = Number.isFinite(Number(amountUsd)) && Number(amountUsd) > 0 ? Number(amountUsd) : parsedAmount;
+    const parsedAmountPi = Number(amount);
+    const parsedAmountUsd = Number.isFinite(Number(amountUsd)) && Number(amountUsd) > 0
+      ? Number(amountUsd)
+      : parsedAmountPi;
     if (!paymentId || typeof paymentId !== "string") throw new Error("Missing paymentId");
 
     const piApiKey = Deno.env.get("PI_API_KEY");
@@ -68,7 +70,7 @@ serve(async (req: Request) => {
       return jsonResponse({ success: true, action, paymentId, txid: txid || null });
     }
 
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) throw new Error("Invalid amount");
+    if (!Number.isFinite(parsedAmountPi) || parsedAmountPi <= 0) throw new Error("Invalid amount");
 
     if (txid) {
       try { await callPi(`/payments/${paymentId}/complete`, "POST", { txid }); } catch { /* idempotent */ }
@@ -93,7 +95,9 @@ serve(async (req: Request) => {
     if (piDirection !== "user_to_app") throw new Error("Invalid payment direction");
     if (status.cancelled || status.user_cancelled) throw new Error("Payment is cancelled");
     if (!status.developer_completed || !status.transaction_verified) throw new Error("Payment is not completed/verified yet. Please retry.");
-    if (!Number.isFinite(piAmount) || Math.abs(piAmount - parsedAmount) > 0.000001) throw new Error("Payment amount mismatch");
+    if (!Number.isFinite(piAmount) || Math.abs(piAmount - parsedAmountPi) > 0.000001) {
+      throw new Error("Payment amount mismatch");
+    }
     if (txid && piTxid && txid !== piTxid) throw new Error("Payment txid mismatch");
 
     const { data: authUserData } = await supabase.auth.admin.getUserById(user.id);
@@ -117,7 +121,13 @@ serve(async (req: Request) => {
       if (accountUpsertError) throw accountUpsertError;
     }
 
-    const creditInsertRes = await supabase.from("pi_payment_credits").insert({ payment_id: paymentId, user_id: user.id, amount: parsedAmount, txid: piTxid || txid || null, status: "completed" });
+    const creditInsertRes = await supabase.from("pi_payment_credits").insert({
+      payment_id: paymentId,
+      user_id: user.id,
+      amount: parsedAmountUsd,
+      txid: piTxid || txid || null,
+      status: "completed",
+    });
     const creditLogError = creditInsertRes?.error;
     if (creditLogError) {
       if (creditLogError.code === "23505" || creditLogError.message?.toLowerCase().includes("duplicate")) {
@@ -130,7 +140,13 @@ serve(async (req: Request) => {
     if (walletError) throw walletError;
     const walletRow = wallet as any;
 
-    const walletUpdateRes = await supabase.from("wallets").update({ balance: (walletRow?.balance || 0) + parsedAmount, updated_at: new Date().toISOString() }).eq("user_id", user.id);
+    const walletUpdateRes = await supabase
+      .from("wallets")
+      .update({
+        balance: (walletRow?.balance || 0) + parsedAmountUsd,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", user.id);
     if (walletUpdateRes?.error) throw walletUpdateRes.error;
 
     const { data: transactionRow, error: transactionError } = await supabase
@@ -138,8 +154,8 @@ serve(async (req: Request) => {
       .insert({
         sender_id: user.id,
         receiver_id: user.id,
-        amount: parsedAmount,
-        note: `Wallet top up (PI -> OPEN USD) | ${parsedAmount.toFixed(2)} PI = ${parsedAmountUsd.toFixed(2)} OPEN USD`,
+        amount: parsedAmountUsd,
+        note: `Wallet top up (PI -> OPEN USD) | ${parsedAmountPi.toFixed(2)} PI = ${parsedAmountUsd.toFixed(2)} OPEN USD`,
         status: "completed",
       })
       .select("id")

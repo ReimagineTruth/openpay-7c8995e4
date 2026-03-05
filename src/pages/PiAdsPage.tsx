@@ -61,7 +61,9 @@ const PiAdsPage = () => {
       throw new Error(payload?.error || "Pi ad verification failed");
     }
 
-    return payload;
+    const rewarded = payload.rewarded ?? payload.data.mediator_ack_status === "granted";
+
+    return { ...payload, rewarded };
   };
 
   const handleWatchRewardedAd = async () => {
@@ -79,15 +81,24 @@ const PiAdsPage = () => {
         }
       }
 
-      if (typeof window.Pi?.Ads?.requestAd === "function") {
-        try {
-          await window.Pi.Ads.requestAd("rewarded");
-        } catch {
-          // ignore prefetch errors; we'll attempt showAd anyway
+      if (typeof window.Pi?.Ads?.isAdReady === "function") {
+        const readiness = await window.Pi.Ads.isAdReady("rewarded");
+        if (!readiness.ready && typeof window.Pi?.Ads?.requestAd === "function") {
+          const request = await window.Pi.Ads.requestAd("rewarded");
+          if (request.result === "ADS_NOT_SUPPORTED") {
+            throw new Error("Ads not supported. Update Pi Browser to latest and try again.");
+          }
+          if (request.result !== "AD_LOADED") {
+            throw new Error("Rewarded ad is not available right now. Please try again.");
+          }
         }
       }
 
-      const adResult = await window.Pi.Ads.showAd("rewarded");
+      let adResult = await window.Pi.Ads.showAd("rewarded");
+      if (adResult.result === "USER_UNAUTHENTICATED") {
+        await window.Pi.authenticate(["username"]);
+        adResult = await window.Pi.Ads.showAd("rewarded");
+      }
       setLastResult(adResult.result);
 
       if (adResult.result !== "AD_REWARDED") {

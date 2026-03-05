@@ -5,11 +5,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import TopUpAccountDetails from "@/components/TopUpAccountDetails";
+import { QRCodeSVG } from "qrcode.react";
 
 type TopUpProviderPageProps = {
   providerName: string;
   providerLogoUrl?: string;
   providerUrl?: string;
+  depositAddress?: string;
+  depositNetwork?: string;
+  qrLogoUrl?: string;
   accentClassName?: string;
 };
 
@@ -17,6 +21,9 @@ const TopUpProviderPage = ({
   providerName,
   providerLogoUrl,
   providerUrl,
+  depositAddress,
+  depositNetwork,
+  qrLogoUrl,
   accentClassName = "text-foreground",
 }: TopUpProviderPageProps) => {
   const navigate = useNavigate();
@@ -38,28 +45,45 @@ const TopUpProviderPage = ({
   const [showSafetyAgreement, setShowSafetyAgreement] = useState(false);
   const [safetyAgreementChecked, setSafetyAgreementChecked] = useState(false);
   const [safetyAccepted, setSafetyAccepted] = useState(false);
+  const [showTopUpInstructions, setShowTopUpInstructions] = useState(false);
+  const normalizedAddress = String(depositAddress || "").trim();
+  const normalizedNetwork = String(depositNetwork || "").trim();
 
   const handleProceed = () => {
-    if (!providerUrl) {
-      toast.error(`${providerName} top-up is not configured yet.`);
-      return;
-    }
     if (!safetyAccepted) {
       setSafetyAgreementChecked(false);
       setShowSafetyAgreement(true);
       return;
     }
-    window.open(providerUrl, "_blank", "noopener,noreferrer");
+    if (providerUrl) {
+      window.open(providerUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (normalizedAddress) {
+      void navigator.clipboard.writeText(normalizedAddress).then(
+        () => toast.success(`${providerName} address copied`),
+        () => toast.error("Unable to copy address"),
+      );
+      return;
+    }
+    toast.error(`${providerName} top-up is not configured yet.`);
   };
 
   const confirmProceed = () => {
     setSafetyAccepted(true);
     setShowSafetyAgreement(false);
-    if (!providerUrl) {
-      toast.error(`${providerName} top-up is not configured yet.`);
+    if (providerUrl) {
+      window.open(providerUrl, "_blank", "noopener,noreferrer");
       return;
     }
-    window.open(providerUrl, "_blank", "noopener,noreferrer");
+    if (normalizedAddress) {
+      void navigator.clipboard.writeText(normalizedAddress).then(
+        () => toast.success(`${providerName} address copied`),
+        () => toast.error("Unable to copy address"),
+      );
+      return;
+    }
+    toast.error(`${providerName} top-up is not configured yet.`);
   };
   const openSupportWidget = () => {
     window.dispatchEvent(new CustomEvent("open-support-widget", { detail: { tab: "messages" } }));
@@ -95,15 +119,64 @@ const TopUpProviderPage = ({
               onClick={handleProceed}
               className="paypal-surface w-full max-w-md rounded-md border border-border bg-white py-3 text-center text-base font-semibold text-foreground shadow-sm"
             >
-              {providerName}
+              {providerUrl ? `Pay with ${providerName}` : normalizedAddress ? `Copy ${providerName} Address` : providerName}
             </button>
           </div>
-          {!providerUrl && (
+          {!providerUrl && !normalizedAddress && (
             <p className="mt-3 text-center text-xs text-muted-foreground">
               {providerName} top-up is coming soon. Please choose another method or contact support.
             </p>
           )}
         </div>
+
+        {normalizedAddress && (
+          <div className="mt-5 rounded-2xl border border-border bg-white p-4">
+            <p className="text-center text-xs font-semibold text-muted-foreground">Deposit {providerName}</p>
+            <div className="mt-4 flex flex-col items-center gap-4">
+              <div className="rounded-2xl bg-white p-3 shadow-sm">
+                <QRCodeSVG
+                  value={normalizedAddress}
+                  size={220}
+                  level="M"
+                  includeMargin
+                  imageSettings={
+                    qrLogoUrl
+                      ? {
+                          src: qrLogoUrl,
+                          height: 40,
+                          width: 40,
+                          excavate: true,
+                        }
+                      : undefined
+                  }
+                />
+              </div>
+              <div className="w-full rounded-xl border border-border bg-muted/20 p-3 text-center">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Address</p>
+                <p className="mt-1 break-all text-sm font-semibold text-foreground">{normalizedAddress}</p>
+              </div>
+              {normalizedNetwork && (
+                <div className="w-full rounded-xl border border-border bg-muted/20 p-3 text-center">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Network</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{normalizedNetwork}</p>
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full rounded-2xl"
+                onClick={() => {
+                  void navigator.clipboard.writeText(normalizedAddress).then(
+                    () => toast.success(`${providerName} address copied`),
+                    () => toast.error("Unable to copy address"),
+                  );
+                }}
+              >
+                Copy {providerName} Address
+              </Button>
+            </div>
+          </div>
+        )}
 
         <Button
           type="button"
@@ -132,6 +205,15 @@ const TopUpProviderPage = ({
           onClick={openSupportWidget}
         >
           Live Customer Service
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-2 h-11 w-full rounded-2xl border-paypal-blue/40 bg-white text-foreground hover:bg-secondary/30"
+          onClick={() => setShowTopUpInstructions(true)}
+        >
+          {providerName} Top-Up Instructions
         </Button>
 
         <Button
@@ -211,6 +293,45 @@ const TopUpProviderPage = ({
             onClick={() => setShowSafetyAgreement(false)}
           >
             Cancel
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showTopUpInstructions} onOpenChange={setShowTopUpInstructions}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto rounded-3xl sm:max-w-lg">
+          <DialogTitle className="text-xl font-bold text-foreground">{providerName} Top-Up Instructions</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Follow these steps to complete your {providerName} deposit.
+          </DialogDescription>
+
+          <div className="rounded-2xl border border-border p-3 text-sm text-foreground space-y-3">
+            <p className="font-semibold">1. Copy the {providerName} address</p>
+            <p className="text-muted-foreground">
+              Use the copy button on the deposit screen to avoid mistakes.
+            </p>
+
+            <p className="font-semibold">2. Send on the correct network</p>
+            <p className="text-muted-foreground">
+              Network: {normalizedNetwork || "Use the network shown on the deposit screen."}
+            </p>
+
+            <p className="font-semibold">3. Send the exact amount</p>
+            <p className="text-muted-foreground">
+              OpenPay credits 1 {providerName} = 1 OPEN USD. Send only {providerName} to this address.
+            </p>
+
+            <p className="font-semibold">4. Wait for confirmation</p>
+            <p className="text-muted-foreground">
+              Network confirmations can take a few minutes depending on traffic.
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            className="h-11 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]"
+            onClick={() => setShowTopUpInstructions(false)}
+          >
+            I Understand
           </Button>
         </DialogContent>
       </Dialog>

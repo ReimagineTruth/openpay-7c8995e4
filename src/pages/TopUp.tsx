@@ -26,6 +26,7 @@ const TopUp = () => {
   const [generatedTopUpLink, setGeneratedTopUpLink] = useState("");
   const [userAccountNumber, setUserAccountNumber] = useState("");
   const [userAccountUsername, setUserAccountUsername] = useState("");
+  const recoveredReceiptRef = useRef<ReceiptData | null>(null);
   const piSectionRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -158,6 +159,40 @@ const TopUp = () => {
             { action: "complete", paymentId: payment.identifier, txid: incompleteTxid },
             "Failed to recover previous payment",
           );
+          const metadata = (payment as { metadata?: Record<string, unknown> }).metadata || {};
+          const metadataUsd =
+            Number(metadata.amount_usd) ||
+            Number(metadata.amountUsd) ||
+            Number(metadata.amount) ||
+            0;
+          const recoveredUsd =
+            metadataUsd > 0
+              ? metadataUsd
+              : Number(payment.amount || 0) > 0
+                ? Number(payment.amount || 0) * PI_TO_USD
+                : 0;
+          const creditResult = await invokeTopUpAction(
+            {
+              action: "credit",
+              amount: Number(payment.amount || 0),
+              amountUsd: recoveredUsd,
+              paymentId: payment.identifier,
+              txid: incompleteTxid,
+              targetAccountNumber: linkAccountNumber || userAccountNumber || undefined,
+              targetUsername: linkUsername || userAccountUsername || undefined,
+            },
+            "Failed to recover previous payment",
+          );
+          const receiptTransactionId =
+            String(creditResult?.transaction_id || incompleteTxid || payment.identifier);
+          recoveredReceiptRef.current = {
+            transactionId: receiptTransactionId,
+            ledgerTransactionId: isUuid(String(creditResult?.transaction_id || "")) ? String(creditResult?.transaction_id) : undefined,
+            type: "topup",
+            amount: Number.isFinite(recoveredUsd) && recoveredUsd > 0 ? recoveredUsd : safeAmount,
+            note: "Pi Network top up (PI -> OPEN USD)",
+            date: new Date(),
+          };
         } catch {
           // no-op
         }
@@ -175,6 +210,16 @@ const TopUp = () => {
           pi_connected_at: new Date().toISOString(),
         },
       });
+
+      if (recoveredReceiptRef.current) {
+        const recovered = recoveredReceiptRef.current;
+        recoveredReceiptRef.current = null;
+        setReceiptData(recovered);
+        setReceiptOpen(true);
+        toast.success(`${usdCurrency.symbol}${Number(recovered.amount).toFixed(2)} added to your balance!`);
+        setPaymentCompleted(true);
+        return;
+      }
 
       let completedPaymentId = "";
       let completedTxid = "";
@@ -206,7 +251,7 @@ const TopUp = () => {
               const creditResult = await invokeTopUpAction(
                 {
                   action: "credit",
-                  amount: safeAmount,
+                  amount: piAmount,
                   amountUsd: safeAmount,
                   paymentId,
                   txid,

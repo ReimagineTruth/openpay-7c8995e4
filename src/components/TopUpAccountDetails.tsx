@@ -27,6 +27,8 @@ const normalizeUsername = (value: string) => value.trim().replace(/^@+/, "").toL
 const isSchemaCacheMissingError = (message: string | undefined, target: string) =>
   Boolean(message) && message.includes("schema cache") && message.includes(target);
 const TOPUP_DRAFT_KEY = "openpay_topup_proof_draft_v1";
+const TOPUP_BUCKET_PRIMARY = "topup-proof";
+const TOPUP_BUCKET_FALLBACK = "support-attachments";
 
 const fileToDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -216,14 +218,27 @@ const TopUpAccountDetails = ({
         })();
       const safeName = uploadFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const filePath = `${user.id}/${Date.now()}-${safeName}`;
-      const { error: uploadError } = await supabase.storage
-        .from("topup-proof")
-        .upload(filePath, uploadFile, { upsert: true, contentType: uploadFile.type });
-      if (uploadError) {
-        throw new Error(uploadError.message || "Upload failed");
+      const tryUpload = async (bucket: string) => {
+        const { error } = await supabase.storage
+          .from(bucket)
+          .upload(filePath, uploadFile, { upsert: true, contentType: uploadFile.type });
+        if (error) throw error;
+        const { data: publicData } = (supabase as any).storage.from(bucket).getPublicUrl(filePath);
+        return publicData?.publicUrl || "";
+      };
+
+      let proofUrl = "";
+      try {
+        proofUrl = await tryUpload(TOPUP_BUCKET_PRIMARY);
+      } catch (uploadError) {
+        const message = uploadError instanceof Error ? uploadError.message : String(uploadError || "");
+        if (message.toLowerCase().includes("bucket") && message.toLowerCase().includes("not")) {
+          proofUrl = await tryUpload(TOPUP_BUCKET_FALLBACK);
+          toast.message("Top up proof saved to fallback storage.");
+        } else {
+          throw uploadError;
+        }
       }
-      const { data: publicData } = (supabase as any).storage.from("topup-proof").getPublicUrl(filePath);
-      const proofUrl = publicData?.publicUrl || "";
       if (!proofUrl) {
         throw new Error("Failed to get proof URL");
       }

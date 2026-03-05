@@ -235,6 +235,18 @@ const MiningPage = () => {
     return true;
   };
 
+  const isPiEnvironment = () => {
+    if (typeof window === "undefined") return false;
+    return isPiBrowserUserAgent() || Boolean(window.Pi);
+  };
+
+  const resetMiningState = () => {
+    setActiveSession(null);
+    setClaimableSession(null);
+    setTimeLeft(0);
+    localStorage.removeItem("mining_session");
+  };
+
   const verifyRewardedAd = async (adId: string) => {
     const { data, error } = await supabase.functions.invoke("pi-platform", {
       body: { action: "ad_verify", adId },
@@ -248,7 +260,9 @@ const MiningPage = () => {
       throw new Error(payload?.error || "Pi ad verification failed");
     }
 
-    return payload;
+    const rewarded = payload.rewarded ?? payload.data.mediator_ack_status === "granted";
+
+    return { ...payload, rewarded };
   };
 
   const runRewardedAd = async () => {
@@ -256,22 +270,31 @@ const MiningPage = () => {
 
     await window.Pi.authenticate(["username"]);
 
-    if (window.Pi.nativeFeaturesList) {
+    if (typeof window.Pi.nativeFeaturesList === "function") {
       const features = await window.Pi.nativeFeaturesList();
       if (!features.includes("ad_network")) {
-        throw new Error("Pi Ad Network is not supported on this Pi Browser version");
+        throw new Error("Pi Ad Network is not supported on this Pi Browser version.");
       }
     }
 
-    if (typeof window.Pi?.Ads?.requestAd === "function") {
-      try {
-        await window.Pi.Ads.requestAd("rewarded");
-      } catch {
-        // ignore prefetch errors; we'll attempt showAd anyway
+    if (typeof window.Pi?.Ads?.isAdReady === "function") {
+      const readiness = await window.Pi.Ads.isAdReady("rewarded");
+      if (!readiness.ready && typeof window.Pi?.Ads?.requestAd === "function") {
+        const request = await window.Pi.Ads.requestAd("rewarded");
+        if (request.result === "ADS_NOT_SUPPORTED") {
+          throw new Error("Pi Ad Network is not supported on this Pi Browser version.");
+        }
+        if (request.result !== "AD_LOADED") {
+          throw new Error("Rewarded ad is not available right now. Please try again.");
+        }
       }
     }
 
-    const adResult = await window.Pi.Ads.showAd("rewarded");
+    let adResult = await window.Pi.Ads.showAd("rewarded");
+    if (adResult.result === "USER_UNAUTHENTICATED") {
+      await window.Pi.authenticate(["username"]);
+      adResult = await window.Pi.Ads.showAd("rewarded");
+    }
 
     if (adResult.result !== "AD_REWARDED") {
       throw new Error(`Ad result: ${adResult.result}. You must watch the full video to start mining.`);
@@ -342,7 +365,7 @@ const MiningPage = () => {
         }
         return;
       }
-      if (!isPiBrowserUserAgent()) {
+      if (!isPiEnvironment()) {
         if (!isAuto) {
           toast.error("Open this app in Pi Browser and watch a rewarded ad to start mining.");
         }
@@ -465,25 +488,27 @@ const MiningPage = () => {
         setRewards(prev => [mockReward, ...prev]);
         
         // Clear the session
-        localStorage.removeItem('mining_session');
-        setActiveSession(null);
-        setClaimableSession(null);
+        resetMiningState();
 
         if (!isAuto) {
           toast.success(`Claimed ${baseReward.toFixed(2)} OUSD!`);
         }
-        localStorage.removeItem("mining_session");
+        resetMiningState();
         await loadMiningData();
       } else if (data && (data as any).error) {
         if (!isAuto) {
           toast.error((data as any).error);
+        }
+        if (String((data as any).error || "").toLowerCase().includes("already claimed")) {
+          resetMiningState();
+          await loadMiningData();
         }
       } else {
         const result = data as any;
         if (!isAuto) {
           toast.success(`Claimed ${(result?.total_reward || 0).toFixed(2)} OUSD!`);
         }
-        localStorage.removeItem("mining_session");
+        resetMiningState();
         await loadMiningData();
       }
     } catch (error) {
