@@ -1980,6 +1980,7 @@ export type Database = {
       claim_mining_rewards: { Args: never; Returns: Json }
       claim_referral_rewards: { Args: never; Returns: Json }
       claim_welcome_bonus: { Args: never; Returns: Json }
+      claim_stake: { Args: { p_position_id: string }; Returns: Json }
       complete_merchant_checkout_with_transaction:
         | {
             Args: {
@@ -2039,6 +2040,10 @@ export type Database = {
           session_token: string
           total_amount: number
         }[]
+      }
+      create_stake: {
+        Args: { p_amount: number; p_lock_days: number }
+        Returns: Json
       }
       create_merchant_payment_link: {
         Args: {
