@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import { Bell, Check, ChevronDown, ChevronUp, CircleDollarSign, Copy, CreditCard, Eye, EyeOff, ExternalLink, FileText, HandCoins, PiggyBank, QrCode, RefreshCw, Settings, Store, TrendingUp, Users, Pickaxe, LayoutGrid } from "lucide-react";
+import { Bell, Check, ChevronDown, ChevronUp, CircleDollarSign, Coins, Copy, CreditCard, Eye, EyeOff, ExternalLink, FileText, HandCoins, PiggyBank, QrCode, RefreshCw, Settings, Store, TrendingUp, Users, Pickaxe, LayoutGrid } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
@@ -2481,6 +2481,46 @@ const Dashboard = () => {
               Powered by OpenPay Network.
             </p>
           </div>
+
+          <div className="paypal-surface rounded-3xl p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xl font-semibold text-foreground">Staking</p>
+              <span className="rounded-full border border-border/70 px-3 py-1 text-xs font-semibold text-muted-foreground">Earn Yield</span>
+            </div>
+
+            <div className="space-y-3">
+              <div className="rounded-2xl bg-gradient-to-br from-paypal-blue/10 to-[#00a3ff]/10 p-4">
+                <p className="text-sm text-muted-foreground">Lock funds to earn rewards</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Choose a lock duration and claim rewards after the lock ends.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold text-foreground">7 days · 2%</span>
+                  <span className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold text-foreground">30 days · 5%</span>
+                  <span className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold text-foreground">90 days · 10%</span>
+                  <span className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold text-foreground">365 days · 20%</span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-secondary/50 p-4">
+                <p className="text-sm text-muted-foreground">How it works</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Staked funds are locked. Rewards are claimable only after the lock period.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate("/staking")}
+              className="mt-3 h-11 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white hover:bg-[#004dc5] transition-colors"
+            >
+              Start Staking
+            </button>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Stake OpenUSD and earn yield based on lock duration.
+            </p>
+          </div>
         </div>
       )}
 
@@ -3023,6 +3063,32 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-paypal-blue/10">
+                    <Coins className="h-5 w-5 text-paypal-blue" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Staking</p>
+                    <p className="text-xs text-muted-foreground">Lock funds and earn yield</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/staking")}
+                  className="rounded-xl bg-paypal-blue px-4 py-2 text-sm font-semibold text-white hover:bg-[#004dc5] transition"
+                >
+                  Stake
+                </button>
+              </div>
+              <div className="mt-3 flex items-center justify-center rounded-xl bg-white/5 p-3 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Choose 7, 30, or 90 day locks to earn rewards.
+                </p>
+              </div>
+            </div>
+
+            <div className="paypal-surface rounded-3xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-paypal-blue/10">
                     <HandCoins className="h-5 w-5 text-paypal-blue" />
                   </div>
                   <div>
@@ -3239,6 +3305,19 @@ const Dashboard = () => {
               </div>
               <p className="text-sm font-semibold text-foreground">Mining</p>
               <p className="text-xs text-muted-foreground">Earn OpenUSD</p>
+            </button>
+            <button
+              onClick={() => {
+                setShowBuyOptions(false);
+                navigate("/staking");
+              }}
+              className="rounded-2xl border border-border/70 bg-secondary/50 p-3 text-center transition hover:bg-secondary"
+            >
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-white">
+                <Coins className="h-5 w-5 text-paypal-blue" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Staking</p>
+              <p className="text-xs text-muted-foreground">Earn Yield</p>
             </button>
           </div>
         </DialogContent>

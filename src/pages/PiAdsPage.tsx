@@ -114,10 +114,20 @@ const PiAdsPage = () => {
         throw new Error(`Ad verification status: ${verification.data.mediator_ack_status ?? "null"}`);
       }
 
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
+      }
       toast.success("Rewarded ad verified successfully");
       const returnTo = searchParams.get("returnTo");
       if (returnTo) {
-        navigate(decodeURIComponent(returnTo), { replace: true });
+        const decoded = decodeURIComponent(returnTo);
+        const url = decoded.startsWith("http") ? decoded : `${window.location.origin}${decoded}`;
+        const parsed = new URL(url);
+        parsed.searchParams.set("ad", "rewarded");
+        const nextPath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        navigate(nextPath, { replace: true });
+      } else {
+        navigate("/mining?ad=rewarded", { replace: true });
       }
     } catch (error) {
       const message =

@@ -54,6 +54,7 @@ const MiningPage = () => {
   const [rewards, setRewards] = useState<MiningReward[]>([]);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [activeReferrals, setActiveReferrals] = useState(0);
+  const adRewardHandledRef = useRef(false);
 
   const persistLocalSession = (session: MiningSession) => {
     if (!session?.user_id || !session?.expires_at) return;
@@ -226,6 +227,23 @@ const MiningPage = () => {
     void handleStartMining({ auto: true });
   }, [piSdkInitialized, timeLeft, starting, loading]);
 
+  useEffect(() => {
+    if (!piSdkInitialized || starting || loading) return;
+    if (adRewardHandledRef.current) return;
+    if (activeSession || claimableSession || timeLeft > 0) return;
+    if (!isPiEnvironment()) return;
+    if (typeof window === "undefined") return;
+    const rewardedAt = Number(window.localStorage.getItem("pi_ad_rewarded_at") || 0);
+    if (!rewardedAt) return;
+    if (Date.now() - rewardedAt > 2 * 60 * 1000) {
+      window.localStorage.removeItem("pi_ad_rewarded_at");
+      return;
+    }
+    adRewardHandledRef.current = true;
+    window.localStorage.removeItem("pi_ad_rewarded_at");
+    void handleStartMining({ auto: true, adVerified: true });
+  }, [piSdkInitialized, starting, loading, activeSession, claimableSession, timeLeft]);
+
   const initPi = () => {
     if (!window.Pi) {
       toast.error("Pi SDK not loaded. Open this app in Pi Browser.");
@@ -349,8 +367,9 @@ const MiningPage = () => {
     });
   };
 
-  const handleStartMining = async (options?: { auto?: boolean }) => {
+  const handleStartMining = async (options?: { auto?: boolean; adVerified?: boolean }) => {
     const isAuto = Boolean(options?.auto);
+    const adVerified = Boolean(options?.adVerified);
     setStarting(true);
     try {
       if (activeSession && timeLeft > 0) {
@@ -372,25 +391,27 @@ const MiningPage = () => {
         return;
       }
 
-      const ok = await runAdGate({ usePiAd: true });
-      if (!ok) {
-        setStarting(false);
-        return;
-      }
-      if (!isAuto) {
-        toast.success("Rewarded ad verified successfully! Starting mining...");
+      if (!adVerified) {
+        const ok = await runAdGate({ usePiAd: true });
+        if (!ok) {
+          setStarting(false);
+          return;
+        }
+        if (!isAuto) {
+          toast.success("Rewarded ad verified successfully! Starting mining...");
+        }
       }
 
       // Basic anti-cheat: in a real app, use a proper fingerprinting library
       const deviceFingerprint = navigator.userAgent; 
       const piBrowserUsed = true;
-      const adVerified = true;
+      const adVerifiedFlag = adVerified || false;
       
       // Try database function first
       const result = await supabase.rpc("start_mining_session" as any, {
         p_device_fingerprint: deviceFingerprint,
         p_ip_address: "client-side-ip",
-        p_ad_verified: adVerified,
+        p_ad_verified: adVerifiedFlag,
         p_pi_browser_used: piBrowserUsed,
       });
       const data = result.data;

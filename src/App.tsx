@@ -34,6 +34,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AffiliatePage from "./pages/AffiliatePage";
 import MiningPage from "./pages/MiningPage";
+import StakingPage from "./pages/StakingPage";
 import OpenPayGuidePage from "./pages/OpenPayGuidePage";
 import PublicLedgerPage from "./pages/PublicLedgerPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
@@ -161,6 +162,7 @@ const AppRoutes = () => {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/affiliate" element={<AffiliatePage />} />
         <Route path="/mining" element={<MiningPage />} />
+        <Route path="/staking" element={<StakingPage />} />
         <Route path="/ledger" element={<PublicLedgerPage />} />
         <Route path="/openledger" element={<Navigate to="/ledger" replace />} />
         <Route path="/announcements" element={<AnnouncementsPage />} />
