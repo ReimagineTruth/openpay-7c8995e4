@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import TopUpAccountDetails from "@/components/TopUpAccountDetails";
+import RegulatoryStatusModal from "@/components/RegulatoryStatusModal";
 
 const PAYPAL_ICON_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/1920px-PayPal.svg.png";
 const PAYPAL_CLIENT_ID = "BAABvvC7_J4mukHtbKyyIkmPBX7N1UzqgAkCmei4q0NbUxp4nBMiCxVLKir2SdQ68p5hbosDBWF8pvLFdE";
@@ -28,6 +29,7 @@ const TopUpPaypal = () => {
   const [safetyAgreementChecked, setSafetyAgreementChecked] = useState(false);
   const [safetyAccepted, setSafetyAccepted] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [showRegulatoryModal, setShowRegulatoryModal] = useState(false);
   const paypalButtonRef = useRef<HTMLDivElement | null>(null);
   const paypalSectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -239,6 +241,15 @@ const TopUpPaypal = () => {
 
         <Button
           type="button"
+          variant="outline"
+          className="mt-2 h-11 w-full rounded-2xl"
+          onClick={() => setShowRegulatoryModal(true)}
+        >
+          Regulatory Status
+        </Button>
+
+        <Button
+          type="button"
           className="mt-2 h-11 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]"
           onClick={() => navigate("/dashboard")}
         >
@@ -432,6 +443,8 @@ const TopUpPaypal = () => {
           </Button>
         </DialogContent>
       </Dialog>
+
+      <RegulatoryStatusModal open={showRegulatoryModal} onOpenChange={setShowRegulatoryModal} />
     </div>
   );
 };

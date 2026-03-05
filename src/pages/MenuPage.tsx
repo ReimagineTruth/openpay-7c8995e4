@@ -243,6 +243,7 @@ const MenuPage = () => {
         { icon: FileText, label: "Pi Whitepaper", action: () => navigate("/pi-whitepaper") },
         { icon: FileText, label: "Pi MiCA Whitepaper", action: () => navigate("/pi-mica-whitepaper") },
         { icon: ShieldCheck, label: "GDPR", action: () => navigate("/gdpr") },
+        { icon: ShieldCheck, label: "Regulatory Status", action: () => navigate("/regulatory-status") },
         { icon: Info, label: "About OpenPay", action: () => navigate("/about-openpay") },
         { icon: FileCheck, label: "Terms", action: () => navigate("/terms") },
         { icon: Lock, label: "Privacy", action: () => navigate("/privacy") },

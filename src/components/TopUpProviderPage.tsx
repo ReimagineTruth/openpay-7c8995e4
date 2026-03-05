@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import TopUpAccountDetails from "@/components/TopUpAccountDetails";
+import RegulatoryStatusModal from "@/components/RegulatoryStatusModal";
 import { QRCodeSVG } from "qrcode.react";
 
 type TopUpProviderPageProps = {
@@ -46,6 +47,7 @@ const TopUpProviderPage = ({
   const [safetyAgreementChecked, setSafetyAgreementChecked] = useState(false);
   const [safetyAccepted, setSafetyAccepted] = useState(false);
   const [showTopUpInstructions, setShowTopUpInstructions] = useState(false);
+  const [showRegulatoryModal, setShowRegulatoryModal] = useState(false);
   const normalizedAddress = String(depositAddress || "").trim();
   const normalizedNetwork = String(depositNetwork || "").trim();
 
@@ -218,6 +220,15 @@ const TopUpProviderPage = ({
 
         <Button
           type="button"
+          variant="outline"
+          className="mt-2 h-11 w-full rounded-2xl border-paypal-blue/40 bg-white text-foreground hover:bg-secondary/30"
+          onClick={() => setShowRegulatoryModal(true)}
+        >
+          Regulatory Status
+        </Button>
+
+        <Button
+          type="button"
           className="mt-2 h-11 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]"
           onClick={() => navigate("/dashboard")}
         >
@@ -335,6 +346,8 @@ const TopUpProviderPage = ({
           </Button>
         </DialogContent>
       </Dialog>
+
+      <RegulatoryStatusModal open={showRegulatoryModal} onOpenChange={setShowRegulatoryModal} />
     </div>
   );
 };

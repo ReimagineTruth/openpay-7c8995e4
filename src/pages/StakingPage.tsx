@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import RegulatoryStatusModal from "@/components/RegulatoryStatusModal";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 type StakeRow = {
@@ -34,6 +35,7 @@ const StakingPage = () => {
   const [lockDays, setLockDays] = useState<number>(30);
   const [staking, setStaking] = useState(false);
   const [positions, setPositions] = useState<StakeRow[]>([]);
+  const [showRegulatoryModal, setShowRegulatoryModal] = useState(false);
 
   const parsedAmount = Number(amount);
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
@@ -247,6 +249,17 @@ const StakingPage = () => {
           </div>
         </div>
       </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="mt-4 h-11 w-full rounded-2xl"
+        onClick={() => setShowRegulatoryModal(true)}
+      >
+        Regulatory Status
+      </Button>
+
+      <RegulatoryStatusModal open={showRegulatoryModal} onOpenChange={setShowRegulatoryModal} />
     </div>
   );
 };

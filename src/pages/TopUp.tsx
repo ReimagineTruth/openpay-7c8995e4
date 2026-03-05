@@ -10,6 +10,7 @@ import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import TopUpAccountDetails from "@/components/TopUpAccountDetails";
+import RegulatoryStatusModal from "@/components/RegulatoryStatusModal";
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const PI_PAYMENT_ICON_URL = "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
@@ -26,6 +27,7 @@ const TopUp = () => {
   const [generatedTopUpLink, setGeneratedTopUpLink] = useState("");
   const [userAccountNumber, setUserAccountNumber] = useState("");
   const [userAccountUsername, setUserAccountUsername] = useState("");
+  const [showRegulatoryModal, setShowRegulatoryModal] = useState(false);
   const recoveredReceiptRef = useRef<ReceiptData | null>(null);
   const piSectionRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
@@ -462,6 +464,15 @@ const TopUp = () => {
 
         <Button
           type="button"
+          variant="outline"
+          className="mt-2 h-11 w-full rounded-2xl"
+          onClick={() => setShowRegulatoryModal(true)}
+        >
+          Regulatory Status
+        </Button>
+
+        <Button
+          type="button"
           className="mt-2 h-11 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]"
           onClick={() => navigate("/dashboard")}
         >
@@ -578,6 +589,8 @@ const TopUp = () => {
           </Button>
         </DialogContent>
       </Dialog>
+
+      <RegulatoryStatusModal open={showRegulatoryModal} onOpenChange={setShowRegulatoryModal} />
     </div>
   );
 };
