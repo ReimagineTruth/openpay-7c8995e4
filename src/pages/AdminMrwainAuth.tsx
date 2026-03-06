@@ -3,15 +3,19 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import BrandLogo from "@/components/BrandLogo";
 import AuthFooter from "@/components/AuthFooter";
+import { ExternalLink } from "lucide-react";
 
 const AdminMrwainAuth = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const mode = params.get("mode") === "signup" ? "signup" : "signin";
   const [loading, setLoading] = useState(false);
+  const [showEmailConfirmationModal, setShowEmailConfirmationModal] = useState(false);
+  const [signedUpEmail, setSignedUpEmail] = useState("");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -55,10 +59,12 @@ const AdminMrwainAuth = () => {
       },
     });
     setLoading(false);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Account created");
-      navigate("/dashboard");
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Account created successfully!");
+      setSignedUpEmail(email);
+      setShowEmailConfirmationModal(true);
     }
   };
 
@@ -73,8 +79,30 @@ const AdminMrwainAuth = () => {
         </div>
 
         <div className="paypal-surface w-full rounded-3xl p-7 shadow-2xl shadow-black/15">
-          <Button asChild variant="outline" className="mb-4 h-10 w-full rounded-2xl">
-            <Link to="/auth">Back to Pi Authentication</Link>
+          {/* OpenPay Socials */}
+          <Button 
+            asChild 
+            variant="outline" 
+            className="mb-4 h-10 w-full rounded-2xl border-gray-300 bg-white text-gray-800 hover:bg-gray-50 flex items-center justify-center"
+          >
+            <a 
+              href="https://droplink.space/@openpay" 
+              target="_blank" 
+              rel="noreferrer"
+              className="w-full h-full flex items-center justify-center"
+            >
+              OpenPay Socials
+            </a>
+          </Button>
+
+          <Button 
+            asChild 
+            variant="outline" 
+            className="mb-4 h-10 w-full rounded-2xl border-gray-300 bg-white text-gray-800 hover:bg-gray-50 flex items-center justify-center"
+          >
+            <Link to="/auth" className="w-full h-full flex items-center justify-center">
+              Back to Pi Authentication
+            </Link>
           </Button>
 
           <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
@@ -132,6 +160,18 @@ const AdminMrwainAuth = () => {
             <Button type="submit" disabled={loading} className="h-12 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]">
               {loading ? "Please wait..." : mode === "signin" ? "Sign In" : "Create Account"}
             </Button>
+            {mode === "signup" && (
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                className="h-12 w-full rounded-2xl"
+              >
+                <Link to="/sign-in?mode=signin">
+                  Already have an account? Sign In
+                </Link>
+              </Button>
+            )}
             <Button
               asChild
               type="button"
@@ -147,6 +187,83 @@ const AdminMrwainAuth = () => {
           <AuthFooter />
         </div>
       </div>
+
+      {/* Email Confirmation Modal */}
+      <Dialog open={showEmailConfirmationModal} onOpenChange={setShowEmailConfirmationModal}>
+        <DialogContent className="max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-semibold text-paypal-blue">
+              Check Your Email
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-center">
+            <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Confirmation Email Sent!
+              </h3>
+              <p className="text-sm text-gray-600">
+                We've sent a confirmation email to:
+              </p>
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <p className="font-mono text-sm text-gray-800 break-all">{signedUpEmail}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-left bg-blue-50 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 text-sm">Next Steps:</h4>
+              <ol className="space-y-2 text-sm text-blue-800">
+                <li className="flex items-start gap-2">
+                  <span className="font-bold text-blue-600">1.</span>
+                  <span>Check your inbox (and spam folder)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold text-blue-600">2.</span>
+                  <span>Open the "Confirm your email" message</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold text-blue-600">3.</span>
+                  <span>Click the confirmation link inside</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold text-blue-600">4.</span>
+                  <span>Return here to sign in</span>
+                </li>
+              </ol>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-gray-500">
+                Didn't receive the email? Check your spam folder or
+                <button 
+                  onClick={() => setShowEmailConfirmationModal(false)}
+                  className="text-paypal-blue hover:underline ml-1"
+                >
+                  try signing in
+                </button>
+              </p>
+              <p className="text-xs text-gray-500">
+                The confirmation link expires in 24 hours.
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setShowEmailConfirmationModal(false);
+                setMode("signin");
+              }}
+              className="w-full bg-paypal-blue text-white hover:bg-[#004dc5]"
+            >
+              Got it, I'll check my email
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -305,26 +305,70 @@ const MerchantPosPage = () => {
     if (!currentSession || paymentStatus !== "waiting") return;
 
     const timer = window.setInterval(async () => {
-      const { data, error } = await (supabase as any)
-        .from("merchant_checkout_sessions")
-        .select("status, paid_at")
-        .eq("id", currentSession.session_id)
-        .maybeSingle();
-      if (error || !data) return;
+      try {
+        console.log('Polling for payment status...', currentSession.session_id);
+        
+        // Check both checkout session status and merchant payments table
+        const [{ data: sessionData, error: sessionError }, { data: paymentData, error: paymentError }] = await Promise.all([
+          (supabase as any)
+            .from("merchant_checkout_sessions")
+            .select("status, paid_at, total_amount, currency")
+            .eq("id", currentSession.session_id)
+            .maybeSingle(),
+          (supabase as any)
+            .from("merchant_payments")
+            .select("status, transaction_id, created_at, amount")
+            .eq("session_id", currentSession.session_id)
+            .maybeSingle()
+        ]);
 
-      if (data.status === "paid") {
-        setPaymentStatus("success");
-        pushNotification("Payment successful", "success");
-        void loadData();
-        navigate(`/pos-thank-you?session=${encodeURIComponent(currentSession.session_token)}&origin=merchant-pos`, { replace: true });
-      } else if (data.status === "expired" || data.status === "canceled") {
-        setPaymentStatus("failed");
-        pushNotification("Payment failed or expired", "error");
+        console.log('Polling results:', { sessionData, sessionError, paymentData, paymentError });
+
+        if (sessionError || paymentError) {
+          console.error('Polling errors:', { sessionError, paymentError });
+          return;
+        }
+
+        // Check if payment is completed in either table
+        const isPaid = sessionData?.status === "paid" || paymentData?.status === "succeeded";
+        const isExpired = sessionData?.status === "expired" || sessionData?.status === "canceled";
+        
+        console.log('Payment status check:', { isPaid, isExpired, sessionStatus: sessionData?.status, paymentStatus: paymentData?.status });
+        
+        if (isPaid) {
+          console.log('Payment detected as successful!');
+          setPaymentStatus("success");
+          pushNotification("Payment successful", "success");
+          
+          // Get transaction ID for thank you page
+          const txId = paymentData?.transaction_id || sessionData?.transaction_id || "";
+          
+          console.log('Navigating to thank you page with:', { txId, sessionToken: currentSession.session_token });
+          
+          // Navigate to thank you page with complete data
+          void loadData().then(() => {
+            navigate(`/pos-thank-you?session=${encodeURIComponent(currentSession.session_token)}&tx=${encodeURIComponent(txId)}&origin=merchant-pos`, { replace: true });
+          });
+          
+          // Clear the timer after successful payment
+          return () => window.clearInterval(timer);
+        } else if (isExpired) {
+          console.log('Payment detected as expired/canceled');
+          setPaymentStatus("failed");
+          pushNotification("Payment expired or canceled", "error");
+          
+          // Clear the timer after failed payment
+          return () => window.clearInterval(timer);
+        } else {
+          console.log('Still waiting for payment...');
+        }
+      } catch (error) {
+        console.error("Payment polling error:", error);
       }
-    }, 3000);
+    }, 2000); // Poll every 2 seconds for faster response
 
     return () => window.clearInterval(timer);
-  }, [currentSession, navigate, paymentStatus]);
+  }, [currentSession, navigate, paymentStatus, loadData]);
 
   useEffect(() => {
     if (loading) return;
@@ -363,12 +407,12 @@ const MerchantPosPage = () => {
       toast.error("Enter a valid amount");
       return;
     }
-    const selectedCurrency = normalizePosCurrencyCode(currency);
 
+    // Enhanced offline mode support
     if (offlineMode && typeof navigator !== "undefined" && !navigator.onLine) {
       setOfflineQueue((prev) => [
         ...prev,
-        { amount: amountValue, currency: selectedCurrency, qrStyle, createdAt: new Date().toISOString() },
+        { amount: amountValue, currency: currency, qrStyle, createdAt: new Date().toISOString() },
       ]);
       setPaymentStatus("waiting");
       toast.message("Offline mode enabled. Payment request queued for sync.");
@@ -377,26 +421,37 @@ const MerchantPosPage = () => {
 
     setCreatingPayment(true);
     try {
+      // Create POS checkout session with enhanced parameters
       const { data, error } = await (supabase as any).rpc("create_my_pos_checkout_session", {
         p_amount: amountValue,
-        p_currency: selectedCurrency,
+        p_currency: currency,
         p_mode: mode,
         p_customer_name: null,
         p_customer_email: null,
-        p_reference: null,
+        p_reference: `POS_${new Date().getTime()}`,
         p_qr_style: qrStyle,
         p_expires_in_minutes: qrStyle === "static" ? 1440 : 30,
       });
+      
       if (error) throw new Error(error.message || "Failed to create POS payment");
 
       const row = Array.isArray(data) ? (data[0] as PosSession | undefined) : (data as PosSession | null);
       if (!row?.session_token) throw new Error("Missing POS session token");
+      
+      // Set session and update UI
       setCurrentSession(row);
       setPaymentStatus("waiting");
       setActiveView("receive");
       setReceiptIssuedAt(new Date().toISOString());
-      toast.success("QR code generated");
+      
+      // Enhanced success message with session details
+      toast.success(`QR code generated - ${qrStyle === "static" ? "Static" : "Dynamic"} mode`);
+      
+      // Auto-refresh dashboard after session creation
+      void loadData().catch(() => undefined);
+      
     } catch (error) {
+      console.error("POS session creation error:", error);
       pushNotification(error instanceof Error ? error.message : "Failed to create payment", "error");
     } finally {
       setCreatingPayment(false);
@@ -505,6 +560,124 @@ const MerchantPosPage = () => {
     }
     playUiSound("receipt");
     window.print();
+  };
+
+  const manualPaymentCheck = async () => {
+    if (!currentSession?.session_id) {
+      toast.error("No active session");
+      return;
+    }
+
+    try {
+      console.log('Manual payment check for session:', currentSession.session_id);
+      
+      const [{ data: sessionData }, { data: paymentData }] = await Promise.all([
+        (supabase as any)
+          .from("merchant_checkout_sessions")
+          .select("*")
+          .eq("id", currentSession.session_id)
+          .maybeSingle(),
+        (supabase as any)
+          .from("merchant_payments")
+          .select("*")
+          .eq("session_id", currentSession.session_id)
+          .maybeSingle()
+      ]);
+
+      console.log('Manual check results:', { sessionData, paymentData });
+      
+      // Check transactions table too
+      if (paymentData?.transaction_id) {
+        const { data: transactionData } = await (supabase as any)
+          .from("transactions")
+          .select("*")
+          .eq("id", paymentData.transaction_id)
+          .maybeSingle();
+        
+        console.log('Transaction data:', transactionData);
+      }
+
+      // Show detailed status
+      const status = sessionData?.status || 'unknown';
+      const paymentStatus = paymentData?.status || 'none';
+      
+      toast.message(`Session: ${status}, Payment: ${paymentStatus}`);
+      
+      // If payment is found, trigger success
+      if (status === 'paid' || paymentStatus === 'succeeded') {
+        setPaymentStatus("success");
+        pushNotification("Payment detected manually!", "success");
+        
+        const txId = paymentData?.transaction_id || "";
+        navigate(`/pos-thank-you?session=${encodeURIComponent(currentSession.session_token)}&tx=${encodeURIComponent(txId)}&origin=merchant-pos`, { replace: true });
+      }
+      
+    } catch (error) {
+      console.error('Manual check error:', error);
+      toast.error('Check failed');
+    }
+  };
+
+  const testPaymentProcessing = async () => {
+    if (!currentSession?.session_token) {
+      toast.error("No active session to test");
+      return;
+    }
+
+    try {
+      console.log('Testing payment processing with session token:', currentSession.session_token);
+      
+      // First, check if the function exists by testing a simple call
+      const { data: functionTest, error: functionError } = await (supabase as any).rpc('pay_merchant_checkout_with_wallet', {
+        p_session_token: 'test_invalid_token',
+        p_note: 'Function test'
+      });
+      
+      if (functionError && functionError.message.includes('function')) {
+        console.error('Function does not exist:', functionError);
+        toast.error('Payment function not found. Please run database migrations.');
+        return;
+      }
+      
+      // Test the payment function with real session
+      const { data: testResult, error: testError } = await (supabase as any).rpc("pay_merchant_checkout_with_wallet", {
+        p_session_token: currentSession.session_token,
+        p_note: "Test payment from POS",
+        p_customer_name: "Test Customer",
+        p_customer_email: "test@example.com",
+        p_customer_phone: "+1234567890",
+        p_customer_address: "Test Address"
+      });
+
+      console.log('Payment test result:', { testResult, testError });
+      
+      if (testError) {
+        console.error('Payment processing error:', testError);
+        
+        // Check for common errors
+        if (testError.message.includes('Merchant cannot pay own checkout')) {
+          toast.error('Cannot pay your own POS session. Use a different account.');
+        } else if (testError.message.includes('Checkout session not found')) {
+          toast.error('Session not found. Create a new POS session.');
+        } else if (testError.message.includes('Checkout session expired')) {
+          toast.error('Session expired. Create a new POS session.');
+        } else if (testError.message.includes('Insufficient balance')) {
+          toast.error('Insufficient balance in wallet.');
+        } else {
+          toast.error(`Payment failed: ${testError.message}`);
+        }
+      } else {
+        console.log('Payment processed successfully:', testResult);
+        toast.success(`Test payment processed: ${testResult}`);
+        
+        // Refresh data after test
+        await loadData();
+      }
+      
+    } catch (error) {
+      console.error('Payment test error:', error);
+      toast.error('Test payment failed');
+    }
   };
 
   if (loading) {
@@ -723,6 +896,16 @@ const MerchantPosPage = () => {
                     <Button variant="outline" className="h-9 rounded-lg" onClick={printPosReceipt}>
                       <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
+                    {paymentStatus === "waiting" && (
+                      <>
+                        <Button variant="secondary" className="h-9 rounded-lg" onClick={manualPaymentCheck}>
+                          <Search className="mr-2 h-4 w-4" /> Check Payment
+                        </Button>
+                        <Button variant="destructive" className="h-9 rounded-lg" onClick={testPaymentProcessing}>
+                          <Wallet className="mr-2 h-4 w-4" /> Test Payment
+                        </Button>
+                      </>
+                    )}
                   </div>
                   {renderStatus()}
                 </div>

@@ -364,11 +364,6 @@ BEGIN
   WHERE user_id = v_session.merchant_user_id;
 
   UPDATE public.wallets
-  SET balance = balance - v_wallet_amount,
-      updated_at = now()
-  WHERE user_id = v_session.merchant_user_id;
-
-  UPDATE public.wallets
   SET balance = v_openpay_balance + v_wallet_amount,
       updated_at = now()
   WHERE user_id = v_openpay_user_id;
@@ -417,7 +412,43 @@ BEGIN
     v_payment_link_token,
     'succeeded'
   )
-  ON CONFLICT (session_id) DO NOTHING;
+  ON CONFLICT (session_id) DO UPDATE SET
+    transaction_id = EXCLUDED.transaction_id,
+    status = EXCLUDED.status,
+    amount = EXCLUDED.amount,
+    currency = EXCLUDED.currency;
+
+  -- Log the merchant payment creation
+  INSERT INTO public.ledger_events (
+    source_table,
+    source_id,
+    event_type,
+    actor_user_id,
+    related_user_id,
+    amount,
+    status,
+    note,
+    payload,
+    occurred_at
+  )
+  VALUES (
+    'merchant_payments',
+    v_tx_id,
+    'merchant_payment_created',
+    v_buyer_user_id,
+    v_session.merchant_user_id,
+    v_session.total_amount,
+    'succeeded',
+    'POS payment completed',
+    jsonb_build_object(
+      'session_id', v_session.id,
+      'session_token', v_session.session_token,
+      'transaction_id', v_tx_id,
+      'currency', v_session.currency,
+      'payment_method', 'wallet'
+    ),
+    now()
+  );
 
   UPDATE public.merchant_checkout_sessions mcs
   SET status = 'paid',

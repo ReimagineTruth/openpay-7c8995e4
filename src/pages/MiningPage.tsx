@@ -217,14 +217,16 @@ const MiningPage = () => {
       pendingAutoStartRef.current = true;
       return;
     }
-    void handleStartMining({ auto: true });
+    console.log('Auto-starting mining due to rewarded ad parameter');
+    void handleStartMining({ auto: true, adVerified: true });
   }, [searchParams, timeLeft, starting, loading, piSdkInitialized]);
 
   useEffect(() => {
     if (!piSdkInitialized || !pendingAutoStartRef.current) return;
     if (timeLeft > 0 || starting || loading) return;
     pendingAutoStartRef.current = false;
-    void handleStartMining({ auto: true });
+    console.log('Auto-starting mining from pending reference');
+    void handleStartMining({ auto: true, adVerified: true });
   }, [piSdkInitialized, timeLeft, starting, loading]);
 
   useEffect(() => {
@@ -239,6 +241,7 @@ const MiningPage = () => {
       window.localStorage.removeItem("pi_ad_rewarded_at");
       return;
     }
+    console.log('Detected recent ad reward, auto-activating mining');
     adRewardHandledRef.current = true;
     window.localStorage.removeItem("pi_ad_rewarded_at");
     void handleStartMining({ auto: true, adVerified: true });
@@ -371,6 +374,9 @@ const MiningPage = () => {
     const isAuto = Boolean(options?.auto);
     const adVerified = Boolean(options?.adVerified);
     setStarting(true);
+    
+    console.log('Starting mining with options:', { isAuto, adVerified });
+    
     try {
       if (activeSession && timeLeft > 0) {
         if (!isAuto) {
@@ -391,9 +397,16 @@ const MiningPage = () => {
         return;
       }
 
-      if (!adVerified) {
+      if (adVerified) {
+        console.log('Ad already verified, proceeding directly to mining start');
+        toast.success("Ad verified! Starting mining session...");
+      } else {
+        console.log('Ad not verified, running ad gate');
         const ok = await runAdGate({ usePiAd: true });
         if (!ok) {
+          if (!isAuto) {
+            toast.error("Ad verification required to start mining.");
+          }
           setStarting(false);
           return;
         }

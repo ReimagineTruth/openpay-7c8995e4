@@ -30,15 +30,32 @@ const PAGE_SIZE = 30;
 const PI_LOGO_URL = "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
 const PROVIDER_LOGOS: Record<string, string> = {
   "Pi Payment": PI_LOGO_URL,
+  "Pi Wallet": PI_LOGO_URL,
+  "Pi": PI_LOGO_URL,
+  "PI": PI_LOGO_URL,
+  "pi": PI_LOGO_URL,
   PayPal: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/1920px-PayPal.svg.png",
   "Ewallet QR PH": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/QR_Ph_Logo.svg/960px-QR_Ph_Logo.svg.png?20250310160234",
+  "QR PH": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/QR_Ph_Logo.svg/960px-QR_Ph_Logo.svg.png?20250310160234",
+  "QR": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/QR_Ph_Logo.svg/960px-QR_Ph_Logo.svg.png?20250310160234",
   "Apple Pay": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Apple_Pay_logo.svg/1920px-Apple_Pay_logo.svg.png",
   "Google Pay": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Google_Pay_Logo.svg/1920px-Google_Pay_Logo.svg.png",
   "Debit Card": "https://i.ibb.co/G3FGwngR/Visa-Inc-logo-2021-present-svg.png",
   "Credit Card": "https://i.ibb.co/9kkZmFDq/Mastercard-2019-logo-svg.png",
+  "Visa": "https://i.ibb.co/G3FGwngR/Visa-Inc-logo-2021-present-svg.png",
+  "Mastercard": "https://i.ibb.co/9kkZmFDq/Mastercard-2019-logo-svg.png",
   Stripe: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/1920px-Stripe_Logo%2C_revised_2016.svg.png",
   Venmo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Venmo_Logo.svg/1920px-Venmo_Logo.svg.png",
-  "Pi Wallet": PI_LOGO_URL,
+  "Bank Transfer": "https://i.ibb.co/6P6X9k2J/bank-transfer-icon.png",
+  "Wire Transfer": "https://i.ibb.co/6P6X9k2J/bank-transfer-icon.png",
+  "Cash": "https://i.ibb.co/3Rj2v1mL/cash-icon.png",
+  "Check": "https://i.ibb.co/3Rj2v1mL/cash-icon.png",
+  "Crypto": "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png",
+  "Bitcoin": "https://i.ibb.co/L8Q4b1fF/bitcoin-logo.png",
+  "Ethereum": "https://i.ibb.co/68vQz2kK/ethereum-logo.png",
+  "USDT": "https://i.ibb.co/L8Q4b1fF/bitcoin-logo.png",
+  "USDC": "https://i.ibb.co/L8Q4b1fF/bitcoin-logo.png",
+  "Other": "https://i.ibb.co/3Rj2v1mL/cash-icon.png",
 };
 const isMissingPrivateLedgerRpcError = (message: string | undefined) =>
   Boolean(message) &&
@@ -63,6 +80,7 @@ const PublicLedgerPage = () => {
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const getInitials = (name: string) => (name || "U").split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase();
   const getPiCodeLabel = (code: string) => {
@@ -116,10 +134,42 @@ const PublicLedgerPage = () => {
   const loadPage = async (nextOffset = 0) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc("get_public_ledger", {
-        p_limit: PAGE_SIZE,
-        p_offset: nextOffset,
-      });
+      // Get user's personal transactions by querying directly with their user ID
+      const { data: userData } = await supabase.auth.getUser();
+      const currentUserId = userData?.user?.id;
+      setUserId(currentUserId || null);
+      
+      let data, error;
+      if (currentUserId) {
+        // For authenticated users, get transactions where they are sender or receiver
+        ({ data, error } = await supabase.rpc("get_public_ledger", {
+          p_limit: PAGE_SIZE,
+          p_offset: nextOffset,
+        }));
+        
+        // Filter the results to show only user's personal transactions
+        if (data && !error) {
+          const allEntries = data as PublicLedgerEntry[];
+          // This is a client-side filter - in production, we'd want a dedicated RPC function
+          const userEntries = allEntries.filter(entry => {
+            // Check if user is involved in this transaction
+            const senderId = entry.payload?.sender_id;
+            const receiverId = entry.payload?.receiver_id;
+            const actorId = entry.payload?.actor_user_id;
+            const relatedId = entry.payload?.related_user_id;
+            
+            return senderId === currentUserId || receiverId === currentUserId || actorId === currentUserId || relatedId === currentUserId;
+          });
+          
+          data = userEntries;
+        }
+      } else {
+        // For non-authenticated users, use public ledger
+        ({ data, error } = await supabase.rpc("get_public_ledger", {
+          p_limit: PAGE_SIZE,
+          p_offset: nextOffset,
+        }));
+      }
 
       if (error) throw new Error(error.message || "Failed to load ledger.");
 
@@ -138,21 +188,29 @@ const PublicLedgerPage = () => {
     setLoading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const isSignedIn = Boolean(userData?.user);
-      let rpcName = isSignedIn
-        ? "get_private_ledger_transaction"
-        : "get_public_ledger_transaction";
-      let { data, error } = await (supabase as any).rpc(rpcName, { p_transaction_id: txId });
-
-      if (isSignedIn && error && isMissingPrivateLedgerRpcError(error.message)) {
-        rpcName = "get_public_ledger_transaction";
-        ({ data, error } = await (supabase as any).rpc(rpcName, { p_transaction_id: txId }));
-      }
+      const currentUserId = userData?.user?.id;
+      setUserId(currentUserId || null);
+      
+      // Always use get_public_ledger_transaction to get transaction details
+      let { data, error } = await supabase.rpc("get_public_ledger_transaction", { p_transaction_id: txId });
 
       if (error) throw new Error(error.message || "Failed to load ledger transaction.");
       const row = Array.isArray(data) ? data[0] : data;
+      
+      // If user is authenticated, check if this is their personal transaction
+      let isUserTransaction = false;
+      if (currentUserId && row) {
+        const rowData = row as any; // Type assertion to access payload
+        const senderId = rowData.payload?.sender_id;
+        const receiverId = rowData.payload?.receiver_id;
+        const actorId = rowData.payload?.actor_user_id;
+        const relatedId = rowData.payload?.related_user_id;
+        
+        isUserTransaction = senderId === currentUserId || receiverId === currentUserId || actorId === currentUserId || relatedId === currentUserId;
+      }
+      
       setEntries(row ? [row as PublicLedgerEntry] : []);
-      setPrivateView(Boolean(row) && isSignedIn && rpcName === "get_private_ledger_transaction");
+      setPrivateView(Boolean(row) && Boolean(currentUserId) && isUserTransaction);
       setOffset(0);
       setHasMore(false);
     } catch (err) {
@@ -186,7 +244,9 @@ const PublicLedgerPage = () => {
             <p className="text-xs text-muted-foreground">
               {transactionId
                 ? `OpenLedger record for transaction ${transactionId.slice(0, 8)}...`
-                : "OpenLedger transaction history. User IDs are not shown."}
+                : userId
+                  ? "Your personal transaction ledger. All your transactions are shown."
+                  : "OpenLedger transaction history. User IDs are not shown."}
             </p>
           </div>
         </div>
@@ -209,9 +269,50 @@ const PublicLedgerPage = () => {
             const isTopup = evt.includes("topup") || evt.includes("deposit") || evt.includes("receive") || evt.includes("incoming");
             const isWithdraw = evt.includes("withdraw") || evt.includes("payout") || evt.includes("send") || evt.includes("outgoing") || evt.includes("payment");
             const paymentMethod = String(row.payload?.payment_method || row.payload?.provider || "").trim();
-            const providerLogo = paymentMethod ? PROVIDER_LOGOS[paymentMethod] : "";
+            
+            // Enhanced logo detection with multiple fallback strategies
+            const getProviderLogo = (method: string): string => {
+              if (!method) return "";
+              
+              // Direct match first
+              if (PROVIDER_LOGOS[method]) return PROVIDER_LOGOS[method];
+              
+              // Case insensitive match
+              const upperMethod = method.toUpperCase();
+              for (const [key, url] of Object.entries(PROVIDER_LOGOS)) {
+                if (key.toUpperCase() === upperMethod) return url;
+              }
+              
+              // Partial match for common variations
+              if (upperMethod.includes("PI") || upperMethod.includes("PI NETWORK")) return PI_LOGO_URL;
+              if (upperMethod.includes("PAYPAL")) return PROVIDER_LOGOS["PayPal"];
+              if (upperMethod.includes("QR") || upperMethod.includes("EWALLET")) return PROVIDER_LOGOS["Ewallet QR PH"];
+              if (upperMethod.includes("APPLE")) return PROVIDER_LOGOS["Apple Pay"];
+              if (upperMethod.includes("GOOGLE")) return PROVIDER_LOGOS["Google Pay"];
+              if (upperMethod.includes("VISA")) return PROVIDER_LOGOS["Visa"];
+              if (upperMethod.includes("MASTERCARD")) return PROVIDER_LOGOS["Mastercard"];
+              if (upperMethod.includes("STRIPE")) return PROVIDER_LOGOS["Stripe"];
+              if (upperMethod.includes("VENMO")) return PROVIDER_LOGOS["Venmo"];
+              if (upperMethod.includes("BANK") || upperMethod.includes("WIRE")) return PROVIDER_LOGOS["Bank Transfer"];
+              if (upperMethod.includes("CASH") || upperMethod.includes("CHECK")) return PROVIDER_LOGOS["Cash"];
+              if (upperMethod.includes("BITCOIN") || upperMethod.includes("BTC")) return PROVIDER_LOGOS["Bitcoin"];
+              if (upperMethod.includes("ETHEREUM") || upperMethod.includes("ETH")) return PROVIDER_LOGOS["Ethereum"];
+              if (upperMethod.includes("USDT") || upperMethod.includes("TETHER")) return PROVIDER_LOGOS["USDT"];
+              if (upperMethod.includes("USDC")) return PROVIDER_LOGOS["USDC"];
+              if (upperMethod.includes("CRYPTO")) return PROVIDER_LOGOS["Crypto"];
+              
+              return PROVIDER_LOGOS["Other"];
+            };
+            
+            const providerLogo = getProviderLogo(paymentMethod);
             const noteHint = String(row.note || "").toLowerCase();
-            const inferredPiLogo = (isTopup || isWithdraw) && (noteHint.includes("pi") || noteHint.includes("wallet top up"));
+            const inferredPiLogo = (isTopup || isWithdraw) && (
+              noteHint.includes("pi") || 
+              noteHint.includes("wallet top up") ||
+              noteHint.includes("pi payment") ||
+              noteHint.includes("pi wallet") ||
+              noteHint.includes("pi network")
+            );
             const methodLogo =
               row.payload?.payment_method_logo ||
               row.payload?.logo_url ||
@@ -296,18 +397,18 @@ const PublicLedgerPage = () => {
                       )}
                       {(row.sender_name || row.sender_username || row.receiver_name || row.receiver_username) && (
                         <span className="text-[11px] font-semibold text-muted-foreground">
-                          â€¢ {(row.sender_name || row.sender_username || "Sender")}
-                          {" â†’ "}
+                          • {(row.sender_name || row.sender_username || "Sender")}
+                          {" → "}
                           {(row.receiver_name || row.receiver_username || "Receiver")}
                         </span>
                       )}
                     </div>
                     <p className="text-[10px] text-muted-foreground">
-                      {format(new Date(row.occurred_at), "MMM d, yyyy HH:mm")} â€¢ {(row.event_type || "").replace(/_/g, " ")}
+                      {format(new Date(row.occurred_at), "MMM d, yyyy HH:mm")} • {(row.event_type || "").replace(/_/g, " ")}
                     </p>
                     {showTransferAmounts && (
                       <p className="text-[11px] text-muted-foreground mt-1">
-                        Sender: {senderFlag} {senderLabel} {senderSymbol}{senderAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} â†’ Receiver: {receiverFlag} {receiverLabel} {receiverSymbol}{receiverAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        Sender: {senderFlag} {senderLabel} {senderSymbol}{senderAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → Receiver: {receiverFlag} {receiverLabel} {receiverSymbol}{receiverAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     )}
                     
@@ -320,7 +421,7 @@ const PublicLedgerPage = () => {
                         senderCurrencyCode
                       )}
                       {(row.sender_name || row.sender_username) && (row.receiver_name || row.receiver_username) && (
-                        <span className="text-muted-foreground text-[10px]">â†’</span>
+                        <span className="text-muted-foreground text-[10px]">→</span>
                       )}
                       {(row.receiver_name || row.receiver_username) && renderProfile(
                         row.receiver_name,

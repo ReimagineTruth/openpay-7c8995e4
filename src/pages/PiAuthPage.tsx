@@ -6,7 +6,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { setAppCookie } from "@/lib/userPreferences";
 import AuthFooter from "@/components/AuthFooter";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 
 const PiAuthPage = () => {
   const [piUser, setPiUser] = useState<{ uid: string; username: string } | null>(null);
@@ -278,8 +278,32 @@ const PiAuthPage = () => {
                   variant="outline"
                   className="h-11 w-full rounded-2xl"
                 >
+                  <Link to="/sign-in?mode=signin">
+                    Sign In with Email
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full rounded-2xl"
+                >
                   <a href="https://minepi.com/" target="_blank" rel="noreferrer">
                     Download Pi Browser
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full rounded-2xl"
+                >
+                  <a 
+                    href="https://droplink.space/@openpay" 
+                    target="_blank" 
+                    rel="noreferrer"
+                  >
+                    OpenPay Socials
                   </a>
                 </Button>
                 <Button
