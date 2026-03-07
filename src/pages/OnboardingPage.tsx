@@ -34,13 +34,13 @@ const OnboardingPage = () => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, username, avatar_url")
+        .select("full_name, username, avatar_url, profile_image_url")
         .eq("id", user.id)
         .single();
 
       const loadedName = (profile?.full_name || "").trim();
       const loadedUsername = (profile?.username || "").trim();
-      setAvatarUrl(profile?.avatar_url || "");
+      setAvatarUrl((profile?.profile_image_url || profile?.avatar_url || "").trim());
       setFullName(loadedName);
       setUsername(loadedUsername.startsWith("pi_") ? "" : loadedUsername);
 
@@ -92,10 +92,9 @@ const OnboardingPage = () => {
       data: { publicUrl },
     } = supabase.storage.from("avatars").getPublicUrl(path);
 
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ avatar_url: publicUrl })
-      .eq("id", userId);
+    const { error: profileError } = await (supabase as any).rpc("upload_profile_image", {
+      p_image_url: publicUrl,
+    });
 
     setUploadingAvatar(false);
     if (profileError) {
@@ -133,17 +132,17 @@ const OnboardingPage = () => {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: fullName.trim(),
-          username: normalizedUsername,
-          avatar_url: avatarUrl.trim() || null,
-        })
-        .eq("id", userId);
-
+      const { data, error } = await (supabase as any).rpc("complete_account_onboarding", {
+        p_full_name: fullName.trim(),
+        p_username: normalizedUsername,
+        p_profile_image_url: avatarUrl.trim() || null,
+        p_security_pin: pinAlreadySet ? null : pin.trim(),
+      });
       if (error) {
-        throw new Error(error.message || "Failed to save profile");
+        throw new Error(error.message || "Failed to complete onboarding");
+      }
+      if (data && !data[0]?.success) {
+        throw new Error(data[0]?.message || "Failed to complete onboarding");
       }
 
       if (!pinAlreadySet) {

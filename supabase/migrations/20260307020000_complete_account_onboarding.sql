@@ -1,6 +1,8 @@
 -- Complete Account Onboarding Database Schema
 -- Supports the "Complete your account" screen with profile image, full name, username, and security PIN
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Add profile image and security PIN fields to profiles table
 ALTER TABLE public.profiles 
 ADD COLUMN IF NOT EXISTS profile_image_url TEXT,
