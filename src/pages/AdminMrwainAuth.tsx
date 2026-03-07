@@ -182,6 +182,16 @@ const AdminMrwainAuth = () => {
                 OpenPay Website
               </a>
             </Button>
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="h-12 w-full rounded-2xl"
+            >
+              <a href="https://www.openpy.space/blog" target="_blank" rel="noreferrer">
+                OpenPay Blog
+              </a>
+            </Button>
           </form>
 
           <AuthFooter />

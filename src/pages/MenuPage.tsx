@@ -230,6 +230,7 @@ const MenuPage = () => {
         { icon: ShieldAlert, label: "Disputes", action: () => navigate("/disputes") },
         { icon: HelpCircle, label: "Help Center", action: () => navigate("/help-center") },
         { icon: Megaphone, label: "Announcements", action: () => navigate("/announcements") },
+        { icon: Megaphone, label: "Blog", action: () => window.open("https://www.openpy.space/blog", "_blank", "noopener,noreferrer") },
         { icon: Smartphone, label: "OpenPay Official Page", action: () => navigate("/openpay-official") },
         { icon: Store, label: "Where to use OpenPay", action: () => navigate("/openpay-guide") },
         { icon: Handshake, label: "Open Partner", action: () => navigate("/open-partner") },

@@ -97,6 +97,16 @@ const SignUp = () => {
             {" "}and{" "}
             <Link to="/privacy" className="text-paypal-blue font-medium">Privacy Policy</Link>.
           </p>
+          <div className="mt-4">
+            <a
+              href="https://www.openpy.space/blog"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block w-full text-center text-sm font-semibold text-paypal-blue underline"
+            >
+              OpenPay Blog
+            </a>
+          </div>
         </div>
       </div>
     </div>
