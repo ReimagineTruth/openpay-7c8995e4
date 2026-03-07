@@ -228,6 +228,9 @@ BEGIN
     completed_at = now(),
     updated_at = now();
 
+  -- Ensure user_accounts row exists and conforms to format
+  PERFORM public.upsert_my_user_account();
+
   RETURN QUERY SELECT true, 'Account completed successfully', 5;
 END;
 $$;

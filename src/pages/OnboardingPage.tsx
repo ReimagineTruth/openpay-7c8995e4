@@ -145,6 +145,8 @@ const OnboardingPage = () => {
         throw new Error(data[0]?.message || "Failed to complete onboarding");
       }
 
+      await (supabase as any).rpc("upsert_my_user_account").catch(() => undefined);
+
       if (!pinAlreadySet) {
         const pinHash = await hashSecret(pin);
         const current = loadAppSecuritySettings(userId);

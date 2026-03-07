@@ -81,8 +81,8 @@ BEGIN
   )
   ON CONFLICT (user_id) DO UPDATE
   SET 
-    account_name = COALESCE(NULLIF(TRIM(p_full_name), user_accounts.account_name),
-    account_username = COALESCE(NULLIF(TRIM(p_username), user_accounts.account_username),
+    account_name = COALESCE(NULLIF(TRIM(p_full_name), ''), user_accounts.account_name),
+    account_username = COALESCE(NULLIF(TRIM(p_username), ''), user_accounts.account_username),
     updated_at = now()
   RETURNING user_id IS NOT NULL INTO v_account_created;
 
