@@ -2135,6 +2135,18 @@ export type Database = {
       claim_referral_rewards: { Args: never; Returns: Json }
       claim_stake: { Args: { p_position_id: string }; Returns: Json }
       claim_welcome_bonus: { Args: never; Returns: Json }
+      complete_account_onboarding: {
+        Args: {
+          p_full_name: string
+          p_profile_image_url?: string
+          p_security_pin?: string
+          p_username: string
+        }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
+      }
       complete_merchant_checkout_with_transaction:
         | {
             Args: {
@@ -2906,6 +2918,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      upload_profile_image: {
+        Args: { p_image_url: string }
+        Returns: undefined
       }
       upsert_my_merchant_profile: {
         Args: {
