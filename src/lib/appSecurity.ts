@@ -150,41 +150,17 @@ const pinSetupStatusKey = (userId: string) => `openpay_pin_setup_completed_${use
 
 export const markPinSetupCompleted = (userId: string) => {
   if (typeof window === "undefined") return;
-  
-  // Save to new preferences system
-  try {
-    const { setPinSetupCompleted } = require("./userPreferencesStorage");
-    setPinSetupCompleted(true);
-  } catch (error) {
-    // Fallback to old method
-    localStorage.setItem(pinSetupStatusKey(userId), "true");
-  }
+  localStorage.setItem(pinSetupStatusKey(userId), "true");
 };
 
 export const isPinSetupCompleted = (userId: string): boolean => {
   if (typeof window === "undefined") return false;
-  
-  // Try to get from new preferences system first
-  try {
-    const { isPinSetupCompleted: checkPinSetup } = require("./userPreferencesStorage");
-    return checkPinSetup();
-  } catch (error) {
-    // Fallback to old method
-    return localStorage.getItem(pinSetupStatusKey(userId)) === "true";
-  }
+  return localStorage.getItem(pinSetupStatusKey(userId)) === "true";
 };
 
 export const clearPinSetupStatus = (userId: string) => {
   if (typeof window === "undefined") return;
-  
-  // Clear from new preferences system
-  try {
-    const { setPinSetupCompleted } = require("./userPreferencesStorage");
-    setPinSetupCompleted(false);
-  } catch (error) {
-    // Fallback to old method
-    localStorage.removeItem(pinSetupStatusKey(userId));
-  }
+  localStorage.removeItem(pinSetupStatusKey(userId));
 };
 
 const toBiometricErrorMessage = (error: unknown, fallback: string) => {

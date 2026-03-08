@@ -8,7 +8,7 @@ import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import BrandLogo from "@/components/BrandLogo";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
-import { isPinSetupCompleted, loadAppSecuritySettings } from "@/lib/appSecurity";
+import { loadAppSecuritySettings, saveAppSecuritySettings } from "@/lib/appSecurity";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -925,8 +925,7 @@ const Dashboard = () => {
         !normalizedUsername.toLowerCase().startsWith("pi_"),
       );
       const securitySettings = loadAppSecuritySettings(userIdLocal);
-      const hasPin = Boolean(securitySettings?.pinHash) && isPinSetupCompleted(userIdLocal);
-      if (!hasProfile || !hasPin) {
+      if (!hasProfile) {
         setRefreshing(false);
         navigate("/onboarding", { replace: true });
         return;
@@ -1038,6 +1037,10 @@ const Dashboard = () => {
           onboarding_completed: loadedPrefs.onboarding_completed,
           onboarding_step: loadedPrefs.onboarding_step,
         };
+        const mergedSecurity = { ...loadedPrefs.security_settings, ...securitySettings };
+        if (JSON.stringify(mergedSecurity) !== JSON.stringify(securitySettings)) {
+          saveAppSecuritySettings(userIdLocal, mergedSecurity);
+        }
         const remittanceRaw = loadedPrefs.merchant_onboarding_data?.remittance_center;
         const remittance =
           remittanceRaw && typeof remittanceRaw === "object" && !Array.isArray(remittanceRaw)
@@ -1067,7 +1070,11 @@ const Dashboard = () => {
       }
 
       setBalanceHidden(hideBalance);
-      setOnboardingStep(prefs.onboarding_step || 0);
+      {
+        const initialStep = Number(prefs.onboarding_step || 0);
+        const clamped = Number.isFinite(initialStep) ? Math.min(Math.max(initialStep, 0), onboardingSteps.length - 1) : 0;
+        setOnboardingStep(clamped);
+      }
 
       if (!hasAcceptedAgreement) {
         setShowAgreement(true);
@@ -3683,8 +3690,12 @@ const Dashboard = () => {
           <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-paypal-blue">
             Step {onboardingStep + 1} of {onboardingSteps.length}
           </div>
-          <DialogTitle className="text-xl font-bold text-foreground">{onboardingSteps[onboardingStep].title}</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">{onboardingSteps[onboardingStep].description}</DialogDescription>
+          <DialogTitle className="text-xl font-bold text-foreground">
+            {onboardingSteps[Math.min(Math.max(onboardingStep, 0), onboardingSteps.length - 1)].title}
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            {onboardingSteps[Math.min(Math.max(onboardingStep, 0), onboardingSteps.length - 1)].description}
+          </DialogDescription>
 
           <div className="mt-3 flex gap-1.5">
             {onboardingSteps.map((_, index) => (

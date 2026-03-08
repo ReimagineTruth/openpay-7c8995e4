@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { hashSecret, loadAppSecuritySettings, markPinSetupCompleted, saveAppSecuritySettings } from "@/lib/appSecurity";
-import { upsertUserPreferences } from "@/lib/userPreferences";
+import { loadUserPreferences, setAppCookie, upsertUserPreferences } from "@/lib/userPreferences";
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
@@ -40,12 +40,24 @@ const OnboardingPage = () => {
 
       const loadedName = (profile?.full_name || "").trim();
       const loadedUsername = (profile?.username || "").trim();
-      setAvatarUrl((profile as any)?.profile_image_url || (profile?.avatar_url || ""));
+      setAvatarUrl(profile?.avatar_url || "");
       setFullName(loadedName);
       setUsername(loadedUsername.startsWith("pi_") ? "" : loadedUsername);
 
-      const settings = loadAppSecuritySettings(user.id);
-      setPinAlreadySet(Boolean(settings?.pinHash));
+      const localSettings = loadAppSecuritySettings(user.id);
+      let prefPinHash: string | undefined;
+      try {
+        const prefs = await loadUserPreferences(user.id);
+        prefPinHash = prefs.security_settings?.pinHash;
+        if (prefPinHash && !localSettings.pinHash) {
+          const merged = { ...prefs.security_settings, ...localSettings };
+          saveAppSecuritySettings(user.id, merged);
+        }
+      } catch {
+        // Ignore DB preferences errors; fall back to device-only settings.
+      }
+
+      setPinAlreadySet(Boolean(localSettings?.pinHash || prefPinHash));
     };
 
     void load();
@@ -132,37 +144,64 @@ const OnboardingPage = () => {
 
     setSaving(true);
     try {
-      const { data, error } = await (supabase as any).rpc("complete_account_onboarding", {
-        p_full_name: fullName.trim(),
-        p_username: normalizedUsername,
-        p_profile_image_url: avatarUrl.trim() || null,
-        p_security_pin: pinAlreadySet ? null : pin.trim(),
-      });
-      if (error) {
-        throw new Error(error.message || "Failed to complete onboarding");
-      }
-      if (data && !data[0]?.success) {
-        throw new Error(data[0]?.message || "Failed to complete onboarding");
+      // Keep onboarding behavior aligned with Settings: update profile + user_preferences.
+      // Avoid relying on server-side onboarding RPCs that may insert invalid user_accounts rows.
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: fullName.trim(),
+          username: normalizedUsername,
+        })
+        .eq("id", userId);
+
+      if (profileError) {
+        throw new Error(profileError.message || "Failed to save profile");
       }
 
-      await (supabase as any).rpc("upsert_my_user_account").catch(() => undefined);
-
+      let securitySettingsToPersist = loadAppSecuritySettings(userId);
       if (!pinAlreadySet) {
         const pinHash = await hashSecret(pin);
         const current = loadAppSecuritySettings(userId);
-        saveAppSecuritySettings(userId, { ...current, pinHash });
+        const updated = { ...current, pinHash };
+        saveAppSecuritySettings(userId, updated);
+        securitySettingsToPersist = updated;
       }
       markPinSetupCompleted(userId);
 
       upsertUserPreferences(userId, {
         profile_full_name: fullName.trim(),
         profile_username: normalizedUsername,
+        onboarding_completed: true,
+        onboarding_step: 5,
+        security_settings: securitySettingsToPersist,
       }).catch(() => undefined);
 
       toast.success("Account setup complete");
+      try {
+        const onboardingKey = `openpay_onboarding_done_v1_${userId}`;
+        localStorage.setItem(onboardingKey, "1");
+        setAppCookie(onboardingKey, "1");
+      } catch {
+        // ignore local persistence failures
+      }
+
+      // Best-effort: ensure user_accounts exists for dashboard; don't block onboarding on this.
+      try {
+        await (supabase as any).rpc("upsert_my_user_account");
+      } catch {
+        // ignore rpc failures
+      }
+
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to complete onboarding");
+      const message = err instanceof Error ? err.message : "Failed to complete onboarding";
+      if (message.includes("user_accounts_account_number_format_ck")) {
+        toast.error(
+          "Onboarding failed due to a database account-number constraint. Apply the latest Supabase migrations (user_accounts format + onboarding RPC) then try again.",
+        );
+      } else {
+        toast.error(message);
+      }
     } finally {
       setSaving(false);
     }

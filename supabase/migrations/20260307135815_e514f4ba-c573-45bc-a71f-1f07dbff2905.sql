@@ -57,7 +57,7 @@ BEGIN
   INSERT INTO user_accounts (user_id, account_number, account_name, account_username)
   VALUES (
     v_user_id,
-    'OPY-' || substr(replace(v_user_id::text, '-', ''), 1, 12),
+    public.generate_openpay_account_number(v_user_id),
     trim(p_full_name),
     p_username
   )
