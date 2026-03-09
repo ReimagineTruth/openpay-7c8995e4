@@ -55,6 +55,7 @@ const MiningPage = () => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [activeReferrals, setActiveReferrals] = useState(0);
   const adRewardHandledRef = useRef(false);
+  const [piAuthUser, setPiAuthUser] = useState(false);
 
   const persistLocalSession = (session: MiningSession) => {
     if (!session?.user_id || !session?.expires_at) return;
@@ -64,6 +65,8 @@ const MiningPage = () => {
   const loadMiningData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    setPiAuthUser(Boolean((user as any)?.user_metadata?.pi_uid));
 
     setLoading(true);
     try {
@@ -378,6 +381,25 @@ const MiningPage = () => {
     console.log('Starting mining with options:', { isAuto, adVerified });
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        if (!isAuto) {
+          toast.error("Please sign in to start mining.");
+          navigate("/auth");
+        }
+        return;
+      }
+
+      const isPiAuthed = Boolean((user as any)?.user_metadata?.pi_uid);
+      setPiAuthUser(isPiAuthed);
+
+      if (!isPiAuthed) {
+        if (!isAuto) {
+          toast.error("Mining requires a Pi-auth OpenPay account. Please sign in using Pi Browser (Pi Auth).");
+          navigate("/auth");
+        }
+        return;
+      }
       if (activeSession && timeLeft > 0) {
         if (!isAuto) {
           toast.error("Mining already active. Please wait for the 24-hour timer to finish.");
@@ -397,7 +419,9 @@ const MiningPage = () => {
         return;
       }
 
-      if (adVerified) {
+      let adVerifiedFlag = adVerified;
+
+      if (adVerifiedFlag) {
         console.log('Ad already verified, proceeding directly to mining start');
         toast.success("Ad verified! Starting mining session...");
       } else {
@@ -410,6 +434,12 @@ const MiningPage = () => {
           setStarting(false);
           return;
         }
+        adVerifiedFlag = true;
+        try {
+          window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
+        } catch {
+          // ignore localStorage failures
+        }
         if (!isAuto) {
           toast.success("Rewarded ad verified successfully! Starting mining...");
         }
@@ -417,9 +447,8 @@ const MiningPage = () => {
 
       // Basic anti-cheat: in a real app, use a proper fingerprinting library
       const deviceFingerprint = navigator.userAgent; 
-      const piBrowserUsed = true;
-      const adVerifiedFlag = adVerified || false;
-      
+      const piBrowserUsed = isPiBrowserUserAgent() || Boolean(window.Pi);
+       
       // Try database function first
       const result = await supabase.rpc("start_mining_session" as any, {
         p_device_fingerprint: deviceFingerprint,
@@ -441,7 +470,7 @@ const MiningPage = () => {
         }
         return;
       } else {
-        const bonusText = " with Pi Browser bonus!";
+        const bonusText = piBrowserUsed ? " with Pi Browser bonus!" : "";
         if (!isAuto) {
           toast.success(`Mining started${bonusText} Check back in 24 hours to claim your reward.`);
         }
@@ -638,6 +667,9 @@ const MiningPage = () => {
                   </span>
                 )}
               </div>
+              <p className="mt-3 max-w-[320px] text-xs font-semibold text-white/80">
+                Note: Mining works only in Pi Browser using a Pi-auth OpenPay account.
+              </p>
             </div>
 
             {timeLeft > 0 ? (
@@ -756,6 +788,9 @@ const MiningPage = () => {
               </div>
               <div>
                 <p className="text-lg font-black tracking-tight text-paypal-dark">🚀 Enhanced Mining in Pi Browser</p>
+                <p className="mt-2 text-sm font-semibold text-muted-foreground">
+                  Mining activates only in Pi Browser after Pi Auth and a verified rewarded ad.
+                </p>
                 <div className="mt-3 space-y-3">
                   <ul className="space-y-2 text-sm font-medium text-paypal-blue/90">
                     <li className="flex gap-3">
@@ -777,17 +812,16 @@ const MiningPage = () => {
                   </ul>
                   <div className="mt-4 rounded-xl bg-paypal-blue/10 p-3 text-center">
                     <p className="text-xs font-bold text-paypal-dark">
-                      Download Pi Browser to unlock enhanced mining rewards!
+                      Open Pi Browser and sign in with Pi Auth to start mining.
                     </p>
-                    <a 
-                      href="https://minepi.com/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => navigate("/auth")}
                       className="mt-2 inline-flex items-center gap-2 rounded-lg bg-paypal-blue px-4 py-2 text-sm font-bold text-white hover:bg-[#004dc5] transition-colors"
                     >
                       <Cpu className="h-4 w-4" />
-                      Get Pi Browser
-                    </a>
+                      Open Pi Auth
+                    </button>
                   </div>
                 </div>
               </div>
