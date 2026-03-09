@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import TopUpAccountDetails from "@/components/TopUpAccountDetails";
 
 const SOLANA_ICON_URL = "https://cryptologos.cc/logos/solana-sol-logo.png?v=040";
+const DEFAULT_SOLANA_PAY_MERCHANT_WALLET = "3P3j1HQR3DpjsTvv3F5SD2HUK46GGVQxWwtHEesqFH7S";
 
 const USDC_MINT_MAINNET = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const USDC_MINT_DEVNET = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
@@ -29,8 +30,11 @@ const TopUpSolanaPay = () => {
   const usdDisplay = safeUsdAmount > 0 ? safeUsdAmount.toFixed(2) : "0.00";
 
   const network = normalizeNetwork(String(import.meta.env.VITE_SOLANA_PAY_NETWORK || "mainnet"));
-  const merchantWallet = String(import.meta.env.VITE_SOLANA_PAY_MERCHANT_WALLET || "").trim();
+  const merchantWallet =
+    String(import.meta.env.VITE_SOLANA_PAY_MERCHANT_WALLET || "").trim() || DEFAULT_SOLANA_PAY_MERCHANT_WALLET;
   const merchantName = String(import.meta.env.VITE_SOLANA_PAY_MERCHANT_NAME || "OpenPay").trim() || "OpenPay";
+  const merchantLogoUrl =
+    typeof window === "undefined" ? "/openpay-o.svg" : `${window.location.origin}/openpay-o.svg`;
 
   const allowedMints = useMemo(() => {
     const configured = String(import.meta.env.VITE_SOLANA_PAY_ALLOWED_MINTS || "").trim();
@@ -79,15 +83,27 @@ const TopUpSolanaPay = () => {
 
         <div className="mt-5 rounded-2xl border border-border bg-white p-4">
           <p className="text-center text-xs font-semibold text-muted-foreground">Pay with Solana Pay</p>
-          {!merchantWallet ? (
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Solana Pay is not configured yet. Set <code className="font-mono">VITE_SOLANA_PAY_MERCHANT_WALLET</code>.
-            </p>
-          ) : null}
+          <div className="mt-3 rounded-xl border border-border bg-muted/10 p-3 text-center">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Merchant wallet</p>
+            <p className="mt-1 break-all text-xs font-semibold text-foreground">{merchantWallet}</p>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-2 h-9 w-full rounded-xl"
+              onClick={() => {
+                void navigator.clipboard.writeText(merchantWallet).then(
+                  () => toast.success("Merchant wallet copied"),
+                  () => toast.error("Unable to copy wallet"),
+                );
+              }}
+            >
+              <Copy className="mr-2 h-4 w-4" /> Copy Wallet
+            </Button>
+          </div>
           <div className="mt-3 flex justify-center">
             <PaymentButton
               config={{
-                merchant: { name: merchantName, wallet: merchantWallet, logo: SOLANA_ICON_URL },
+                merchant: { name: merchantName, wallet: merchantWallet, logo: merchantLogoUrl },
                 mode: "buyNow",
                 network,
                 allowedMints,
