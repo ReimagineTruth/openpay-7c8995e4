@@ -21,6 +21,7 @@ const AdminMrwainAuth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
+  const [signupCode, setSignupCode] = useState("");
 
   const setMode = (nextMode: "signin" | "signup") => {
     setParams({ mode: nextMode });
@@ -50,11 +51,17 @@ const AdminMrwainAuth = () => {
       return;
     }
 
+    if (!signupCode.trim()) {
+      setLoading(false);
+      toast.error("Sign-up code is required");
+      return;
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, username },
+        data: { full_name: fullName, username, signup_code: signupCode.trim().toUpperCase() },
         emailRedirectTo: window.location.origin,
       },
     });
@@ -136,6 +143,14 @@ const AdminMrwainAuth = () => {
                   placeholder="Username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="h-12 rounded-2xl border-white/70 bg-white"
+                />
+                <Input
+                  type="text"
+                  placeholder="Sign-up Code"
+                  value={signupCode}
+                  onChange={(e) => setSignupCode(e.target.value)}
                   required
                   className="h-12 rounded-2xl border-white/70 bg-white"
                 />

@@ -13,7 +13,13 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  NEW.updated_at := now();
+  BEGIN
+    NEW.updated_at := now();
+  EXCEPTION
+    WHEN undefined_column THEN
+      -- Some tables may use this trigger without an updated_at column.
+      NULL;
+  END;
   RETURN NEW;
 END;
 $$;

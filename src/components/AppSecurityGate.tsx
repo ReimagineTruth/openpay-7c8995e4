@@ -136,6 +136,14 @@ const AppSecurityGate = () => {
     setError("");
   };
 
+  const focusPinInput = () => {
+    try {
+      pinInputRef.current?.focus();
+    } catch {
+      // ignore focus failures
+    }
+  };
+
   const handlePinDigitPress = (digit: string) => {
     if (busy) return;
     if (!/^\d$/.test(digit)) return;
@@ -200,7 +208,7 @@ const AppSecurityGate = () => {
 
   return (
     <div
-      className="openpay-lock-scroll fixed inset-0 z-[10000] overflow-y-auto touch-manipulation bg-gradient-to-b from-paypal-blue to-[#072a7a] text-white dark:from-slate-950 dark:to-slate-900"
+      className="openpay-lock-scroll fixed inset-0 z-[10000] overflow-y-auto bg-gradient-to-b from-paypal-blue to-[#072a7a] text-white pointer-events-auto dark:from-slate-950 dark:to-slate-900"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
       <style>{`
@@ -254,6 +262,11 @@ const AppSecurityGate = () => {
                     key={n}
                     type="button"
                     onClick={() => handlePinDigitPress(String(n))}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      handlePinDigitPress(String(n));
+                      focusPinInput();
+                    }}
                     className="flex h-12 items-center justify-center rounded-2xl border border-paypal-light-blue/60 bg-white text-xl font-semibold transition active:scale-95 dark:border-border dark:bg-secondary"
                   >
                     {n}
@@ -262,6 +275,11 @@ const AppSecurityGate = () => {
                 <button
                   type="button"
                   onClick={handlePinBackspace}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    handlePinBackspace();
+                    focusPinInput();
+                  }}
                   className="flex h-12 items-center justify-center rounded-2xl border border-paypal-light-blue/60 bg-white transition active:scale-95 dark:border-border dark:bg-secondary"
                   aria-label="Backspace"
                 >
@@ -270,6 +288,11 @@ const AppSecurityGate = () => {
                 <button
                   type="button"
                   onClick={() => handlePinDigitPress("0")}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    handlePinDigitPress("0");
+                    focusPinInput();
+                  }}
                   className="flex h-12 items-center justify-center rounded-2xl border border-paypal-light-blue/60 bg-white text-xl font-semibold transition active:scale-95 dark:border-border dark:bg-secondary"
                 >
                   0
@@ -277,6 +300,11 @@ const AppSecurityGate = () => {
                 <button
                   type="button"
                   onClick={() => void handleUnlockWithPin()}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    void handleUnlockWithPin();
+                    focusPinInput();
+                  }}
                   disabled={busy || pin.replace(/\D/g, "").length < 4}
                   className="flex h-12 items-center justify-center rounded-2xl bg-paypal-blue text-white transition active:scale-95 disabled:bg-paypal-blue/45"
                   aria-label="Unlock"
@@ -287,6 +315,11 @@ const AppSecurityGate = () => {
               <Button
                 disabled={busy || pin.replace(/\D/g, "").length < 4}
                 onClick={handleUnlockWithPin}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  void handleUnlockWithPin();
+                  focusPinInput();
+                }}
                 className={`mt-4 ${primaryButtonClass}`}
               >
                 {busy ? "Unlocking..." : "Unlock with MPIN"}
@@ -307,6 +340,10 @@ const AppSecurityGate = () => {
               <Button
                 disabled={busy || !password.trim()}
                 onClick={handleUnlockWithPassword}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  void handleUnlockWithPassword();
+                }}
                 className={`mt-2 ${primaryButtonClass}`}
               >
                 {busy ? "Unlocking..." : "Unlock with Password"}
@@ -318,6 +355,10 @@ const AppSecurityGate = () => {
             <Button
               disabled={busy}
               onClick={handleUnlockWithBiometric}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                void handleUnlockWithBiometric();
+              }}
               className={`mt-4 ${darkButtonClass}`}
             >
               Use Face ID / Fingerprint
@@ -328,6 +369,10 @@ const AppSecurityGate = () => {
 
           <Button
             onClick={handleLogout}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              void handleLogout();
+            }}
             className={`mt-4 ${softButtonClass}`}
           >
             Log Out

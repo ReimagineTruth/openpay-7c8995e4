@@ -1435,7 +1435,12 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  NEW.updated_at := now();
+  BEGIN
+    NEW.updated_at := now();
+  EXCEPTION
+    WHEN undefined_column THEN
+      NULL;
+  END;
   RETURN NEW;
 END;
 $$;
@@ -1822,7 +1827,12 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  NEW.updated_at := now();
+  BEGIN
+    NEW.updated_at := now();
+  EXCEPTION
+    WHEN undefined_column THEN
+      NULL;
+  END;
   RETURN NEW;
 END;
 $$;
@@ -2440,7 +2450,12 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  NEW.updated_at := now();
+  BEGIN
+    NEW.updated_at := now();
+  EXCEPTION
+    WHEN undefined_column THEN
+      NULL;
+  END;
   RETURN NEW;
 END;
 $$;
@@ -12409,7 +12424,12 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  NEW.updated_at := now();
+  BEGIN
+    NEW.updated_at := now();
+  EXCEPTION
+    WHEN undefined_column THEN
+      NULL;
+  END;
   RETURN NEW;
 END;
 $$;
@@ -12489,7 +12509,12 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  NEW.updated_at := now();
+  BEGIN
+    NEW.updated_at := now();
+  EXCEPTION
+    WHEN undefined_column THEN
+      NULL;
+  END;
   RETURN NEW;
 END;
 $$;

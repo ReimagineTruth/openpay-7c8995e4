@@ -186,10 +186,17 @@ const OnboardingPage = () => {
       }
 
       if (!updatedRows || updatedRows.length === 0) {
-        const referralBase = trimmedUsername || `user_${userId.replace(/-/g, "").slice(0, 8)}`;
+        const referralBase = trimmedUsername || `user_${userId.replace(/-/g, "").slice(0, 12)}`;
+        const fallbackReferral = `user_${userId.replace(/-/g, "").slice(0, 12)}`;
         let created = false;
-        for (let attempt = 0; attempt < 6; attempt++) {
-          const referral_code = attempt === 0 ? referralBase : `${referralBase}${attempt}`;
+        let lastInsertError = "";
+        const candidates = [
+          referralBase,
+          ...Array.from({ length: 24 }, (_, i) => `${referralBase}${i + 1}`),
+          fallbackReferral,
+        ];
+
+        for (const referral_code of candidates) {
           const insertPayload = {
             id: userId,
             full_name: trimmedName,
@@ -204,6 +211,7 @@ const OnboardingPage = () => {
           }
 
           const msg = String(insertError.message || "");
+          lastInsertError = msg;
           if (msg.toLowerCase().includes("column") && msg.toLowerCase().includes("referral_code")) {
             const { error: retryError } = await supabase.from("profiles").insert({
               id: userId,
@@ -214,12 +222,13 @@ const OnboardingPage = () => {
               created = true;
               break;
             }
+            lastInsertError = String(retryError.message || "");
           }
         }
 
         if (!created) {
           throw new Error(
-            "Profile record was missing and could not be created. Apply the latest Supabase migrations then try again.",
+            `Profile record was missing and could not be created. ${lastInsertError ? `Last error: ${lastInsertError}` : "Apply the latest Supabase migrations then try again."}`,
           );
         }
       }
