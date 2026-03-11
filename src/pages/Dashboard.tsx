@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
@@ -425,6 +425,43 @@ const Dashboard = () => {
   const currencyTag = currency.code === "PI" ? "PI" : `${currencyLabel} (Pi rate)`;
   const formatCompactCurrency = (amount: number, codeOverride?: string) =>
     formatCurrencyValue(amount, codeOverride || currency.code, currencies, amountFormat);
+
+  // --- Animated Counter Component ---
+  const AnimatedCounter = ({ value, codeOverride }: { value: number; codeOverride?: string }) => {
+    const [displayValue, setDisplayValue] = useState(0);
+    const lastValue = useRef(value);
+
+    useEffect(() => {
+      if (balanceHidden) {
+        setDisplayValue(value);
+        return;
+      }
+      
+      const start = displayValue;
+      const end = value;
+      const duration = 1000;
+      const startTime = performance.now();
+
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        const current = start + (end - start) * easeProgress;
+        
+        setDisplayValue(current);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+
+      requestAnimationFrame(animate);
+      lastValue.current = value;
+    }, [value, balanceHidden]);
+
+    if (balanceHidden) return <span>****</span>;
+    return <span>{formatCompactCurrency(displayValue, codeOverride)}</span>;
+  };
   const getPiCodeLabel = (code: string) => {
     const upper = String(code || "").toUpperCase();
     if (upper === "PI") return "PI";
@@ -1895,7 +1932,7 @@ const Dashboard = () => {
                   <PiggyBank className="h-6 w-6 text-paypal-blue" />
                 </div>
                 <h2 className="text-5xl font-black tracking-tighter text-foreground">
-                  {balanceHidden ? "****" : formatCompactCurrency(savings?.savings_balance ?? 0)}
+                  <AnimatedCounter value={savings?.savings_balance ?? 0} />
                 </h2>
               </div>
               <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
@@ -1906,7 +1943,7 @@ const Dashboard = () => {
             <div className="relative mt-8 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Wallet balance</p>
-                <p className="text-base font-bold text-foreground">{balanceHidden ? "****" : formatCompactCurrency(savings?.wallet_balance ?? balance)}</p>
+                <p className="text-base font-bold text-foreground"><AnimatedCounter value={savings?.wallet_balance ?? balance} /></p>
               </div>
               <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Estimated APY</p>
@@ -2103,7 +2140,7 @@ const Dashboard = () => {
                   <HandCoins className="h-6 w-6 text-paypal-blue" />
                 </div>
                 <h2 className="text-5xl font-black tracking-tighter text-foreground">
-                  {balanceHidden ? "****" : formatCompactCurrency(availableToBorrow)}
+                  <AnimatedCounter value={availableToBorrow} />
                 </h2>
               </div>
               <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
@@ -2525,7 +2562,7 @@ const Dashboard = () => {
                   <Pickaxe className={`h-6 w-6 text-paypal-blue ${activeMiningSession ? "animate-bounce-slow" : ""}`} />
                 </div>
                 <h2 className="text-5xl font-black tracking-tighter text-foreground">
-                  {miningBalance.toFixed(2)}
+                  <AnimatedCounter value={miningBalance} codeOverride="OUSD" />
                 </h2>
               </div>
               <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
@@ -2612,7 +2649,7 @@ const Dashboard = () => {
                       <TrendingUp className="h-6 w-6 text-paypal-blue" />
                     </div>
                     <h2 className="text-5xl font-black tracking-tighter text-foreground">
-                      {formatCompactCurrency(personalAnalytics.summary.net_balance)}
+                      <AnimatedCounter value={personalAnalytics.summary.net_balance} />
                     </h2>
                   </div>
                   <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
@@ -2623,11 +2660,11 @@ const Dashboard = () => {
                 <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Total Sent</p>
-                    <p className="text-lg font-bold text-red-500">{formatCompactCurrency(personalAnalytics.summary.total_sent)}</p>
+                    <p className="text-lg font-bold text-red-500"><AnimatedCounter value={personalAnalytics.summary.total_sent} /></p>
                   </div>
                   <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Total Received</p>
-                    <p className="text-lg font-bold text-green-500">{formatCompactCurrency(personalAnalytics.summary.total_received)}</p>
+                    <p className="text-lg font-bold text-green-500"><AnimatedCounter value={personalAnalytics.summary.total_received} /></p>
                   </div>
                   <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Transactions</p>
@@ -2830,7 +2867,7 @@ const Dashboard = () => {
                 <BrandLogo className="h-8 w-8 text-paypal-blue" />
               </div>
               <h2 className="text-5xl font-black tracking-tighter text-foreground">
-                {balanceHidden ? "****" : formatCompactCurrency(walletCardAmount)}
+                <AnimatedCounter value={walletCardAmount} />
               </h2>
             </div>
             <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
