@@ -13,6 +13,7 @@ const AdminMrwainAuth = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const mode = params.get("mode") === "signup" ? "signup" : "signin";
+  const referralParam = (params.get("ref") || "").trim().toLowerCase();
   const [loading, setLoading] = useState(false);
   const [showEmailConfirmationModal, setShowEmailConfirmationModal] = useState(false);
   const [signedUpEmail, setSignedUpEmail] = useState("");
@@ -24,7 +25,9 @@ const AdminMrwainAuth = () => {
   const [signupCode, setSignupCode] = useState("");
 
   const setMode = (nextMode: "signin" | "signup") => {
-    setParams({ mode: nextMode });
+    const next: Record<string, string> = { mode: nextMode };
+    if (referralParam) next.ref = referralParam;
+    setParams(next);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +64,12 @@ const AdminMrwainAuth = () => {
       email,
       password,
       options: {
-        data: { full_name: fullName, username, signup_code: signupCode.trim().toUpperCase() },
+        data: {
+          full_name: fullName,
+          username,
+          signup_code: signupCode.trim().toUpperCase(),
+          ...(referralParam ? { referral_code: referralParam } : {}),
+        },
         emailRedirectTo: window.location.origin,
       },
     });

@@ -303,7 +303,11 @@ const PiAuthPage = () => {
                   variant="outline"
                   className="h-11 w-full rounded-2xl"
                 >
-                  <Link to="/sign-in?mode=signin">Sign In with Email</Link>
+                  <Link
+                    to={`/sign-in?mode=signin${searchParams.get("ref") ? `&ref=${encodeURIComponent((searchParams.get("ref") || '').trim().toLowerCase())}` : ""}`}
+                  >
+                    Sign In with Email
+                  </Link>
                 </Button>
                 <Button
                   asChild
