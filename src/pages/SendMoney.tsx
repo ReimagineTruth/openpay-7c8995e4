@@ -1253,7 +1253,7 @@ const SendMoney = () => {
   }
 
   return (
-    <div className="min-h-screen bg-paypal-blue px-4 pt-4 text-white">
+    <div className="min-h-screen bg-paypal-blue px-4 pt-4 pb-8 text-white">
       <div className="flex items-center gap-3">
         {myAvatarUrl ? (
           <img
@@ -1305,7 +1305,7 @@ const SendMoney = () => {
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 pb-12">
         {isMultiSend && (
           <div className="mb-6 p-4 rounded-2xl bg-white/10 border border-white/20">
             <div className="flex items-center justify-between mb-3">
