@@ -71,32 +71,59 @@ const MiningPage = () => {
     setLoading(true);
     try {
       // First sync the mining state to ensure consistency
+      let syncedActiveSession: MiningSession | null = null;
+      let syncedClaimableSession: MiningSession | null = null;
+      let finalActiveSession: MiningSession | null = null;
+      let finalClaimableSession: MiningSession | null = null;
       try {
-        await supabase.rpc("sync_mining_state" as any);
+        const syncResult = await supabase.rpc("sync_mining_state" as any);
+        const payload = syncResult.data as any;
+        syncedActiveSession = (payload?.active_session || payload?.activeSession || null) as any;
+        syncedClaimableSession = (payload?.claimable_session || payload?.claimableSession || null) as any;
       } catch (syncError) {
         console.warn("Mining state sync failed:", syncError);
       }
 
-      // Get active session from database
-      const { data: session } = await (supabase
-        .from("mining_sessions" as any) as any)
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
-
-      setActiveSession(session as any);
-      if (session) {
-        persistLocalSession(session as MiningSession);
-      }
-
-      if (!session) {
+      // Prefer SECURITY DEFINER sync payload if available (more reliable under RLS / schema drift)
+      if (syncedActiveSession) {
+        finalActiveSession = syncedActiveSession;
+        setActiveSession(finalActiveSession as any);
+        persistLocalSession(finalActiveSession);
+        setClaimableSession(null);
+      } else if (syncedClaimableSession) {
+        finalClaimableSession = syncedClaimableSession;
+        setActiveSession(null);
+        setClaimableSession(finalClaimableSession as any);
         localStorage.removeItem("mining_session");
+      } else {
+        // Get active session from database (fallback)
+        const { data: session, error: sessionError } = await (supabase
+          .from("mining_sessions" as any) as any)
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .gt("expires_at", new Date().toISOString())
+          .maybeSingle();
+
+        if (sessionError) {
+          console.warn("Mining session load failed:", sessionError);
+          // Keep any existing/optimistic state; do not clear local storage on transient errors.
+        } else {
+          finalActiveSession = (session as any) ? (session as MiningSession) : null;
+          setActiveSession(session as any);
+          if (session) {
+            persistLocalSession(session as MiningSession);
+          } else {
+            localStorage.removeItem("mining_session");
+          }
+        }
       }
 
-      // If no database session, check for claimable sessions (expired but active=true)
-      if (!session) {
+      // If no active session, check for claimable sessions (expired but active=true)
+      if (!finalActiveSession) {
+        if (finalClaimableSession) {
+          setClaimableSession(finalClaimableSession as any);
+        } else {
         const { data: claimable } = await (supabase
           .from("mining_sessions" as any) as any)
           .select("*")
@@ -111,6 +138,7 @@ const MiningPage = () => {
           localStorage.removeItem("mining_session");
         } else {
           setClaimableSession(claimable as any);
+        }
         }
       } else {
         setClaimableSession(null);
@@ -247,6 +275,7 @@ const MiningPage = () => {
     console.log('Detected recent ad reward, auto-activating mining');
     adRewardHandledRef.current = true;
     window.localStorage.removeItem("pi_ad_rewarded_at");
+    window.localStorage.removeItem("pi_ad_rewarded_id");
     void handleStartMining({ auto: true, adVerified: true });
   }, [piSdkInitialized, starting, loading, activeSession, claimableSession, timeLeft]);
 
@@ -290,7 +319,9 @@ const MiningPage = () => {
   };
 
   const runRewardedAd = async () => {
-    if (!initPi() || !window.Pi?.Ads?.showAd) return false;
+    if (!initPi() || !window.Pi?.Ads?.showAd) {
+      throw new Error("Pi Ad Network is not available. Please update Pi Browser or try again later.");
+    }
 
     await window.Pi.authenticate(["username"]);
 
@@ -328,8 +359,22 @@ const MiningPage = () => {
       throw new Error("Rewarded ad returned no adId. Verification is required before granting rewards.");
     }
 
+    // Persist a short-lived marker as soon as the ad is rewarded (helps if Pi Browser reloads after the video)
+    try {
+      window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
+      window.localStorage.setItem("pi_ad_rewarded_id", String(adResult.adId));
+    } catch {
+      // ignore localStorage failures
+    }
+
     const verification = await verifyRewardedAd(adResult.adId);
     if (!verification.rewarded) {
+      try {
+        window.localStorage.removeItem("pi_ad_rewarded_at");
+        window.localStorage.removeItem("pi_ad_rewarded_id");
+      } catch {
+        // ignore localStorage failures
+      }
       throw new Error(`Ad verification status: ${verification.data.mediator_ack_status ?? "null"}`);
     }
 

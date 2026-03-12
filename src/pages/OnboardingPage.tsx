@@ -89,6 +89,26 @@ const OnboardingPage = () => {
     return username.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
   }, [username]);
 
+  const suggestUsername = (base: string) => {
+    const safe = String(base || "").trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    const suffix = (userId || "").replace(/-/g, "").slice(0, 4) || "01";
+    const candidate = `${safe}${suffix}`.slice(0, 20);
+    return candidate.length >= 3 ? candidate : `user_${suffix}`;
+  };
+
+  const isUsernameAvailable = async (desired: string) => {
+    if (!desired || !userId) return false;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      // Use exact match (ILIKE treats '_' as wildcard); still best-effort since RLS may restrict visibility.
+      .eq("username", desired)
+      .neq("id", userId)
+      .limit(1);
+    if (error) throw new Error(error.message || "Username check failed");
+    return !data || data.length === 0;
+  };
+
   const initials = fullName
     ? fullName
       .split(" ")
@@ -154,6 +174,20 @@ const OnboardingPage = () => {
       return;
     }
 
+    try {
+      const available = await isUsernameAvailable(normalizedUsername);
+      if (!available) {
+        const suggestion = suggestUsername(normalizedUsername);
+        toast.error(`Username already taken. Try "${suggestion}"`);
+        setUsername(suggestion);
+        return;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to check username availability";
+      toast.error(message);
+      return;
+    }
+
     if (!pinAlreadySet) {
       if (!/^\d{4,8}$/.test(pin.trim())) {
         toast.error("PIN must be 4-8 digits");
@@ -182,7 +216,17 @@ const OnboardingPage = () => {
         .select("id");
 
       if (profileError) {
-        throw new Error(profileError.message || "Failed to save profile");
+        const msg = String(profileError.message || "");
+        const code = String((profileError as any)?.code || "");
+        const duplicate =
+          code === "23505" || msg.includes("profiles_username_key") || msg.toLowerCase().includes("duplicate key");
+        if (duplicate) {
+          const suggestion = suggestUsername(trimmedUsername || trimmedName);
+          setUsername(suggestion);
+          toast.error(`Username already taken. Try \"${suggestion}\" then tap Finish setup again.`);
+          return;
+        }
+        throw new Error(msg || "Failed to save profile");
       }
 
       if (!updatedRows || updatedRows.length === 0) {
@@ -211,6 +255,15 @@ const OnboardingPage = () => {
           }
 
           const msg = String(insertError.message || "");
+          const code = String((insertError as any)?.code || "");
+          const duplicate =
+            code === "23505" || msg.includes("profiles_username_key") || msg.toLowerCase().includes("duplicate key");
+          if (duplicate) {
+            const suggestion = suggestUsername(trimmedUsername || trimmedName);
+            setUsername(suggestion);
+            toast.error(`Username already taken. Try \"${suggestion}\" then tap Finish setup again.`);
+            return;
+          }
           lastInsertError = msg;
           if (msg.toLowerCase().includes("column") && msg.toLowerCase().includes("referral_code")) {
             const { error: retryError } = await supabase.from("profiles").insert({
@@ -222,7 +275,19 @@ const OnboardingPage = () => {
               created = true;
               break;
             }
-            lastInsertError = String(retryError.message || "");
+            const retryMsg = String(retryError.message || "");
+            const retryCode = String((retryError as any)?.code || "");
+            const retryDuplicate =
+              retryCode === "23505" ||
+              retryMsg.includes("profiles_username_key") ||
+              retryMsg.toLowerCase().includes("duplicate key");
+            if (retryDuplicate) {
+              const suggestion = suggestUsername(trimmedUsername || trimmedName);
+              setUsername(suggestion);
+              toast.error(`Username already taken. Try \"${suggestion}\" then tap Finish setup again.`);
+              return;
+            }
+            lastInsertError = retryMsg;
           }
         }
 
