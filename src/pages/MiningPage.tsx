@@ -373,6 +373,41 @@ const MiningPage = () => {
     });
   };
 
+  const startMiningSessionRpc = async (args: {
+    deviceFingerprint: string;
+    ipAddress: string;
+    adVerified: boolean;
+    piBrowserUsed: boolean;
+  }) => {
+    const firstAttempt = await supabase.rpc("start_mining_session" as any, {
+      p_device_fingerprint: args.deviceFingerprint,
+      p_ip_address: args.ipAddress,
+      p_ad_verified: args.adVerified,
+      p_pi_browser_used: args.piBrowserUsed,
+    });
+
+    if (!firstAttempt.error) return firstAttempt;
+
+    const message = String(firstAttempt.error.message || "");
+    const code = String((firstAttempt.error as any)?.code || "");
+    const looksLikeSignatureMismatch =
+      code === "PGRST202" ||
+      message.toLowerCase().includes("could not find the function") ||
+      message.toLowerCase().includes("function public.start_mining_session") ||
+      message.toLowerCase().includes("no function matches") ||
+      message.toLowerCase().includes("unknown function") ||
+      message.toLowerCase().includes("invalid input syntax") ||
+      message.toLowerCase().includes("unexpected parameter");
+
+    if (!looksLikeSignatureMismatch) return firstAttempt;
+
+    console.warn("start_mining_session signature mismatch; retrying legacy RPC (2 args)", firstAttempt.error);
+    return await supabase.rpc("start_mining_session" as any, {
+      p_device_fingerprint: args.deviceFingerprint,
+      p_ip_address: args.ipAddress,
+    });
+  };
+
   const handleStartMining = async (options?: { auto?: boolean; adVerified?: boolean }) => {
     const isAuto = Boolean(options?.auto);
     const adVerified = Boolean(options?.adVerified);
@@ -450,26 +485,40 @@ const MiningPage = () => {
       const piBrowserUsed = isPiBrowserUserAgent() || Boolean(window.Pi);
        
       // Try database function first
-      const result = await supabase.rpc("start_mining_session" as any, {
-        p_device_fingerprint: deviceFingerprint,
-        p_ip_address: "client-side-ip",
-        p_ad_verified: adVerifiedFlag,
-        p_pi_browser_used: piBrowserUsed,
+      const result = await startMiningSessionRpc({
+        deviceFingerprint,
+        ipAddress: "client-side-ip",
+        adVerified: adVerifiedFlag,
+        piBrowserUsed,
       });
       const data = result.data;
       const error = result.error;
 
       if (error) {
-        if (!isAuto) {
-          toast.error(error.message || "Failed to start mining");
-        }
+        toast.error(error.message || "Failed to start mining");
         return;
       } else if (data && (data as any).error) {
-        if (!isAuto) {
-          toast.error((data as any).error);
-        }
+        toast.error((data as any).error);
         return;
       } else {
+        try {
+          const expiresAt = (data as any)?.expires_at;
+          const sessionId = (data as any)?.session_id;
+          if (expiresAt && sessionId) {
+            const optimisticSession: MiningSession = {
+              id: String(sessionId),
+              user_id: user.id,
+              started_at: new Date().toISOString(),
+              expires_at: String(expiresAt),
+              is_active: true,
+              created_at: new Date().toISOString(),
+            };
+            setActiveSession(optimisticSession);
+            persistLocalSession(optimisticSession);
+          }
+        } catch {
+          // ignore optimistic state failures
+        }
         const bonusText = piBrowserUsed ? " with Pi Browser bonus!" : "";
         if (!isAuto) {
           toast.success(`Mining started${bonusText} Check back in 24 hours to claim your reward.`);
@@ -590,20 +639,21 @@ const MiningPage = () => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  const MIN_MINING_CLAIM_OUSD = 10;
   const currentDailyRate = 0.10 * (1 + Math.min(activeReferrals * 0.10, 1.0));
   const totalEarned = (rewards || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-  const canClaimAll = totalEarned >= 5;
+  const canClaimAll = totalEarned >= MIN_MINING_CLAIM_OUSD;
 
   const handleClaimAllEarnings = async () => {
     try {
       const amount = Number(totalEarned.toFixed(2));
-      if (!canClaimAll || amount < 5) {
-        toast.error("Minimum 5 OUSD required to claim");
+      if (!canClaimAll || amount < MIN_MINING_CLAIM_OUSD) {
+        toast.error(`Minimum ${MIN_MINING_CLAIM_OUSD} OUSD required to claim`);
         return;
       }
       let rpcError: unknown = null;
       try {
-        const { error } = await (supabase as any).rpc("withdraw_mining_earnings", { p_min_payout: 5 });
+        const { error } = await (supabase as any).rpc("withdraw_mining_earnings", { p_min_payout: MIN_MINING_CLAIM_OUSD });
         rpcError = error;
       } catch {
         rpcError = { message: "RPC unavailable" };
@@ -765,7 +815,7 @@ const MiningPage = () => {
               <div>
                 <p className="text-base font-black text-paypal-dark">Claim Earnings</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Minimum 5 OUSD to claim · Current: {totalEarned.toFixed(2)} OUSD
+                  Minimum {MIN_MINING_CLAIM_OUSD} OUSD to claim · Current: {totalEarned.toFixed(2)} OUSD
                 </p>
               </div>
               <Button
