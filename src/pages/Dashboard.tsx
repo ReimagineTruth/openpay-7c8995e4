@@ -1959,17 +1959,17 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="mt-4 paypal-surface rounded-3xl p-4">
+          <div className="mt-4 paypal-surface rounded-3xl p-4 text-foreground">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-border/70 p-3">
-                <p className="mb-2 text-sm font-semibold">Move wallet to savings</p>
+                <p className="mb-2 text-sm font-semibold text-foreground">Move wallet to savings</p>
                 <input
                   value={formatAmountInput(savingsAmount)}
                   onChange={(e) => setSavingsAmount(normalizeAmountInput(e.target.value))}
                   type="text"
                   inputMode="decimal"
                   placeholder={`Amount (${currencyLabel})`}
-                  className="mb-2 h-10 w-full rounded-xl border border-border px-3"
+                  className="mb-2 h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground"
                 />
                 <button disabled={movingToSavings} onClick={() => handleProtectedAction(handleMoveWalletToSavings, "handleMoveWalletToSavings")} className="h-10 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white">
                   {movingToSavings ? "Moving..." : "Move to Savings"}
@@ -1983,7 +1983,7 @@ const Dashboard = () => {
                   type="text"
                   inputMode="decimal"
                   placeholder={`Amount (${currencyLabel})`}
-                  className="mb-2 h-10 w-full rounded-xl border border-border px-3"
+                  className="mb-2 h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground"
                 />
                 <button disabled={movingToWallet} onClick={() => handleProtectedAction(handleMoveSavingsToWallet, "handleMoveSavingsToWallet")} className="h-10 w-full rounded-xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue">
                   {movingToWallet ? "Moving..." : "Move to Wallet"}
@@ -1992,7 +1992,7 @@ const Dashboard = () => {
             </div>
             <div className="mt-4 rounded-2xl border border-border/70 p-3">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-semibold">Recent savings activity</p>
+                <p className="text-sm font-semibold text-foreground">Recent savings activity</p>
                 {savingsTransfers.length > 0 && <p className="text-xs text-muted-foreground">{savingsTransfers.length} latest</p>}
               </div>
               {savingsTransfers.length === 0 ? (
