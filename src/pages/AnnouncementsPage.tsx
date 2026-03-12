@@ -6,6 +6,18 @@ const AnnouncementsPage = () => {
 
   const announcements = [
     {
+      title: "OpenPay Update: Global Language Translation + New Branding",
+      date: "March 12, 2026",
+      body:
+        'You can now translate the full OpenPay app into many languages from Settings (including custom language codes like "pt-BR" or "zh-CN"). We also refreshed OpenPay branding across the dashboard, receipts, notifications, docs, and auth screens with the latest OpenPay logo assets.',
+    },
+    {
+      title: "UI Refresh: Blue Dashboard + White Cards",
+      date: "March 12, 2026",
+      body:
+        "Dashboard now uses the same blue background style as Send, with improved text contrast. Section cards (Wallet/Savings/Credit/Loans/Cards/Buy/Mining/Analytics) are now white cards for clarity, and the Pay button matches Receive/Buy with a border outline.",
+    },
+    {
       title: "🚀 OpenPay 2026: The Ultimate Pi-Powered Financial Ecosystem",
       date: "March 1, 2026",
       body:
