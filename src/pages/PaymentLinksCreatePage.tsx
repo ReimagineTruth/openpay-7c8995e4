@@ -49,7 +49,7 @@ type PaymentLinkRow = {
 };
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
-const OPENPAY_ICON_URL = "/openpay-o.svg";
+const OPENPAY_ICON_URL = "/openpay-logo.jpg";
 
 const PaymentLinksCreatePage = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -249,7 +249,7 @@ const PaymentLinksCreatePage = () => {
 
   const shareButtonHtmlCode = useMemo(
     () =>
-      `<a href="${createdUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;background:${buttonStyle === "dark" ? "#0b1f3b" : buttonStyle === "soft" ? "#4b7dd1" : "#0057d8"};color:#fff;padding:${buttonSize === "small" ? "8px 16px" : buttonSize === "large" ? "14px 28px" : "12px 24px"};border-radius:10px;text-decoration:none;font-weight:700;font-family:Arial,sans-serif"><img src="/openpay-o.svg" alt="OpenPay" width="16" height="16" style="display:block;border-radius:999px" />Pay with OpenPay</a>`,
+      `<a href="${createdUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;background:${buttonStyle === "dark" ? "#0b1f3b" : buttonStyle === "soft" ? "#4b7dd1" : "#0057d8"};color:#fff;padding:${buttonSize === "small" ? "8px 16px" : buttonSize === "large" ? "14px 28px" : "12px 24px"};border-radius:10px;text-decoration:none;font-weight:700;font-family:Arial,sans-serif"><img src="/openpay-logo.jpg" alt="OpenPay" width="16" height="16" style="display:block;border-radius:999px" />Pay with OpenPay</a>`,
     [createdUrl, buttonStyle, buttonSize],
   );
   const shareButtonBg = useMemo(
@@ -262,7 +262,7 @@ const PaymentLinksCreatePage = () => {
   );
   const qrImageSettings = useMemo(
     () => ({
-      src: "/openpay-o.svg",
+      src: "/openpay-logo.jpg",
       width: 42,
       height: 42,
       excavate: true,
@@ -272,7 +272,7 @@ const PaymentLinksCreatePage = () => {
 
   const shareButtonReactCode = useMemo(
     () =>
-      `export default function OpenPayButton() {\n  return (\n    <a\n      href="${createdUrl}"\n      target="_blank"\n      rel="noopener noreferrer"\n      style={{\n        display: "inline-flex",\n        alignItems: "center",\n        gap: "8px",\n        background: "${buttonStyle === "dark" ? "#0b1f3b" : buttonStyle === "soft" ? "#4b7dd1" : "#0057d8"}",\n        color: "#fff",\n        padding: "${buttonSize === "small" ? "8px 16px" : buttonSize === "large" ? "14px 28px" : "12px 24px"}",\n        borderRadius: "10px",\n        textDecoration: "none",\n        fontWeight: 700,\n      }}\n    >\n      <img src="/openpay-o.svg" alt="OpenPay" width={16} height={16} style={{ borderRadius: 999 }} />\n      Pay with OpenPay\n    </a>\n  );\n}`,
+      `export default function OpenPayButton() {\n  return (\n    <a\n      href="${createdUrl}"\n      target="_blank"\n      rel="noopener noreferrer"\n      style={{\n        display: "inline-flex",\n        alignItems: "center",\n        gap: "8px",\n        background: "${buttonStyle === "dark" ? "#0b1f3b" : buttonStyle === "soft" ? "#4b7dd1" : "#0057d8"}",\n        color: "#fff",\n        padding: "${buttonSize === "small" ? "8px 16px" : buttonSize === "large" ? "14px 28px" : "12px 24px"}",\n        borderRadius: "10px",\n        textDecoration: "none",\n        fontWeight: 700,\n      }}\n    >\n      <img src="/openpay-logo.jpg" alt="OpenPay" width={16} height={16} style={{ borderRadius: 999 }} />\n      Pay with OpenPay\n    </a>\n  );\n}`,
     [createdUrl, buttonStyle, buttonSize],
   );
 

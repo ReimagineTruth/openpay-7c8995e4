@@ -34,7 +34,7 @@ const TopUpSolanaPay = () => {
     String(import.meta.env.VITE_SOLANA_PAY_MERCHANT_WALLET || "").trim() || DEFAULT_SOLANA_PAY_MERCHANT_WALLET;
   const merchantName = String(import.meta.env.VITE_SOLANA_PAY_MERCHANT_NAME || "OpenPay").trim() || "OpenPay";
   const merchantLogoUrl =
-    typeof window === "undefined" ? "/openpay-o.svg" : `${window.location.origin}/openpay-o.svg`;
+    typeof window === "undefined" ? "/openpay-logo.jpg" : `${window.location.origin}/openpay-logo.jpg`;
 
   const allowedMints = useMemo(() => {
     const configured = String(import.meta.env.VITE_SOLANA_PAY_ALLOWED_MINTS || "").trim();

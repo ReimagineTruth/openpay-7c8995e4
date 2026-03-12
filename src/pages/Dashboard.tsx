@@ -1745,7 +1745,7 @@ const Dashboard = () => {
 
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background pb-64">
+    <div className="min-h-screen overflow-x-hidden bg-paypal-blue pb-64 text-white">
       <div className="flex items-center justify-between px-4 pt-5">
         <div className="flex items-center gap-2">
           <CurrencySelector />
@@ -1753,13 +1753,13 @@ const Dashboard = () => {
           {/* Mining Header Info */}
           <div 
             onClick={() => navigate("/mining")}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-paypal-blue/10 border border-paypal-blue/20 cursor-pointer hover:bg-paypal-blue/15 transition-colors"
+            className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 transition-colors hover:bg-white/15 cursor-pointer"
           >
-            <Pickaxe className={`h-4 w-4 text-paypal-blue ${miningTimeLeft > 0 ? "animate-bounce-slow" : ""}`} />
+            <Pickaxe className={`h-4 w-4 text-white ${miningTimeLeft > 0 ? "animate-bounce-slow" : ""}`} />
             <div className="flex flex-col leading-none">
-              <span className="text-[10px] font-black text-paypal-blue/60 uppercase">Mining</span>
+              <span className="text-[10px] font-black text-white/70 uppercase">Mining</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-black text-paypal-blue">{miningBalance.toFixed(2)}</span>
+                <span className="text-sm font-black text-white">{miningBalance.toFixed(2)}</span>
                 {miningTimeLeft > 0 && (
                   <span className="text-[10px] font-black text-paypal-blue bg-white px-1.5 py-0.5 rounded-md animate-pulse">
                     {Math.floor(miningTimeLeft / 3600)}:
@@ -1803,9 +1803,9 @@ const Dashboard = () => {
           className="w-full"
         >
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">OpenApp Utilities</h2>
+            <h2 className="text-sm font-bold text-white/80 uppercase tracking-wider">OpenApp Utilities</h2>
             <CollapsibleTrigger asChild>
-              <button className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary transition-colors">
+              <button className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/15 transition-colors">
                 {showOpenAppBanner ? (
                   <ChevronUp className="h-4 w-4" />
                 ) : (
@@ -1841,7 +1841,7 @@ const Dashboard = () => {
 
       {/* Greeting */}
       <div className="px-4 mt-3">
-        <h1 className="text-2xl font-bold text-foreground">
+        <h1 className="text-2xl font-bold text-white">
           {activeSection === "cards"
             ? "OpenPay Cards"
             : activeSection === "buy"
@@ -1855,7 +1855,7 @@ const Dashboard = () => {
                   : `${getGreeting()}, ${userName.split(" ")[0] || "there"}`}
         </h1>
         {activeSection !== "cards" && activeSection !== "buy" && activeSection !== "swap" && activeSection !== "mining" && activeSection !== "analytics" && username && (
-          <p className="text-base text-muted-foreground">@{username}</p>
+          <p className="text-base text-white/80">@{username}</p>
         )}
       </div>
 
@@ -1887,17 +1887,17 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-        <div className="mt-4 rounded-2xl bg-secondary/30 dark:bg-secondary/10 p-3 border border-secondary/50 dark:border-white/5">
+        <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-3">
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground dark:text-foreground/70">
-              Display currency: <span className="font-bold text-paypal-blue dark:text-blue-400">{currencyTag}</span>
+            <p className="text-sm text-white/80">
+              Display currency: <span className="font-bold text-white">{currencyTag}</span>
             </p>
             <div className="flex flex-wrap gap-x-4 gap-y-1">
-              <p className="text-xs text-muted-foreground dark:text-foreground/60">
-                Rate: <span className="font-semibold text-paypal-blue dark:text-blue-400">1 PI = {PI_TO_OUSD.toFixed(2)} OUSD</span>
+              <p className="text-xs text-white/70">
+                Rate: <span className="font-semibold text-white">1 PI = {PI_TO_OUSD.toFixed(2)} OUSD</span>
               </p>
-              <p className="text-xs text-muted-foreground dark:text-foreground/60">
-                Rate: <span className="font-semibold text-paypal-blue dark:text-blue-400">1 USD = 1 OUSD</span>
+              <p className="text-xs text-white/70">
+                Rate: <span className="font-semibold text-white">1 USD = 1 OUSD</span>
               </p>
             </div>
           </div>
@@ -1906,11 +1906,7 @@ const Dashboard = () => {
 
       {activeSection === "savings" && (
         <div className="mx-4 mt-4 animate-in-up">
-          <div className="ios-glass relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-paypal-blue/20">
-            {/* Background highlights for glass look */}
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-paypal-blue/10 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
-
+          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
                 <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
@@ -2028,11 +2024,7 @@ const Dashboard = () => {
 
       {activeSection === "credit" && (
         <div className="mx-4 mt-4 animate-in-up">
-          <div className="ios-glass relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-paypal-blue/20">
-            {/* Background highlights for glass look */}
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-paypal-blue/10 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
-
+          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
                 <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
@@ -2118,11 +2110,7 @@ const Dashboard = () => {
 
       {activeSection === "loans" && (
         <div className="mx-4 mt-4 animate-in-up">
-          <div className="ios-glass relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-paypal-blue/20">
-            {/* Background highlights for glass look */}
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-paypal-blue/10 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
-
+          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
                 <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
@@ -2299,11 +2287,7 @@ const Dashboard = () => {
 
       {activeSection === "cards" && (
         <div className="mx-4 mt-4 animate-in-up">
-          <div className="ios-glass relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-paypal-blue/20">
-            {/* Background highlights for glass look */}
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-paypal-blue/10 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
-
+          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
                 <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
@@ -2387,11 +2371,7 @@ const Dashboard = () => {
 
       {activeSection === "buy" && (
         <div className="mx-4 mt-4 animate-in-up">
-          <div className="ios-glass relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-paypal-blue/20">
-            {/* Background highlights for glass look */}
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-paypal-blue/10 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
-
+          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
                 <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
@@ -2540,11 +2520,7 @@ const Dashboard = () => {
 
       {activeSection === "mining" && (
         <div className="mx-4 mt-4 animate-in-up">
-          <div className="ios-glass relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-paypal-blue/20">
-            {/* Background highlights for glass look */}
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-paypal-blue/10 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
-
+          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
                 <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
@@ -2615,11 +2591,7 @@ const Dashboard = () => {
 
       {activeSection === "analytics" && (
         <div className="mx-4 mt-4 animate-in-up space-y-4">
-          <div className="ios-glass relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-paypal-blue/20">
-            {/* Background highlights for glass look */}
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-paypal-blue/10 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
-
+          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
                 <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
@@ -2789,10 +2761,7 @@ const Dashboard = () => {
       {activeSection === "wallet" && (
         <>
       <div className="mx-4 mt-4 animate-in-up">
-        <div className="ios-glass relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-paypal-blue/20">
-          {/* Background highlights for glass look */}
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-paypal-blue/10 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
+        <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
           
           <div className="relative mb-6 flex flex-wrap items-center gap-3">
             <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
@@ -3030,11 +2999,11 @@ const Dashboard = () => {
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-paypal-blue" />
-            <h2 className="text-lg font-bold text-paypal-dark">Quick Access</h2>
+            <LayoutGrid className="h-5 w-5 text-white" />
+            <h2 className="text-lg font-bold text-white">Quick Access</h2>
           </div>
           <CollapsibleTrigger asChild>
-            <button className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary transition-colors">
+            <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/15 transition-colors">
               {showShortcuts ? (
                 <ChevronUp className="h-5 w-5" />
               ) : (
@@ -3057,7 +3026,7 @@ const Dashboard = () => {
                 key={item.id}
                 onClick={item.action}
                 style={{ animationDelay: `${idx * 50}ms` }}
-                className="ios-glass ios-active flex flex-col items-center justify-center rounded-[2rem] p-5 text-center shadow-lg shadow-black/5 animate-in-up"
+                className="paypal-surface ios-active flex flex-col items-center justify-center rounded-[2rem] p-5 text-center shadow-lg shadow-black/5 animate-in-up text-foreground"
               >
                 <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${item.color} shadow-inner`}>
                   <item.icon className={`h-6 w-6 ${item.iconColor} ${item.animate ? "animate-bounce-slow" : ""}`} />
@@ -3093,12 +3062,14 @@ const Dashboard = () => {
 
       <div className="mt-6 px-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-paypal-dark">Recent activity</h2>
-          <button onClick={() => navigate("/activity")} className="text-sm font-semibold text-paypal-blue">See more</button>
+          <h2 className="text-xl font-bold text-white">Recent activity</h2>
+          <button onClick={() => navigate("/activity")} className="text-sm font-semibold text-white/80 hover:text-white">
+            See more
+          </button>
         </div>
 
         {transactions.length === 0 ? (
-          <p className="py-8 text-center text-muted-foreground">No transactions yet</p>
+          <p className="py-8 text-center text-white/70">No transactions yet</p>
         ) : (
           <div className="paypal-surface divide-y divide-border/70 rounded-3xl">
             {transactions.map((tx) => (
@@ -3165,7 +3136,12 @@ const Dashboard = () => {
           >
             <Users className="h-6 w-6" />
           </button>
-          <button onClick={() => navigate("/send")} className="min-w-0 flex-1 rounded-full bg-paypal-blue py-4 text-center text-base font-bold text-white shadow-xl shadow-paypal-blue/40 transition-transform active:scale-95">Pay</button>
+          <button
+            onClick={() => navigate("/send")}
+            className="min-w-0 flex-1 rounded-full border-2 border-white bg-paypal-blue py-4 text-center text-base font-bold text-white shadow-xl shadow-paypal-blue/40 transition-transform active:scale-95"
+          >
+            Pay
+          </button>
           <button onClick={() => setShowReceiveOptions(true)} className="min-w-0 flex-1 rounded-full border-2 border-paypal-blue bg-white py-4 text-center text-base font-bold text-paypal-blue shadow-lg shadow-black/10 transition-transform active:scale-95">Receive</button>
           <button onClick={openBuyOptions} className="min-w-0 flex-1 rounded-full border-2 border-paypal-blue bg-white py-4 text-center text-base font-bold text-paypal-blue shadow-lg shadow-black/10 transition-transform active:scale-95">Buy</button>
         </div>

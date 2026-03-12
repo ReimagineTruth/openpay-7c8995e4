@@ -39,7 +39,7 @@ interface RecentRecipient extends UserProfile {
 }
 
 const sendSuccessSoundUrl = "https://www.myinstants.com/media/sounds/applepay.mp3";
-const OPENPAY_ICON_URL = "/openpay-o.svg";
+const OPENPAY_ICON_URL = "/openpay-logo.jpg";
 let sendSuccessAudio: HTMLAudioElement | null = null;
 let sendSoundUnlocked = false;
 
@@ -1339,13 +1339,13 @@ const SendMoney = () => {
         {!searchQuery && recentRecipients.length > 0 && (
           <>
             <h2 className="mb-3 font-bold text-white">Recent</h2>
-            <div className="ios-glass overflow-hidden rounded-[2.5rem] mb-6 shadow-xl shadow-black/10 animate-in-up">
+            <div className="paypal-surface overflow-hidden rounded-[2.5rem] mb-6 shadow-xl shadow-black/10 animate-in-up text-foreground">
               {recentRecipients.map((user, i) => (
                 <div
                   key={`${user.id}-${user.last_sent_at}`}
                   onClick={() => handleSelectUser(user)}
                   style={{ animationDelay: `${i * 50}ms` }}
-                  className="ios-active flex w-full items-center gap-4 border-b border-white/5 px-5 py-4 text-left last:border-b-0 hover:bg-white/5 transition cursor-pointer animate-in-fade"
+                  className="ios-active flex w-full items-center gap-4 border-b border-border/70 px-5 py-4 text-left last:border-b-0 hover:bg-secondary/40 transition cursor-pointer animate-in-fade"
                 >
                   {renderAvatar(user, i)}
                   <div className="text-left flex-1">
@@ -1366,7 +1366,7 @@ const SendMoney = () => {
                       e.stopPropagation();
                       void toggleBookmark(user);
                     }}
-                    className="ios-active rounded-full p-2.5 hover:bg-white/10 transition-colors"
+                    className="ios-active rounded-full p-2.5 hover:bg-secondary/40 transition-colors"
                     aria-label={contactIds.includes(user.id) ? "Remove bookmark" : "Save bookmark"}
                   >
                     {contactIds.includes(user.id) ? <BookmarkCheck className="h-5 w-5 text-paypal-blue" /> : <Bookmark className="h-5 w-5 text-muted-foreground/40" />}
@@ -1378,11 +1378,11 @@ const SendMoney = () => {
         )}
 
         <h2 className="mb-4 font-bold text-white">{searchQuery ? "Search results" : "Your contacts"}</h2>
-        <div className="ios-glass overflow-hidden rounded-[2.5rem] shadow-xl shadow-black/10 animate-in-up">
+        <div className="paypal-surface overflow-hidden rounded-[2.5rem] shadow-xl shadow-black/10 animate-in-up text-foreground">
           {isAccountNumberSearch && (
             <>
               {accountLookupLoading && (
-                <div className="flex items-center gap-3 border-b border-white/5 px-5 py-5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-3 border-b border-border/70 px-5 py-5 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Searching account number...</span>
                 </div>
@@ -1390,7 +1390,7 @@ const SendMoney = () => {
               {!accountLookupLoading && accountLookupResult && (
                 <div
                   onClick={() => handleSelectUser(accountLookupResult)}
-                  className="ios-active flex w-full items-center gap-4 border-b border-white/5 px-5 py-4 text-left hover:bg-white/5 transition cursor-pointer animate-in-fade"
+                  className="ios-active flex w-full items-center gap-4 border-b border-border/70 px-5 py-4 text-left hover:bg-secondary/40 transition cursor-pointer animate-in-fade"
                 >
                   {renderAvatar(accountLookupResult, 0)}
                   <div className="text-left flex-1">
@@ -1408,7 +1408,7 @@ const SendMoney = () => {
               key={user.id}
               onClick={() => handleSelectUser(user)}
               style={{ animationDelay: `${i * 30}ms` }}
-              className="ios-active flex w-full items-center gap-4 border-b border-white/5 px-5 py-4 text-left last:border-b-0 hover:bg-white/5 transition cursor-pointer animate-in-fade"
+              className="ios-active flex w-full items-center gap-4 border-b border-border/70 px-5 py-4 text-left last:border-b-0 hover:bg-secondary/40 transition cursor-pointer animate-in-fade"
             >
               {renderAvatar(user, i)}
               <div className="text-left flex-1">
@@ -1428,7 +1428,7 @@ const SendMoney = () => {
                   e.stopPropagation();
                   void toggleBookmark(user);
                 }}
-                className="ios-active rounded-full p-2.5 hover:bg-white/10 transition-colors"
+                className="ios-active rounded-full p-2.5 hover:bg-secondary/40 transition-colors"
                 aria-label={contactIds.includes(user.id) ? "Remove bookmark" : "Save bookmark"}
               >
                 {contactIds.includes(user.id) ? <BookmarkCheck className="h-5 w-5 text-paypal-blue" /> : <Bookmark className="h-5 w-5 text-muted-foreground/40" />}

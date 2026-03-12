@@ -143,7 +143,7 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
     ctx.roundRect(cardX, cardY, cardW, 330, [34, 34, 0, 0]);
     ctx.fill();
 
-    const logo = await loadImage(`${window.location.origin}/openpay-o.svg`);
+    const logo = await loadImage(`${window.location.origin}/openpay-logo.jpg`);
     if (logo) {
       const logoSize = 84;
       ctx.drawImage(logo, canvas.width / 2 - logoSize / 2, 120, logoSize, logoSize);

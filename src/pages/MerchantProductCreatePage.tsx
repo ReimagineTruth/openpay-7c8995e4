@@ -743,7 +743,7 @@ const MerchantProductCreatePage = () => {
                                 bgColor="#f3f8ff"
                                 level="H"
                                 imageSettings={{
-                                  src: "/openpay-o.svg",
+                                  src: "/openpay-logo.jpg",
                                   width: 28,
                                   height: 28,
                                   excavate: true,

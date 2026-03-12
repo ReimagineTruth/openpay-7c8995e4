@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
-const OPENPAY_ICON_URL = "/openpay-o.svg";
+const OPENPAY_ICON_URL = "/openpay-logo.jpg";
 
 const CurrencyConverterPage = () => {
   const navigate = useNavigate();

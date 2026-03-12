@@ -87,7 +87,7 @@ import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { useRealtimePushNotifications } from "./hooks/useRealtimePushNotifications";
 import AppSecurityGate from "./components/AppSecurityGate";
 import AppFooter from "./components/AppFooter";
-import BrandLogo from "./components/BrandLogo";
+import AuthMark from "./components/AuthMark";
 import AppLanguageTranslate from "./components/AppLanguageTranslate";
 import SupportWidget from "./components/SupportWidget";
 import { CookieConsentProvider } from "./contexts/CookieConsentContext";
@@ -222,9 +222,7 @@ const AppRoutes = () => {
       {showRouteSplash && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-gradient-to-b from-paypal-blue to-[#072a7a]">
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10 backdrop-blur-sm">
-              <BrandLogo className="h-14 w-14 text-white" />
-            </div>
+            <AuthMark className="mx-auto mb-6 h-20 w-20" />
             <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
             <p className="mt-1 text-sm text-white/80">Loading page...</p>
             <p className="mt-1 text-xs font-medium tracking-normal text-white/65">Powered by Pi Network</p>

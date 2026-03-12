@@ -92,7 +92,7 @@ type MerchantActivityRow = {
 
 type CustomerProfile = { id: string; full_name: string; username: string | null };
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
-const OPENPAY_ICON_URL = "/openpay-o.svg";
+const OPENPAY_ICON_URL = "/openpay-logo.jpg";
 const MERCHANT_MODE_KEY = "openpay_merchant_mode_v1";
 
 const navItems: {

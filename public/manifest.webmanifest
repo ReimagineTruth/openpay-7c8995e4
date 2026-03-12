@@ -9,15 +9,15 @@
   "theme_color": "#0b4abf",
   "icons": [
     {
-      "src": "/openpay-o.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
+      "src": "/openpay-logo.jpg",
+      "sizes": "400x400",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "/openpay-o.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
+      "src": "/openpay-logo.jpg",
+      "sizes": "400x400",
+      "type": "image/jpeg",
       "purpose": "maskable"
     }
   ]

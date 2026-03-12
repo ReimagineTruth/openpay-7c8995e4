@@ -34,8 +34,8 @@ const showSystemNotification = async (title: string, body: string) => {
       if (registration) {
         await registration.showNotification(title, {
           body,
-          icon: "/openpay-o.svg",
-          badge: "/openpay-o.svg",
+          icon: "/openpay-logo.jpg",
+          badge: "/openpay-logo.jpg",
           tag: "openpay-notification",
         });
         return;
@@ -46,7 +46,7 @@ const showSystemNotification = async (title: string, body: string) => {
   }
 
   // Fallback when service worker is unavailable.
-  new Notification(title, { body, icon: "/openpay-o.svg" });
+  new Notification(title, { body, icon: "/openpay-logo.jpg" });
 };
 
 export const useRealtimePushNotifications = () => {

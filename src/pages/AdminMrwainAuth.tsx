@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import BrandLogo from "@/components/BrandLogo";
+import AuthMark from "@/components/AuthMark";
 import AuthFooter from "@/components/AuthFooter";
 import { ExternalLink } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -88,10 +88,8 @@ const AdminMrwainAuth = () => {
     <div className="min-h-screen bg-gradient-to-b from-paypal-blue to-[#072a7a] px-6 py-10">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-sm flex-col justify-center">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/10 backdrop-blur-sm">
-            <BrandLogo className="h-14 w-14 text-white" />
-          </div>
-          <p className="mb-1 text-lg font-semibold text-white">OpenPay</p>
+          <AuthMark className="mx-auto mb-5 h-32 w-32" />
+          <p className="mb-1 text-2xl font-bold tracking-tight text-white">OpenPay</p>
         </div>
 
         <div className="paypal-surface w-full rounded-3xl p-7 shadow-2xl shadow-black/15">

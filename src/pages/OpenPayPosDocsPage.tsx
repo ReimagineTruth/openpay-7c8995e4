@@ -28,7 +28,7 @@ const OpenPayPosDocsPage = () => {
         : `${window.location.origin}/merchant-checkout?session=${sampleSessionToken}`,
     [sampleSessionToken],
   );
-  const samplePosButtonCode = `<a href="${sampleCheckoutLink}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;background:#0057d8;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700"><img src="/openpay-o.svg" alt="OpenPay" width="16" height="16" style="display:block;border-radius:999px" />Pay at POS</a>`;
+  const samplePosButtonCode = `<a href="${sampleCheckoutLink}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;background:#0057d8;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700"><img src="/openpay-logo.jpg" alt="OpenPay" width="16" height="16" style="display:block;border-radius:999px" />Pay at POS</a>`;
   const samplePosWidgetCode = `<!doctype html>
 <html>
   <body style="margin:0;padding:24px;background:#f8fbff;font-family:Arial,sans-serif">
@@ -202,7 +202,7 @@ const OpenPayPosDocsPage = () => {
                   size={220}
                   level="H"
                   includeMargin
-                  imageSettings={{ src: "/openpay-o.svg", height: 34, width: 34, excavate: true }}
+                  imageSettings={{ src: "/openpay-logo.jpg", height: 34, width: 34, excavate: true }}
                 />
               </div>
               <p className="mt-2 text-xs text-muted-foreground">{sampleAmount} {sampleCurrency}</p>
@@ -298,7 +298,7 @@ const OpenPayPosDocsPage = () => {
                     size={170}
                     level="H"
                     includeMargin
-                    imageSettings={{ src: "/openpay-o.svg", height: 28, width: 28, excavate: true }}
+                    imageSettings={{ src: "/openpay-logo.jpg", height: 28, width: 28, excavate: true }}
                   />
                 </div>
                 <p className="mt-1 text-center text-[10px]">@{sampleMerchant}</p>

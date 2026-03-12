@@ -156,14 +156,14 @@ const RemittanceMerchantPage = () => {
   );
 
   const downloadSafeLogoSrc = useMemo(() => {
-    if (!merchantLogoUrl) return "/openpay-o.svg";
+    if (!merchantLogoUrl) return "/openpay-logo.jpg";
     if (merchantLogoUrl.startsWith("data:")) return merchantLogoUrl;
-    if (typeof window === "undefined") return "/openpay-o.svg";
+    if (typeof window === "undefined") return "/openpay-logo.jpg";
     try {
       const parsed = new URL(merchantLogoUrl, window.location.origin);
-      return parsed.origin === window.location.origin ? parsed.toString() : "/openpay-o.svg";
+      return parsed.origin === window.location.origin ? parsed.toString() : "/openpay-logo.jpg";
     } catch {
-      return "/openpay-o.svg";
+      return "/openpay-logo.jpg";
     }
   }, [merchantLogoUrl]);
 
@@ -649,7 +649,7 @@ const RemittanceMerchantPage = () => {
               level="H"
               includeMargin
               imageSettings={{
-                src: merchantLogoUrl || "/openpay-o.svg",
+                src: merchantLogoUrl || "/openpay-logo.jpg",
                 height: 34,
                 width: 34,
                 excavate: true,

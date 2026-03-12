@@ -71,7 +71,7 @@ const SETTINGS_KEY = "openpay_pos_settings_v1";
 const MERCHANT_MODE_KEY = "openpay_merchant_mode_v1";
 const POS_CURRENCY_PATTERN = /^(PI|[A-Z]{3})$/;
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
-const OPENPAY_ICON_URL = "/openpay-o.svg";
+const OPENPAY_ICON_URL = "/openpay-logo.jpg";
 
 const normalizePosCurrencyCode = (rawCode: string) => {
   const normalized = String(rawCode || "").trim().toUpperCase();
@@ -876,7 +876,7 @@ const MerchantPosPage = () => {
                       level="H"
                       includeMargin
                       imageSettings={{
-                        src: "/openpay-o.svg",
+                        src: "/openpay-logo.jpg",
                         height: 34,
                         width: 34,
                         excavate: true,
@@ -1082,7 +1082,7 @@ const MerchantPosPage = () => {
               level="H"
               includeMargin
               imageSettings={{
-                src: "/openpay-o.svg",
+                src: "/openpay-logo.jpg",
                 height: 28,
                 width: 28,
                 excavate: true,

@@ -48,7 +48,7 @@ const SendInvoice = () => {
   const location = useLocation();
   const { format: formatCurrency, currencies, currency } = useCurrency();
   const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
-  const OPENPAY_ICON_URL = "/openpay-o.svg";
+  const OPENPAY_ICON_URL = "/openpay-logo.jpg";
   const [invoiceCurrencyCode, setInvoiceCurrencyCode] = useState<string>(currency.code);
   const [payCurrencyCode, setPayCurrencyCode] = useState<string>(currency.code);
   const getPiCodeLabel = (code: string) => {

@@ -50,7 +50,7 @@ type PaymentLinkSessionCreate = {
   call_to_action: string;
 };
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
-const OPENPAY_ICON_URL = "/openpay-o.svg";
+const OPENPAY_ICON_URL = "/openpay-logo.jpg";
 
 const COUNTRIES: string[] = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
@@ -567,7 +567,7 @@ const MerchantCheckoutPage = () => {
                         level="H"
                         includeMargin
                         imageSettings={{
-                          src: "/openpay-o.svg",
+                          src: "/openpay-logo.jpg",
                           height: 30,
                           width: 30,
                           excavate: true,
