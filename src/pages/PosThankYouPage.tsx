@@ -61,6 +61,7 @@ const PosThankYouPage = () => {
         // Load session data
         const { data } = await db.rpc("get_public_merchant_checkout_session", { p_session_token: sessionToken });
         const row = Array.isArray(data) ? data[0] : data;
+        const resolvedSessionId = row ? String(row.session_id || "") : "";
         if (row) {
           setSessionData({
             session_id: String(row.session_id || ""),
@@ -71,40 +72,70 @@ const PosThankYouPage = () => {
           });
         }
 
-        // Load payment details with customer information
-        const { data: paymentData } = await db
-          .from("merchant_payments")
-          .select(`
-            payment_id,
-            transaction_id,
-            created_at,
-            status,
-            customer_name,
-            customer_email,
-            customer_phone,
-            payer_user_id,
-            payer_name,
-            payer_username,
-            payer_avatar_url
-          `)
-          .eq("session_token", sessionToken)
-          .maybeSingle();
+        if (resolvedSessionId) {
+          const { data: paymentRow } = await db
+            .from("merchant_payments")
+            .select("id, transaction_id, buyer_user_id, created_at, status, amount, currency")
+            .eq("session_id", resolvedSessionId)
+            .maybeSingle();
 
-        if (paymentData) {
-          setPaymentDetails({
-            payment_id: paymentData.payment_id,
-            transaction_id: paymentData.transaction_id || "",
-            created_at: paymentData.created_at,
-            status: paymentData.status,
-            customer_details: paymentData.payer_user_id ? {
-              user_id: paymentData.payer_user_id,
-              full_name: paymentData.payer_name || paymentData.customer_name || "Customer",
-              username: paymentData.payer_username,
-              email: paymentData.customer_email,
-              phone: paymentData.customer_phone,
-              avatar_url: paymentData.payer_avatar_url,
-            } : null,
-          });
+          let buyerProfile: { full_name: string; username: string | null; avatar_url: string | null } | null = null;
+          if (paymentRow?.buyer_user_id) {
+            const { data: profileRow } = await db
+              .from("profiles")
+              .select("full_name, username, avatar_url")
+              .eq("id", paymentRow.buyer_user_id)
+              .maybeSingle();
+            if (profileRow) {
+              buyerProfile = {
+                full_name: String(profileRow.full_name || "Customer"),
+                username: profileRow.username ? String(profileRow.username) : null,
+                avatar_url: profileRow.avatar_url ? String(profileRow.avatar_url) : null,
+              };
+            }
+          }
+
+          let privateCustomer: { customer_name: string | null; customer_email: string | null; metadata: any } | null = null;
+          if (isMerchantOrigin) {
+            const { data: privateSession } = await db
+              .from("merchant_checkout_sessions")
+              .select("customer_name, customer_email, metadata")
+              .eq("id", resolvedSessionId)
+              .maybeSingle();
+            if (privateSession) {
+              privateCustomer = {
+                customer_name: privateSession.customer_name ? String(privateSession.customer_name) : null,
+                customer_email: privateSession.customer_email ? String(privateSession.customer_email) : null,
+                metadata: (privateSession as any).metadata ?? null,
+              };
+            }
+          }
+
+          if (paymentRow) {
+            const customerName = privateCustomer?.customer_name || buyerProfile?.full_name || "Customer";
+            const customerEmail = privateCustomer?.customer_email || null;
+            const customerPhone =
+              privateCustomer?.metadata && typeof privateCustomer.metadata === "object"
+                ? String((privateCustomer.metadata as any).customer_phone || "") || null
+                : null;
+
+            setPaymentDetails({
+              payment_id: String(paymentRow.id),
+              transaction_id: paymentRow.transaction_id ? String(paymentRow.transaction_id) : "",
+              created_at: String(paymentRow.created_at),
+              status: String(paymentRow.status || "succeeded"),
+              customer_details: paymentRow.buyer_user_id
+                ? {
+                    user_id: String(paymentRow.buyer_user_id),
+                    full_name: customerName,
+                    username: buyerProfile?.username ?? null,
+                    email: customerEmail,
+                    phone: customerPhone,
+                    avatar_url: buyerProfile?.avatar_url ?? null,
+                  }
+                : null,
+            });
+          }
         }
       } catch (error) {
         console.error("Failed to load POS session:", error);

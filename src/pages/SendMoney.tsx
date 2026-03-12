@@ -131,18 +131,19 @@ const SendMoney = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { currencies, currency, setCurrency, format: formatCurrency } = useCurrency();
-  const checkoutSessionToken = searchParams.get("checkout_session") || "";
+	  const { currencies, currency, setCurrency, format: formatCurrency } = useCurrency();
+	  const checkoutSessionToken = searchParams.get("checkout_session") || "";
   const checkoutCustomerName = searchParams.get("checkout_customer_name") || "";
   const checkoutCustomerEmail = searchParams.get("checkout_customer_email") || "";
-  const checkoutCustomerPhone = searchParams.get("checkout_customer_phone") || "";
-  const checkoutCustomerAddress = searchParams.get("checkout_customer_address") || "";
-  const posSessionToken = searchParams.get("pos_session") || "";
-  const formatShortText = (value: string, head = 28, tail = 18) => {
-    const cleaned = value.trim();
-    if (cleaned.length <= head + tail + 3) return cleaned;
-    return `${cleaned.slice(0, head)}...${cleaned.slice(-tail)}`;
-  };
+	  const checkoutCustomerPhone = searchParams.get("checkout_customer_phone") || "";
+	  const checkoutCustomerAddress = searchParams.get("checkout_customer_address") || "";
+	  const posSessionToken = searchParams.get("pos_session") || "";
+	  const effectiveCheckoutSessionToken = checkoutSessionToken || posSessionToken;
+	  const formatShortText = (value: string, head = 28, tail = 18) => {
+	    const cleaned = value.trim();
+	    if (cleaned.length <= head + tail + 3) return cleaned;
+	    return `${cleaned.slice(0, head)}...${cleaned.slice(-tail)}`;
+	  };
   const formatAmountWithCommas = (value: number, maximumFractionDigits = 2) => {
     if (!Number.isFinite(value)) return "0";
     return new Intl.NumberFormat("en-US", {
@@ -442,15 +443,15 @@ const SendMoney = () => {
         return;
       }
 
-      if (checkoutSessionToken) {
-        const { data: checkoutTxId, error: checkoutError } = await (supabase as any).rpc("pay_merchant_checkout_with_wallet", {
-          p_session_token: checkoutSessionToken,
-          p_note: activeNote || "Completed via OpenPay wallet /send flow",
-          p_customer_name: checkoutCustomerName || null,
-          p_customer_email: checkoutCustomerEmail || null,
-          p_customer_phone: checkoutCustomerPhone || null,
-          p_customer_address: checkoutCustomerAddress || null,
-        });
+	      if (effectiveCheckoutSessionToken) {
+	        const { data: checkoutTxId, error: checkoutError } = await (supabase as any).rpc("pay_merchant_checkout_with_wallet", {
+	          p_session_token: effectiveCheckoutSessionToken,
+	          p_note: activeNote || "Completed via OpenPay wallet /send flow",
+	          p_customer_name: checkoutCustomerName || null,
+	          p_customer_email: checkoutCustomerEmail || null,
+	          p_customer_phone: checkoutCustomerPhone || null,
+	          p_customer_address: checkoutCustomerAddress || null,
+	        });
 
         if (checkoutError) {
           setLoading(false);
@@ -458,13 +459,13 @@ const SendMoney = () => {
           return;
         }
 
-        const txId = String(checkoutTxId || "");
-        const isPosRedirect = isPosCheckoutSession || (typeof activeNote === "string" && activeNote.toLowerCase().includes("pos"));
-        const nextPath = isPosRedirect ? "/pos-thank-you" : "/merchant-checkout/thank-you";
-        navigate(`${nextPath}?session=${encodeURIComponent(checkoutSessionToken)}&tx=${encodeURIComponent(txId)}`, { replace: true });
-        setLoading(false);
-        return;
-      }
+	        const txId = String(checkoutTxId || "");
+	        const isPosRedirect = isPosCheckoutSession || (typeof activeNote === "string" && activeNote.toLowerCase().includes("pos"));
+	        const nextPath = isPosRedirect ? "/pos-thank-you" : "/merchant-checkout/thank-you";
+	        navigate(`${nextPath}?session=${encodeURIComponent(effectiveCheckoutSessionToken)}&tx=${encodeURIComponent(txId)}`, { replace: true });
+	        setLoading(false);
+	        return;
+	      }
 
       const transferViaSecureRpcFallback = async () => {
         const { data: txId, error: rpcError } = await supabase.rpc("transfer_funds_authenticated", {
@@ -687,26 +688,26 @@ const SendMoney = () => {
       }
     }
 
-    if (checkoutSessionToken) {
-      const { data: checkoutPayload } = await (supabase as any).rpc("get_public_merchant_checkout_session", {
-        p_session_token: checkoutSessionToken,
-      });
-      const checkoutRow = Array.isArray(checkoutPayload) ? checkoutPayload[0] : checkoutPayload;
-      const typedCheckout: {
-        total_amount?: number;
-        currency?: string;
-        merchant_user_id?: string;
-        items?: Array<{ item_name?: string }>;
-      } = (checkoutRow || {}) as any;
-      if (checkoutRow) {
-        const checkoutAmount = Number(typedCheckout.total_amount || 0);
-        const checkoutCurrency = String(typedCheckout.currency || "").toUpperCase();
-        const checkoutMerchantId = String(typedCheckout.merchant_user_id || "");
-        const checkoutItems = Array.isArray(typedCheckout.items) ? typedCheckout.items : [];
-        const firstItemName = String(checkoutItems[0]?.item_name || "").toLowerCase();
-        const qrNoteHint = String(searchParams.get("note") || "").toLowerCase();
-        const isPosHint = firstItemName.includes("pos payment") || qrNoteHint.includes("pos");
-        setIsPosCheckoutSession(isPosHint);
+	    if (effectiveCheckoutSessionToken) {
+	      const { data: checkoutPayload } = await (supabase as any).rpc("get_public_merchant_checkout_session", {
+	        p_session_token: effectiveCheckoutSessionToken,
+	      });
+	      const checkoutRow = Array.isArray(checkoutPayload) ? checkoutPayload[0] : checkoutPayload;
+	      const typedCheckout: {
+	        total_amount?: number;
+	        currency?: string;
+	        merchant_user_id?: string;
+	        items?: Array<{ item_name?: string }>;
+	      } = (checkoutRow || {}) as any;
+	      if (checkoutRow) {
+	        const checkoutAmount = Number(typedCheckout.total_amount || 0);
+	        const checkoutCurrency = String(typedCheckout.currency || "").toUpperCase();
+	        const checkoutMerchantId = String(typedCheckout.merchant_user_id || "");
+	        const checkoutItems = Array.isArray(typedCheckout.items) ? typedCheckout.items : [];
+	        const firstItemName = String(checkoutItems[0]?.item_name || "").toLowerCase();
+	        const qrNoteHint = String(searchParams.get("note") || "").toLowerCase();
+	        const isPosHint = firstItemName.includes("pos payment") || qrNoteHint.includes("pos");
+	        setIsPosCheckoutSession(isPosHint);
 
         if (checkoutAmount > 0) {
           setAmount(checkoutAmount.toFixed(2));
@@ -722,42 +723,8 @@ const SendMoney = () => {
             setStep("amount");
           }
         }
-      }
-    }
-
-    // Handle POS session token
-    if (posSessionToken) {
-      const { data: posPayload } = await (supabase as any)
-        .from("merchant_checkout_sessions")
-        .select("*")
-        .eq("session_token", posSessionToken)
-        .eq("status", "open")
-        .gte("expires_at", new Date().toISOString())
-        .maybeSingle();
-
-      if (posPayload) {
-        const posAmount = Number(posPayload.total_amount || 0);
-        const posCurrency = String(posPayload.currency || "").toUpperCase();
-        const posMerchantId = String(posPayload.merchant_user_id || "");
-        
-        setIsPosCheckoutSession(true);
-        
-        if (posAmount > 0) {
-          setAmount(posAmount.toFixed(2));
-        }
-        if (posCurrency) {
-          const foundCurrency = currencies.find((c) => c.code === posCurrency);
-          if (foundCurrency) setCurrency(foundCurrency);
-        }
-        if (posMerchantId && profiles) {
-          const merchantProfile = profiles.find((p) => p.id === posMerchantId);
-          if (merchantProfile) {
-            setSelectedUser(merchantProfile);
-            setStep("amount");
-          }
-        }
-      }
-    }
+	      }
+	    }
 
     const fallbackPurposes = [
       { id: "1", name: "Rent", category: "Living Expenses", icon: "home", color: "blue" },

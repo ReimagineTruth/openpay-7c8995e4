@@ -18,25 +18,25 @@ const extractQrPayload = (rawValue: string) => {
   const normalizeUsername = (input: string | null | undefined) =>
     (input || "").trim().replace(/^@+/, "").toLowerCase();
 
-  try {
-    const parsed = new URL(value);
-    const uidOrTo = parsed.searchParams.get("uid") || parsed.searchParams.get("to");
-    const usernameParam = parsed.searchParams.get("username");
-    const amount = parsed.searchParams.get("amount") || "";
-    const currencyCode = (parsed.searchParams.get("currency") || "").toUpperCase();
-    const note = parsed.searchParams.get("note") || "";
-    
-    // Check if this is a public payment QR code
-    const isPublicPayment = parsed.protocol.toLowerCase() === "openpay:" && parsed.hostname.toLowerCase() === "public-payment";
-    
-    // Check if this is a POS QR code (different from checkout)
-    const isPosPayment = parsed.protocol.toLowerCase() === "openpay-pos:" && parsed.hostname.toLowerCase() === "checkout";
-    
-    // Check if this is a POS payment QR code in openpay://pay format
-    const isPosPayFormat = parsed.protocol.toLowerCase() === "openpay:" && 
-                           parsed.hostname.toLowerCase() === "pay" && 
-                           (parsed.searchParams.get("note")?.toLowerCase().includes("pos") || 
-                            parsed.searchParams.get("note")?.toLowerCase().includes("payment"));
+	  try {
+	    const parsed = new URL(value);
+	    const uidOrTo = parsed.searchParams.get("uid") || parsed.searchParams.get("to");
+	    const usernameParam = parsed.searchParams.get("username");
+	    const amount = parsed.searchParams.get("amount") || "";
+	    const currencyCode = (parsed.searchParams.get("currency") || "").toUpperCase();
+	    const note = parsed.searchParams.get("note") || "";
+	    const hasCheckoutSessionParam = Boolean(parsed.searchParams.get("session") || parsed.searchParams.get("checkout_session"));
+	    
+	    // Check if this is a public payment QR code
+	    const isPublicPayment = parsed.protocol.toLowerCase() === "openpay:" && parsed.hostname.toLowerCase() === "public-payment";
+	    
+	    // Check if this is a POS QR code (different from checkout)
+	    const isPosPayment = parsed.protocol.toLowerCase() === "openpay-pos:" && parsed.hostname.toLowerCase() === "checkout";
+	    
+	    // Check if this is a POS payment QR code in openpay://pay format
+	    const isPosPayFormat = parsed.protocol.toLowerCase() === "openpay:" && 
+	                           parsed.hostname.toLowerCase() === "pay" && 
+	                           (hasCheckoutSessionParam || parsed.searchParams.get("note")?.toLowerCase().includes("pos"));
     
     // Check if this is a regular checkout link
     const isCheckoutLink = parsed.protocol.toLowerCase() === "openpay:" && 
@@ -56,24 +56,24 @@ const extractQrPayload = (rawValue: string) => {
       isCheckoutLink
     });
     
-    // Extract session tokens differently for POS vs checkout
-    let checkoutSession = null;
-    let apiKeyType = null;
-    
-    if (isPosPayment) {
-      // POS QR codes have session token in pathname
-      checkoutSession = parsed.pathname.replace(/^\/+/, "");
-      apiKeyType = "pos";
-      console.log("POS Payment detected:", { checkoutSession, apiKeyType });
-    } else if (isPosPayFormat) {
-      // POS payment in openpay://pay format - no session, direct payment
-      checkoutSession = null;
-      apiKeyType = "pos";
-      console.log("POS Pay Format detected:", { checkoutSession, apiKeyType });
-    } else if (isCheckoutLink) {
-      // Checkout links have session in query params
-      checkoutSession = parsed.searchParams.get("session") || parsed.searchParams.get("checkout_session");
-      apiKeyType = "checkout";
+	    // Extract session tokens differently for POS vs checkout
+	    let checkoutSession = null;
+	    let apiKeyType = null;
+	    
+	    if (isPosPayment) {
+	      // POS QR codes have session token in pathname
+	      checkoutSession = parsed.pathname.replace(/^\/+/, "");
+	      apiKeyType = "pos";
+	      console.log("POS Payment detected:", { checkoutSession, apiKeyType });
+	    } else if (isPosPayFormat) {
+	      // POS payment in openpay://pay format - prefer checkout_session/session param
+	      checkoutSession = parsed.searchParams.get("checkout_session") || parsed.searchParams.get("session");
+	      apiKeyType = "pos";
+	      console.log("POS Pay Format detected:", { checkoutSession, apiKeyType });
+	    } else if (isCheckoutLink) {
+	      // Checkout links have session in query params
+	      checkoutSession = parsed.searchParams.get("session") || parsed.searchParams.get("checkout_session");
+	      apiKeyType = "checkout";
       console.log("Checkout Link detected:", { checkoutSession, apiKeyType });
     } else {
       // Regular checkout session
@@ -432,22 +432,23 @@ const QrScannerPage = () => {
       
       console.log("Extracted QR Payload:", payload);
       
-      // Handle POS payment QR codes - original behavior
-      if (payload.posPayment) {
-        console.log("Handling POS payment QR code");
-        setScanHint("POS payment QR detected. Opening payment page...");
-        playScanBeep();
-        await stopScanner();
-        
-        // Navigate to send payment page with POS details
-        const params = new URLSearchParams();
-        if (payload.checkoutSession) {
-          params.set("pos_session", payload.checkoutSession);
-        }
-        if (payload.uid) {
-          params.set("to", payload.uid);
-        }
-        if (payload.username) {
+	      // Handle POS payment QR codes - original behavior
+	      if (payload.posPayment) {
+	        console.log("Handling POS payment QR code");
+	        setScanHint("POS payment QR detected. Opening payment page...");
+	        playScanBeep();
+	        await stopScanner();
+	        
+	        // Navigate to send payment page with POS details
+	        const params = new URLSearchParams();
+	        if (payload.checkoutSession) {
+	          // Use checkout_session so /send triggers pay_merchant_checkout_with_wallet and completes POS workflow
+	          params.set("checkout_session", payload.checkoutSession);
+	        }
+	        if (payload.uid) {
+	          params.set("to", payload.uid);
+	        }
+	        if (payload.username) {
           params.set("username", payload.username);
         }
         params.set("note", payload.note || "POS Payment");
