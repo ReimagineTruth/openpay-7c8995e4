@@ -2215,13 +2215,21 @@ const Dashboard = () => {
                       <AlertCircle className="h-5 w-5 text-orange-600" />
                     )}
                     <div className="flex-1">
-                      <p className="text-sm font-semibold">
+                      <p className={`text-sm font-semibold ${
+                        kycStatus === 'approved' ? 'text-green-800' :
+                        kycStatus === 'pending' || kycStatus === 'under_review' ? 'text-blue-800' :
+                        kycStatus === 'rejected' ? 'text-red-800' : 'text-orange-800'
+                      }`}>
                         KYC Status: {kycStatus === 'approved' ? 'Verified' : 
                                    kycStatus === 'pending' ? 'Submitted' :
                                    kycStatus === 'under_review' ? 'Under Review' :
                                    kycStatus === 'rejected' ? 'Rejected' : 'Required'}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className={`text-xs ${
+                        kycStatus === 'approved' ? 'text-green-700' :
+                        kycStatus === 'pending' || kycStatus === 'under_review' ? 'text-blue-700' :
+                        kycStatus === 'rejected' ? 'text-red-700' : 'text-orange-700'
+                      }`}>
                         {kycStatus === 'approved' ? 'You can apply for loans up to your available credit limit.' :
                          kycStatus === 'pending' || kycStatus === 'under_review' ? 'Your KYC is being reviewed. Loan applications require KYC approval.' :
                          kycStatus === 'rejected' ? 'KYC was rejected. Please contact support for assistance.' :
@@ -2293,7 +2301,7 @@ const Dashboard = () => {
                   onClick={() => setLoanPaymentMethod("wallet")}
                   className={`h-10 rounded-xl border text-sm font-semibold ${loanPaymentMethod === "wallet" ? "border-paypal-blue bg-paypal-blue text-white" : "border-border bg-white text-foreground"}`}
                 >
-                  Pi Payment
+                  OpenPay Balance
                 </button>
                 <button
                   type="button"
