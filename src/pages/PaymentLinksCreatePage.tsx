@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Bell, Copy, ExternalLink, FileText, Link2, Menu, MessageCircle, Plus, ShoppingCart, Store, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -112,6 +112,7 @@ const PaymentLinksCreatePage = () => {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [pendingDeleteLink, setPendingDeleteLink] = useState<PaymentLinkRow | null>(null);
+  const appliedQueryDefaultsRef = useRef(false);
 
   const loadPaymentLinks = async (userId: string) => {
     const { data } = await db
@@ -160,6 +161,96 @@ const PaymentLinksCreatePage = () => {
 
     void boot();
   }, [navigate]);
+
+  useEffect(() => {
+    if (appliedQueryDefaultsRef.current) return;
+
+    const requestedTab = String(searchParams.get("share_tab") || "").trim();
+    const requestedType = String(searchParams.get("link_type") || "").trim();
+    const requestedTitle = String(searchParams.get("title") || "").trim();
+    const requestedDescription = String(searchParams.get("description") || "").trim();
+    const requestedCurrency = String(searchParams.get("currency") || "").trim();
+    const requestedAmount = String(searchParams.get("amount") || "").trim();
+    const requestedCta = String(searchParams.get("cta") || "").trim();
+    const requestedBilling = String(searchParams.get("billing") || "").trim();
+    const requestedButtonStyle = String(searchParams.get("button_style") || "").trim();
+    const requestedButtonSize = String(searchParams.get("button_size") || "").trim();
+
+    const hasAny =
+      Boolean(requestedTab) ||
+      Boolean(requestedType) ||
+      Boolean(requestedTitle) ||
+      Boolean(requestedDescription) ||
+      Boolean(requestedCurrency) ||
+      Boolean(requestedAmount) ||
+      Boolean(requestedCta) ||
+      Boolean(requestedBilling) ||
+      Boolean(requestedButtonStyle) ||
+      Boolean(requestedButtonSize);
+    if (!hasAny) return;
+
+    appliedQueryDefaultsRef.current = true;
+
+    if (["button", "widget", "iframe", "direct", "qr"].includes(requestedTab)) {
+      setShareTab(requestedTab as ShareTab);
+    }
+
+    if (requestedType === "custom_amount") {
+      setType("custom_amount");
+      setShowCreateForm(true);
+    } else if (requestedType === "products") {
+      setType("products");
+      setShowCreateForm(true);
+    }
+
+    if (requestedBilling === "subscription") {
+      setBillingType("subscription");
+      setShowCreateForm(true);
+    } else if (requestedBilling === "one_time") {
+      setBillingType("one_time");
+      setShowCreateForm(true);
+    }
+
+    if (requestedTitle) {
+      const safeTitle = requestedTitle.slice(0, 64);
+      setTitle(safeTitle);
+      setShareLinkTitle(safeTitle);
+      setShowCreateForm(true);
+    }
+
+    if (requestedDescription) {
+      setDescription(requestedDescription.slice(0, 2048));
+      setShowCreateForm(true);
+    }
+
+    if (requestedCurrency) {
+      setCurrency(requestedCurrency.toUpperCase().slice(0, 8));
+      setShowCreateForm(true);
+    }
+
+    if (requestedAmount) {
+      const parsed = Number(requestedAmount);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        setCustomAmount(String(Math.round(parsed * 100) / 100));
+        setShowCreateForm(true);
+      }
+    }
+
+    if (requestedCta) {
+      setCallToAction(requestedCta.slice(0, 24));
+      setShowCreateForm(true);
+    }
+
+    if (requestedButtonStyle && ["default", "soft", "dark"].includes(requestedButtonStyle)) {
+      setButtonStyle(requestedButtonStyle as any);
+      setShowCreateForm(true);
+    }
+
+    if (requestedButtonSize && ["small", "medium", "large"].includes(requestedButtonSize)) {
+      setButtonSize(requestedButtonSize as any);
+      setShowCreateForm(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!products.length) return;

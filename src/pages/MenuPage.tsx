@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
-import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins } from "lucide-react";
+import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer } from "lucide-react";
 import { toast } from "sonner";
 import { clearAllAppSecurityUnlocks } from "@/lib/appSecurity";
 import { canAccessRemittanceMerchant, isRemittanceUiEnabled } from "@/lib/remittanceAccess";
@@ -188,14 +188,15 @@ const MenuPage = () => {
       layout: "grid-card",
       color: "bg-blue-50 dark:bg-blue-950/30",
       textColor: "text-blue-900 dark:text-blue-100",
-      items: [
-        { icon: Store, label: "Merchant Portal", action: () => navigate("/merchant-onboarding") },
-        { icon: Store, label: "Product Catalog", action: () => navigate("/merchant-products") },
-        { icon: Store, label: "Merchant POS", action: () => navigate("/merchant-pos") },
-        { icon: FileText, label: "Payment Link Creator", action: () => navigate("/payment-links/create") },
-        ...(remittanceUiEnabled
-          ? [{
-              icon: Store,
+        items: [
+          { icon: Store, label: "Merchant Portal", action: () => navigate("/merchant-onboarding") },
+          { icon: Store, label: "Product Catalog", action: () => navigate("/merchant-products") },
+          { icon: Store, label: "Merchant POS", action: () => navigate("/merchant-pos") },
+          { icon: FileText, label: "Payment Link Creator", action: () => navigate("/payment-links/create") },
+          { icon: Pointer, label: "Buttons", subtitle: "OpenPay", action: () => navigate("/buttons") },
+          ...(remittanceUiEnabled
+            ? [{
+                icon: Store,
               label: "Remittance Center",
               action: () => {
                 if (hasRemittanceAccess) {

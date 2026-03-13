@@ -39,6 +39,12 @@ import ProfilePage from "./pages/ProfilePage";
 import AffiliatePage from "./pages/AffiliatePage";
 import MiningPage from "./pages/MiningPage";
 import StakingPage from "./pages/StakingPage";
+import ButtonsPage from "./pages/ButtonsPage";
+import ButtonsPaymentLinksPage from "./pages/buttons/ButtonsPaymentLinksPage";
+import ButtonsCartPage from "./pages/buttons/ButtonsCartPage";
+import ButtonsDonatePage from "./pages/buttons/ButtonsDonatePage";
+import ButtonsSubscribePage from "./pages/buttons/ButtonsSubscribePage";
+import ButtonsEmbedsPage from "./pages/buttons/ButtonsEmbedsPage";
 import OpenPayGuidePage from "./pages/OpenPayGuidePage";
 import PublicLedgerPage from "./pages/PublicLedgerPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
@@ -175,6 +181,12 @@ const AppRoutes = () => {
         <Route path="/affiliate" element={<AffiliatePage />} />
         <Route path="/mining" element={<MiningPage />} />
         <Route path="/staking" element={<StakingPage />} />
+        <Route path="/buttons" element={<ButtonsPage />} />
+        <Route path="/buttons/payment-links" element={<ButtonsPaymentLinksPage />} />
+        <Route path="/buttons/cart" element={<ButtonsCartPage />} />
+        <Route path="/buttons/donate" element={<ButtonsDonatePage />} />
+        <Route path="/buttons/subscribe" element={<ButtonsSubscribePage />} />
+        <Route path="/buttons/embeds" element={<ButtonsEmbedsPage />} />
         <Route path="/ledger" element={<PublicLedgerPage />} />
         <Route path="/openledger" element={<Navigate to="/ledger" replace />} />
         <Route path="/announcements" element={<AnnouncementsPage />} />
