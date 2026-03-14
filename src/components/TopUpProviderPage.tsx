@@ -128,7 +128,7 @@ const TopUpProviderPage = ({
             <button
               type="button"
               onClick={handleProceed}
-              className="paypal-surface w-full max-w-md rounded-md border border-border bg-white py-3 text-center text-base font-semibold text-foreground shadow-sm"
+              className="paypal-surface w-full max-w-md rounded-md border border-border bg-blue-50 py-3 text-center text-base font-semibold text-blue-900 shadow-sm hover:bg-blue-100 transition-colors"
             >
               {providerUrl ? `Pay with ${providerName}` : normalizedAddress ? `Copy ${providerName} Address` : providerName}
             </button>
@@ -144,7 +144,7 @@ const TopUpProviderPage = ({
           <div className="mt-5 rounded-2xl border border-border bg-white p-4">
             <p className="text-center text-xs font-semibold text-muted-foreground">Deposit {providerName}</p>
             <div className="mt-4 flex flex-col items-center gap-4">
-              <div className="rounded-2xl bg-white p-3 shadow-sm">
+              <div className="rounded-2xl bg-blue-50 p-3 shadow-sm border border-blue-200">
                 <QRCodeSVG
                   value={normalizedAddress}
                   size={220}
@@ -175,7 +175,7 @@ const TopUpProviderPage = ({
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 w-full rounded-2xl"
+                className="h-11 w-full rounded-2xl bg-blue-50 border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors"
                 onClick={() => {
                   void navigator.clipboard.writeText(normalizedAddress).then(
                     () => toast.success(`${providerName} address copied`),

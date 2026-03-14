@@ -89,7 +89,7 @@ const TopUpSolanaPay = () => {
           You will receive {usdDisplay} OPEN USD (1 USDC = 1 OPEN USD)
         </p>
 
-        <div className="mt-5 rounded-2xl border border-border bg-white p-4">
+        <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4">
           <p className="text-center text-xs font-semibold text-muted-foreground">Pay with Solana Pay</p>
           <div className="mt-3 rounded-xl border border-border bg-muted/10 p-3 text-center">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Merchant wallet</p>
@@ -137,7 +137,7 @@ const TopUpSolanaPay = () => {
               <button
                 type="button"
                 disabled={!canPay}
-                className="paypal-surface w-full max-w-md rounded-md border border-border bg-white py-3 text-center text-base font-semibold text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                className="paypal-surface w-full max-w-md rounded-md border border-border bg-blue-50 py-3 text-center text-base font-semibold text-blue-900 shadow-sm hover:bg-blue-100 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Pay with Solana Pay
               </button>
@@ -146,7 +146,7 @@ const TopUpSolanaPay = () => {
         </div>
 
         {signature ? (
-          <div className="mt-4 rounded-2xl border border-border bg-white p-4">
+          <div className="mt-4 rounded-2xl border border-border bg-blue-50 p-4">
             <p className="text-xs font-semibold text-muted-foreground">Transaction signature</p>
             <p className="mt-1 break-all text-sm font-semibold text-foreground">{signature}</p>
             <Button
@@ -187,7 +187,7 @@ const TopUpSolanaPay = () => {
         </div>
 
         {paymentCompleted && (
-          <div className="mt-5 rounded-2xl border border-border bg-white p-4">
+          <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4">
             <TopUpAccountDetails
               providerName="Solana Pay"
               amount={safeUsdAmount}

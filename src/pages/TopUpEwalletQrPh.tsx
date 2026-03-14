@@ -95,7 +95,7 @@ const TopUpEwalletQrPh = () => {
           OPEN USD to receive: {openUsdDisplay} OPEN USD
         </p>
 
-        <div className="mt-5 flex justify-center rounded-2xl border border-border bg-white p-4">
+        <div className="mt-5 flex justify-center rounded-2xl border border-border bg-blue-50 p-4">
           <QRCodeSVG
             key={`${payQrPhUrl}-plain`}
             value={payQrPhUrl}
@@ -166,7 +166,7 @@ const TopUpEwalletQrPh = () => {
         </Button>
 
         {paymentCompleted && (
-          <div className="mt-5 rounded-2xl border border-border bg-white p-4">
+          <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4">
             <TopUpAccountDetails providerName="Ewallet QR PH" amount={roundedOpenUsdAmount} submitLabel="Submit Ewallet Top Up" />
           </div>
         )}
@@ -188,7 +188,7 @@ const TopUpEwalletQrPh = () => {
           <DialogDescription className="text-sm text-muted-foreground">
             Embedded checkout for: {payQrPhUrl}
           </DialogDescription>
-          <div className="mt-2 rounded-xl border border-border bg-white p-2">
+          <div className="mt-2 rounded-xl border border-border bg-blue-50 p-2">
             <iframe
               src={payQrPhUrl}
               title="Pay QR PH Embed"

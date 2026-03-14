@@ -157,7 +157,7 @@ const TopUpPaypal = () => {
         </p>
 
         {safeUsdAmount > 0 && (
-          <div ref={paypalSectionRef} className="mt-5 rounded-2xl border border-border bg-white p-4">
+          <div ref={paypalSectionRef} className="mt-5 rounded-2xl border border-border bg-blue-50 p-4">
             <p className="text-center text-xs font-semibold text-muted-foreground">Pay with PayPal</p>
             {!safetyAccepted ? (
               <div className="mt-3 flex justify-center">
@@ -241,7 +241,7 @@ const TopUpPaypal = () => {
         </Button>
 
         {paymentCompleted && (
-          <div className="mt-5 rounded-2xl border border-border bg-white p-4">
+          <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4">
             <TopUpAccountDetails providerName="PayPal" amount={safeUsdAmount} submitLabel="Submit PayPal Top Up" />
           </div>
         )}

@@ -360,7 +360,7 @@ const TopUp = () => {
         <p className="mt-2 text-center text-sm font-semibold text-foreground">
           OPEN USD to receive: {safeAmount.toFixed(2)} OPEN USD
         </p>
-        <div className="mt-5 rounded-2xl border border-border bg-white p-4 text-center">
+        <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4 text-center">
           <p className="text-xs text-muted-foreground">Enter amount to add - OPEN USD</p>
           <div className="mt-3 flex justify-center">
             <Input
@@ -379,7 +379,7 @@ const TopUp = () => {
         </div>
 
         {safeAmount > 0 && (
-          <div ref={piSectionRef} className="mt-5 rounded-2xl border border-border bg-white p-4">
+          <div ref={piSectionRef} className="mt-5 rounded-2xl border border-border bg-blue-50 p-4">
             <p className="text-center text-xs font-semibold text-muted-foreground">Pay with Pi Payment</p>
             <div className="mt-3 flex justify-center">
               <Button
@@ -400,7 +400,7 @@ const TopUp = () => {
         </p>
 
         {paymentCompleted && (
-          <div className="mt-5 rounded-2xl border border-border bg-white p-4">
+          <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4">
             <TopUpAccountDetails providerName="Pi Payment" amount={safeAmount} submitLabel="Submit Pi Top Up Request" />
           </div>
         )}
