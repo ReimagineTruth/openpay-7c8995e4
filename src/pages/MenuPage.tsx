@@ -177,6 +177,7 @@ const MenuPage = () => {
         { icon: Wallet, label: "Wallet", action: () => navigate("/dashboard") },
         { icon: TrendingUp, label: "Analytics", action: () => navigate("/dashboard?section=analytics") },
         { icon: Users, label: "User profile", action: () => navigate("/profile") },
+        { icon: ShieldCheck, label: "Two-Factor Auth", action: () => navigate("/two-factor") },
         { icon: UserCheck, label: "KYC Verification", action: () => navigate("/kyc") },
         { icon: CreditCard, label: "Virtual Card", action: () => navigate("/virtual-card") },
         { icon: ArrowLeftRight, label: "Currency converter", action: () => navigate("/currency-converter") },

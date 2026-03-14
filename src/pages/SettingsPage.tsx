@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, LogOut } from "lucide-react";
+import { ArrowLeft, LogOut, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -329,6 +329,13 @@ const SettingsPage = () => {
           className="mb-4 w-full rounded-2xl border border-border/70 bg-secondary/60 px-3 py-3 text-left font-semibold text-paypal-blue hover:bg-secondary"
         >
           Open Profile
+        </button>
+        <button
+          onClick={() => navigate("/two-factor")}
+          className="mb-4 w-full rounded-2xl border border-border/70 bg-secondary/60 px-3 py-3 text-left font-semibold text-paypal-blue hover:bg-secondary"
+        >
+          <Shield className="h-4 w-4 mr-2" />
+          Two-Factor Authentication
         </button>
         <button
           onClick={handleEnableNotifications}

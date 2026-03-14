@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
@@ -172,8 +173,7 @@ const AdminMrwainAuth = () => {
               required
               className="h-12 rounded-2xl border-white/70 bg-white"
             />
-            <Input
-              type="password"
+            <PasswordInput
               placeholder={mode === "signin" ? "Password" : "Password (min 6 characters)"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -207,24 +207,6 @@ const AdminMrwainAuth = () => {
               <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or</span></div>
             </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12 w-full rounded-2xl flex items-center justify-center gap-2"
-              disabled={loading}
-              onClick={async () => {
-                setLoading(true);
-                const { lovable } = await import("@/integrations/lovable/index");
-                const { error } = await lovable.auth.signInWithOAuth("apple", {
-                  redirect_uri: `${window.location.origin}/auth/callback`,
-                });
-                setLoading(false);
-                if (error) toast.error(String(error));
-              }}
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.23 0-1.44.64-2.2.46-3.06-.4C3.79 16.17 4.36 9.63 8.7 9.42c1.23.06 2.08.7 2.8.73.99-.2 1.95-.78 3.01-.7 1.28.1 2.24.6 2.87 1.52-2.63 1.58-2.01 5.07.37 6.04-.5 1.3-.87 2.07-1.7 3.27zM12.05 9.35C11.91 7.15 13.68 5.35 15.74 5.2c.29 2.56-2.34 4.47-3.69 4.15z"/></svg>
-              Sign in with Apple
-            </Button>
             {mode === "signup" && (
               <Button
                 asChild

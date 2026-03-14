@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { X, HelpCircle, ArrowLeft, Check, Delete, ShieldCheck, Keyboard, Fingerprint } from "lucide-react";
+import { X, HelpCircle, ArrowLeft, Check, Delete, ShieldCheck, Keyboard, Fingerprint, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { hashSecret, loadAppSecuritySettings, saveAppSecuritySettings, markPinSetupCompleted } from "@/lib/appSecurity";
 import { upsertUserPreferences } from "@/lib/userPreferences";
@@ -12,6 +12,7 @@ const ConfirmPinPage = () => {
   const [pin, setPin] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -118,19 +119,33 @@ const ConfirmPinPage = () => {
       <div className="flex flex-1 flex-col items-center justify-start pt-12 text-white">
         <h2 className="text-2xl font-bold">{title}</h2>
         
-        <div className="mt-12 flex justify-center gap-4">
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
-            <div
-              key={index}
-              className={`h-4 w-4 rounded-full transition-all duration-200 ${
-                pin.length > index 
-                  ? "bg-white scale-110 shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
-                  : "bg-white/30"
-              }`}
-            />
-          ))}
+        <div className="mt-12 flex items-center gap-4">
+          <div className="flex justify-center gap-4">
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
+              <div
+                key={index}
+                className={`h-4 w-4 rounded-full transition-all duration-200 ${
+                  pin.length > index 
+                    ? "bg-white scale-110 shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
+                    : "bg-white/30"
+                }`}
+              />
+            ))}
+          </div>
+          
+          <button
+            onClick={() => setShowPin(!showPin)}
+            className="hover:opacity-70 active:scale-90 transition-all bg-white/10 p-2 rounded-full ml-4"
+            title={showPin ? "Hide PIN" : "Show PIN"}
+            aria-label={showPin ? "Hide PIN" : "Show PIN"}
+          >
+            {showPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
         </div>
-        <p className="mt-6 text-sm text-white/80">Enter your 4-8 digit PIN</p>
+        
+        <p className="mt-6 text-sm text-white/80">
+          {showPin ? `PIN: ${pin}` : "Enter your 4-8 digit PIN"}
+        </p>
       </div>
 
       {/* Number Pad Area */}
