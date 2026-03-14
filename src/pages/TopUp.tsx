@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, HelpCircle, Copy, ExternalLink, LifeBuoy, FileText, CreditCard, Link2 } from "lucide-react";
+import { ArrowLeft, HelpCircle, Copy, ExternalLink, LifeBuoy, FileText, CreditCard, Link2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
@@ -318,6 +318,10 @@ const TopUp = () => {
     window.dispatchEvent(new CustomEvent("open-support-widget", { detail: { tab: "messages" } }));
   };
 
+  const openTelegramSupport = () => {
+    window.open("https://t.me/openpayofficial/1", "_blank", "noopener,noreferrer");
+  };
+
   const topUpButtonLabel = loading
     ? "Processing Pi payment..."
     : safeAmount > 0
@@ -427,9 +431,14 @@ const TopUp = () => {
               disabled: !generatedTopUpLink,
             },
             {
-              label: "Support",
+              label: "Support Chat",
               onClick: openSupportWidget,
               icon: <LifeBuoy className="h-4 w-4" />,
+            },
+            {
+              label: "Telegram Support",
+              onClick: openTelegramSupport,
+              icon: <MessageCircle className="h-4 w-4" />,
             },
             {
               label: "Instructions",

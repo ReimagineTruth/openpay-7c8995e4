@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import AdminMrwainAuth from "./pages/AdminMrwainAuth";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import TwoFactorAuthPage from "./pages/TwoFactorAuthPage";
+import TwoFactorVerifyPage from "./pages/TwoFactorVerifyPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ForgotMpinPage from "./pages/ForgotMpinPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -186,6 +187,7 @@ const AppRoutes = () => {
         <Route path="/forgot-mpin" element={<ForgotMpinPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/two-factor" element={<TwoFactorAuthPage />} />
+        <Route path="/two-factor-verify" element={<TwoFactorVerifyPage />} />
         <Route path="/admin-mrwain" element={<LegacyAdminMrwainRedirect />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/admin-swap-withrawals" element={<AdminSwapWithdrawalsPage />} />

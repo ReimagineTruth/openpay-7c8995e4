@@ -72,7 +72,26 @@ const ConfirmPinPage = () => {
       } else if (hashed === settings.pinHash) {
         // PIN verification: User is verifying existing PIN
         toast.success("PIN verified successfully!");
-        navigate(returnTo, { state: { pinVerified: true, actionData }, replace: true });
+        
+        // Check if user has 2FA enabled
+        const { data: { user } } = await supabase.auth.getUser();
+        const has2FA = user?.user_metadata?.two_factor_enabled || false;
+        
+        // Debug logging
+        console.log("PIN verification - User metadata:", user?.user_metadata);
+        console.log("PIN verification - Has 2FA:", has2FA);
+        
+        // Temporary: Force show 2FA for testing (remove this in production)
+        if (has2FA || returnTo.includes("dashboard")) {
+          // User has 2FA, redirect to 2FA verification
+          navigate("/two-factor-verify", { 
+            state: { returnTo, actionData }, 
+            replace: true 
+          });
+        } else {
+          // No 2FA, proceed to destination
+          navigate(returnTo, { state: { pinVerified: true, actionData }, replace: true });
+        }
       } else {
         toast.error("Incorrect PIN. Please try again.");
         setPin("");

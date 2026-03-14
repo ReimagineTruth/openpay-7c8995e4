@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Copy, HelpCircle, ExternalLink, LifeBuoy, CreditCard } from "lucide-react";
+import { ArrowLeft, Copy, HelpCircle, ExternalLink, FileText, LifeBuoy, CreditCard, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -41,6 +41,10 @@ const TopUpApplePay = () => {
   };
   const openSupportWidget = () => {
     window.dispatchEvent(new CustomEvent("open-support-widget", { detail: { tab: "messages" } }));
+  };
+
+  const openTelegramSupport = () => {
+    window.open("https://t.me/openpayofficial/1", "_blank", "noopener,noreferrer");
   };
 
   const confirmOpenApplePay = () => {
@@ -130,9 +134,14 @@ const TopUpApplePay = () => {
               icon: <ExternalLink className="h-4 w-4" />,
             },
             {
-              label: "Support",
+              label: "Support Chat",
               onClick: openSupportWidget,
               icon: <LifeBuoy className="h-4 w-4" />,
+            },
+            {
+              label: "Telegram Support",
+              onClick: openTelegramSupport,
+              icon: <MessageCircle className="h-4 w-4" />,
             },
             {
               label: "Instructions",
