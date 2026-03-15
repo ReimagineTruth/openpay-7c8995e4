@@ -379,17 +379,17 @@ const ReceivePage = () => {
           {profile?.avatar_url ? (
             <img src={profile.avatar_url} alt="Profile avatar" className="h-16 w-16 rounded-full border-2 border-white/20 object-cover shadow-sm" />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/20 text-xl font-black text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">{initials}</div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-xl font-bold text-white border border-white/30">{initials}</div>
           )}
           <div>
-            <p className="text-lg font-black text-white leading-tight">{profile?.full_name || "OpenPay User"}</p>
-            {profile?.username && <p className="text-sm font-bold text-white/80">@{profile.username}</p>}
+            <p className="text-lg font-bold text-white leading-tight">{profile?.full_name || "OpenPay User"}</p>
+            {profile?.username && <p className="text-sm font-medium text-white/80">@{profile.username}</p>}
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-3xl bg-black/5 dark:bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white">Custom Amount (optional)</p>
+          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-4">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/60">Custom Amount (optional)</p>
             <Input
               type="number"
               min="0.01"
@@ -401,8 +401,8 @@ const ReceivePage = () => {
             />
           </div>
 
-          <div className="rounded-3xl bg-black/5 dark:bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white">Currency</p>
+          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-4">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/60">Currency</p>
             <div className="relative">
               {(currencyCode === "PI" || currencyCode === "OUSD") && (
                 <img
@@ -429,7 +429,7 @@ const ReceivePage = () => {
           </div>
         </div>
 
-        <div className="mt-8 rounded-[2rem] border border-white/10 bg-white p-6 shadow-inner shadow-black/5 animate-in-fade">
+        <div className="mt-8 rounded-[2rem] border border-white/20 bg-white p-6 shadow-inner shadow-black/5 animate-in-fade">
           <div className="flex justify-center">
             {receiveQrValue ? (
               <QRCodeSVG
@@ -452,9 +452,9 @@ const ReceivePage = () => {
         </div>
 
         <div className="mt-6 space-y-4">
-          <div className="rounded-3xl border border-white/10 bg-black/5 dark:bg-white/5 p-5 animate-in-up">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white">Payment request link</p>
-            <p className="mt-2 break-all text-sm font-bold text-white leading-snug">{shortDisplayLink || "Loading link..."}</p>
+          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 animate-in-up">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Payment request link</p>
+            <p className="mt-2 break-all text-sm font-medium text-white leading-snug">{shortDisplayLink || "Loading link..."}</p>
             <div className="mt-4 flex gap-3">
               <Button
                 type="button"
@@ -478,9 +478,9 @@ const ReceivePage = () => {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-black/5 dark:bg-white/5 p-5 animate-in-up" style={{ animationDelay: "100ms" }}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-white">OpenPay QR link</p>
-            <p className="mt-2 break-all text-xs font-bold text-white/80 leading-snug">{receiveQrValue || "Loading link..."}</p>
+          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 animate-in-up" style={{ animationDelay: "100ms" }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">OpenPay QR link</p>
+            <p className="mt-2 break-all text-xs font-medium text-white/80 leading-snug">{receiveQrValue || "Loading link..."}</p>
             <div className="mt-4">
               <Button
                 type="button"
@@ -495,8 +495,8 @@ const ReceivePage = () => {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-black/5 dark:bg-white/5 p-5 print:hidden animate-in-up" style={{ animationDelay: "200ms" }}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-white">Printable Store QR</p>
+          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 print:hidden animate-in-up" style={{ animationDelay: "200ms" }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Printable Store QR</p>
             <div className="mt-4 grid gap-3">
               <div className="space-y-1">
                 <p className="px-1 text-[10px] font-bold text-white uppercase">Store name</p>
@@ -640,8 +640,8 @@ const ReceivePage = () => {
             </Button>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-black/5 dark:bg-white/5 p-5 print:hidden animate-in-up" style={{ animationDelay: "400ms" }}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-white">Download link fallback</p>
+          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 print:hidden animate-in-up" style={{ animationDelay: "400ms" }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Download link fallback</p>
             <div className="mt-4 flex gap-3">
               <Button type="button" variant="outline" className="ios-active h-11 flex-1 rounded-xl border-white/10 bg-white/50 dark:bg-white/5 font-bold" onClick={handleGenerateDownloadLink}>
                 Generate
