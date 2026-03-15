@@ -360,10 +360,12 @@ const ReceivePage = () => {
             align-items: center !important;
             justify-content: center !important;
             background: #ffffff !important;
+            padding: 20px !important;
           }
           #print-store-qr-card {
             box-shadow: none !important;
             margin: 0 auto !important;
+            max-width: 100% !important;
           }
         }
       `}</style>
@@ -411,16 +413,49 @@ const ReceivePage = () => {
                   className="pointer-events-none absolute left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full object-cover shadow-sm"
                 />
               )}
+              <select
+                value={currencyCode}
+                onChange={(e) => setCurrencyCode(e.target.value)}
+                className={`h-12 w-full rounded-2xl border-none bg-white dark:bg-white/5 text-base font-bold text-gray-800 shadow-sm focus-visible:ring-1 focus-visible:ring-blue-500/30 ${currencyCode === "PI" || currencyCode === "OUSD" ? "pl-12 pr-3" : "px-3"}`}
+              >
+                {currencies.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {`${c.code === "PI" ? "PI " : c.code === "OUSD" ? "" : `${c.flag} `}${getPiCodeLabel(c.code)} - ${c.name}`}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <p className="mt-4 text-center text-[11px] font-bold text-foreground uppercase tracking-tight">
-            Scan to pay in Express Send
-          </p>
-        </div>
+
+          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-6">
+            <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-foreground">Your QR Code</p>
+            <div className="flex justify-center rounded-2xl border border-white/20 bg-white p-4">
+              {receiveQrValue ? (
+                <QRCodeSVG
+                  value={receiveQrValue}
+                  size={200}
+                  level="H"
+                  includeMargin
+                  imageSettings={{
+                    src: "/openpay-logo.jpg",
+                    height: 40,
+                    width: 40,
+                    excavate: true,
+                  }}
+                />
+              ) : (
+                <p className="text-sm text-gray-500">Loading QR code...</p>
+              )}
+            </div>
+            <p className="mt-4 text-center text-[11px] font-bold text-foreground uppercase tracking-tight">
+              Scan to pay in Express Send
+            </p>
+          </div>
 
         <div className="mt-6 space-y-4">
           <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 animate-in-up">
             <p className="text-[10px] font-bold uppercase tracking-widest text-foreground">Payment request link</p>
-            <p className="mt-2 break-all text-sm font-medium text-white leading-snug">{shortDisplayLink || "Loading link..."}</p>
+            <p className="mt-2 break-all text-sm font-medium text-gray-800 leading-snug">{shortDisplayLink || "Loading link..."}</p>
             <div className="mt-4 flex gap-3">
               <Button
                 type="button"
@@ -446,8 +481,8 @@ const ReceivePage = () => {
 
           <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 animate-in-up" style={{ animationDelay: "100ms" }}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-foreground">OpenPay QR link</p>
-            <p className="mt-2 break-all text-xs font-medium text-white/80 leading-snug">{receiveQrValue || "Loading link..."}</p>
-            <div className="mt-4">
+            <p className="mt-2 break-all text-xs font-medium text-gray-800 leading-snug">{receiveQrValue || "Loading link..."}</p>
+            <div className="mt-4 grid gap-3">
               <Button
                 type="button"
                 variant="outline"
@@ -457,6 +492,34 @@ const ReceivePage = () => {
               >
                 <Copy className="mr-2 h-4 w-4" />
                 Copy QR Link
+              </Button>
+              {downloadLink && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="ios-active h-12 w-full rounded-2xl border-green-600 bg-green-600 text-white font-bold shadow-lg shadow-green-500/20 hover:bg-green-700"
+                    onClick={handleOpenDownloadLink}
+                  >
+                    Open Download Link
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="ios-active h-12 w-full rounded-2xl border-purple-600 bg-purple-600 text-white font-bold shadow-lg shadow-purple-500/20 hover:bg-purple-700"
+                    onClick={handleCopyDownloadLink}
+                  >
+                    Copy Download Link
+                  </Button>
+                </>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="ios-active h-12 w-full rounded-2xl border-blue-600 bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700"
+                onClick={handleGenerateDownloadLink}
+              >
+                Generate Download Link
               </Button>
             </div>
           </div>
@@ -561,18 +624,34 @@ const ReceivePage = () => {
 
               <div className="mt-1 flex justify-center">
                 {receiveQrValue ? (
-                  <QRCodeSVG
-                    value={receiveQrValue}
-                    size={printSizeConfig.qrSize}
-                    level="H"
-                    includeMargin
-                    imageSettings={{
-                      src: "/openpay-logo.jpg",
-                      height: 30,
-                      width: 30,
-                      excavate: true,
-                    }}
-                  />
+                  <>
+                    <QRCodeSVG
+                      value={receiveQrValue}
+                      size={printSizeConfig.qrSize}
+                      level="H"
+                      includeMargin
+                      imageSettings={{
+                        src: "/openpay-logo.jpg",
+                        height: 30,
+                        width: 30,
+                        excavate: true,
+                      }}
+                    />
+                    <QRCodeCanvas
+                      id="store-qr-download-source"
+                      value={receiveQrValue}
+                      size={printSizeConfig.qrSize}
+                      level="H"
+                      includeMargin
+                      imageSettings={{
+                        src: "/openpay-logo.jpg",
+                        height: 30,
+                        width: 30,
+                        excavate: true,
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                  </>
                 ) : null}
               </div>
               <p className="mt-3 text-center text-xs font-semibold tracking-wide text-white">
@@ -592,7 +671,7 @@ const ReceivePage = () => {
             <Button
               type="button"
               variant="outline"
-              className="ios-active h-12 flex-1 rounded-2xl border-white/10 bg-white dark:bg-white/5 font-bold shadow-sm"
+              className="ios-active h-12 flex-1 rounded-2xl border-blue-600 bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700"
               onClick={handleDownloadPrintableQr}
             >
               Download QR
@@ -600,7 +679,7 @@ const ReceivePage = () => {
             <Button
               type="button"
               variant="outline"
-              className="ios-active h-12 flex-1 rounded-2xl border-white/10 bg-white dark:bg-white/5 font-bold shadow-sm"
+              className="ios-active h-12 flex-1 rounded-2xl border-blue-600 bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700"
               onClick={handlePrintStoreQr}
             >
               Print QR

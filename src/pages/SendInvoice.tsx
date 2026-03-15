@@ -487,11 +487,12 @@ const SendInvoice = () => {
 
       <div className="px-4 space-y-4">
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-white">Create invoice</h2>
+          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Create invoice</h2>
           <Input
             placeholder="Search person by name, username, email, or account number"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="bg-white text-gray-800 placeholder:text-gray-400"
           />
           <div className="rounded-xl border border-border bg-white px-3 py-2 text-sm text-muted-foreground">
             {selectedRecipient ? (
@@ -582,6 +583,7 @@ const SendInvoice = () => {
             placeholder="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            className="bg-white text-gray-800 placeholder:text-gray-400"
           />
           <div>
             <p className="mb-1 text-sm text-muted-foreground">Invoice currency</p>
@@ -610,11 +612,13 @@ const SendInvoice = () => {
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
+            className="bg-white text-gray-800 [&::-webkit-calendar-picker-indicator]:text-gray-800 [&::-webkit-datetime-edit-text-wrapper]:text-gray-800"
           />
           <Textarea
             placeholder="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            className="bg-white text-gray-800 placeholder:text-gray-400"
           />
           <Button onClick={handleCreate} disabled={loading || !recipientId} className="w-full">
             {loading ? "Sending..." : "Send Invoice"}
@@ -622,7 +626,7 @@ const SendInvoice = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-white">Received invoices</h2>
+          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Received invoices</h2>
           <div>
             <p className="mb-1 text-sm text-muted-foreground">Payment currency</p>
             <div className="relative">
@@ -697,7 +701,7 @@ const SendInvoice = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-white">Sent invoices</h2>
+          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Sent invoices</h2>
           {sent.length === 0 && <p className="text-sm text-muted-foreground">No sent invoices</p>}
           {sent.map((invoice) => {
             const recipient = profileMap.get(invoice.recipient_id);

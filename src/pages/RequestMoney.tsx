@@ -658,9 +658,10 @@ const RequestMoney = () => {
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-semibold text-white">Receive via QR</h2>
-              <p className="text-sm text-white/80">{selfProfile?.full_name || "Your account"}</p>
-              {selfProfile?.username && <p className="text-sm text-white/80">@{selfProfile.username}</p>}
+              <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Receive via QR</h2>
+              <p className="text-sm text-gray-600">{selfProfile?.full_name || "Your account"}</p>
+              {selfProfile?.username && <p className="text-sm text-gray-600">@{selfProfile.username}</p>}
+              {/* Debug info removed */}
             </div>
             <Button type="button" variant="secondary" className="bg-blue-600 text-white hover:bg-blue-700 border-blue-700" onClick={() => setShowScanner(true)}>
               <ScanLine className="mr-2 h-4 w-4" />
@@ -691,11 +692,12 @@ const RequestMoney = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-white">Create request</h2>
+          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Create request</h2>
           <Input
             placeholder="Search person by name, username, email, or account number"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="bg-white text-gray-800 placeholder:text-gray-400"
           />
           <div className="rounded-xl border border-border bg-white px-3 py-2 text-sm text-muted-foreground">
             {selectedPayer ? (
@@ -709,8 +711,8 @@ const RequestMoney = () => {
                     </div>
                   )}
                   <div>
-                    <p className="text-sm font-semibold text-white">{selectedPayer.full_name}</p>
-                    {selectedPayer.username && <p className="text-xs text-white/80">@{selectedPayer.username}</p>}
+                    <p className="text-sm font-semibold text-gray-800">{selectedPayer.full_name}</p>
+                    {selectedPayer.username && <p className="text-xs text-gray-600">@{selectedPayer.username}</p>}
                   </div>
                 </div>
                 <Button
@@ -743,8 +745,8 @@ const RequestMoney = () => {
                           </div>
                         )}
                         <div className="flex-1">
-                          <p className="font-medium text-white">{accountLookupResult.full_name}</p>
-                          {accountLookupResult.username && <p className="text-sm text-white/80">@{accountLookupResult.username}</p>}
+                          <p className="font-medium text-gray-800">{accountLookupResult.full_name}</p>
+                          {accountLookupResult.username && <p className="text-sm text-gray-600">@{accountLookupResult.username}</p>}
                           <p className="text-xs text-white/70">Matched by account number</p>
                         </div>
                         <Info className="h-4 w-4 text-white/70" />
@@ -766,8 +768,8 @@ const RequestMoney = () => {
                           </div>
                         )}
                         <div>
-                          <p className="font-medium text-white">{p.full_name}</p>
-                          {p.username && <p className="text-sm text-white/80">@{p.username}</p>}
+                          <p className="font-medium text-gray-800">{p.full_name}</p>
+                          {p.username && <p className="text-sm text-gray-600">@{p.username}</p>}
                         </div>
                       </div>
                     </button>
@@ -786,6 +788,7 @@ const RequestMoney = () => {
             placeholder="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            className="bg-white text-gray-800 placeholder:text-gray-400"
           />
           <div>
             <p className="mb-1 text-sm text-muted-foreground">Requested currency</p>
@@ -814,6 +817,7 @@ const RequestMoney = () => {
             placeholder="Note (optional)"
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            className="bg-white text-gray-800 placeholder:text-gray-400"
           />
           <Button onClick={handleCreate} disabled={loading || !payerId} className="w-full">
             {loading ? "Sending..." : "Send Request"}
@@ -821,7 +825,7 @@ const RequestMoney = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-foreground">Incoming requests</h2>
+          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Incoming requests</h2>
           <div>
             <p className="mb-1 text-sm text-muted-foreground">Payment currency</p>
             <div className="relative">
@@ -897,7 +901,7 @@ const RequestMoney = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-foreground">Sent requests</h2>
+          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Sent requests</h2>
           {outgoing.length === 0 && <p className="text-sm text-muted-foreground">No requests sent yet</p>}
           {outgoing.map((request) => {
             const payer = profileMap.get(request.payer_id);
@@ -917,7 +921,7 @@ const RequestMoney = () => {
                   )}
                   <div>
                     <p className="font-medium text-foreground">{payer?.full_name || "Unknown user"}</p>
-                    {payer?.username && <p className="text-sm text-muted-foreground">@{payer.username}</p>}
+                    {payer?.username && <p className="text-sm text-gray-600">@{payer.username}</p>}
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">{format(new Date(request.created_at), "MMM d, yyyy")}</p>
