@@ -645,11 +645,11 @@ const RequestMoney = () => {
       <div className="flex items-center justify-between gap-3 px-4 pt-4 mb-4">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate("/menu")}>
-            <ArrowLeft className="w-6 h-6 text-foreground" />
+            <ArrowLeft className="w-6 h-6 text-white" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">Request Payment</h1>
+          <h1 className="text-xl font-bold text-white">Request Payment</h1>
         </div>
-        <Button type="button" variant="outline" className="h-9 rounded-full px-4" onClick={() => setShowInstructions(true)}>
+        <Button type="button" variant="secondary" className="h-9 rounded-full px-4 bg-white/10 text-white border-white/20 hover:bg-white/20" onClick={() => setShowInstructions(true)}>
           Instructions
         </Button>
       </div>
@@ -658,11 +658,11 @@ const RequestMoney = () => {
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-semibold text-foreground">Receive via QR</h2>
-              <p className="text-sm text-muted-foreground">{selfProfile?.full_name || "Your account"}</p>
-              {selfProfile?.username && <p className="text-sm text-muted-foreground">@{selfProfile.username}</p>}
+              <h2 className="font-semibold text-white">Receive via QR</h2>
+              <p className="text-sm text-white/80">{selfProfile?.full_name || "Your account"}</p>
+              {selfProfile?.username && <p className="text-sm text-white/80">@{selfProfile.username}</p>}
             </div>
-            <Button type="button" variant="outline" onClick={() => setShowScanner(true)}>
+            <Button type="button" variant="secondary" className="bg-blue-600 text-white hover:bg-blue-700 border-blue-700" onClick={() => setShowScanner(true)}>
               <ScanLine className="mr-2 h-4 w-4" />
               Scan QR code
             </Button>
@@ -685,13 +685,13 @@ const RequestMoney = () => {
               <p className="text-sm text-muted-foreground">Loading QR code...</p>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-white/70">
             Ask sender to scan this QR to open Express Send with your account.
           </p>
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-foreground">Create request</h2>
+          <h2 className="font-semibold text-white">Create request</h2>
           <Input
             placeholder="Search person by name, username, email, or account number"
             value={search}
@@ -704,13 +704,13 @@ const RequestMoney = () => {
                   {selectedPayer.avatar_url ? (
                     <img src={selectedPayer.avatar_url} alt={selectedPayer.full_name} className="h-8 w-8 rounded-full border border-border object-cover" />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-foreground">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-white">
                       {selectedPayer.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                     </div>
                   )}
                   <div>
-                    <p className="text-sm font-semibold text-foreground">{selectedPayer.full_name}</p>
-                    {selectedPayer.username && <p className="text-xs text-muted-foreground">@{selectedPayer.username}</p>}
+                    <p className="text-sm font-semibold text-white">{selectedPayer.full_name}</p>
+                    {selectedPayer.username && <p className="text-xs text-white/80">@{selectedPayer.username}</p>}
                   </div>
                 </div>
                 <Button
@@ -724,10 +724,10 @@ const RequestMoney = () => {
               </div>
             ) : (
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Select recipient</p>
+                <p className="text-xs uppercase tracking-wide text-white/70">Select recipient</p>
                 <div className="mt-2 max-h-40 overflow-auto rounded-xl border border-border">
                   {isAccountNumberSearch && accountLookupLoading && (
-                    <p className="border-b border-border px-3 py-2 text-sm text-muted-foreground">Searching account number...</p>
+                    <p className="border-b border-border px-3 py-2 text-sm text-white/70">Searching account number...</p>
                   )}
                   {isAccountNumberSearch && !accountLookupLoading && accountLookupResult && (
                     <button
@@ -743,11 +743,11 @@ const RequestMoney = () => {
                           </div>
                         )}
                         <div className="flex-1">
-                          <p className="font-medium text-foreground">{accountLookupResult.full_name}</p>
-                          {accountLookupResult.username && <p className="text-sm text-muted-foreground">@{accountLookupResult.username}</p>}
-                          <p className="text-xs text-muted-foreground">Matched by account number</p>
+                          <p className="font-medium text-white">{accountLookupResult.full_name}</p>
+                          {accountLookupResult.username && <p className="text-sm text-white/80">@{accountLookupResult.username}</p>}
+                          <p className="text-xs text-white/70">Matched by account number</p>
                         </div>
-                        <Info className="h-4 w-4 text-muted-foreground" />
+                        <Info className="h-4 w-4 text-white/70" />
                       </div>
                     </button>
                   )}
@@ -761,19 +761,19 @@ const RequestMoney = () => {
                         {p.avatar_url ? (
                           <img src={p.avatar_url} alt={p.full_name} className="h-9 w-9 rounded-full border border-border object-cover" />
                         ) : (
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-foreground">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-white">
                             {p.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                           </div>
                         )}
                         <div>
-                          <p className="font-medium text-foreground">{p.full_name}</p>
-                          {p.username && <p className="text-sm text-muted-foreground">@{p.username}</p>}
+                          <p className="font-medium text-white">{p.full_name}</p>
+                          {p.username && <p className="text-sm text-white/80">@{p.username}</p>}
                         </div>
                       </div>
                     </button>
                   ))}
                   {filteredWithoutAccountMatch.length === 0 && !accountLookupResult && !accountLookupLoading && (
-                    <p className="px-3 py-4 text-sm text-muted-foreground">No users found</p>
+                    <p className="px-3 py-4 text-sm text-white/70">No users found</p>
                   )}
                 </div>
               </div>

@@ -476,18 +476,18 @@ const SendInvoice = () => {
       <div className="flex items-center justify-between gap-3 px-4 pt-4 mb-4">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate("/menu")}>
-            <ArrowLeft className="w-6 h-6 text-foreground" />
+            <ArrowLeft className="w-6 h-6 text-white" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">Send Invoice</h1>
+          <h1 className="text-xl font-bold text-white">Send Invoice</h1>
         </div>
-        <Button type="button" variant="outline" className="h-9 rounded-full px-4" onClick={() => setShowInstructions(true)}>
+        <Button type="button" variant="secondary" className="h-9 rounded-full px-4 bg-white/10 text-white border-white/20 hover:bg-white/20" onClick={() => setShowInstructions(true)}>
           Instructions
         </Button>
       </div>
 
       <div className="px-4 space-y-4">
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-foreground">Create invoice</h2>
+          <h2 className="font-semibold text-white">Create invoice</h2>
           <Input
             placeholder="Search person by name, username, email, or account number"
             value={search}
@@ -622,7 +622,7 @@ const SendInvoice = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-foreground">Received invoices</h2>
+          <h2 className="font-semibold text-white">Received invoices</h2>
           <div>
             <p className="mb-1 text-sm text-muted-foreground">Payment currency</p>
             <div className="relative">
@@ -697,7 +697,7 @@ const SendInvoice = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold text-foreground">Sent invoices</h2>
+          <h2 className="font-semibold text-white">Sent invoices</h2>
           {sent.length === 0 && <p className="text-sm text-muted-foreground">No sent invoices</p>}
           {sent.map((invoice) => {
             const recipient = profileMap.get(invoice.recipient_id);
