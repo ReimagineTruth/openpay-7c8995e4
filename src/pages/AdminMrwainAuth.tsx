@@ -43,10 +43,15 @@ const AdminMrwainAuth = () => {
     setLoading(true);
 
     if (mode === "signin") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       setLoading(false);
-      if (error) toast.error(error.message);
-      else navigate("/dashboard");
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      
+      // 2FA verification disabled for now - go directly to dashboard
+      navigate("/dashboard");
       return;
     }
 

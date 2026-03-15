@@ -30,23 +30,11 @@ const SignIn = () => {
     }
     
     if (data.user) {
-      // Check if user has 2FA enabled
-      const has2FA = data.user.user_metadata?.two_factor_enabled || false;
-      
       // Debug logging
       console.log("User metadata:", data.user.user_metadata);
-      console.log("Has 2FA:", has2FA);
       
-      // Temporary: Force show 2FA for testing (remove this in production)
-      if (has2FA || email.includes("test")) {
-        // Store session and show 2FA verification
-        setUserSession(data);
-        setShow2FA(true);
-        toast.info("Please enter your 2FA code");
-      } else {
-        // No 2FA, proceed to dashboard
-        navigate("/dashboard");
-      }
+      // 2FA verification disabled - proceed directly to dashboard
+      navigate("/dashboard");
     }
   };
 

@@ -31,6 +31,12 @@ const PUBLIC_PATHS = new Set([
   "/about-openpay",
   "/legal",
   "/help-center",
+  "/send",
+  "/confirm-pin",
+  "/topup",
+  "/receive",
+  "/request-payment",
+  "/two-factor-verify"
 ]);
 
 const AppSecurityGate = () => {

@@ -562,23 +562,36 @@ const MerchantOnboardingPage = () => {
     }
 
     setTransferring(true);
-    const { error } = await db.rpc("transfer_my_merchant_balance", {
-      p_amount: amount,
-      p_mode: mode,
-      p_destination: transferDestination,
-      p_note: "Merchant portal transfer",
-    });
-    setTransferring(false);
+    try {
+      const { data, error } = await db.rpc("transfer_my_merchant_balance", {
+        p_amount: amount,
+        p_mode: mode,
+        p_destination: transferDestination,
+        p_note: "Merchant portal transfer",
+      });
+      
+      if (error) {
+        console.error("Transfer error:", error);
+        toast.error(error.message || "Transfer failed");
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        toast.error("Transfer completed but no data returned");
+        return;
+      }
 
-    if (error) {
-      toast.error(error.message || "Transfer failed");
-      return;
+      console.log("Transfer successful:", data);
+      setTransferAmount("");
+      await loadPortal(userId, mode);
+      toast.success(`Moved ${amount} to ${transferDestination}`);
+      playUiSound("receive");
+    } catch (err) {
+      console.error("Transfer exception:", err);
+      toast.error("Transfer failed unexpectedly");
+    } finally {
+      setTransferring(false);
     }
-
-    setTransferAmount("");
-    await loadPortal(userId, mode);
-    toast.success(`Moved to ${transferDestination}`);
-    playUiSound("receive");
   };
 
   const deleteCheckoutLink = async (sessionId: string) => {

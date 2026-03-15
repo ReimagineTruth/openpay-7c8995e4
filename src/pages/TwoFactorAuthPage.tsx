@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import BottomNav from "@/components/BottomNav";
 import QRCode from "qrcode";
-import { TOTP } from "otplib";
+import * as authenticator from "otplib";
 
 const TwoFactorAuthPage = () => {
   const navigate = useNavigate();
@@ -20,8 +20,6 @@ const TwoFactorAuthPage = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   
-  // Create TOTP instance
-  const totp = new TOTP();
 
   useEffect(() => {
     checkCurrent2FAStatus();
@@ -96,23 +94,21 @@ const TwoFactorAuthPage = () => {
     }
   };
 
-  const verifyTOTP = (token: string, secret: string): boolean => {
+  const verifyTOTP = async (token: string, secret: string): Promise<boolean> => {
     try {
-      // Use a simpler approach - basic TOTP verification
-      // For now, accept any 6-digit code as valid (simplified for testing)
-      // In production, use proper TOTP verification
-      return token.length === 6 && /^\d{6}$/.test(token);
+      // Use proper TOTP verification with otplib authenticator
+      const result = await authenticator.verify({ token, secret });
+      return result.valid;
     } catch (error) {
       console.error("Error verifying TOTP:", error);
       return false;
     }
   };
 
-  const generateTOTPToken = (secret: string): string => {
+  const generateTOTPToken = async (secret: string): Promise<string> => {
     try {
-      // Generate a simple 6-digit code for testing
-      // In production, use proper TOTP generation
-      return Math.floor(100000 + Math.random() * 900000).toString();
+      // Generate proper TOTP token for testing
+      return await authenticator.generate({ secret });
     } catch (error) {
       console.error("Error generating TOTP token:", error);
       return "";
@@ -127,9 +123,13 @@ const TwoFactorAuthPage = () => {
 
     setLoading(true);
     try {
-      const isValid = verifyTOTP(verificationCode, secretKey);
+      const isValid = await verifyTOTP(verificationCode, secretKey);
       
       if (isValid) {
+        // Generate backup codes first
+        const codes = generateBackupCodes();
+        setBackupCodes(codes);
+        
         // Save 2FA setup to user metadata
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -139,15 +139,12 @@ const TwoFactorAuthPage = () => {
           await supabase.auth.updateUser({
             data: {
               two_factor_enabled: true,
-              two_factor_secret: secretKey
+              two_factor_secret: secretKey,
+              backup_codes: codes
             }
           });
           
           console.log("2FA setup completed - two_factor_enabled: true");
-          
-          // Generate backup codes
-          const codes = generateBackupCodes();
-          setBackupCodes(codes);
           
           setIsSetup(true);
           setIsVerified(true);
