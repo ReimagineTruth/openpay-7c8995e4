@@ -389,7 +389,7 @@ const ReceivePage = () => {
 
         <div className="space-y-4">
           <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-4">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white">Custom Amount (optional)</p>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-foreground">Custom Amount (optional)</p>
             <Input
               type="number"
               min="0.01"
@@ -402,7 +402,7 @@ const ReceivePage = () => {
           </div>
 
           <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-4">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white">Currency</p>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-foreground">Currency</p>
             <div className="relative">
               {(currencyCode === "PI" || currencyCode === "OUSD") && (
                 <img
@@ -412,14 +412,14 @@ const ReceivePage = () => {
                 />
               )}
           </div>
-          <p className="mt-4 text-center text-[11px] font-bold text-white uppercase tracking-tight">
+          <p className="mt-4 text-center text-[11px] font-bold text-foreground uppercase tracking-tight">
             Scan to pay in Express Send
           </p>
         </div>
 
         <div className="mt-6 space-y-4">
           <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 animate-in-up">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white">Payment request link</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-foreground">Payment request link</p>
             <p className="mt-2 break-all text-sm font-medium text-white leading-snug">{shortDisplayLink || "Loading link..."}</p>
             <div className="mt-4 flex gap-3">
               <Button
@@ -445,7 +445,7 @@ const ReceivePage = () => {
           </div>
 
           <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 animate-in-up" style={{ animationDelay: "100ms" }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white">OpenPay QR link</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-foreground">OpenPay QR link</p>
             <p className="mt-2 break-all text-xs font-medium text-white/80 leading-snug">{receiveQrValue || "Loading link..."}</p>
             <div className="mt-4">
               <Button
@@ -462,10 +462,10 @@ const ReceivePage = () => {
           </div>
 
           <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 print:hidden animate-in-up" style={{ animationDelay: "200ms" }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white">Printable Store QR</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-foreground">Printable Store QR</p>
             <div className="mt-4 grid gap-3">
               <div className="space-y-1">
-                <p className="px-1 text-[10px] font-bold text-white uppercase">Store name</p>
+                <p className="px-1 text-[10px] font-bold text-foreground uppercase">Store name</p>
                 <Input
                   value={storeQrName}
                   onChange={(e) => setStoreQrName(e.target.value)}
@@ -474,7 +474,7 @@ const ReceivePage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <p className="px-1 text-[10px] font-bold text-white uppercase">Merchant username</p>
+                <p className="px-1 text-[10px] font-bold text-foreground uppercase">Merchant username</p>
                 <Input
                   value={storeMerchantUsername}
                   onChange={(e) => setStoreMerchantUsername(e.target.value)}
@@ -484,7 +484,7 @@ const ReceivePage = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-white uppercase">Accent</p>
+                  <p className="px-1 text-[10px] font-bold text-foreground uppercase">Accent</p>
                   <input
                     type="color"
                     value={storeQrAccent}
@@ -493,7 +493,7 @@ const ReceivePage = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-white uppercase">Background</p>
+                  <p className="px-1 text-[10px] font-bold text-foreground uppercase">Background</p>
                   <input
                     type="color"
                     value={storeQrBackground}
@@ -503,7 +503,7 @@ const ReceivePage = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <p className="px-1 text-[10px] font-bold text-white uppercase">Template</p>
+                    <p className="px-1 text-[10px] font-bold text-foreground uppercase">Template</p>
                   <select
                     value={storeQrDesign}
                     onChange={(e) => setStoreQrDesign(e.target.value as "clean" | "gradient" | "badge")}
@@ -515,7 +515,7 @@ const ReceivePage = () => {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-white uppercase">Size</p>
+                  <p className="px-1 text-[10px] font-bold text-foreground uppercase">Size</p>
                   <select
                     value={printSize}
                     onChange={(e) => setPrintSize(e.target.value as "small" | "medium" | "large")}
