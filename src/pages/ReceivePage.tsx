@@ -343,7 +343,7 @@ const ReceivePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 pt-4 pb-10">
+    <div className="min-h-screen bg-paypal-blue px-4 pt-4 pb-10 text-white">
       <style>{`
         @media print {
           body * {
@@ -371,7 +371,7 @@ const ReceivePage = () => {
         <button onClick={() => navigate("/dashboard")} className="ios-active rounded-full p-2 hover:bg-secondary/50 transition-colors">
           <ArrowLeft className="h-6 w-6 text-foreground" />
         </button>
-        <h1 className="text-2xl font-black tracking-tight text-foreground">Receive</h1>
+        <h1 className="text-2xl font-black tracking-tight text-white">Receive</h1>
       </div>
 
       <div className="ios-glass overflow-hidden rounded-[2.5rem] p-6 shadow-2xl shadow-black/5 animate-in-up">
@@ -382,14 +382,14 @@ const ReceivePage = () => {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/20 text-xl font-black text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">{initials}</div>
           )}
           <div>
-            <p className="text-lg font-black text-foreground leading-tight">{profile?.full_name || "OpenPay User"}</p>
-            {profile?.username && <p className="text-sm font-bold text-muted-foreground/70">@{profile.username}</p>}
+            <p className="text-lg font-black text-white leading-tight">{profile?.full_name || "OpenPay User"}</p>
+            {profile?.username && <p className="text-sm font-bold text-white/80">@{profile.username}</p>}
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="rounded-3xl bg-black/5 dark:bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Custom Amount (optional)</p>
+            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white">Custom Amount (optional)</p>
             <Input
               type="number"
               min="0.01"
@@ -402,7 +402,7 @@ const ReceivePage = () => {
           </div>
 
           <div className="rounded-3xl bg-black/5 dark:bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Currency</p>
+            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white">Currency</p>
             <div className="relative">
               {(currencyCode === "PI" || currencyCode === "OUSD") && (
                 <img
@@ -446,15 +446,15 @@ const ReceivePage = () => {
               />
             ) : null}
           </div>
-          <p className="mt-4 text-center text-[11px] font-bold text-muted-foreground/60 uppercase tracking-tight">
+          <p className="mt-4 text-center text-[11px] font-bold text-white uppercase tracking-tight">
             Scan to pay in Express Send
           </p>
         </div>
 
         <div className="mt-6 space-y-4">
           <div className="rounded-3xl border border-white/10 bg-black/5 dark:bg-white/5 p-5 animate-in-up">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Payment request link</p>
-            <p className="mt-2 break-all text-sm font-bold text-foreground leading-snug">{shortDisplayLink || "Loading link..."}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white">Payment request link</p>
+            <p className="mt-2 break-all text-sm font-bold text-white leading-snug">{shortDisplayLink || "Loading link..."}</p>
             <div className="mt-4 flex gap-3">
               <Button
                 type="button"
@@ -479,8 +479,8 @@ const ReceivePage = () => {
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-black/5 dark:bg-white/5 p-5 animate-in-up" style={{ animationDelay: "100ms" }}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">OpenPay QR link</p>
-            <p className="mt-2 break-all text-xs font-bold text-muted-foreground/80 leading-snug">{receiveQrValue || "Loading link..."}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white">OpenPay QR link</p>
+            <p className="mt-2 break-all text-xs font-bold text-white/80 leading-snug">{receiveQrValue || "Loading link..."}</p>
             <div className="mt-4">
               <Button
                 type="button"
@@ -496,10 +496,10 @@ const ReceivePage = () => {
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-black/5 dark:bg-white/5 p-5 print:hidden animate-in-up" style={{ animationDelay: "200ms" }}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Printable Store QR</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white">Printable Store QR</p>
             <div className="mt-4 grid gap-3">
               <div className="space-y-1">
-                <p className="px-1 text-[10px] font-bold text-muted-foreground/50 uppercase">Store name</p>
+                <p className="px-1 text-[10px] font-bold text-white uppercase">Store name</p>
                 <Input
                   value={storeQrName}
                   onChange={(e) => setStoreQrName(e.target.value)}
@@ -508,7 +508,7 @@ const ReceivePage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <p className="px-1 text-[10px] font-bold text-muted-foreground/50 uppercase">Merchant username</p>
+                <p className="px-1 text-[10px] font-bold text-white uppercase">Merchant username</p>
                 <Input
                   value={storeMerchantUsername}
                   onChange={(e) => setStoreMerchantUsername(e.target.value)}
@@ -518,27 +518,26 @@ const ReceivePage = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-muted-foreground/50 uppercase">Accent</p>
+                  <p className="px-1 text-[10px] font-bold text-white uppercase">Accent</p>
                   <input
                     type="color"
                     value={storeQrAccent}
                     onChange={(e) => setStoreQrAccent(e.target.value)}
-                    className="h-11 w-full rounded-xl border-none bg-white dark:bg-white/5 p-1 shadow-sm cursor-pointer"
+                    className="h-11 w-full rounded-xl border-none bg-white dark:bg-white/5 font-bold shadow-sm"
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-muted-foreground/50 uppercase">Background</p>
+                  <p className="px-1 text-[10px] font-bold text-white uppercase">Background</p>
                   <input
                     type="color"
                     value={storeQrBackground}
                     onChange={(e) => setStoreQrBackground(e.target.value)}
-                    className="h-11 w-full rounded-xl border-none bg-white dark:bg-white/5 p-1 shadow-sm cursor-pointer"
+                    className="h-11 w-full rounded-xl border-none bg-white dark:bg-white/5 font-bold shadow-sm"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-muted-foreground/50 uppercase">Template</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="px-1 text-[10px] font-bold text-white uppercase">Template</p>
                   <select
                     value={storeQrDesign}
                     onChange={(e) => setStoreQrDesign(e.target.value as "clean" | "gradient" | "badge")}
@@ -550,7 +549,7 @@ const ReceivePage = () => {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-muted-foreground/50 uppercase">Size</p>
+                  <p className="px-1 text-[10px] font-bold text-white uppercase">Size</p>
                   <select
                     value={printSize}
                     onChange={(e) => setPrintSize(e.target.value as "small" | "medium" | "large")}
@@ -610,13 +609,13 @@ const ReceivePage = () => {
                   />
                 ) : null}
               </div>
-              <p className="mt-3 text-center text-xs font-semibold tracking-wide text-muted-foreground">
+              <p className="mt-3 text-center text-xs font-semibold tracking-wide text-white">
                 {storeQrTagline || "SCAN TO PAY"}
               </p>
-              <p className="mt-1 text-center text-[11px] font-medium text-muted-foreground">
+              <p className="mt-1 text-center text-[11px] font-medium text-white">
                 {normalizedMerchantUsername ? `Manual pay: @${normalizedMerchantUsername}` : "Manual payment available in OpenPay app"}
               </p>
-              <p className="mt-2 text-center text-[10px] text-muted-foreground">
+              <p className="mt-2 text-center text-[10px] text-white">
                 Powered by OpenPay
               </p>
             </div>
@@ -642,7 +641,7 @@ const ReceivePage = () => {
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-black/5 dark:bg-white/5 p-5 print:hidden animate-in-up" style={{ animationDelay: "400ms" }}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Download link fallback</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white">Download link fallback</p>
             <div className="mt-4 flex gap-3">
               <Button type="button" variant="outline" className="ios-active h-11 flex-1 rounded-xl border-white/10 bg-white/50 dark:bg-white/5 font-bold" onClick={handleGenerateDownloadLink}>
                 Generate
@@ -680,6 +679,7 @@ const ReceivePage = () => {
           <Button className="ios-active h-14 w-full rounded-2xl bg-blue-600 text-white font-black text-lg shadow-xl shadow-blue-500/20 animate-in-up" style={{ animationDelay: "500ms" }} onClick={() => navigate("/send")}>
             Open Express Send
           </Button>
+        </div>
         </div>
       </div>
     </div>
