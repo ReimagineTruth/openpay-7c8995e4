@@ -314,9 +314,9 @@ const MenuPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-[#0a3fa9] px-4 pt-8 pb-10 text-white">
       <div className="px-4 pt-8">
-        <h1 className="text-3xl font-bold text-foreground mb-8">Services</h1>
+        <h1 className="text-3xl font-bold text-white mb-8">Services</h1>
         
         {sections.map((section) => (
           <div key={section.title} className="mb-8 animate-in-up">
@@ -331,17 +331,17 @@ const MenuPage = () => {
                       disabled ? "opacity-40 cursor-not-allowed" : "hover:scale-105"
                     }`}
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/20 shadow-sm border border-blue-100/50 dark:border-blue-900/30">
-                      <Icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0a3fa9] shadow-sm border border-[#0a3fa9]/20">
+                      <Icon className="h-6 w-6 text-white" />
                     </div>
-                    <span className="text-[11px] font-bold text-center leading-tight text-muted-foreground dark:text-foreground/70">{label}</span>
+                    <span className="text-[11px] font-bold text-center leading-tight text-white dark:text-white/70">{label}</span>
                   </button>
                 ))}
               </div>
             ) : (
               <div className="ios-glass overflow-hidden rounded-[2.5rem] border border-border/40 dark:border-white/5 shadow-xl shadow-black/5">
                 <div className={`px-6 py-4 ${section.color || "bg-secondary/10"}`}>
-                  <h2 className={`text-lg font-black tracking-tight ${section.textColor || "text-foreground"}`}>{section.title}</h2>
+                  <h2 className={`text-lg font-black tracking-tight ${section.textColor || "text-white"}`}>{section.title}</h2>
                 </div>
                 <div className="p-4 grid grid-cols-4 gap-y-8 gap-x-2">
                   {section.items.map(({ icon: Icon, label, action, disabled, subtitle }) => (
@@ -353,12 +353,12 @@ const MenuPage = () => {
                         disabled ? "opacity-40 cursor-not-allowed" : "hover:scale-105"
                       }`}
                     >
-                      <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-blue-50 dark:bg-blue-900/20 border border-blue-100/50 dark:border-blue-900/30 shadow-sm">
-                        <Icon className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+                      <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-[#0a3fa9] shadow-sm border border-[#0a3fa9]/20">
+                        <Icon className="h-7 w-7 text-white" />
                       </div>
                       <div className="flex flex-col items-center gap-0.5 px-1">
-                        <span className="text-[10px] font-bold text-center leading-tight text-foreground/90 dark:text-foreground line-clamp-2">{label}</span>
-                        {subtitle && <span className="text-[8px] text-muted-foreground dark:text-white/40 text-center leading-tight line-clamp-1">{subtitle}</span>}
+                        <span className="text-[10px] font-bold text-center leading-tight text-white dark:text-white/40 line-clamp-2">{label}</span>
+                        {subtitle && <span className="text-[8px] text-white dark:text-white/60 text-center leading-tight line-clamp-1">{subtitle}</span>}
                       </div>
                     </button>
                   ))}
@@ -411,10 +411,10 @@ const MenuPage = () => {
               <button
                 type="button"
                 onClick={() => void handleCopyApkLink()}
-                className="mt-4 h-12 w-full rounded-xl bg-neutral-200 px-4 text-lg font-semibold hover:bg-neutral-300"
+                className="mt-4 h-12 w-full rounded-xl bg-gray-700 px-4 text-lg font-semibold text-white hover:bg-gray-600"
               >
                 <span className="inline-flex items-center gap-2">
-                  <Copy className="h-4 w-4" />
+                  <Copy className="h-4 w-4 text-white" />
                   Copy download link
                 </span>
               </button>
@@ -422,10 +422,10 @@ const MenuPage = () => {
               <button
                 type="button"
                 onClick={() => void handleCopyMegaKey()}
-                className="mt-3 h-12 w-full rounded-xl bg-neutral-200 px-4 text-lg font-semibold hover:bg-neutral-300"
+                className="mt-3 h-12 w-full rounded-xl bg-gray-700 px-4 text-lg font-semibold text-white hover:bg-gray-600"
               >
                 <span className="inline-flex items-center gap-2">
-                  <Copy className="h-4 w-4" />
+                  <Copy className="h-4 w-4 text-white" />
                   If Mega asks key, copy Mega key
                 </span>
               </button>

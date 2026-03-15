@@ -740,7 +740,7 @@ const RequestMoney = () => {
                         {accountLookupResult.avatar_url ? (
                           <img src={accountLookupResult.avatar_url} alt={accountLookupResult.full_name} className="h-9 w-9 rounded-full border border-border object-cover" />
                         ) : (
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-foreground">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-gray-800">
                             {accountLookupResult.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                           </div>
                         )}
@@ -803,7 +803,7 @@ const RequestMoney = () => {
               <select
                 value={createCurrencyCode}
                 onChange={(e) => setCreateCurrencyCode(e.target.value)}
-                className={`h-10 w-full rounded-xl border border-input bg-white text-sm text-foreground ${createCurrencyCode === "PI" || createCurrencyCode === "OUSD" ? "pl-10 pr-3" : "px-3"}`}
+                className={`h-10 w-full rounded-xl border border-input bg-white text-sm text-gray-800 ${createCurrencyCode === "PI" || createCurrencyCode === "OUSD" ? "pl-10 pr-3" : "px-3"}`}
               >
                 {currencies.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -839,7 +839,7 @@ const RequestMoney = () => {
               <select
                 value={payCurrencyCode}
                 onChange={(e) => setPayCurrencyCode(e.target.value)}
-                className={`h-10 w-full rounded-xl border border-input bg-white text-sm text-foreground ${payCurrencyCode === "PI" || payCurrencyCode === "OUSD" ? "pl-10 pr-3" : "px-3"}`}
+                className={`h-10 w-full rounded-xl border border-input bg-white text-sm text-gray-800 ${payCurrencyCode === "PI" || payCurrencyCode === "OUSD" ? "pl-10 pr-3" : "px-3"}`}
               >
                 {currencies.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -862,12 +862,12 @@ const RequestMoney = () => {
                   {requester?.avatar_url ? (
                     <img src={requester.avatar_url} alt={requester.full_name} className="h-10 w-10 rounded-full border border-border object-cover" />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-foreground">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-gray-800">
                       {(requester?.full_name || "U").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                     </div>
                   )}
                   <div>
-                    <p className="font-medium text-foreground">{requester?.full_name || "Unknown user"}</p>
+                    <p className="font-medium text-gray-800">{requester?.full_name || "Unknown user"}</p>
                     {requester?.username && <p className="text-sm text-muted-foreground">@{requester.username}</p>}
                   </div>
                 </div>
@@ -887,7 +887,7 @@ const RequestMoney = () => {
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 bg-red-600 text-white hover:bg-red-700 border-red-600"
                       disabled={loading}
                       onClick={() => handleReject(request)}
                     >
@@ -915,12 +915,12 @@ const RequestMoney = () => {
                   {payer?.avatar_url ? (
                     <img src={payer.avatar_url} alt={payer.full_name} className="h-10 w-10 rounded-full border border-border object-cover" />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-foreground">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-gray-800">
                       {(payer?.full_name || "U").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                     </div>
                   )}
                   <div>
-                    <p className="font-medium text-foreground">{payer?.full_name || "Unknown user"}</p>
+                    <p className="font-medium text-gray-800">{payer?.full_name || "Unknown user"}</p>
                     {payer?.username && <p className="text-sm text-gray-600">@{payer.username}</p>}
                   </div>
                 </div>
@@ -942,8 +942,8 @@ const RequestMoney = () => {
       <Dialog open={showScanner} onOpenChange={setShowScanner}>
         <DialogContent className="max-w-md rounded-3xl">
           <div className="mb-2 flex items-center gap-2">
-            <QrCode className="h-5 w-5 text-foreground" />
-            <DialogTitle className="text-lg font-semibold text-foreground">Scan QR Code</DialogTitle>
+            <QrCode className="h-5 w-5 text-gray-800" />
+            <DialogTitle className="text-lg font-semibold text-gray-800">Scan QR Code</DialogTitle>
           </div>
           <DialogDescription className="text-xs text-muted-foreground">
             Point your camera at an OpenPay receive QR code.
@@ -956,11 +956,11 @@ const RequestMoney = () => {
 
       <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
         <DialogContent className="max-w-md rounded-3xl">
-          <DialogTitle className="text-lg font-semibold text-foreground">Request Payment Instructions</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-gray-800">Request Payment Instructions</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             Review before sending or paying a request.
           </DialogDescription>
-          <div className="space-y-2 text-sm text-foreground">
+          <div className="space-y-2 text-sm text-gray-800">
             <p>1. Confirm the name and username before you send a request.</p>
             <p>2. Verify the amount and note details carefully.</p>
             <p>3. Only pay requests from people you know and expected to transact with.</p>
@@ -978,7 +978,7 @@ const RequestMoney = () => {
         }}
       >
         <DialogContent className="rounded-3xl">
-          <DialogTitle className="text-xl font-bold text-foreground">
+          <DialogTitle className="text-xl font-bold text-gray-800">
             {confirmAction?.type === "create"
               ? "Confirm request"
               : confirmAction?.type === "pay"
@@ -1005,7 +1005,7 @@ const RequestMoney = () => {
                 </div>
               )}
               <div>
-                <p className="font-semibold text-foreground">
+                <p className="font-semibold text-gray-800">
                   {confirmAction.type === "create" ? confirmAction.payer.full_name : confirmAction.requester?.full_name || "Unknown user"}
                 </p>
                 {(confirmAction.type === "create" ? confirmAction.payer.username : confirmAction.requester?.username) && (
@@ -1020,7 +1020,7 @@ const RequestMoney = () => {
           <div className="mt-4 space-y-2 rounded-2xl border border-border p-3 text-sm">
             <p className="flex items-center justify-between">
               <span className="text-muted-foreground">Amount</span>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-gray-800">
                 {confirmAction?.type === "create"
                   ? (() => {
                     const meta = currencies.find((c) => c.code === confirmAction.currencyCode);
@@ -1034,7 +1034,7 @@ const RequestMoney = () => {
             </p>
             <p className="flex items-center justify-between">
               <span className="text-muted-foreground">Converted (USD)</span>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-gray-800">
                 ${confirmAction?.type === "create"
                   ? (() => {
                     const meta = currencies.find((c) => c.code === confirmAction.currencyCode);
@@ -1049,7 +1049,7 @@ const RequestMoney = () => {
             </p>
             <p className="flex items-start justify-between gap-2">
               <span className="text-muted-foreground">Note</span>
-              <span className="max-w-[70%] break-all text-right text-foreground">
+              <span className="max-w-[70%] break-all text-right text-gray-800">
                 {confirmAction?.type === "create"
                   ? confirmAction.note || "No note"
                   : confirmAction?.type === "pay" || confirmAction?.type === "reject"
