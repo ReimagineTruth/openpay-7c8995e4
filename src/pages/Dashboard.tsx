@@ -375,6 +375,8 @@ const Dashboard = () => {
   const [loanPaymentHistory, setLoanPaymentHistory] = useState<LoanPaymentHistoryRow[]>([]);
   const [movingToSavings, setMovingToSavings] = useState(false);
   const [movingToWallet, setMovingToWallet] = useState(false);
+  const [savingsAnimation, setSavingsAnimation] = useState(false);
+  const [walletAnimation, setWalletAnimation] = useState(false);
   const [requestingLoan, setRequestingLoan] = useState(false);
   const [payingLoan, setPayingLoan] = useState(false);
   const [savingsAmount, setSavingsAmount] = useState("");
@@ -1391,11 +1393,13 @@ const Dashboard = () => {
       return;
     }
     setMovingToSavings(true);
+    setSavingsAnimation(true);
     const { error } = await (supabase as any).rpc("transfer_my_wallet_to_savings", {
       p_amount: amount,
       p_note: "Dashboard savings transfer",
     });
     setMovingToSavings(false);
+    setTimeout(() => setSavingsAnimation(false), 1000); // Animation duration
     if (error) {
       toast.error(error.message);
       return;
@@ -1413,11 +1417,13 @@ const Dashboard = () => {
       return;
     }
     setMovingToWallet(true);
+    setWalletAnimation(true);
     const { error } = await (supabase as any).rpc("transfer_my_savings_to_wallet", {
       p_amount: amount,
       p_note: "Dashboard savings withdrawal",
     });
     setMovingToWallet(false);
+    setTimeout(() => setWalletAnimation(false), 1000); // Animation duration
     if (error) {
       toast.error(error.message);
       return;
@@ -1985,8 +1991,29 @@ const Dashboard = () => {
                   placeholder={`Amount (${currencyLabel})`}
                   className="mb-2 h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground"
                 />
-                <button disabled={movingToSavings} onClick={() => handleProtectedAction(handleMoveWalletToSavings, "handleMoveWalletToSavings")} className="h-10 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white">
-                  {movingToSavings ? "Moving..." : "Move to Savings"}
+                <button 
+                  disabled={movingToSavings} 
+                  onClick={() => handleProtectedAction(handleMoveWalletToSavings, "handleMoveWalletToSavings")} 
+                  className={`h-10 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white relative overflow-hidden transition-all duration-300 ${
+                    savingsAnimation ? 'scale-105 shadow-lg' : ''
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    {movingToSavings ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        <span>Moving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <PiggyBank className="h-4 w-4" />
+                        <span>Move to Savings</span>
+                      </>
+                    )}
+                  </span>
+                  {savingsAnimation && (
+                    <div className="absolute inset-0 bg-green-500 opacity-20 animate-pulse" />
+                  )}
                 </button>
               </div>
               <div className="rounded-2xl border border-border/70 p-3">
@@ -1999,8 +2026,29 @@ const Dashboard = () => {
                   placeholder={`Amount (${currencyLabel})`}
                   className="mb-2 h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground"
                 />
-                <button disabled={movingToWallet} onClick={() => handleProtectedAction(handleMoveSavingsToWallet, "handleMoveSavingsToWallet")} className="h-10 w-full rounded-xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue">
-                  {movingToWallet ? "Moving..." : "Move to Wallet"}
+                <button 
+                  disabled={movingToWallet} 
+                  onClick={() => handleProtectedAction(handleMoveSavingsToWallet, "handleMoveSavingsToWallet")} 
+                  className={`h-10 w-full rounded-xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue relative overflow-hidden transition-all duration-300 ${
+                    walletAnimation ? 'scale-105 shadow-lg' : ''
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    {movingToWallet ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        <span>Moving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Wallet className="h-4 w-4" />
+                        <span>Move to Wallet</span>
+                      </>
+                    )}
+                  </span>
+                  {walletAnimation && (
+                    <div className="absolute inset-0 bg-blue-500 opacity-20 animate-pulse" />
+                  )}
                 </button>
               </div>
             </div>
