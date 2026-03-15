@@ -405,24 +405,12 @@ const ReceivePage = () => {
             <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/60">Currency</p>
             <div className="relative">
               {(currencyCode === "PI" || currencyCode === "OUSD") && (
-        </div>
-
-        <div className="mt-8 rounded-[2rem] border border-white/20 bg-white p-6 shadow-inner shadow-black/5 animate-in-fade">
-          <div className="flex justify-center">
-            {receiveQrValue ? (
-              <QRCodeSVG
-                value={receiveQrValue}
-                size={220}
-                level="H"
-                includeMargin
-                imageSettings={{
-                  src: "/openpay-logo.jpg",
-                  height: 38,
-                  width: 38,
-                  excavate: true,
-                }}
-              />
-            ) : null}
+                <img
+                  src={currencyCode === "PI" ? PURE_PI_ICON_URL : OPENPAY_ICON_URL}
+                  alt={currencyCode === "PI" ? "Pure Pi" : "Open USD"}
+                  className="pointer-events-none absolute left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full object-cover shadow-sm"
+                />
+              )}
           </div>
           <p className="mt-4 text-center text-[11px] font-bold text-white uppercase tracking-tight">
             Scan to pay in Express Send
@@ -654,11 +642,45 @@ const ReceivePage = () => {
             ) : null}
           </div>
 
+          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 print:hidden animate-in-up" style={{ animationDelay: "400ms" }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Download link fallback</p>
+            <div className="mt-4 flex gap-3">
+              <Button type="button" variant="outline" className="ios-active h-11 flex-1 rounded-xl border-white/10 bg-white/50 dark:bg-white/5 font-bold" onClick={handleGenerateDownloadLink}>
+                Generate
+              </Button>
+              <Button type="button" variant="outline" className="ios-active h-11 flex-1 rounded-xl border-white/10 bg-white/50 dark:bg-white/5 font-bold" onClick={handleOpenDownloadLink} disabled={!downloadLink}>
+                Open
+              </Button>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Input value={downloadLink ? "data:image/png;base64,...(generated)" : ""} readOnly className="h-11 rounded-xl border-none bg-white/70 dark:bg-white/5 font-medium" />
+              <Button type="button" variant="outline" className="ios-active h-11 rounded-xl border-white/10 bg-white dark:bg-white/5 font-bold" onClick={handleCopyDownloadLink} disabled={!downloadLink}>
+                Copy
+              </Button>
+            </div>
+          </div>
+
+          <div className="hidden">
+            {receiveQrValue ? (
+              <QRCodeCanvas
+                id="store-qr-download-source"
+                value={receiveQrValue}
+                size={1024}
+                level="H"
+                includeMargin
+                imageSettings={{
+                  src: "/openpay-logo.jpg",
+                  height: 140,
+                  width: 140,
+                  excavate: true,
+                }}
+              />
+            ) : null}
+          </div>
+
           <Button className="ios-active h-14 w-full rounded-2xl bg-blue-600 text-white font-black text-lg shadow-xl shadow-blue-500/20 animate-in-up" style={{ animationDelay: "500ms" }} onClick={() => navigate("/send")}>
             Open Express Send
           </Button>
-
-        </div>
         </div>
       </div>
     </div>
