@@ -314,9 +314,10 @@ const normalizeAmountInput = (value: string, maxDecimals = 2) => {
   return `${intPart}.${decPart.slice(0, maxDecimals)}`;
 };
 
-const formatAmountInput = (value: string) => {
-  if (!value) return "";
-  const [intPart, decPart] = value.split(".");
+const formatAmountInput = (value: string | number) => {
+  const stringValue = String(value || "");
+  if (!stringValue) return "";
+  const [intPart, decPart] = stringValue.split(".");
   const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return decPart !== undefined && decPart.length > 0 ? `${withCommas}.${decPart}` : withCommas;
 };
@@ -586,7 +587,7 @@ const Dashboard = () => {
         if (data?.loanPaymentAmount) setLoanPaymentAmount(data.loanPaymentAmount);
         if (data?.merchantSavingsAmount) setMerchantSavingsAmount(data.merchantSavingsAmount);
         if (data?.merchantWithdrawAmount) setMerchantWithdrawAmount(data.merchantWithdrawAmount);
-        if (data?.personalToMerchantAmount) setPersonalToMerchantAmount(data.personalToMerchantAmount);
+        if (data?.personalToMerchantAmount) setPersonalToMerchantAmount(String(data.personalToMerchantAmount));
 
         // Clear location state immediately to prevent re-execution
         navigate(location.pathname + location.search, { replace: true, state: {} });
