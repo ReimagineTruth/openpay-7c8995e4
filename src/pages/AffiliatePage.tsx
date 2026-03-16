@@ -154,12 +154,12 @@ const AffiliatePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 pt-4 pb-24">
+    <div className="min-h-screen bg-paypal-blue px-4 pt-4 pb-24 text-white">
       <div className="mb-5 flex items-center gap-3">
-        <button onClick={() => navigate("/menu")} className="paypal-surface flex h-10 w-10 items-center justify-center rounded-full">
-          <ArrowLeft className="h-5 w-5 text-foreground" />
+        <button onClick={() => navigate("/menu")} className="bg-white flex h-10 w-10 items-center justify-center rounded-full">
+          <ArrowLeft className="h-5 w-5 text-paypal-blue" />
         </button>
-        <h1 className="text-xl font-bold text-paypal-dark">Affiliate</h1>
+        <h1 className="text-xl font-bold text-white">Affiliate</h1>
       </div>
 
       <div className="grid gap-3">
@@ -178,14 +178,14 @@ const AffiliatePage = () => {
         </div>
 
         {/* Mining Bonus Info */}
-        <div className="rounded-3xl border border-paypal-blue/20 bg-paypal-blue/5 p-5">
+        <div className="rounded-3xl border border-white/20 bg-white/10 p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-paypal-blue/10">
-              <TrendingUp className="h-5 w-5 text-paypal-blue" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
+              <TrendingUp className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="font-bold text-paypal-dark">Mining Bonus Logic</p>
-              <p className="text-xs text-muted-foreground">Base: 0.10/day + 10% per active miner (max 100%)</p>
+              <p className="font-bold text-white">Mining Bonus Logic</p>
+              <p className="text-xs text-white/80">Base: 0.10/day + 10% per active miner (max 100%)</p>
             </div>
           </div>
         </div>
@@ -195,22 +195,22 @@ const AffiliatePage = () => {
           <div className="paypal-surface rounded-2xl p-4 text-center">
             <Users className="mx-auto h-5 w-5 text-paypal-blue" />
             <p className="mt-2 text-lg font-bold text-foreground">{rewards.length}</p>
-            <p className="text-xs text-muted-foreground">Total Invites</p>
+            <p className="text-xs text-white">Total Invites</p>
           </div>
           <div className="paypal-surface rounded-2xl p-4 text-center">
             <Timer className="mx-auto h-5 w-5 text-paypal-success" />
             <p className="mt-2 text-lg font-bold text-foreground">{activeMiners}</p>
-            <p className="text-xs text-muted-foreground">Active Miners</p>
+            <p className="text-xs text-white">Active Miners</p>
           </div>
           <div className="paypal-surface rounded-2xl p-4 text-center">
             <DollarSign className="mx-auto h-5 w-5 text-paypal-blue" />
             <p className="mt-2 text-lg font-bold text-foreground">${totalClaimed.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Claimed</p>
+            <p className="text-xs text-white">Claimed</p>
           </div>
           <div className="paypal-surface rounded-2xl p-4 text-center">
             <TrendingUp className="mx-auto h-5 w-5 text-paypal-blue" />
             <p className="mt-2 text-lg font-bold text-foreground">{bonusEarned.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Bonus Earned</p>
+            <p className="text-xs text-white">Bonus Earned</p>
           </div>
         </div>
 

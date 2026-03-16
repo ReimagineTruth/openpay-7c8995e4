@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { getAppCookie, loadUserPreferences, setAppCookie, upsertUserPreferences } from "@/lib/userPreferences";
 import { isRemittanceUiEnabled } from "@/lib/remittanceAccess";
 import { isSolanaPayEnabled } from "@/lib/solanaPayAccess";
@@ -3052,7 +3053,12 @@ const Dashboard = () => {
               ].map((stat, i) => (
                 <div key={i} className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">{stat.label}</p>
-                  <p className="text-base font-bold text-foreground">{balanceHidden ? "****" : formatCompactCurrency(Number(stat.value ?? 0))}</p>
+                  <p className={cn(
+                    "text-base font-bold",
+                    stat.label === "Incoming" && "text-green-500",
+                    stat.label === "Refunded" && "text-red-500",
+                    stat.label === "Transferred out" && "text-paypal-blue",
+                  )}>{balanceHidden ? "****" : formatCompactCurrency(Number(stat.value ?? 0))}</p>
                 </div>
               ))}
             </div>
@@ -3082,7 +3088,7 @@ const Dashboard = () => {
                 type="text"
                 inputMode="decimal"
                 placeholder={`Amount (${currencyLabel})`}
-                className="mb-2 h-10 w-full rounded-xl border border-border px-3"
+                className="mb-2 h-10 w-full rounded-xl border border-border px-3 text-black"
               />
               <button
                 disabled={movingMerchantToSavings}
@@ -3090,6 +3096,7 @@ const Dashboard = () => {
                 className="h-10 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white"
               >
                 {movingMerchantToSavings ? "Moving..." : "Move to Savings"}
+                <ArrowLeftRight className="ml-2 h-4 w-4" />
               </button>
             </div>
             <div className="rounded-2xl border border-border/70 p-3">
@@ -3100,7 +3107,7 @@ const Dashboard = () => {
                 type="text"
                 inputMode="decimal"
                 placeholder={`Amount (${currencyLabel})`}
-                className="mb-2 h-10 w-full rounded-xl border border-border px-3"
+                className="mb-2 h-10 w-full rounded-xl border border-border px-3 text-black"
               />
               <button
                 disabled={movingMerchantToWallet}
@@ -3108,6 +3115,7 @@ const Dashboard = () => {
                 className="h-10 w-full rounded-xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue"
               >
                 {movingMerchantToWallet ? "Moving..." : "Move to Wallet"}
+                <Wallet className="ml-2 h-4 w-4" />
               </button>
             </div>
           </div>

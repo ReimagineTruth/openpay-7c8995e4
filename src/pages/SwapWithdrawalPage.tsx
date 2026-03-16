@@ -285,27 +285,27 @@ const SwapWithdrawalPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-4 pb-10">
+    <div className="min-h-screen bg-paypal-blue px-4 py-4 pb-10 text-white">
       <div className="mx-auto w-full max-w-3xl">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/dashboard")} aria-label="Back">
-              <ArrowLeft className="h-6 w-6 text-foreground" />
+            <button onClick={() => navigate("/dashboard")} aria-label="Back" className="bg-white flex h-10 w-10 items-center justify-center rounded-full">
+              <ArrowLeft className="h-6 w-6 text-paypal-blue" />
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-paypal-blue/10">
-                  <BrandLogo className="h-6 w-6 text-paypal-blue" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/20">
+                  <BrandLogo className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-paypal-dark">OpenPay</h1>
-                  <p className="text-xs text-muted-foreground">Swap Withdrawal</p>
+                  <h1 className="text-xl font-bold text-white">OpenPay</h1>
+                  <p className="text-xs text-white/80">Swap Withdrawal</p>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">OpenUSD to PI mainnet payout</p>
+              <p className="text-xs text-white/80">OpenUSD to PI mainnet payout</p>
             </div>
           </div>
-          <Button variant="outline" onClick={loadHistory} disabled={refreshing}>
+          <Button variant="outline" onClick={loadHistory} disabled={refreshing} className="border-white/30 bg-white/10 text-white hover:bg-white/20">
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -313,19 +313,19 @@ const SwapWithdrawalPage = () => {
 
         <div className="paypal-surface rounded-3xl p-4 space-y-4">
           {!swapEnabled && (
-            <div className="rounded-2xl border border-border/70 bg-secondary/30 p-4 text-sm text-muted-foreground">
-              <p className="text-base font-semibold text-foreground">Swap Withdrawal</p>
+            <div className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-white">
+              <p className="text-base font-semibold text-white">Swap Withdrawal</p>
               <p className="mt-2">This feature is coming soon.</p>
               <p className="mt-1">You can view your recent requests below once available.</p>
             </div>
           )}
-          <div className="rounded-2xl border border-border/70 bg-secondary/30 p-4 text-sm text-muted-foreground">
-            <p className="font-semibold text-foreground">How this works</p>
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-white">
+            <p className="font-semibold text-white">How this works</p>
             <p className="mt-2">1. Fill in your OpenPay identity and mainnet PI wallet address.</p>
             <p>2. When you submit, your OpenUSD is moved to the settlement account {SETTLEMENT_USERNAME} ({SETTLEMENT_ACCOUNT_NUMBER}).</p>
             <p>3. After admin approval, you receive PI to your mainnet wallet. Rate is always 1 PI = 3.14 OPEN USD.</p>
             <p>4. A 2% processing fee applies to withdrawals.</p>
-            <div className="mt-3 rounded-xl border border-border/60 bg-secondary/30 p-3 text-xs text-foreground">
+            <div className="mt-3 rounded-xl border border-white/30 bg-white/5 p-3 text-xs text-white">
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-2">
                   <img src={PI_LOGO_URL} alt="Pi" className="h-4 w-4" />
@@ -348,12 +348,12 @@ const SwapWithdrawalPage = () => {
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-foreground">Withdrawal details</p>
-            <p className="text-xs text-muted-foreground">Confirm your OpenPay identity and enter your PI wallet address.</p>
+            <p className="text-sm font-semibold text-white">Withdrawal details</p>
+            <p className="text-xs text-white/80">Confirm your OpenPay identity and enter your PI wallet address.</p>
           </div>
 
           <div className="mt-4 grid gap-3">
-            <label className="space-y-1 text-xs text-muted-foreground">
+            <label className="space-y-1 text-xs text-white/80">
               <span>OpenUSD amount (min 10)</span>
               <input
                 value={amount}
@@ -363,40 +363,40 @@ const SwapWithdrawalPage = () => {
                 placeholder="Enter amount"
                 readOnly
                 aria-readonly="true"
-                className="h-11 w-full rounded-xl border border-border bg-secondary/30 px-3 text-sm text-foreground"
+                className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-white placeholder:text-white/50"
               />
             </label>
-            <label className="space-y-1 text-xs text-muted-foreground">
+            <label className="space-y-1 text-xs text-white/80">
               <span>OpenPay full name</span>
               <input
                 value={openpayName}
                 placeholder="Full name"
                 readOnly
                 aria-readonly="true"
-                className="h-11 w-full rounded-xl border border-border bg-secondary/30 px-3 text-sm text-foreground"
+                className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-white placeholder:text-white/50"
               />
             </label>
-            <label className="space-y-1 text-xs text-muted-foreground">
+            <label className="space-y-1 text-xs text-white/80">
               <span>OpenPay username</span>
               <input
                 value={openpayUsername}
                 placeholder="@username"
                 readOnly
                 aria-readonly="true"
-                className="h-11 w-full rounded-xl border border-border bg-secondary/30 px-3 text-sm text-foreground"
+                className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-white placeholder:text-white/50"
               />
             </label>
-            <label className="space-y-1 text-xs text-muted-foreground">
+            <label className="space-y-1 text-xs text-white/80">
               <span>OpenPay account number</span>
               <input
                 value={openpayAccountNumber}
                 placeholder="OPEA..."
                 readOnly
                 aria-readonly="true"
-                className="h-11 w-full rounded-xl border border-border bg-secondary/30 px-3 text-sm text-foreground"
+                className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-white placeholder:text-white/50"
               />
             </label>
-            <label className="space-y-1 text-xs text-muted-foreground">
+            <label className="space-y-1 text-xs text-white/80">
               <span>Mainnet PI wallet address</span>
               <input
                 value={piWalletAddress}
@@ -404,9 +404,9 @@ const SwapWithdrawalPage = () => {
                 placeholder="Pi wallet address"
                 readOnly={!swapEnabled}
                 aria-readonly={!swapEnabled ? "true" : undefined}
-                className="h-11 w-full rounded-xl border border-border px-3 text-sm text-foreground"
+                className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-white placeholder:text-white/50"
               />
-              <span className="text-[11px] text-muted-foreground">Make sure this is your PI mainnet address.</span>
+              <span className="text-[11px] text-white/70">Make sure this is your PI mainnet address.</span>
             </label>
           </div>
 
@@ -441,7 +441,7 @@ const SwapWithdrawalPage = () => {
               in your dashboard activity history.
             </div>
           ) : null}
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-xs text-white/70">
             By submitting, you authorize the transfer of your OpenUSD to {SETTLEMENT_USERNAME} ({SETTLEMENT_ACCOUNT_NUMBER}).
           </p>
         </div>
