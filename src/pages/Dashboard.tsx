@@ -425,6 +425,8 @@ const Dashboard = () => {
     const saved = localStorage.getItem("openpay_amount_format");
     return saved === "comma" ? "comma" : "compact";
   });
+  const [personalToMerchantAmount, setPersonalToMerchantAmount] = useState("");
+  const [movingToMerchant, setMovingToMerchant] = useState(false);
   
   // Mining state
   
@@ -516,7 +518,8 @@ const Dashboard = () => {
         (actionName === "handleMoveWalletToSavings" && (!Number.isFinite(Number(savingsAmount)) || Number(savingsAmount) <= 0)) ||
         (actionName === "handleMoveSavingsToWallet" && (!Number.isFinite(Number(withdrawAmount)) || Number(withdrawAmount) <= 0)) ||
         (actionName === "handleMoveMerchantToSavings" && (!Number.isFinite(Number(merchantSavingsAmount)) || Number(merchantSavingsAmount) <= 0)) ||
-        (actionName === "handleMoveMerchantToWallet" && (!Number.isFinite(Number(merchantWithdrawAmount)) || Number(merchantWithdrawAmount) <= 0))
+        (actionName === "handleMoveMerchantToWallet" && (!Number.isFinite(Number(merchantWithdrawAmount)) || Number(merchantWithdrawAmount) <= 0)) ||
+        (actionName === "handleMovePersonalToMerchant" && (!Number.isFinite(Number(personalToMerchantAmount)) || Number(personalToMerchantAmount) <= 0))
       ) {
         toast.error("Enter a valid amount");
         return;
@@ -530,6 +533,7 @@ const Dashboard = () => {
       if (actionName === "handlePayLoan") actionData.loanPaymentAmount = Number(loanPaymentAmount);
       if (actionName === "handleMoveMerchantToSavings") actionData.merchantSavingsAmount = Number(merchantSavingsAmount);
       if (actionName === "handleMoveMerchantToWallet") actionData.merchantWithdrawAmount = Number(merchantWithdrawAmount);
+      if (actionName === "handleMovePersonalToMerchant") actionData.personalToMerchantAmount = Number(personalToMerchantAmount);
 
       navigate("/confirm-pin", { 
         state: { 
@@ -574,6 +578,7 @@ const Dashboard = () => {
         else if (actionName === "handleMoveMerchantToSavings") void handleMoveMerchantToSavings(data.merchantSavingsAmount);
         else if (actionName === "handleMoveMerchantToWallet") void handleMoveMerchantToWallet(data.merchantWithdrawAmount);
         else if (actionName === "handlePayLoan") void handlePayLoan(data.loanPaymentAmount);
+        else if (actionName === "handleMovePersonalToMerchant") void handleMovePersonalToMerchant(data.personalToMerchantAmount);
 
         // Also update local state so UI is consistent
         if (data?.savingsAmount) setSavingsAmount(data.savingsAmount);
@@ -581,6 +586,7 @@ const Dashboard = () => {
         if (data?.loanPaymentAmount) setLoanPaymentAmount(data.loanPaymentAmount);
         if (data?.merchantSavingsAmount) setMerchantSavingsAmount(data.merchantSavingsAmount);
         if (data?.merchantWithdrawAmount) setMerchantWithdrawAmount(data.merchantWithdrawAmount);
+        if (data?.personalToMerchantAmount) setPersonalToMerchantAmount(data.personalToMerchantAmount);
 
         // Clear location state immediately to prevent re-execution
         navigate(location.pathname + location.search, { replace: true, state: {} });
@@ -1479,6 +1485,33 @@ const Dashboard = () => {
     }
     setMerchantWithdrawAmount("");
     toast.success("Moved to wallet");
+    playUiSound("receive");
+    await loadDashboard();
+  };
+
+  const handleMovePersonalToMerchant = async (overrideAmount?: number) => {
+    const amount = overrideAmount || Number(personalToMerchantAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    if (amount > balance) {
+      toast.error("Insufficient balance");
+      return;
+    }
+    setMovingToMerchant(true);
+    const { error } = await (supabase as any).rpc("transfer_my_personal_wallet_to_merchant", {
+      p_amount: amount,
+      p_mode: merchantMode,
+      p_note: "Dashboard personal to merchant transfer",
+    });
+    setMovingToMerchant(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setPersonalToMerchantAmount("");
+    toast.success("Transferred to merchant wallet");
     playUiSound("receive");
     await loadDashboard();
   };
@@ -3076,6 +3109,38 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {walletView === "personal" && (
+        <div className="mx-4 mt-4 paypal-surface rounded-3xl p-4">
+          <div className="grid gap-3 sm:grid-cols-1">
+            <div className="rounded-2xl border border-border/70 p-3">
+              <p className="mb-2 text-sm font-semibold text-foreground">Transfer to merchant wallet ({merchantMode})</p>
+              <input
+                value={formatAmountInput(personalToMerchantAmount)}
+                onChange={(e) => setPersonalToMerchantAmount(normalizeAmountInput(e.target.value))}
+                type="text"
+                inputMode="decimal"
+                placeholder={`Amount (${currencyLabel})`}
+                className="mb-2 h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground"
+              />
+              <button
+                disabled={movingToMerchant}
+                onClick={() => handleProtectedAction(handleMovePersonalToMerchant, "handleMovePersonalToMerchant")}
+                className="h-10 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white relative overflow-hidden transition-all duration-300"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  {movingToMerchant ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Store className="h-4 w-4" />
+                  )}
+                  <span>Transfer to Merchant</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {walletView === "merchant" && (
         <div className="mx-4 mt-4 paypal-surface rounded-3xl p-4">
