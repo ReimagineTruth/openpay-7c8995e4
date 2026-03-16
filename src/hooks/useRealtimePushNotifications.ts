@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useThankYouModal } from "@/contexts/ThankYouModalContext";
 
 const notificationBellSoundUrl = "https://www.myinstants.com/media/sounds/dono_UZmG3Ta.mp3";
 let notificationBellAudio: HTMLAudioElement | null = null;
@@ -50,6 +51,8 @@ const showSystemNotification = async (title: string, body: string) => {
 };
 
 export const useRealtimePushNotifications = () => {
+  const { showThankYouModal } = useThankYouModal();
+
   useEffect(() => {
     let isMounted = true;
     const unlockAudio = () => {
@@ -110,13 +113,43 @@ export const useRealtimePushNotifications = () => {
             filter: `receiver_id=eq.${user.id}`,
           },
           async (payload) => {
-            const tx = payload.new as { amount?: number; sender_id?: string; receiver_id?: string };
+            const tx = payload.new as { 
+              amount?: number; 
+              sender_id?: string; 
+              receiver_id?: string;
+              note?: string;
+              purpose?: string;
+              sender?: { full_name?: string; username?: string; avatar_url?: string };
+            };
             const amount = Number(tx.amount || 0).toFixed(2);
             const isTopUp = tx.sender_id === tx.receiver_id && tx.receiver_id === user.id;
             if (isTopUp) {
               await maybeNotify("Top up successful", `$${amount} was added to your balance.`);
             } else {
-              await maybeNotify("Payment received", `$${amount} was added to your balance.`);
+              // Show ThankYouModal for received payments
+              try {
+                // Get sender details
+                const { data: senderProfile } = await supabase
+                  .from("profiles")
+                  .select("full_name, username, avatar_url")
+                  .eq("id", tx.sender_id)
+                  .single();
+
+                showThankYouModal({
+                  receiverName: senderProfile?.full_name || "Someone",
+                  receiverUsername: senderProfile?.username || undefined,
+                  amount: Number(tx.amount || 0),
+                  purpose: tx.purpose || undefined,
+                  note: tx.note || undefined,
+                  receiverAvatar: senderProfile?.avatar_url || undefined,
+                  transactionId: payload.new.id,
+                  date: new Date(payload.new.created_at),
+                });
+              } catch (error) {
+                console.error("Error showing ThankYouModal for receiver:", error);
+                // Fallback to regular notification
+                await maybeNotify("Payment received", `$${amount} was added to your balance.`);
+              }
             }
           },
         )

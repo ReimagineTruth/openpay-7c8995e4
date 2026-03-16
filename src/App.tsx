@@ -105,6 +105,9 @@ import SupportWidget from "./components/SupportWidget";
 import SupportPage from "./pages/SupportPage";
 import TopUpHistoryPage from "./pages/TopUpHistoryPage";
 import { CookieConsentProvider } from "./contexts/CookieConsentContext";
+import { ThankYouModalProvider } from "./contexts/ThankYouModalContext";
+import ThankYouModal from "./components/ThankYouModal";
+import GlobalThankYouModal from "./components/GlobalThankYouModal";
 import PageTransition from "./components/PageTransition";
 import { isSolanaPayEnabled } from "@/lib/solanaPayAccess";
 
@@ -298,23 +301,31 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  useRealtimePushNotifications();
-
   return (
     <QueryClientProvider client={queryClient}>
       <CookieConsentProvider>
         <CurrencyProvider>
-          <TooltipProvider>
-            <AppLanguageTranslate />
-            <Toaster />
-            <Sonner />
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <AppRoutes />
-            </BrowserRouter>
-          </TooltipProvider>
+          <ThankYouModalProvider>
+            <TooltipProvider>
+              <AppLanguageTranslate />
+              <Toaster />
+              <Sonner />
+              <AppWithNotifications />
+            </TooltipProvider>
+          </ThankYouModalProvider>
         </CurrencyProvider>
       </CookieConsentProvider>
     </QueryClientProvider>
+  );
+};
+
+const AppWithNotifications = () => {
+  useRealtimePushNotifications();
+  return (
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <AppRoutes />
+      <GlobalThankYouModal />
+    </BrowserRouter>
   );
 };
 

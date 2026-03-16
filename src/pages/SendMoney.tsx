@@ -8,6 +8,7 @@ import { ArrowLeft, Search, Info, ScanLine, Bookmark, BookmarkCheck, Loader2, Fi
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
+import { useThankYouModal } from "@/contexts/ThankYouModalContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import CurrencySelector from "@/components/CurrencySelector";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
@@ -112,6 +113,7 @@ const SendMoney = () => {
   const [note, setNote] = useState("");
   const [purpose, setPurpose] = useState("");
   const [customPurpose, setCustomPurpose] = useState("");
+  const [purposeSearchQuery, setPurposeSearchQuery] = useState("");
   const [showPurposeSelector, setShowPurposeSelector] = useState(false);
   const [paymentPurposes, setPaymentPurposes] = useState<any[]>([]);
   const [isPosCheckoutSession, setIsPosCheckoutSession] = useState(false);
@@ -122,6 +124,7 @@ const SendMoney = () => {
   const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const { showThankYouModal } = useThankYouModal();
   const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
   const [myFullName, setMyFullName] = useState("");
   const [accountLookupResult, setAccountLookupResult] = useState<UserProfile | null>(null);
@@ -429,13 +432,27 @@ const SendMoney = () => {
           note: activeNote || undefined,
           date: new Date(),
         });
-        setReceiptOpen(true);
+        
+        // Set thank you modal data for multi-send
+        showThankYouModal({
+          receiverName: `${activeUsers.length} recipients`,
+          receiverUsername: `Multiple recipients`,
+          amount: totalUsdAmount,
+          purpose: purpose || undefined,
+          note: activeNote || undefined,
+          transactionId: firstTxId,
+          date: new Date(),
+        });
+        
+        // Don't show receipt immediately - let thank you modal show first
+        // Receipt will be shown after thank you modal closes via GlobalThankYouModal
         playSendSuccessSound();
         toast.success(`${currency.symbol}${totalAmount.toFixed(2)} sent to ${activeUsers.length} people!`);
 
         // Reset state
         setAmount("");
         setNote("");
+        setPurpose("");
         setSelectedUsers([]);
         setIsMultiSend(false);
         setStep("select");
@@ -565,14 +582,30 @@ const SendMoney = () => {
         amount: usdAmountPerUser,
         otherPartyName: activeUser?.full_name
       });
-      setReceiptOpen(true);
-      console.log('Receipt modal opened:', true);
+      
+      // Set thank you modal data
+      showThankYouModal({
+        receiverName: activeUser?.full_name || "Unknown",
+        receiverUsername: activeUser?.username || undefined,
+        amount: usdAmountPerUser,
+        purpose: purpose || undefined,
+        note: activeNote || undefined,
+        receiverAvatar: activeUser?.avatar_url || undefined,
+        transactionId: txId,
+        date: new Date(),
+      });
+      console.log('Thank you modal opened:', true);
+      
+      // Don't show receipt immediately - let thank you modal show first
+      // Receipt will be shown after thank you modal closes via GlobalThankYouModal
+      console.log('Receipt modal will show after thank you modal closes');
       playSendSuccessSound();
       toast.success(`${currency.symbol}${parseFloat(activeAmount).toFixed(2)} sent to ${activeUser?.full_name || "Unknown"}!`);
 
       // Clear the amount and note
       setAmount("");
       setNote("");
+      setPurpose("");
       setSelectedUser(null);
       setStep("select");
       setSearchQuery("");
@@ -766,6 +799,12 @@ const SendMoney = () => {
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  // Reset modal state when component mounts to prevent showing on navigation back
+  useEffect(() => {
+    setShowPurposeSelector(false);
+    setPurposeSearchQuery("");
+  }, []);
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const normalizedSearchRaw = searchQuery.trim();
@@ -1089,6 +1128,136 @@ const SendMoney = () => {
           </div>
         </div>
 
+        {/* Purpose Selector Dialog - Only show during amount/confirm steps */}
+        {step === "amount" && (
+          <Dialog open={showPurposeSelector} onOpenChange={setShowPurposeSelector} key={showPurposeSelector ? "purpose-selector-open" : "purpose-selector-closed"}>
+            {showPurposeSelector && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[99999]" />
+            )}
+            <DialogContent className="rounded-3xl max-h-[80vh] overflow-y-auto z-[100000] relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md shadow-2xl border border-white/20">
+              <DialogTitle className="text-xl font-bold">Select Payment Purpose</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                Choose a purpose to help track your spending in analytics
+              </DialogDescription>
+
+              {/* Search Bar */}
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search purpose..."
+                  className="pl-10 h-12 rounded-xl border-border bg-background"
+                  value={purposeSearchQuery}
+                  onChange={(e) => setPurposeSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              <div className="mt-4 space-y-3 max-h-[50vh] overflow-y-auto">
+                {/* Filtered purposes */}
+                {paymentPurposes
+                  .filter(purposeOption => {
+                    const matchesSearch = !purposeSearchQuery || 
+                      purposeOption.name.toLowerCase().includes(purposeSearchQuery.toLowerCase()) ||
+                      purposeOption.category.toLowerCase().includes(purposeSearchQuery.toLowerCase());
+                    return matchesSearch;
+                  })
+                  .map(purposeOption => (
+                    <button
+                      key={purposeOption.id}
+                      onClick={() => {
+                        setPurpose(purposeOption.name);
+                        setShowPurposeSelector(false);
+                        setPurposeSearchQuery("");
+                      }}
+                      className={`w-full p-3 rounded-xl border text-left transition-colors flex items-center justify-between ${
+                        purpose === purposeOption.name
+                          ? 'border-paypal-blue bg-paypal-blue/10'
+                          : 'border-border hover:bg-secondary/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          purposeOption.color === 'blue' ? 'bg-blue-100 text-blue-600' :
+                          purposeOption.color === 'green' ? 'bg-green-100 text-green-600' :
+                          purposeOption.color === 'orange' ? 'bg-orange-100 text-orange-600' :
+                          purposeOption.color === 'yellow' ? 'bg-yellow-100 text-yellow-600' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
+                          {purposeOption.icon === 'home' && '🏠'}
+                          {purposeOption.icon === 'car' && '🚗'}
+                          {purposeOption.icon === 'shopping-cart' && '🛒'}
+                          {purposeOption.icon === 'utensils' && '🍽️'}
+                          {purposeOption.icon === 'fuel' && '⛽'}
+                          {purposeOption.icon === 'lightbulb' && '💡'}
+                          {purposeOption.icon === 'droplet' && '💧'}
+                          {purposeOption.icon === 'wifi' && '📶'}
+                          {purposeOption.icon === 'phone' && '📱'}
+                          {purposeOption.icon === 'shield' && '🛡️'}
+                          {purposeOption.icon === 'credit-card' && '💳'}
+                          {purposeOption.icon === 'more-horizontal' && '⋯'}
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">{purposeOption.name}</div>
+                          <div className="text-xs text-muted-foreground">{purposeOption.category}</div>
+                        </div>
+                      </div>
+                      {purpose === purposeOption.name && (
+                        <Check className="w-4 h-4 text-paypal-blue" />
+                      )}
+                    </button>
+                  ))}
+                
+                {/* Show no results message */}
+                {paymentPurposes.filter(p => 
+                  p.name.toLowerCase().includes(purposeSearchQuery.toLowerCase()) ||
+                  p.category.toLowerCase().includes(purposeSearchQuery.toLowerCase())
+                ).length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No purposes found for "{purposeSearchQuery}"
+                  </div>
+                )}
+                
+                {/* Custom purpose option */}
+                <div className="pt-4 border-t border-border">
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-2">Custom Purpose</h4>
+                  <input
+                    type="text"
+                    placeholder="Enter custom purpose..."
+                    value={customPurpose}
+                    onChange={(e) => setCustomPurpose(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-border focus:border-paypal-blue focus:outline-none"
+                  />
+                  <button
+                    onClick={() => {
+                      if (customPurpose.trim()) {
+                        setPurpose(customPurpose.trim());
+                        setCustomPurpose("");
+                        setShowPurposeSelector(false);
+                        setPurposeSearchQuery("");
+                      }
+                    }}
+                    disabled={!customPurpose.trim()}
+                    className="mt-2 w-full p-3 rounded-xl bg-paypal-blue text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Use Custom Purpose
+                  </button>
+                </div>
+                
+                {/* Clear purpose option */}
+                <button
+                  onClick={() => {
+                    setPurpose("");
+                    setCustomPurpose("");
+                    setShowPurposeSelector(false);
+                    setPurposeSearchQuery("");
+                  }}
+                  className="w-full p-3 rounded-xl border border-border text-muted-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  Remove Purpose
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
         <TransactionReceipt open={receiptOpen} onOpenChange={(open) => {
           setReceiptOpen(open);
           if (!open) navigate("/dashboard");
@@ -1431,82 +1600,6 @@ const SendMoney = () => {
               <Button onClick={handleConfirmUser} className="mt-4 h-14 w-full rounded-full bg-paypal-blue text-lg font-semibold text-white hover:bg-[#004dc5]">Continue</Button>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Purpose Selector Dialog */}
-      <Dialog open={showPurposeSelector} onOpenChange={setShowPurposeSelector}>
-        <DialogContent className="rounded-3xl max-h-[80vh] overflow-y-auto">
-          <DialogTitle className="text-xl font-bold">Select Payment Purpose</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            Choose a purpose to help track your spending in analytics
-          </DialogDescription>
-          
-          <div className="mt-4 space-y-4">
-            {/* Group purposes by category */}
-            {Array.from(new Set(paymentPurposes.filter(p => p.category).map(p => p.category))).map(category => (
-              <div key={category}>
-                <h4 className="text-sm font-semibold text-muted-foreground mb-2">{category}</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {paymentPurposes
-                    .filter(p => p.category === category)
-                    .map(purposeOption => (
-                      <button
-                        key={purposeOption.id}
-                        onClick={() => {
-                          setPurpose(purposeOption.name);
-                          setShowPurposeSelector(false);
-                        }}
-                        className={`p-3 rounded-xl border text-left transition-colors ${
-                          purpose === purposeOption.name
-                            ? 'border-paypal-blue bg-paypal-blue/10'
-                            : 'border-border hover:bg-secondary/50'
-                        }`}
-                      >
-                        <div className="font-medium text-sm">{purposeOption.name}</div>
-                      </button>
-                    ))}
-                </div>
-              </div>
-            ))}
-            
-            {/* Custom purpose option */}
-            <div className="pt-4 border-t border-border">
-              <h4 className="text-sm font-semibold text-muted-foreground mb-2">Custom Purpose</h4>
-              <input
-                type="text"
-                placeholder="Enter custom purpose..."
-                value={customPurpose}
-                onChange={(e) => setCustomPurpose(e.target.value)}
-                className="w-full p-3 rounded-xl border border-border focus:border-paypal-blue focus:outline-none"
-              />
-              <button
-                onClick={() => {
-                  if (customPurpose.trim()) {
-                    setPurpose(customPurpose.trim());
-                    setCustomPurpose("");
-                    setShowPurposeSelector(false);
-                  }
-                }}
-                disabled={!customPurpose.trim()}
-                className="mt-2 w-full p-3 rounded-xl bg-paypal-blue text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Use Custom Purpose
-              </button>
-            </div>
-            
-            {/* Clear purpose option */}
-            <button
-              onClick={() => {
-                setPurpose("");
-                setCustomPurpose("");
-                setShowPurposeSelector(false);
-              }}
-              className="w-full p-3 rounded-xl border border-border text-muted-foreground hover:bg-secondary/50 transition-colors"
-            >
-              Remove Purpose
-            </button>
-          </div>
         </DialogContent>
       </Dialog>
 
