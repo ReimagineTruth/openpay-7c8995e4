@@ -80,6 +80,7 @@ import AdminMasterTopUp from "./pages/AdminMasterTopUp";
 import MerchantOnboardingPage from "./pages/MerchantOnboardingPage";
 import OpenPayOfficialPage from "./pages/OpenPayOfficialPage";
 import RemittanceMerchantPage from "./pages/RemittanceMerchantPage";
+import RemittanceCenterPage from "./pages/RemittanceCenterPage";
 import MerchantPosPage from "./pages/MerchantPosPage";
 import MerchantCheckoutPage from "./pages/MerchantCheckoutPage";
 import MerchantCheckoutThankYouPage from "./pages/MerchantCheckoutThankYouPage";
@@ -220,6 +221,7 @@ const AppRoutes = () => {
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/currency-converter" element={<CurrencyConverterPage />} />
+        <Route path="/remittance-center" element={<RemittanceCenterPage />} />
         <Route path="/activity" element={<ActivityPage />} />
         <Route path="/request-payment" element={<RequestMoney />} />
         <Route path="/send-invoice" element={<SendInvoice />} />
