@@ -431,7 +431,7 @@ const Dashboard = () => {
   
   // Dashboard preferences state
   const [dashboardPreferences, setDashboardPreferences] = useState({
-    showMerchantTransferFeature: true,
+    showMerchantTransferFeature: false,
     showMerchantBalanceDetails: true,
     showMerchantActivityFeed: true,
   });
