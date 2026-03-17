@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, Sparkles } from "lucide-react";
+import { Send, Bot, User, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, Sparkles, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import BrandLogo from "@/components/BrandLogo";
 import SplashScreen from "@/components/SplashScreen";
 
-// OpenRouter API integration
+// OpenRouter SDK integration
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
 type Message = {
@@ -268,6 +268,90 @@ const OpenPayAIPage = () => {
     try {
       console.log("Calling OpenRouter API with key:", OPENROUTER_API_KEY?.substring(0, 10) + "...");
       
+      // Dynamic import of OpenRouter SDK
+      const { OpenRouter } = await import("@openrouter/sdk");
+      const openrouter = new OpenRouter({
+        apiKey: OPENROUTER_API_KEY
+      });
+
+      const openPayKnowledge = `
+You are OpenPay AI, a comprehensive smart financial assistant for the OpenPay fintech platform. You have complete knowledge of all OpenPay features and can help users with any aspect of the platform.
+
+## OpenPay Platform Features You Know:
+
+### Core Banking Features:
+- **Wallet Management**: Balance checking, transaction history, wallet security
+- **Payments**: Send money, receive money, request payments, express send
+- **Top-up Methods**: PayPal, credit/debit cards, bank transfer, Apple Pay, Google Pay, Venmo, USDT, USDC, Solana Pay
+- **Currency Exchange**: Multi-currency support with real-time rates
+- **Virtual Cards**: Create and manage virtual payment cards
+
+### Merchant Services:
+- **Merchant Portal**: Product catalog, order management, analytics
+- **POS System**: Point-of-sale for in-person payments
+- **Payment Links**: Create customizable payment links and buttons
+- **QR Code Payments**: Generate and scan QR codes for payments
+- **Payment Buttons**: Embeddable payment buttons for websites
+- **Invoice System**: Create and send professional invoices
+- **Product Management**: Add/edit products, inventory tracking
+
+### Advanced Features:
+- **Mining**: Pi Network mining with ad verification requirements
+- **Staking**: Earn rewards by staking tokens
+- **Affiliate Program**: Referral system with rewards
+- **Two-Factor Authentication**: Enhanced security with 2FA
+- **KYC Verification**: Identity verification for higher limits
+- **Pi Ad Network**: Watch ads to earn rewards
+- **Remittance Services**: International money transfers
+
+### Security & Support:
+- **Transaction History**: Complete transaction records and search
+- **Dispute Resolution**: Handle payment disputes and chargebacks
+- **Notifications**: Real-time alerts for transactions and account activity
+- **Customer Support**: Help center and support tickets
+- **Fraud Detection**: Advanced security monitoring
+
+### User Management:
+- **Profile Management**: Personal information and preferences
+- **Contact Management**: Save frequently contacted users
+- **Settings**: App customization and security settings
+- **Dashboard**: Financial overview with analytics and insights
+
+### Technical Details:
+- **Multi-Currency**: Support for PHP, USD, and other currencies
+- **Blockchain Integration**: Solana and other blockchain networks
+- **API Access**: Developer APIs for integration
+- **Mobile App**: iOS and Android applications
+- **Web Platform**: Full-featured web interface
+
+## Your Capabilities:
+- Answer questions about ANY OpenPay feature
+- Guide users through complex processes
+- Explain fees, limits, and requirements
+- Help with troubleshooting and error resolution
+- Provide step-by-step instructions for any feature
+- Assist with account setup and verification
+- Explain security best practices
+- Help with merchant onboarding and setup
+- Guide users through payment processes
+- Assist with mining and staking operations
+
+## Current User Context:
+- Balance: ₱${userBalance.toFixed(2)}
+- Monthly spending: ₱${spendingCategories.reduce((sum, cat) => sum + cat.amount, 0).toFixed(2)}
+- Top spending categories: ${spendingCategories.slice(0, 3).map(c => c.name).join(", ")}
+- Budget alerts: ${budgetAlerts.length} active alerts
+
+## Response Guidelines:
+- Be comprehensive but clear and concise
+- Use Philippine Peso (₱) for amounts
+- Provide specific, actionable advice
+- Include step-by-step instructions when helpful
+- Mention relevant fees or limits
+- Suggest related OpenPay features when appropriate
+- Always prioritize user security and best practices
+      `;
+
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -281,27 +365,13 @@ const OpenPayAIPage = () => {
           messages: [
             {
               role: "system",
-              content: `You are OpenPay AI, a smart financial assistant. Help users manage money, analyze spending, create budgets, and execute payments safely. 
-              
-              Rules:
-              - Be friendly, professional, and clear
-              - For payment requests, always ask for confirmation
-              - Provide specific financial insights
-              - Use Philippine Peso (₱) for amounts
-              - Analyze spending patterns and give actionable advice
-              - Alert about unusual spending or low balance
-              
-              Current user data:
-              - Balance: ₱${userBalance.toFixed(2)}
-              - Monthly spending: ₱${spendingCategories.reduce((sum, cat) => sum + cat.amount, 0).toFixed(2)}
-              - Top spending categories: ${spendingCategories.slice(0, 3).map(c => c.name).join(", ")}`
+              content: openPayKnowledge
             },
             {
               role: "user",
               content: prompt
             }
-          ],
-          stream: false
+          ]
         })
       });
 
@@ -320,7 +390,11 @@ const OpenPayAIPage = () => {
         return "No response from AI service. Please try again.";
       }
       
-      return data.choices[0]?.message?.content || "Sorry, I couldn't process your request.";
+      const aiResponse = data.choices[0]?.message?.content || "I apologize, but I couldn't generate a response. Please try again.";
+      
+      console.log("OpenRouter API response length:", aiResponse.length);
+      
+      return aiResponse;
     } catch (error) {
       console.error("OpenRouter API error:", error);
       return "I'm having trouble connecting to my AI services. Please try again later.";
@@ -558,13 +632,85 @@ const OpenPayAIPage = () => {
                   <Bot className="h-12 w-12 text-blue-600 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Welcome to OpenPay AI!</h3>
                   <p className="text-muted-foreground mb-4">
-                    I'm your smart financial assistant. Ask me anything about:
+                    I'm your comprehensive OpenPay assistant. I can help you with ANY OpenPay feature:
                   </p>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-left max-w-md mx-auto">
-                    <div className="p-2 bg-white rounded-lg border">💰 Check my balance</div>
-                    <div className="p-2 bg-white rounded-lg border">📊 Analyze spending</div>
-                    <div className="p-2 bg-white rounded-lg border">📋 Create budget</div>
-                    <div className="p-2 bg-white rounded-lg border">💸 Send money</div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-sm text-left max-w-2xl mx-auto">
+                    <div className="p-2 bg-white rounded-lg border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Wallet className="h-4 w-4 text-blue-600" />
+                        <strong>Banking</strong>
+                      </div>
+                      <p className="text-xs">Balance, transfers, payments, top-up</p>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Store className="h-4 w-4 text-blue-600" />
+                        <strong>Merchant</strong>
+                      </div>
+                      <p className="text-xs">POS, payment links, products</p>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CreditCard className="h-4 w-4 text-blue-600" />
+                        <strong>Virtual Cards</strong>
+                      </div>
+                      <p className="text-xs">Create & manage virtual cards</p>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <ArrowLeftRight className="h-4 w-4 text-blue-600" />
+                        <strong>Exchange</strong>
+                      </div>
+                      <p className="text-xs">Currency conversion & rates</p>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <FileText className="h-4 w-4 text-blue-600" />
+                        <strong>Invoices</strong>
+                      </div>
+                      <p className="text-xs">Create & send invoices</p>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <History className="h-4 w-4 text-blue-600" />
+                        <strong>History</strong>
+                      </div>
+                      <p className="text-xs">Transaction records & search</p>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Coins className="h-4 w-4 text-blue-600" />
+                        <strong>Mining</strong>
+                      </div>
+                      <p className="text-xs">Pi Network mining & rewards</p>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Pickaxe className="h-4 w-4 text-blue-600" />
+                        <strong>Staking</strong>
+                      </div>
+                      <p className="text-xs">Earn rewards by staking</p>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="h-4 w-4 text-blue-600" />
+                        <strong>Security</strong>
+                      </div>
+                      <p className="text-xs">2FA, KYC, verification</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-medium text-blue-900 mb-2">Try asking me:</p>
+                    <div className="text-xs text-blue-800 space-y-1">
+                      <p>• "How do I create a payment link?"</p>
+                      <p>• "What are the merchant fees?"</p>
+                      <p>• "How do I start mining?"</p>
+                      <p>• "Help me set up 2FA"</p>
+                      <p>• "What currencies do you support?"</p>
+                      <p>• "How do I become a merchant?"</p>
+                    </div>
                   </div>
                 </div>
               )}
