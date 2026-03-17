@@ -157,8 +157,30 @@ const AppRoutes = () => {
         }
         
         // Only redirect if not already on a valid page and not coming from background
-        const validPaths = ['/dashboard', '/auth/callback', '/mining', '/menu', '/activity', '/send', '/receive', '/contacts', '/settings', '/profile'];
-        const isValidPath = validPaths.some(path => location.pathname === path) || location.pathname.startsWith('/topup') || location.pathname.startsWith('/buttons');
+        const validPaths = [
+          '/dashboard', '/auth/callback', '/mining', '/menu', '/activity', '/send', '/receive', 
+          '/contacts', '/settings', '/profile', '/auth', '/setup-profile', '/onboarding', '/pi-ads',
+          '/scan-qr', '/currency-converter', '/remittance-center', '/request-payment', '/send-invoice',
+          '/disputes', '/help-center', '/notifications', '/affiliate', '/staking', '/ledger',
+          '/announcements', '/openpay-guide', '/terms', '/privacy', '/regulatory-status',
+          '/about-openpay', '/openpay-documentation', '/openpay-api-docs', '/openpay-pos-docs',
+          '/openpay-merchant-portal-docs', '/open-partner', '/pi-whitepaper', '/pi-mica-whitepaper',
+          '/whitepaper', '/gdpr', '/legal', '/merchant-onboarding', '/merchant-products',
+          '/virtual-card', '/kyc', '/kyc-status', '/remittance-merchant', '/openpay-official',
+          '/openapp', '/openpay-desktop', '/live-customer-service', '/support', '/topup-history',
+          '/swap-withdrawal', '/confirm-pin'
+        ];
+        const isValidPath = validPaths.some(path => location.pathname === path) || 
+                           location.pathname.startsWith('/topup') || 
+                           location.pathname.startsWith('/buttons') ||
+                           location.pathname.startsWith('/merchant') ||
+                           location.pathname.startsWith('/payment-link') ||
+                           location.pathname.startsWith('/public-payment') ||
+                           location.pathname.startsWith('/admin') ||
+                           location.pathname.startsWith('/forgot') ||
+                           location.pathname.startsWith('/reset') ||
+                           location.pathname.startsWith('/two-factor') ||
+                           location.pathname === '/';
         
         if (!isValidPath) {
           console.log('Redirecting to dashboard from:', location.pathname);
