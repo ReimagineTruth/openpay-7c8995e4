@@ -635,81 +635,169 @@ You are OpenPay AI, a comprehensive smart financial assistant for the OpenPay fi
                     I'm your comprehensive OpenPay assistant. I can help you with ANY OpenPay feature:
                   </p>
                   
-                  <div className="grid grid-cols-2 gap-2 text-sm text-left max-w-2xl mx-auto">
-                    <div className="p-2 bg-white rounded-lg border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Wallet className="h-4 w-4 text-blue-600" />
-                        <strong>Banking</strong>
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-lg p-4 border">
+                      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                        <Wallet className="h-5 w-5 text-blue-600" />
+                        Banking Features
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I check my balance?")}>
+                          <p className="font-medium">💰 Check Balance</p>
+                          <p className="text-xs text-gray-600">View current wallet balance</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I send money?")}>
+                          <p className="font-medium">💸 Send Money</p>
+                          <p className="text-xs text-gray-600">Transfer funds to users</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I top-up my account?")}>
+                          <p className="font-medium">💳 Top-up Account</p>
+                          <p className="text-xs text-gray-600">Add funds to wallet</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("What currencies do you support?")}>
+                          <p className="font-medium">💱 Currency Exchange</p>
+                          <p className="text-xs text-gray-600">Multi-currency support</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I create a virtual card?")}>
+                          <p className="font-medium">💳 Virtual Cards</p>
+                          <p className="text-xs text-gray-600">Create payment cards</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I view transaction history?")}>
+                          <p className="font-medium">📋 Transaction History</p>
+                          <p className="text-xs text-gray-600">View past transactions</p>
+                        </div>
                       </div>
-                      <p className="text-xs">Balance, transfers, payments, top-up</p>
                     </div>
-                    <div className="p-2 bg-white rounded-lg border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Store className="h-4 w-4 text-blue-600" />
-                        <strong>Merchant</strong>
+
+                    <div className="bg-white rounded-lg p-4 border">
+                      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                        <Store className="h-5 w-5 text-blue-600" />
+                        Merchant Services
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I become a merchant?")}>
+                          <p className="font-medium">🏪 Become Merchant</p>
+                          <p className="text-xs text-gray-600">Start selling online</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I set up POS?")}>
+                          <p className="font-medium">📱 POS System</p>
+                          <p className="text-xs text-gray-600">In-person payments</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I create payment links?")}>
+                          <p className="font-medium">🔗 Payment Links</p>
+                          <p className="text-xs text-gray-600">Share payment links</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I add products?")}>
+                          <p className="font-medium">📦 Product Catalog</p>
+                          <p className="text-xs text-gray-600">Manage products</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I create invoices?")}>
+                          <p className="font-medium">🧾 Create Invoices</p>
+                          <p className="text-xs text-gray-600">Send professional invoices</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("What are merchant fees?")}>
+                          <p className="font-medium">💰 Merchant Fees</p>
+                          <p className="text-xs text-gray-600">Transaction costs</p>
+                        </div>
                       </div>
-                      <p className="text-xs">POS, payment links, products</p>
                     </div>
-                    <div className="p-2 bg-white rounded-lg border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CreditCard className="h-4 w-4 text-blue-600" />
-                        <strong>Virtual Cards</strong>
+
+                    <div className="bg-white rounded-lg p-4 border">
+                      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                        <Coins className="h-5 w-5 text-blue-600" />
+                        Earning & Rewards
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I start mining?")}>
+                          <p className="font-medium">⛏️ Mining</p>
+                          <p className="text-xs text-gray-600">Pi Network mining</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I start staking?")}>
+                          <p className="font-medium">💎 Staking</p>
+                          <p className="text-xs text-gray-600">Earn rewards</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How does affiliate program work?")}>
+                          <p className="font-medium">👥 Affiliate Program</p>
+                          <p className="text-xs text-gray-600">Referral rewards</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I watch Pi ads?")}>
+                          <p className="font-medium">📺 Pi Ad Network</p>
+                          <p className="text-xs text-gray-600">Watch ads earn</p>
+                        </div>
                       </div>
-                      <p className="text-xs">Create & manage virtual cards</p>
                     </div>
-                    <div className="p-2 bg-white rounded-lg border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <ArrowLeftRight className="h-4 w-4 text-blue-600" />
-                        <strong>Exchange</strong>
+
+                    <div className="bg-white rounded-lg p-4 border">
+                      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-blue-600" />
+                        Security & Support
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I set up 2FA?")}>
+                          <p className="font-medium">🔐 Two-Factor Auth</p>
+                          <p className="text-xs text-gray-600">Enhanced security</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I complete KYC?")}>
+                          <p className="font-medium">🆔 KYC Verification</p>
+                          <p className="text-xs text-gray-600">Identity verification</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I dispute a transaction?")}>
+                          <p className="font-medium">⚖️ Dispute Resolution</p>
+                          <p className="text-xs text-gray-600">Handle disputes</p>
+                        </div>
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I contact support?")}>
+                          <p className="font-medium">💬 Customer Support</p>
+                          <p className="text-xs text-gray-600">Get help</p>
+                        </div>
                       </div>
-                      <p className="text-xs">Currency conversion & rates</p>
-                    </div>
-                    <div className="p-2 bg-white rounded-lg border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <FileText className="h-4 w-4 text-blue-600" />
-                        <strong>Invoices</strong>
-                      </div>
-                      <p className="text-xs">Create & send invoices</p>
-                    </div>
-                    <div className="p-2 bg-white rounded-lg border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <History className="h-4 w-4 text-blue-600" />
-                        <strong>History</strong>
-                      </div>
-                      <p className="text-xs">Transaction records & search</p>
-                    </div>
-                    <div className="p-2 bg-white rounded-lg border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Coins className="h-4 w-4 text-blue-600" />
-                        <strong>Mining</strong>
-                      </div>
-                      <p className="text-xs">Pi Network mining & rewards</p>
-                    </div>
-                    <div className="p-2 bg-white rounded-lg border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Pickaxe className="h-4 w-4 text-blue-600" />
-                        <strong>Staking</strong>
-                      </div>
-                      <p className="text-xs">Earn rewards by staking</p>
-                    </div>
-                    <div className="p-2 bg-white rounded-lg border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Users className="h-4 w-4 text-blue-600" />
-                        <strong>Security</strong>
-                      </div>
-                      <p className="text-xs">2FA, KYC, verification</p>
                     </div>
                   </div>
                   
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm font-medium text-blue-900 mb-2">Try asking me:</p>
-                    <div className="text-xs text-blue-800 space-y-1">
-                      <p>• "How do I create a payment link?"</p>
-                      <p>• "What are the merchant fees?"</p>
-                      <p>• "How do I start mining?"</p>
-                      <p>• "Help me set up 2FA"</p>
-                      <p>• "What currencies do you support?"</p>
-                      <p>• "How do I become a merchant?"</p>
+                  <div className="mt-6 bg-blue-50 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-900 mb-3">Quick Questions</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                      <button 
+                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
+                        onClick={() => setInputMessage("How do I check my balance?")}
+                      >
+                        💰 Balance
+                      </button>
+                      <button 
+                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
+                        onClick={() => setInputMessage("How do I send money?")}
+                      >
+                        💸 Send
+                      </button>
+                      <button 
+                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
+                        onClick={() => setInputMessage("How do I create payment link?")}
+                      >
+                        🔗 Payment Link
+                      </button>
+                      <button 
+                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
+                        onClick={() => setInputMessage("How do I become a merchant?")}
+                      >
+                        🏪 Merchant
+                      </button>
+                      <button 
+                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
+                        onClick={() => setInputMessage("How do I start mining?")}
+                      >
+                        ⛏️ Mining
+                      </button>
+                      <button 
+                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
+                        onClick={() => setInputMessage("How do I set up 2FA?")}
+                      >
+                        🔐 Security
+                      </button>
+                      <button 
+                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
+                        onClick={() => setInputMessage("What are the fees?")}
+                      >
+                        💰 Fees
+                      </button>
                     </div>
                   </div>
                 </div>
