@@ -34,6 +34,15 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Suppress Pi SDK postMessage errors when running outside Pi Browser
+      window.addEventListener('error', function(e) {
+        if (e.message && e.message.includes('postMessage') && e.message.includes('minepi.com')) {
+          console.info('Pi SDK postMessage error suppressed (expected outside Pi Browser)');
+          e.preventDefault();
+          return false;
+        }
+      });
+      
       (function () {
         if (window.__PI_SDK_LOADING__) return;
         window.__PI_SDK_LOADING__ = true;
@@ -55,6 +64,10 @@
             }
           } catch (e) {
             console.warn("Pi SDK init failed:", e);
+            // Silently handle postMessage errors when not in Pi Browser
+            if (e.message && e.message.includes('postMessage')) {
+              console.info("Running outside Pi Browser - Pi SDK features unavailable");
+            }
           }
           try {
             window.dispatchEvent(new Event("pi-sdk-ready"));
