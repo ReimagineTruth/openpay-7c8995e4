@@ -106,6 +106,7 @@ import AppLanguageTranslate from "./components/AppLanguageTranslate";
 import SupportWidget from "./components/SupportWidget";
 import SupportPage from "./pages/SupportPage";
 import TopUpHistoryPage from "./pages/TopUpHistoryPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { CookieConsentProvider } from "./contexts/CookieConsentContext";
 import { ThankYouModalProvider } from "./contexts/ThankYouModalContext";
 import ThankYouModal from "./components/ThankYouModal";
@@ -188,8 +189,14 @@ const AppRoutes = () => {
           navigateRef.current('/dashboard', { replace: true });
         }
       } else if (event === 'SIGNED_OUT') {
-        // Only redirect if not already on sign-in page
-        if (location.pathname !== '/sign-in' && !location.pathname.includes('/signin')) {
+        // Only redirect if not already on sign-in page and not on a public path
+        const publicPaths = ['/', '/auth', '/sign-in', '/signin', '/signup', '/terms', 'privacy', 'about-openpay', 'legal', 'help-center'];
+        const isPublicPath = publicPaths.some(path => location.pathname === path) || 
+                            location.pathname.startsWith('/forgot') ||
+                            location.pathname.startsWith('/reset') ||
+                            location.pathname.startsWith('/two-factor');
+        
+        if (!isPublicPath && location.pathname !== '/sign-in' && !location.pathname.includes('/signin')) {
           console.log('Redirecting to sign-in from:', location.pathname);
           navigateRef.current('/sign-in', { replace: true });
         }
@@ -227,40 +234,172 @@ const AppRoutes = () => {
         <Route path="/signin" element={<Navigate to="/sign-in?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-in?mode=signup" replace />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/send" element={<SendMoney />} />
-        <Route path="/scan-qr" element={<QrScannerPage />} />
-        <Route path="/topup" element={<TopUp />} />
-        <Route path="/topup-ewallet-qrph" element={<TopUpEwalletQrPh />} />
-        <Route path="/topup-paypal" element={<TopUpPaypal />} />
-        <Route path="/topup-debit" element={<TopUpDebit />} />
-        <Route path="/topup-credit" element={<TopUpCredit />} />
-        <Route path="/topup-apple-pay" element={<TopUpApplePay />} />
-        <Route path="/topup-google-pay" element={<TopUpGooglePay />} />
-        <Route path="/topup-stripe" element={<TopUpStripe />} />
-        <Route path="/topup-venmo" element={<TopUpVenmo />} />
-        <Route path="/topup-usdt" element={<TopUpUSDT />} />
-        <Route path="/topup-usdc" element={<TopUpUSDC />} />
-        {isSolanaPayEnabled() ? <Route path="/topup-solana-pay" element={<TopUpSolanaPay />} /> : null}
-        <Route path="/receive" element={<ReceivePage />} />
-        <Route path="/contacts" element={<Contacts />} />
-        <Route path="/menu" element={<MenuPage />} />
-        <Route path="/currency-converter" element={<CurrencyConverterPage />} />
-        <Route path="/remittance-center" element={<RemittanceCenterPage />} />
-        <Route path="/activity" element={<ActivityPage />} />
-        <Route path="/ai" element={<OpenPayAIPage />} />
-        <Route path="/request-payment" element={<RequestMoney />} />
-        <Route path="/send-invoice" element={<SendInvoice />} />
-        <Route path="/disputes" element={<DisputesPage />} />
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/send" element={
+          <ProtectedRoute>
+            <SendMoney />
+          </ProtectedRoute>
+        } />
+        <Route path="/scan-qr" element={
+          <ProtectedRoute>
+            <QrScannerPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup" element={
+          <ProtectedRoute>
+            <TopUp />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-ewallet-qrph" element={
+          <ProtectedRoute>
+            <TopUpEwalletQrPh />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-paypal" element={
+          <ProtectedRoute>
+            <TopUpPaypal />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-debit" element={
+          <ProtectedRoute>
+            <TopUpDebit />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-credit" element={
+          <ProtectedRoute>
+            <TopUpCredit />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-apple-pay" element={
+          <ProtectedRoute>
+            <TopUpApplePay />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-google-pay" element={
+          <ProtectedRoute>
+            <TopUpGooglePay />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-stripe" element={
+          <ProtectedRoute>
+            <TopUpStripe />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-venmo" element={
+          <ProtectedRoute>
+            <TopUpVenmo />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-usdt" element={
+          <ProtectedRoute>
+            <TopUpUSDT />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-usdc" element={
+          <ProtectedRoute>
+            <TopUpUSDC />
+          </ProtectedRoute>
+        } />
+        {isSolanaPayEnabled() ? <Route path="/topup-solana-pay" element={
+          <ProtectedRoute>
+            <TopUpSolanaPay />
+          </ProtectedRoute>
+        } /> : null}
+        <Route path="/receive" element={
+          <ProtectedRoute>
+            <ReceivePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/contacts" element={
+          <ProtectedRoute>
+            <Contacts />
+          </ProtectedRoute>
+        } />
+        <Route path="/menu" element={
+          <ProtectedRoute>
+            <MenuPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/currency-converter" element={
+          <ProtectedRoute>
+            <CurrencyConverterPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/remittance-center" element={
+          <ProtectedRoute>
+            <RemittanceCenterPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/activity" element={
+          <ProtectedRoute>
+            <ActivityPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/ai" element={
+          <ProtectedRoute>
+            <OpenPayAIPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/request-payment" element={
+          <ProtectedRoute>
+            <RequestMoney />
+          </ProtectedRoute>
+        } />
+        <Route path="/send-invoice" element={
+          <ProtectedRoute>
+            <SendInvoice />
+          </ProtectedRoute>
+        } />
+        <Route path="/disputes" element={
+          <ProtectedRoute>
+            <DisputesPage />
+          </ProtectedRoute>
+        } />
         <Route path="/help-center" element={<HelpCenter />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/affiliate" element={<AffiliatePage />} />
-        <Route path="/mining" element={<MiningPage />} />
-        <Route path="/staking" element={<StakingPage />} />
-        <Route path="/buttons" element={<ButtonsPage />} />
-        <Route path="/buttons/payment-links" element={<ButtonsPaymentLinksPage />} />
+        <Route path="/notifications" element={
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/affiliate" element={
+          <ProtectedRoute>
+            <AffiliatePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/mining" element={
+          <ProtectedRoute>
+            <MiningPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/staking" element={
+          <ProtectedRoute>
+            <StakingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/buttons" element={
+          <ProtectedRoute>
+            <ButtonsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/buttons/payment-links" element={
+          <ProtectedRoute>
+            <ButtonsPaymentLinksPage />
+          </ProtectedRoute>
+        } />
         <Route path="/buttons/cart" element={<ButtonsCartPage />} />
         <Route path="/buttons/donate" element={<ButtonsDonatePage />} />
         <Route path="/buttons/subscribe" element={<ButtonsSubscribePage />} />

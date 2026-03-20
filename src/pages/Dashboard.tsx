@@ -933,7 +933,7 @@ const Dashboard = () => {
       }
       if (!user) {
         setRefreshing(false);
-        navigate("/signin");
+        // Don't redirect here - ProtectedRoute handles it
         return;
       }
 
