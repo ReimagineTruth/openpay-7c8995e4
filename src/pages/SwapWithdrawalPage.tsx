@@ -11,6 +11,8 @@ import { playGoogleWalletSuccessSound } from "@/lib/soundEffects";
 import { PI_TO_USD } from "@/contexts/CurrencyContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
+type WithdrawalType = "PI" | "MRWN";
+
 type SwapWithdrawalRow = {
   id: string;
   amount: number;
@@ -85,7 +87,7 @@ const SwapWithdrawalPage = () => {
   const [openpayAccountNumber, setOpenpayAccountNumber] = useState("");
   const [piWalletAddress, setPiWalletAddress] = useState("");
   const [mrwnWalletAddress, setMrwnWalletAddress] = useState("");
-  const [withdrawalType, setWithdrawalType] = useState<"PI" | "MRWN">("PI");
+  const [withdrawalType, setWithdrawalType] = useState<WithdrawalType>("PI");
   const mrwnComingSoon = true; // MRWN price coming soon flag
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [showAgreementModal, setShowAgreementModal] = useState(false);
@@ -419,15 +421,38 @@ const SwapWithdrawalPage = () => {
           <div className="mt-4 grid gap-3">
             <label className="space-y-1 text-xs text-muted-foreground">
               <span>Withdrawal type</span>
-              <select
-                value={withdrawalType}
-                onChange={(e) => setWithdrawalType(e.target.value as "PI" | "MRWN")}
-                disabled={!swapEnabled}
-                className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-foreground"
-              >
-                <option value="PI">Pi Network (PI)</option>
-                <option value="MRWN">Marvin (MRWN)</option>
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWithdrawalType("PI")}
+                  disabled={!swapEnabled}
+                  className={`h-11 rounded-xl border px-3 text-sm font-medium transition-colors ${
+                    withdrawalType === "PI"
+                      ? "border-white/50 bg-white text-paypal-blue"
+                      : "border-white/30 bg-white/10 text-foreground hover:bg-white/20"
+                  } ${!swapEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <img src={PI_LOGO_URL} alt="PI" className="h-4 w-4" />
+                    <span>Pi Network</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWithdrawalType("MRWN")}
+                  disabled={!swapEnabled}
+                  className={`h-11 rounded-xl border px-3 text-sm font-medium transition-colors ${
+                    withdrawalType === "MRWN"
+                      ? "border-white/50 bg-white text-paypal-blue"
+                      : "border-white/30 bg-white/10 text-foreground hover:bg-white/20"
+                  } ${!swapEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <img src={MRWN_LOGO_URL} alt="MRWN" className="h-4 w-4" />
+                    <span>MRWN</span>
+                  </div>
+                </button>
+              </div>
             </label>
             <label className="space-y-1 text-xs text-muted-foreground">
               <span>OpenUSD amount (min 10)</span>
@@ -473,7 +498,10 @@ const SwapWithdrawalPage = () => {
               />
             </label>
             <label className="space-y-1 text-xs text-muted-foreground">
-              <span>{withdrawalType === "PI" ? "Mainnet PI" : "Mainnet MRWN"} wallet address</span>
+              <span className="inline-flex items-center gap-2">
+                <img src={withdrawalType === "PI" ? PI_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-4 w-4" />
+                {withdrawalType === "PI" ? "Mainnet PI" : "Mainnet MRWN"} wallet address
+              </span>
               <input
                 value={withdrawalType === "PI" ? piWalletAddress : mrwnWalletAddress}
                 onChange={(e) => withdrawalType === "PI" ? setPiWalletAddress(e.target.value) : setMrwnWalletAddress(e.target.value)}
@@ -499,11 +527,25 @@ const SwapWithdrawalPage = () => {
               <span className="font-semibold">You will receive</span>
               <span className="inline-flex items-center gap-2 font-semibold text-paypal-blue">
                 <img src={withdrawalType === "PI" ? PI_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-5 w-5" />
-                {showPrice ? (
-                  withdrawalType === "PI" ? `${payoutPiAmount.toFixed(4)} PI` : `${payoutMrwnAmount.toFixed(4)} MRWN`
-                ) : (
-                  withdrawalType === "PI" ? `${payoutPiAmount.toFixed(4)} PI` : `Coming Soon MRWN`
-                )}
+                {(() => {
+                  if (showPrice) {
+                    if (withdrawalType === "PI") {
+                      return `${payoutPiAmount.toFixed(4)} PI`;
+                    } else if (withdrawalType === "MRWN") {
+                      return `${payoutMrwnAmount.toFixed(4)} MRWN`;
+                    } else {
+                      return "Coming Soon";
+                    }
+                  } else {
+                    if (withdrawalType === "PI") {
+                      return `${payoutPiAmount.toFixed(4)} PI`;
+                    } else if (withdrawalType === "MRWN") {
+                      return `Coming Soon MRWN`;
+                    } else {
+                      return "Coming Soon";
+                    }
+                  }
+                })()}
               </span>
             </div>
           </div>

@@ -6,6 +6,8 @@ import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity
 import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
+
+type WithdrawalType = "PI" | "MRWN";
 import BrandLogo from "@/components/BrandLogo";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { loadAppSecuritySettings, saveAppSecuritySettings } from "@/lib/appSecurity";
@@ -346,7 +348,7 @@ const Dashboard = () => {
     return true;
   });
   const [swapAmount, setSwapAmount] = useState("");
-  const [swapWithdrawalType, setSwapWithdrawalType] = useState<"PI" | "MRWN">("PI");
+  const [swapWithdrawalType, setSwapWithdrawalType] = useState<WithdrawalType>("PI");
   const mrwnComingSoon = true; // MRWN price coming soon flag
   const parsedSwapAmount = Number(swapAmount);
   const safeSwapAmount = Number.isFinite(parsedSwapAmount) && parsedSwapAmount > 0 ? parsedSwapAmount : 0;
@@ -2764,19 +2766,25 @@ const Dashboard = () => {
                 <div className="mt-2 flex items-center justify-between">
                   <span className="font-semibold">You will receive</span>
                   <span className="inline-flex items-center gap-2 font-semibold text-paypal-blue">
-                    {showSwapPrice ? (
-                      swapWithdrawalType === "PI" ? (
-                        <>{swapPayoutPiAmount.toFixed(4)} PI</>
-                      ) : (
-                        <>Coming Soon MRWN</>
-                      )
-                    ) : (
-                      swapWithdrawalType === "PI" ? (
-                        <>{swapPayoutPiAmount.toFixed(4)} PI</>
-                      ) : (
-                        <>Coming Soon MRWN</>
-                      )
-                    )}
+                    {(() => {
+                    if (showSwapPrice) {
+                      if (swapWithdrawalType === "PI") {
+                        return <>{swapPayoutPiAmount.toFixed(4)} PI</>;
+                      } else if (swapWithdrawalType === "MRWN") {
+                        return <>Coming Soon MRWN</>;
+                      } else {
+                        return <>Coming Soon</>;
+                      }
+                    } else {
+                      if (swapWithdrawalType === "PI") {
+                        return <>{swapPayoutPiAmount.toFixed(4)} PI</>;
+                      } else if (swapWithdrawalType === "MRWN") {
+                        return <>Coming Soon MRWN</>;
+                      } else {
+                        return <>Coming Soon</>;
+                      }
+                    }
+                  })()}
                   </span>
                 </div>
               </div>
