@@ -2768,17 +2768,17 @@ const Dashboard = () => {
                   <span className="inline-flex items-center gap-2 font-semibold text-paypal-blue">
                     {(() => {
                     if (showSwapPrice) {
-                      if (swapWithdrawalType === "PI") {
+                      if ((swapWithdrawalType as WithdrawalType) === "PI") {
                         return <>{swapPayoutPiAmount.toFixed(4)} PI</>;
-                      } else if (swapWithdrawalType === "MRWN") {
+                      } else if ((swapWithdrawalType as WithdrawalType) === "MRWN") {
                         return <>Coming Soon MRWN</>;
                       } else {
                         return <>Coming Soon</>;
                       }
                     } else {
-                      if (swapWithdrawalType === "PI") {
+                      if ((swapWithdrawalType as WithdrawalType) === "PI") {
                         return <>{swapPayoutPiAmount.toFixed(4)} PI</>;
-                      } else if (swapWithdrawalType === "MRWN") {
+                      } else if ((swapWithdrawalType as WithdrawalType) === "MRWN") {
                         return <>Coming Soon MRWN</>;
                       } else {
                         return <>Coming Soon</>;

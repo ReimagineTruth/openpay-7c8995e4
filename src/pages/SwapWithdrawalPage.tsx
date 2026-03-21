@@ -529,17 +529,17 @@ const SwapWithdrawalPage = () => {
                 <img src={withdrawalType === "PI" ? PI_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-5 w-5" />
                 {(() => {
                   if (showPrice) {
-                    if (withdrawalType === "PI") {
+                    if ((withdrawalType as WithdrawalType) === "PI") {
                       return `${payoutPiAmount.toFixed(4)} PI`;
-                    } else if (withdrawalType === "MRWN") {
+                    } else if ((withdrawalType as WithdrawalType) === "MRWN") {
                       return `${payoutMrwnAmount.toFixed(4)} MRWN`;
                     } else {
                       return "Coming Soon";
                     }
                   } else {
-                    if (withdrawalType === "PI") {
+                    if ((withdrawalType as WithdrawalType) === "PI") {
                       return `${payoutPiAmount.toFixed(4)} PI`;
-                    } else if (withdrawalType === "MRWN") {
+                    } else if ((withdrawalType as WithdrawalType) === "MRWN") {
                       return `Coming Soon MRWN`;
                     } else {
                       return "Coming Soon";
