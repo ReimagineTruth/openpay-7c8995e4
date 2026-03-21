@@ -57,6 +57,7 @@ const PROVIDER_LOGOS: Record<string, string> = {
   "Ethereum": "https://i.ibb.co/68vQz2kK/ethereum-logo.png",
   "USDT": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Tether_Logo.svg/1920px-Tether_Logo.svg.png",
   "USDC": "https://upload.wikimedia.org/wikipedia/fr/1/18/Logo-USDC-2023.png",
+  "MRWN": "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722deab5-1-removebg-preview.png",
   "Other": "https://i.ibb.co/3Rj2v1mL/cash-icon.png",
 };
 const isMissingPrivateLedgerRpcError = (message: string | undefined) =>

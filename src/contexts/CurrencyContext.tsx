@@ -116,6 +116,7 @@ const PI_RATE_OVERRIDES: Record<string, number> = {
 const baseCurrencies: Currency[] = [
   { code: "OUSD", symbol: "$", name: "Open USD", flag: "OP", rate: 3.14 },
   { code: "PI", symbol: "\u03C0", name: "Pi", flag: "PI", rate: 1 },
+  { code: "MRWN", symbol: "M", name: "MRWN", flag: "MR", rate: 0.5 },
   { code: "USD", symbol: "$", name: "US Dollar", flag: "\u{1F1FA}\u{1F1F8}", rate: 3.14 },
   { code: "EUR", symbol: "\u20AC", name: "Euro", flag: "\u{1F1EA}\u{1F1FA}", rate: 2.89 },
   { code: "GBP", symbol: "\u00A3", name: "British Pound", flag: "\u{1F1EC}\u{1F1E7}", rate: 2.48 },

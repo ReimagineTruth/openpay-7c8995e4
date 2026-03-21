@@ -9,6 +9,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { loadAppSecuritySettings, isPinSetupCompleted } from "@/lib/appSecurity";
 import { playGoogleWalletSuccessSound } from "@/lib/soundEffects";
 import { PI_TO_USD } from "@/contexts/CurrencyContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 type SwapWithdrawalRow = {
   id: string;
@@ -17,6 +18,8 @@ type SwapWithdrawalRow = {
   openpay_account_username: string;
   openpay_account_number: string;
   pi_wallet_address: string;
+  mrwn_wallet_address: string;
+  withdrawal_type: "PI" | "MRWN";
   status: string;
   admin_note: string;
   reviewed_at: string | null;
@@ -26,6 +29,7 @@ type SwapWithdrawalRow = {
 const SETTLEMENT_ACCOUNT_NUMBER = "OPEA68BB7A9F964994A199A15786D680FA";
 const SETTLEMENT_USERNAME = "@openpay";
 const PI_LOGO_URL = "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
+const MRWN_LOGO_URL = "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722deab5-1-removebg-preview.png";
 const WITHDRAWAL_FEE_RATE = 0.02;
 const PIN_ACTION_KEY = "openpay_pin_action_swap_v1";
 const swapEnabled = String(import.meta.env.VITE_SWAP_ENABLED || "false").toLowerCase() === "true";
@@ -57,6 +61,8 @@ const SwapWithdrawalPage = () => {
             openpayUsername: normalizedUsername,
             openpayAccountNumber,
             piWalletAddress,
+            mrwnWalletAddress,
+            withdrawalType,
           },
         },
       });
@@ -78,6 +84,9 @@ const SwapWithdrawalPage = () => {
   const [openpayUsername, setOpenpayUsername] = useState("");
   const [openpayAccountNumber, setOpenpayAccountNumber] = useState("");
   const [piWalletAddress, setPiWalletAddress] = useState("");
+  const [mrwnWalletAddress, setMrwnWalletAddress] = useState("");
+  const [withdrawalType, setWithdrawalType] = useState<"PI" | "MRWN">("PI");
+  const mrwnComingSoon = true; // MRWN price coming soon flag
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [showAgreementModal, setShowAgreementModal] = useState(false);
   const [agreementChecked, setAgreementChecked] = useState(false);
@@ -86,12 +95,19 @@ const SwapWithdrawalPage = () => {
   const [history, setHistory] = useState<SwapWithdrawalRow[]>([]);
   const [piPriceUsd] = useState<number>(PI_TO_USD);
 
+  const { currencies } = useCurrency();
+  const piCurrency = currencies.find(c => c.code === "PI");
+  const mrwnCurrency = currencies.find(c => c.code === "MRWN");
+  const selectedCurrency = withdrawalType === "PI" ? piCurrency : mrwnCurrency;
+  
   const parsedAmount = Number(amount);
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
   const meetsMinimum = safeAmount >= 10;
   const feeAmount = safeAmount > 0 ? Number((safeAmount * WITHDRAWAL_FEE_RATE).toFixed(2)) : 0;
   const payoutAmount = safeAmount > 0 ? Number((safeAmount - feeAmount).toFixed(2)) : 0;
   const payoutPiAmount = payoutAmount > 0 ? payoutAmount / PI_TO_USD : 0;
+  const payoutMrwnAmount = payoutAmount > 0 && selectedCurrency ? payoutAmount / selectedCurrency.rate : 0;
+  const showPrice = withdrawalType === "PI" || !mrwnComingSoon;
 
   const normalizedUsername = useMemo(() => normalizeUsername(openpayUsername), [openpayUsername]);
   const formattedPiPrice = useMemo(
@@ -118,7 +134,7 @@ const SwapWithdrawalPage = () => {
       }
       const { data, error } = await supabase
         .from("user_swap_withdrawals" as any)
-        .select("id, amount, openpay_account_name, openpay_account_username, openpay_account_number, pi_wallet_address, status, admin_note, reviewed_at, created_at")
+        .select("id, amount, openpay_account_name, openpay_account_username, openpay_account_number, pi_wallet_address, mrwn_wallet_address, withdrawal_type, status, admin_note, reviewed_at, created_at")
         .order("created_at", { ascending: false })
         .limit(10);
       if (error) throw new Error(error.message || "Failed to load withdrawals");
@@ -132,6 +148,8 @@ const SwapWithdrawalPage = () => {
             openpay_account_username: String(r.openpay_account_username ?? ""),
             openpay_account_number: String(r.openpay_account_number ?? ""),
             pi_wallet_address: String(r.pi_wallet_address ?? ""),
+            mrwn_wallet_address: String(r.mrwn_wallet_address ?? ""),
+            withdrawal_type: (String(r.withdrawal_type ?? "PI") as "PI" | "MRWN"),
             status: String(r.status ?? "pending"),
             admin_note: String(r.admin_note ?? ""),
             reviewed_at: r.reviewed_at ? String(r.reviewed_at) : null,
@@ -180,6 +198,8 @@ const SwapWithdrawalPage = () => {
           openpayUsername: String(data.openpayUsername || ""),
           openpayAccountNumber: String(data.openpayAccountNumber || ""),
           piWalletAddress: String(data.piWalletAddress || ""),
+          mrwnWalletAddress: String(data.mrwnWalletAddress || ""),
+          withdrawalType: String(data.withdrawalType || "PI") as "PI" | "MRWN",
         });
         try {
           if (typeof window !== "undefined") window.sessionStorage.removeItem(PIN_ACTION_KEY);
@@ -194,11 +214,18 @@ const SwapWithdrawalPage = () => {
 
   useEffect(() => {
     const amountParam = searchParams.get("amount");
-    if (!amountParam) return;
-    const parsed = Number(amountParam);
-    if (!Number.isFinite(parsed) || parsed <= 0) return;
-    const formatted = parsed.toFixed(2);
-    setAmount((prev) => prev || formatted);
+    const typeParam = searchParams.get("type");
+    
+    if (amountParam) {
+      const parsed = Number(amountParam);
+      if (!Number.isFinite(parsed) || parsed <= 0) return;
+      const formatted = parsed.toFixed(2);
+      setAmount((prev) => prev || formatted);
+    }
+    
+    if (typeParam && (typeParam === "PI" || typeParam === "MRWN")) {
+      setWithdrawalType(typeParam);
+    }
   }, [searchParams]);
 
   const submitWithdrawal = async () => {
@@ -214,7 +241,8 @@ const SwapWithdrawalPage = () => {
       toast.error("Minimum withdrawal is 10 OPEN USD");
       return;
     }
-    if (!openpayName.trim() || !normalizedUsername || !openpayAccountNumber.trim() || !piWalletAddress.trim()) {
+    if (!openpayName.trim() || !normalizedUsername || !openpayAccountNumber.trim() || 
+        (withdrawalType === "PI" ? !piWalletAddress.trim() : !mrwnWalletAddress.trim())) {
       toast.error("Complete all required fields");
       return;
     }
@@ -233,12 +261,16 @@ const SwapWithdrawalPage = () => {
     openpayUsername: string;
     openpayAccountNumber: string;
     piWalletAddress: string;
+    mrwnWalletAddress: string;
+    withdrawalType: "PI" | "MRWN";
   }) => {
     const activeAmount = overrideData ? Number(overrideData.amount) : safeAmount;
     const activeOpenpayName = overrideData ? overrideData.openpayName : openpayName;
     const activeOpenpayUsername = overrideData ? overrideData.openpayUsername : normalizedUsername;
     const activeOpenpayAccountNumber = overrideData ? overrideData.openpayAccountNumber : openpayAccountNumber;
     const activePiWalletAddress = overrideData ? overrideData.piWalletAddress : piWalletAddress;
+    const activeMrwnWalletAddress = overrideData ? overrideData.mrwnWalletAddress : mrwnWalletAddress;
+    const activeWithdrawalType = overrideData ? overrideData.withdrawalType : withdrawalType;
 
     playGoogleWalletSuccessSound();
     setSubmitted(false);
@@ -249,7 +281,9 @@ const SwapWithdrawalPage = () => {
         p_openpay_account_name: activeOpenpayName.trim(),
         p_openpay_account_username: activeOpenpayUsername,
         p_openpay_account_number: activeOpenpayAccountNumber.trim().toUpperCase(),
-        p_pi_wallet_address: activePiWalletAddress.trim(),
+        p_pi_wallet_address: withdrawalType === "PI" ? activePiWalletAddress.trim() : null,
+        p_mrwn_wallet_address: withdrawalType === "MRWN" ? activeMrwnWalletAddress.trim() : null,
+        p_withdrawal_type: withdrawalType,
       });
       if (error) throw new Error(error.message || "Withdrawal submission failed");
       if (data) {
@@ -302,7 +336,7 @@ const SwapWithdrawalPage = () => {
                   <p className="text-xs text-white/80">Swap Withdrawal</p>
                 </div>
               </div>
-              <p className="text-xs text-white/80">OpenUSD to PI mainnet payout</p>
+              <p className="text-xs text-white/80">OpenUSD to {withdrawalType === "PI" ? "PI" : "MRWN"} mainnet payout</p>
             </div>
           </div>
           <Button variant="outline" onClick={loadHistory} disabled={refreshing} className="border-white/30 bg-white/10 text-white hover:bg-white/20">
@@ -321,27 +355,57 @@ const SwapWithdrawalPage = () => {
           )}
           <div className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-foreground">
             <p className="font-semibold text-foreground">How this works</p>
-            <p className="mt-2">1. Fill in your OpenPay identity and mainnet PI wallet address.</p>
+            <p className="mt-2">1. Fill in your OpenPay identity and mainnet {withdrawalType === "PI" ? "PI" : "MRWN"} wallet address.</p>
             <p>2. When you submit, your OpenUSD is moved to the settlement account {SETTLEMENT_USERNAME} ({SETTLEMENT_ACCOUNT_NUMBER}).</p>
-            <p>3. After admin approval, you receive PI to your mainnet wallet. Rate is always 1 PI = 3.14 OPEN USD.</p>
-            <p>4. A 2% processing fee applies to withdrawals.</p>
-            <div className="mt-3 rounded-xl border border-white/30 bg-white/5 p-3 text-xs text-foreground">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-2">
-                  <img src={PI_LOGO_URL} alt="Pi" className="h-4 w-4" />
-                  Pi fixed rate
-                </span>
-                <span className="inline-flex items-center gap-1 font-semibold">
-                  <img src={PI_LOGO_URL} alt="Pi" className="h-4 w-4" />
-                  <span>π</span>
-                  <span>{formattedPiPrice}</span>
-                </span>
-              </div>
-                <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>Fixed</span>
-                  <span>1 PI = {PI_TO_USD.toFixed(2)} OPEN USD</span>
+            {showPrice ? (
+              <>
+                <p>3. After admin approval, you receive {withdrawalType === "PI" ? "PI" : "MRWN"} to your mainnet wallet. Rate is always 1 {withdrawalType === "PI" ? "PI" : "MRWN"} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : (selectedCurrency?.rate || 0.5).toFixed(2)} OPEN USD.</p>
+                <p>4. A 2% processing fee applies to withdrawals.</p>
+              </>
+            ) : (
+              <>
+                <p>3. After admin approval, you will receive MRWN to your mainnet wallet. Price coming soon.</p>
+                <p>4. A 2% processing fee applies to withdrawals.</p>
+              </>
+            )}
+            {showPrice && (
+              <div className="mt-3 rounded-xl border border-white/30 bg-white/5 p-3 text-xs text-foreground">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-2">
+                    <img src={withdrawalType === "PI" ? PI_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-4 w-4" />
+                    {withdrawalType} fixed rate
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-semibold">
+                    <img src={withdrawalType === "PI" ? PI_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-4 w-4" />
+                    <span>{withdrawalType === "PI" ? "π" : "M"}</span>
+                    <span>{formattedPiPrice}</span>
+                  </span>
                 </div>
-            </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>Fixed</span>
+                    <span>1 {withdrawalType} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : (selectedCurrency?.rate || 0.5).toFixed(2)} OPEN USD</span>
+                  </div>
+              </div>
+            )}
+            {!showPrice && withdrawalType === "MRWN" && (
+              <div className="mt-3 rounded-xl border border-yellow-300/50 bg-yellow-100/20 p-3 text-xs text-yellow-900">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-2">
+                    <img src={MRWN_LOGO_URL} alt="MRWN" className="h-4 w-4" />
+                    MRWN price coming soon
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-semibold">
+                    <img src={MRWN_LOGO_URL} alt="MRWN" className="h-4 w-4" />
+                    <span>M</span>
+                    <span>Coming Soon</span>
+                  </span>
+                </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-yellow-800">
+                    <span>Status</span>
+                    <span>Price will be announced soon</span>
+                  </div>
+              </div>
+            )}
             <p className="mt-2 text-xs text-muted-foreground">
               Processing may be delayed due to high transaction volume or network congestion.
             </p>
@@ -349,10 +413,22 @@ const SwapWithdrawalPage = () => {
 
           <div>
             <p className="text-sm font-semibold text-foreground">Withdrawal details</p>
-            <p className="text-xs text-muted-foreground">Confirm your OpenPay identity and enter your PI wallet address.</p>
+            <p className="text-xs text-muted-foreground">Select withdrawal type and confirm your OpenPay identity and wallet address.</p>
           </div>
 
           <div className="mt-4 grid gap-3">
+            <label className="space-y-1 text-xs text-muted-foreground">
+              <span>Withdrawal type</span>
+              <select
+                value={withdrawalType}
+                onChange={(e) => setWithdrawalType(e.target.value as "PI" | "MRWN")}
+                disabled={!swapEnabled}
+                className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-foreground"
+              >
+                <option value="PI">Pi Network (PI)</option>
+                <option value="MRWN">Marvin (MRWN)</option>
+              </select>
+            </label>
             <label className="space-y-1 text-xs text-muted-foreground">
               <span>OpenUSD amount (min 10)</span>
               <input
@@ -397,16 +473,16 @@ const SwapWithdrawalPage = () => {
               />
             </label>
             <label className="space-y-1 text-xs text-muted-foreground">
-              <span>Mainnet PI wallet address</span>
+              <span>{withdrawalType === "PI" ? "Mainnet PI" : "Mainnet MRWN"} wallet address</span>
               <input
-                value={piWalletAddress}
-                onChange={(e) => setPiWalletAddress(e.target.value)}
-                placeholder="Pi wallet address"
+                value={withdrawalType === "PI" ? piWalletAddress : mrwnWalletAddress}
+                onChange={(e) => withdrawalType === "PI" ? setPiWalletAddress(e.target.value) : setMrwnWalletAddress(e.target.value)}
+                placeholder={`${withdrawalType === "PI" ? "Pi" : "MRWN"} wallet address`}
                 readOnly={!swapEnabled}
                 aria-readonly={!swapEnabled ? "true" : undefined}
                 className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-foreground placeholder:text-muted-foreground"
               />
-              <span className="text-[11px] text-muted-foreground">Make sure this is your PI mainnet address.</span>
+              <span className="text-[11px] text-muted-foreground">Make sure this is your {withdrawalType === "PI" ? "PI" : "MRWN"} mainnet address.</span>
             </label>
           </div>
 
@@ -422,8 +498,12 @@ const SwapWithdrawalPage = () => {
             <div className="mt-2 flex items-center justify-between">
               <span className="font-semibold">You will receive</span>
               <span className="inline-flex items-center gap-2 font-semibold text-paypal-blue">
-                <img src={PI_LOGO_URL} alt="Pi" className="h-5 w-5" />
-                {payoutPiAmount.toFixed(4)} PI
+                <img src={withdrawalType === "PI" ? PI_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-5 w-5" />
+                {showPrice ? (
+                  withdrawalType === "PI" ? `${payoutPiAmount.toFixed(4)} PI` : `${payoutMrwnAmount.toFixed(4)} MRWN`
+                ) : (
+                  withdrawalType === "PI" ? `${payoutPiAmount.toFixed(4)} PI` : `Coming Soon MRWN`
+                )}
               </span>
             </div>
           </div>
@@ -463,8 +543,12 @@ const SwapWithdrawalPage = () => {
                       {row.status}
                     </span>
                   </div>
+                  <div className="mt-1 inline-flex items-center justify-end gap-2 text-xs text-muted-foreground">
+                    <img src={row.withdrawal_type === "PI" ? PI_LOGO_URL : MRWN_LOGO_URL} alt={row.withdrawal_type} className="h-5 w-auto object-contain" />
+                    <span>{row.withdrawal_type} payout</span>
+                  </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Pi wallet: {row.pi_wallet_address}
+                    {row.withdrawal_type} wallet: {row.withdrawal_type === "PI" ? row.pi_wallet_address : row.mrwn_wallet_address}
                   </p>
                   {row.admin_note && (
                     <p className="mt-1 text-xs text-muted-foreground">Admin note: {row.admin_note}</p>
@@ -490,7 +574,7 @@ const SwapWithdrawalPage = () => {
             </p>
             <p className="mt-3 font-semibold">2. Withdrawal Authorization</p>
             <p className="mt-1">By proceeding, you authorize OpenPay to move your OpenUSD to the settlement account.</p>
-            <p className="mt-1">You confirm the OpenPay account details and PI wallet address are correct.</p>
+            <p className="mt-1">You confirm the OpenPay account details and {withdrawalType === "PI" ? "PI" : "MRWN"} wallet address are correct.</p>
             <p className="mt-3 font-semibold">3. Fees and Processing</p>
             <p className="mt-1">A 2% processing fee applies to swap withdrawals.</p>
             <p className="mt-1">Processing time depends on network conditions and admin approval.</p>
@@ -537,11 +621,11 @@ const SwapWithdrawalPage = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">You will receive</span>
-              <span className="font-semibold">{payoutPiAmount.toFixed(4)} PI</span>
+              <span className="font-semibold">{withdrawalType === "PI" ? payoutPiAmount.toFixed(4) : payoutMrwnAmount.toFixed(4)} {withdrawalType}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">PI wallet</span>
-              <span className="font-semibold">{piWalletAddress || "N/A"}</span>
+              <span className="text-muted-foreground">{withdrawalType} wallet</span>
+              <span className="font-semibold">{withdrawalType === "PI" ? piWalletAddress || "N/A" : mrwnWalletAddress || "N/A"}</span>
             </div>
           </div>
           <div className="mt-3 flex gap-2">

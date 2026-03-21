@@ -53,6 +53,7 @@ type BuyOnrampProvider =
   | "Ewallet QR PH"
   | "USDT"
   | "USDC"
+  | "MRWN"
   | "Solana Pay"
   | "PayPal"
   | "Apple Pay"
@@ -69,6 +70,7 @@ type BuyPaymentMethod =
   | "Ewallet"
   | "USDT"
   | "USDC"
+  | "MRWN"
   | "Solana Pay"
   | "Debit Card"
   | "Credit Card"
@@ -83,6 +85,7 @@ const inferTopupPaymentMethod = (tx: Transaction): BuyPaymentMethod | null => {
   const hint = `${tx.note || ""} ${tx.other_name || ""} ${tx.other_username || ""}`.toLowerCase();
   if (hint.includes("usdt") || hint.includes("tether")) return "USDT";
   if (hint.includes("usdc")) return "USDC";
+  if (hint.includes("mrwn")) return "MRWN";
   if (hint.includes("paypal")) return "PayPal";
   if (hint.includes("ewallet") || hint.includes("qr ph") || hint.includes("qrph") || hint.includes("jqr")) return "Ewallet";
   if (hint.includes("solana")) return "Solana Pay";
@@ -103,6 +106,7 @@ const getPaymentMethodIcon = (method: BuyPaymentMethod | null) => {
   if (method === "PayPal") return { src: PAYPAL_ICON_URL, fallback: "" };
   if (method === "USDT") return { src: USDT_ICON_URL, fallback: USDT_ICON_FALLBACK_URL };
   if (method === "USDC") return { src: USDC_ICON_URL, fallback: USDC_ICON_FALLBACK_URL };
+  if (method === "MRWN") return { src: MRWN_ICON_URL, fallback: "" };
   if (method === "Solana Pay") return { src: SOLANA_PAY_ICON_URL, fallback: "" };
   if (method === "Apple Pay") return { src: APPLE_PAY_ICON_URL, fallback: "" };
   if (method === "Google Pay") return { src: GOOGLE_PAY_ICON_URL, fallback: "" };
@@ -127,6 +131,7 @@ const VISA_ICON_URL = "https://i.ibb.co/G3FGwngR/Visa-Inc-logo-2021-present-svg.
 const MASTERCARD_ICON_URL = "https://i.ibb.co/9kkZmFDq/Mastercard-2019-logo-svg.png";
 const USDT_ICON_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Tether_Logo.svg/1920px-Tether_Logo.svg.png";
 const USDC_ICON_URL = "https://upload.wikimedia.org/wikipedia/fr/1/18/Logo-USDC-2023.png";
+const MRWN_ICON_URL = "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722deab5-1-removebg-preview.png";
 const USDT_ICON_FALLBACK_URL = "/icons/usdt.svg";
 const USDC_ICON_FALLBACK_URL = "/icons/usdc.svg";
 const SOLANA_PAY_ICON_URL = "https://cryptologos.cc/logos/solana-sol-logo.png?v=040";
@@ -341,11 +346,15 @@ const Dashboard = () => {
     return true;
   });
   const [swapAmount, setSwapAmount] = useState("");
+  const [swapWithdrawalType, setSwapWithdrawalType] = useState<"PI" | "MRWN">("PI");
+  const mrwnComingSoon = true; // MRWN price coming soon flag
   const parsedSwapAmount = Number(swapAmount);
   const safeSwapAmount = Number.isFinite(parsedSwapAmount) && parsedSwapAmount > 0 ? parsedSwapAmount : 0;
   const swapMeetsMinimum = safeSwapAmount >= 10;
   const swapFeeAmount = safeSwapAmount > 0 ? Number((safeSwapAmount * 0.02).toFixed(2)) : 0;
   const swapPayoutPiAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * OUSD_TO_PI : 0;
+  const swapPayoutMrwnAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * (1 / 0.5) * OUSD_TO_PI : 0;
+  const showSwapPrice = swapWithdrawalType === "PI" || !mrwnComingSoon;
   const [showOpenAppBanner, setShowOpenAppBanner] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("dashboard_openapp_banner_visible");
@@ -1660,21 +1669,28 @@ const Dashboard = () => {
   const isEwalletBuyFlow = buyPaymentMethod === "Ewallet";
   const isUsdtBuyFlow = buyPaymentMethod === "USDT";
   const isUsdcBuyFlow = buyPaymentMethod === "USDC";
+  const isMrwnBuyFlow = buyPaymentMethod === "MRWN";
   const isUsdFiatBuyFlow =
     buyPaymentMethod !== "Ewallet" &&
     buyPaymentMethod !== "Pi Payment" &&
     buyPaymentMethod !== "USDT" &&
-    buyPaymentMethod !== "USDC";
-  const buySpendUnit = isEwalletBuyFlow ? "PHP" : isUsdtBuyFlow ? "USDT" : isUsdcBuyFlow ? "USDC" : isUsdFiatBuyFlow ? "USD" : "PI";
+    buyPaymentMethod !== "USDC" &&
+    buyPaymentMethod !== "MRWN" &&
+    buyPaymentMethod !== "Solana Pay";
+  const buySpendUnit = isEwalletBuyFlow ? "PHP" : isUsdtBuyFlow ? "USDT" : isUsdcBuyFlow ? "USDC" : isMrwnBuyFlow ? "MRWN" : isUsdFiatBuyFlow ? "USD" : "PI";
   const buySpendRateText = isEwalletBuyFlow
     ? `${E_WALLET_PHP_PER_OUSD.toFixed(2)} PHP = 1 OPEN USD`
     : isUsdtBuyFlow
       ? "1 USDT = 1 OPEN USD"
       : isUsdcBuyFlow
         ? "1 USDC = 1 OPEN USD"
-        : isUsdFiatBuyFlow
-          ? "1 USD = 1 OPEN USD"
-          : `1 PI = ${PI_TO_OUSD.toFixed(2)} OPEN USD`;
+        : isMrwnBuyFlow
+          ? "1 MRWN = 1 OPEN USD"
+          : isEwalletBuyFlow
+            ? `${E_WALLET_PHP_PER_OUSD.toFixed(2)} PHP = 1 OPEN USD`
+            : isUsdFiatBuyFlow
+              ? "1 USD = 1 OPEN USD"
+              : `1 PI = ${PI_TO_OUSD.toFixed(2)} OPEN USD`;
   const buyOpenUsdRateText = isUsdtBuyFlow
     ? "1 USDT = 1 OPEN USD"
     : isUsdcBuyFlow
@@ -1689,6 +1705,7 @@ const Dashboard = () => {
     "Ewallet QR PH": 1,
     "USDT": 1,
     "USDC": 1,
+    "MRWN": 1,
     "Solana Pay": 1,
     "PayPal": 1,
     "Apple Pay": 1,
@@ -1705,6 +1722,7 @@ const Dashboard = () => {
   const solanaPayEnabled = isSolanaPayEnabled();
   const baseOnrampRows: Array<{ key: BuyOnrampProvider; disabled?: boolean; subtitle: string; delta?: string; recommended?: boolean }> = [
     { key: "Pi Payment", subtitle: "Active", recommended: true },
+    { key: "MRWN", subtitle: "Active" },
     { key: "Ewallet QR PH", subtitle: "Active" },
     { key: "USDT", subtitle: "Active" },
     { key: "USDC", subtitle: "Active" },
@@ -1724,9 +1742,10 @@ const Dashboard = () => {
     solanaPayEnabled ? baseOnrampRows : baseOnrampRows.filter((row) => row.key !== "Solana Pay");
   const basePaymentMethodRows: Array<{ key: BuyPaymentMethod; recommended?: boolean; disabled?: boolean }> = [
     { key: "Pi Payment", recommended: true },
-    { key: "Ewallet" },
+    { key: "MRWN" },
     { key: "USDT" },
     { key: "USDC" },
+    { key: "Ewallet" },
     { key: "Solana Pay" },
     { key: "PayPal" },
     { key: "Apple Pay" },
@@ -1740,9 +1759,10 @@ const Dashboard = () => {
     solanaPayEnabled ? basePaymentMethodRows : basePaymentMethodRows.filter((row) => row.key !== "Solana Pay");
   const baseSupportedBuyPaymentMethods: BuyPaymentMethod[] = [
     "Pi Payment",
-    "Ewallet",
+    "MRWN",
     "USDT",
     "USDC",
+    "Ewallet",
     "Solana Pay",
     "PayPal",
     "Apple Pay",
@@ -1797,6 +1817,7 @@ const Dashboard = () => {
       const methodRouteMap: Record<string, string> = {
         "USDT": "/topup-usdt",
         "USDC": "/topup-usdc",
+        "MRWN": "/topup-mrwn",
         "Solana Pay": "/topup-solana-pay",
         "PayPal": "/topup-paypal",
         "Debit Card": "/topup-debit",
@@ -2678,6 +2699,14 @@ const Dashboard = () => {
                       }}
                     />
                   )}
+                  {buyPaymentMethod === "MRWN" && (
+                    <img
+                      src={MRWN_ICON_URL}
+                      alt=""
+                      className="h-10 w-auto object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
                   {buyPaymentMethod === "Solana Pay" && <img src={SOLANA_PAY_ICON_URL} alt="" className="h-6 w-auto object-contain" />}
                   {buyPaymentMethod === "Apple Pay" && <img src={APPLE_PAY_ICON_URL} alt="" className="h-6 w-auto object-contain" />}
                   {buyPaymentMethod === "Google Pay" && <img src={GOOGLE_PAY_ICON_URL} alt="" className="h-6 w-auto object-contain" />}
@@ -2699,9 +2728,19 @@ const Dashboard = () => {
           <div className="paypal-surface rounded-3xl p-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xl font-semibold text-foreground">Swap Withdrawal</p>
-              <span className="rounded-full border border-border/70 px-3 py-1 text-xs font-semibold text-muted-foreground">
-                OUSD → PI payout
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-border/70 px-3 py-1 text-xs font-semibold text-muted-foreground">
+                  OUSD → {swapWithdrawalType} payout
+                </span>
+                <select
+                  value={swapWithdrawalType}
+                  onChange={(e) => setSwapWithdrawalType(e.target.value as "PI" | "MRWN")}
+                  className="h-8 rounded-lg border border-border/70 bg-background px-2 text-xs font-medium text-foreground"
+                >
+                  <option value="PI">PI</option>
+                  <option value="MRWN">MRWN</option>
+                </select>
+              </div>
             </div>
             <div className="rounded-2xl bg-secondary/30 p-4">
               <p className="text-sm text-muted-foreground">Amount (min 10 OUSD)</p>
@@ -2725,17 +2764,33 @@ const Dashboard = () => {
                 <div className="mt-2 flex items-center justify-between">
                   <span className="font-semibold">You will receive</span>
                   <span className="inline-flex items-center gap-2 font-semibold text-paypal-blue">
-                    {swapPayoutPiAmount.toFixed(4)} PI
+                    {showSwapPrice ? (
+                      swapWithdrawalType === "PI" ? (
+                        <>{swapPayoutPiAmount.toFixed(4)} PI</>
+                      ) : (
+                        <>Coming Soon MRWN</>
+                      )
+                    ) : (
+                      swapWithdrawalType === "PI" ? (
+                        <>{swapPayoutPiAmount.toFixed(4)} PI</>
+                      ) : (
+                        <>Coming Soon MRWN</>
+                      )
+                    )}
                   </span>
                 </div>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Rate: 1 PI = {PI_TO_OUSD.toFixed(2)} OUSD. Processing fee is 2%.
+                {showSwapPrice ? (
+                  <>Rate: 1 {swapWithdrawalType} = {swapWithdrawalType === "PI" ? PI_TO_OUSD.toFixed(2) : (0.5 * PI_TO_OUSD).toFixed(2)} OUSD. Processing fee is 2%.</>
+                ) : (
+                  <>MRWN price coming soon. Processing fee is 2%.</>
+                )}
               </p>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={() => navigate(`/swap-withdrawal?amount=${safeSwapAmount.toFixed(2)}`)}
+                  onClick={() => navigate(`/swap-withdrawal?amount=${safeSwapAmount.toFixed(2)}&type=${swapWithdrawalType}`)}
                   className="h-11 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white hover:bg-[#004dc5]"
                   disabled={!swapMeetsMinimum}
                 >
@@ -3616,6 +3671,8 @@ const Dashboard = () => {
                     ? `${targetOpenUsdAmount.toFixed(2)} USDT`
                     : row.key === "USDC"
                       ? `${targetOpenUsdAmount.toFixed(2)} USDC`
+                      : row.key === "MRWN"
+                        ? `${targetOpenUsdAmount.toFixed(2)} MRWN`
                       : row.key === "Solana Pay"
                         ? `${targetOpenUsdAmount.toFixed(2)} USDC`
                   : usdOnrampProviders.includes(row.key)
@@ -3636,6 +3693,8 @@ const Dashboard = () => {
                       setBuyPaymentMethod("USDT");
                     } else if (row.key === "USDC") {
                       setBuyPaymentMethod("USDC");
+                    } else if (row.key === "MRWN") {
+                      setBuyPaymentMethod("MRWN");
                     } else if (row.key === "Solana Pay") {
                       setBuyPaymentMethod("Solana Pay");
                     } else if (row.key === "Pi Payment") {
@@ -3697,6 +3756,14 @@ const Dashboard = () => {
                             onError={(e) => {
                               e.currentTarget.src = USDC_ICON_FALLBACK_URL;
                             }}
+                          />
+                        )}
+                        {row.key === "MRWN" && (
+                          <img
+                            src={MRWN_ICON_URL}
+                            alt="MRWN"
+                            className="h-10 w-auto object-contain"
+                            referrerPolicy="no-referrer"
                           />
                         )}
                         {row.key === "Solana Pay" && (
@@ -3801,11 +3868,13 @@ const Dashboard = () => {
                     ? `${targetOpenUsdAmount.toFixed(2)} USDT`
                     : row.key === "USDC"
                       ? `${targetOpenUsdAmount.toFixed(2)} USDC`
-                      : row.key === "Solana Pay"
-                        ? `${targetOpenUsdAmount.toFixed(2)} USDC`
-                        : usdPaymentMethods.includes(row.key)
-                          ? `${targetOpenUsdAmount.toFixed(2)} USD`
-                          : `${(targetOpenUsdAmount * OUSD_TO_PI).toFixed(5)} PI`;
+                      : row.key === "MRWN"
+                        ? `${targetOpenUsdAmount.toFixed(2)} MRWN`
+                        : row.key === "Solana Pay"
+                          ? `${targetOpenUsdAmount.toFixed(2)} USDC`
+                          : usdPaymentMethods.includes(row.key)
+                            ? `${targetOpenUsdAmount.toFixed(2)} USD`
+                            : `${(targetOpenUsdAmount * OUSD_TO_PI).toFixed(5)} PI`;
               return (
                 <button
                   key={row.key}
@@ -3820,6 +3889,8 @@ const Dashboard = () => {
                       setBuyOnrampProvider("USDT");
                     } else if (row.key === "USDC") {
                       setBuyOnrampProvider("USDC");
+                    } else if (row.key === "MRWN") {
+                      setBuyOnrampProvider("MRWN");
                     } else if (row.key === "Solana Pay") {
                       setBuyOnrampProvider("Solana Pay");
                     } else if (row.key === "Pi Payment") {
@@ -3881,6 +3952,14 @@ const Dashboard = () => {
                             onError={(e) => {
                               e.currentTarget.src = USDC_ICON_FALLBACK_URL;
                             }}
+                          />
+                        )}
+                        {row.key === "MRWN" && (
+                          <img
+                            src={MRWN_ICON_URL}
+                            alt="MRWN"
+                            className="h-10 w-auto object-contain"
+                            referrerPolicy="no-referrer"
                           />
                         )}
                         {row.key === "Solana Pay" && (

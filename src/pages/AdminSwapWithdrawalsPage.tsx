@@ -18,6 +18,8 @@ type SwapWithdrawalRow = {
   openpay_account_username: string;
   openpay_account_number: string;
   pi_wallet_address: string;
+  mrwn_wallet_address: string;
+  withdrawal_type: "PI" | "MRWN";
   status: string;
   admin_note: string;
   reviewed_at: string | null;
@@ -28,6 +30,7 @@ type SwapWithdrawalRow = {
 const ADMIN_PROFILE_USERNAMES = new Set(["openpay", "wainfoundation"]);
 const PI_LOGO_URL =
   "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
+const MRWN_LOGO_URL = "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722deab5-1-removebg-preview.png";
 const WITHDRAWAL_FEE_RATE = 0.02;
 
 const AdminSwapWithdrawalsPage = () => {
@@ -95,6 +98,8 @@ const AdminSwapWithdrawalsPage = () => {
           openpay_account_username: String(row.openpay_account_username || ""),
           openpay_account_number: String(row.openpay_account_number || ""),
           pi_wallet_address: String(row.pi_wallet_address || ""),
+          mrwn_wallet_address: String(row.mrwn_wallet_address || ""),
+          withdrawal_type: (String(row.withdrawal_type || "PI") as "PI" | "MRWN"),
           status: String(row.status || "pending"),
           admin_note: String(row.admin_note || ""),
           reviewed_at: row.reviewed_at ? String(row.reviewed_at) : null,
@@ -150,7 +155,7 @@ const AdminSwapWithdrawalsPage = () => {
             </button>
             <div>
               <h1 className="text-xl font-bold text-paypal-dark">Swap Withdrawals</h1>
-              <p className="text-xs text-muted-foreground">Pending requests for OpenUSD to PI payouts</p>
+              <p className="text-xs text-muted-foreground">Pending requests for OpenUSD to PI/MRWN payouts</p>
             </div>
           </div>
           <Button variant="outline" onClick={() => loadSwapWithdrawals()} disabled={refreshing || loading}>
@@ -205,8 +210,8 @@ const AdminSwapWithdrawalsPage = () => {
                   <div className="text-right">
                     <p className="text-sm font-semibold text-paypal-blue">{row.amount.toFixed(2)} OPEN USD</p>
                     <div className="mt-1 inline-flex items-center justify-end gap-2 text-xs text-muted-foreground">
-                      <img src={PI_LOGO_URL} alt="Pi Network" className="h-5 w-auto object-contain" />
-                      <span>PI payout</span>
+                      <img src={row.withdrawal_type === "PI" ? PI_LOGO_URL : MRWN_LOGO_URL} alt={row.withdrawal_type} className="h-5 w-auto object-contain" />
+                      <span>{row.withdrawal_type} payout</span>
                     </div>
                   </div>
                 </div>
@@ -215,18 +220,18 @@ const AdminSwapWithdrawalsPage = () => {
                   <p>OpenPay username: @{row.openpay_account_username}</p>
                   <p>Account number: {row.openpay_account_number}</p>
                   <p className="sm:col-span-2">
-                    PI to send: {((row.amount * (1 - WITHDRAWAL_FEE_RATE)) / PI_TO_USD).toFixed(4)} PI (after 2% fee)
+                    {row.withdrawal_type} to send: {((row.amount * (1 - WITHDRAWAL_FEE_RATE)) / (row.withdrawal_type === "PI" ? PI_TO_USD : 0.5)).toFixed(4)} {row.withdrawal_type} (after 2% fee)
                   </p>
                   <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
-                    <span>PI wallet: {row.pi_wallet_address}</span>
-                    {row.pi_wallet_address ? (
+                    <span>{row.withdrawal_type} wallet: {row.withdrawal_type === "PI" ? row.pi_wallet_address : row.mrwn_wallet_address}</span>
+                    {(row.withdrawal_type === "PI" ? row.pi_wallet_address : row.mrwn_wallet_address) ? (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText(row.pi_wallet_address);
-                            toast.success("PI wallet address copied");
+                            await navigator.clipboard.writeText(row.withdrawal_type === "PI" ? row.pi_wallet_address : row.mrwn_wallet_address);
+                            toast.success(`${row.withdrawal_type} wallet address copied`);
                           } catch {
                             toast.error("Copy failed");
                           }
@@ -235,11 +240,11 @@ const AdminSwapWithdrawalsPage = () => {
                         Copy
                       </Button>
                     ) : null}
-                    {row.pi_wallet_address ? (
+                    {(row.withdrawal_type === "PI" ? row.pi_wallet_address : row.mrwn_wallet_address) ? (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setQrWalletAddress(row.pi_wallet_address)}
+                        onClick={() => setQrWalletAddress(row.withdrawal_type === "PI" ? row.pi_wallet_address : row.mrwn_wallet_address)}
                       >
                         QR
                       </Button>
