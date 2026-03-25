@@ -595,7 +595,11 @@ export type Database = {
           custom_amount: number | null
           description: string
           expires_at: string | null
+          fee_amount: number | null
+          fee_payer: string | null
           id: string
+          merchant_settlement_amount: number | null
+          openpay_fee_account: string | null
           is_active: boolean
           key_mode: string
           link_token: string
@@ -619,7 +623,11 @@ export type Database = {
           custom_amount?: number | null
           description?: string
           expires_at?: string | null
+          fee_amount?: number | null
+          fee_payer?: string | null
           id?: string
+          merchant_settlement_amount?: number | null
+          openpay_fee_account?: string | null
           is_active?: boolean
           key_mode: string
           link_token: string
@@ -643,7 +651,11 @@ export type Database = {
           custom_amount?: number | null
           description?: string
           expires_at?: string | null
+          fee_amount?: number | null
+          fee_payer?: string | null
           id?: string
+          merchant_settlement_amount?: number | null
+          openpay_fee_account?: string | null
           is_active?: boolean
           key_mode?: string
           link_token?: string
@@ -2220,9 +2232,13 @@ export type Database = {
           p_custom_amount?: number
           p_description?: string
           p_expires_in_minutes?: number
+          p_fee_amount?: number
+          p_fee_payer?: string
           p_items?: Json
           p_link_type: string
+          p_merchant_settlement_amount?: number
           p_mode: string
+          p_openpay_fee_account?: string
           p_redirect_url?: string
           p_secret_key: string
           p_title?: string
