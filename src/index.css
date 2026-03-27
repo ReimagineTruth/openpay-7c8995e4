@@ -159,6 +159,45 @@
   .paypal-heading {
     @apply text-2xl font-bold tracking-tight text-paypal-dark dark:text-foreground;
   }
+
+  /* Logo Animations */
+  .animate-pulse-slow {
+    animation: pulseSlow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-bounce-slow {
+    animation: bounceSlow 2s infinite;
+  }
+
+  .animate-rotate-slow {
+    animation: rotateSlow 8s linear infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulseSlow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+
+  @keyframes bounceSlow {
+    0%, 20%, 53%, 80%, 100% { transform: translateY(0); }
+    40%, 43% { transform: translateY(-8px); }
+    70% { transform: translateY(-4px); }
+    90% { transform: translateY(-2px); }
+  }
+
+  @keyframes rotateSlow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes glow {
+    from { box-shadow: 0 0 10px rgba(0, 87, 216, 0.5); }
+    to { box-shadow: 0 0 20px rgba(0, 87, 216, 0.8), 0 0 30px rgba(0, 87, 216, 0.4); }
+  }
 }
 
 /* Keep Google Translate UI invisible while preserving full-page translation. */

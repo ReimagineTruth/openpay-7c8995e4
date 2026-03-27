@@ -147,7 +147,7 @@ const KycStatusPage = () => {
               </button>
               <h1 className="text-xl font-bold text-paypal-dark">KYC Status</h1>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
               <BrandLogo className="h-full w-full text-paypal-blue" />
             </div>
           </div>
@@ -174,7 +174,7 @@ const KycStatusPage = () => {
             </button>
             <h1 className="text-xl font-bold text-paypal-dark">KYC Status</h1>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
             <BrandLogo className="h-full w-full text-paypal-blue" />
           </div>
         </div>
