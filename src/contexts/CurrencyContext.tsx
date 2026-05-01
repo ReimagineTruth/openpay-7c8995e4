@@ -341,6 +341,7 @@ interface CurrencyContextType {
   setCurrency: (c: Currency) => void;
   convert: (usdAmount: number) => number;
   format: (usdAmount: number) => string;
+  formatCompact: (amount: number, symbol?: string) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType>({
@@ -350,6 +351,7 @@ const CurrencyContext = createContext<CurrencyContextType>({
   setCurrency: () => {},
   convert: (a) => a,
   format: (a) => `$${a.toFixed(2)}`,
+  formatCompact: (a, symbol) => `${symbol || '$'}${a >= 1000 ? a.toLocaleString(undefined, { notation: 'compact', compactDisplay: 'short', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : a.toFixed(2)}`,
 });
 
 export const useCurrency = () => useContext(CurrencyContext);
@@ -468,11 +470,34 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
 
   const format = (usdAmount: number) => {
     const converted = convert(usdAmount);
+    // Use compact notation for large numbers (>= 1,000)
+    if (converted >= 1000) {
+      return `${currency.symbol}${converted.toLocaleString(undefined, { 
+        notation: 'compact',
+        compactDisplay: 'short',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2 
+      })}`;
+    }
+    // Use standard formatting for smaller numbers
     return `${currency.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const formatCompact = (amount: number, symbol?: string) => {
+    if (amount >= 1000) {
+      return `${symbol || currency.symbol}${amount.toLocaleString(undefined, { 
+        notation: 'compact',
+        compactDisplay: 'short',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2 
+      })}`;
+    }
+    // Use standard formatting for smaller numbers
+    return `${symbol || currency.symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   const contextValue = useMemo(
-    () => ({ currencies: availableCurrencies, currency, ratesUpdatedAt, setCurrency, convert, format }),
+    () => ({ currencies: availableCurrencies, currency, ratesUpdatedAt, setCurrency, convert, format, formatCompact }),
     [availableCurrencies, currency, ratesUpdatedAt],
   );
 

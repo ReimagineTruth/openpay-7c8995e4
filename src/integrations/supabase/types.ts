@@ -737,13 +737,13 @@ export type Database = {
           fee_amount: number | null
           fee_payer: string | null
           id: string
-          merchant_settlement_amount: number | null
-          openpay_fee_account: string | null
           is_active: boolean
           key_mode: string
           link_token: string
           link_type: string
+          merchant_settlement_amount: number | null
           merchant_user_id: string
+          openpay_fee_account: string | null
           redirect_url: string | null
           title: string
           updated_at: string
@@ -765,13 +765,13 @@ export type Database = {
           fee_amount?: number | null
           fee_payer?: string | null
           id?: string
-          merchant_settlement_amount?: number | null
-          openpay_fee_account?: string | null
           is_active?: boolean
           key_mode: string
           link_token: string
           link_type: string
+          merchant_settlement_amount?: number | null
           merchant_user_id: string
+          openpay_fee_account?: string | null
           redirect_url?: string | null
           title?: string
           updated_at?: string
@@ -793,13 +793,13 @@ export type Database = {
           fee_amount?: number | null
           fee_payer?: string | null
           id?: string
-          merchant_settlement_amount?: number | null
-          openpay_fee_account?: string | null
           is_active?: boolean
           key_mode?: string
           link_token?: string
           link_type?: string
+          merchant_settlement_amount?: number | null
           merchant_user_id?: string
+          openpay_fee_account?: string | null
           redirect_url?: string | null
           title?: string
           updated_at?: string

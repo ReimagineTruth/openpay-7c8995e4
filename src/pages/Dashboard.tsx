@@ -357,9 +357,10 @@ const Dashboard = () => {
   const swapPayoutPiAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * OUSD_TO_PI : 0;
   const swapPayoutMrwnAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * (1 / 0.5) * OUSD_TO_PI : 0;
   const showSwapPrice = swapWithdrawalType === "PI" || !mrwnComingSoon;
-  const [showOpenAppBanner, setShowOpenAppBanner] = useState(() => {
+  const [showOpenAppBanner, setShowOpenAppBanner] = useState(true); // Always visible for now
+  const [showApkBanner, setShowApkBanner] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("dashboard_openapp_banner_visible");
+      const saved = localStorage.getItem("dashboard_apk_banner_visible");
       return saved !== null ? JSON.parse(saved) : true;
     }
     return true;
@@ -1884,48 +1885,83 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* OpenApp Banner */}
-      <div className="px-4 mt-2">
-        <Collapsible 
-          open={showOpenAppBanner} 
-          onOpenChange={setShowOpenAppBanner}
-          className="w-full"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-white/80 uppercase tracking-wider">OpenApp Utilities</h2>
-            <CollapsibleTrigger asChild>
-              <button className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/15 transition-colors">
-                {showOpenAppBanner ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </button>
-            </CollapsibleTrigger>
-          </div>
-          <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
-            <button 
-              onClick={() => navigate("/openapp")} 
-              className="w-full paypal-surface rounded-2xl p-4 flex items-center justify-between hover:opacity-90 transition-opacity"
-              aria-label="Open OpenApp utilities"
+      {/* OpenPay APK Promotion Banner */}
+      {showApkBanner && (
+        <div className="px-4 mt-3">
+          <div className="bg-white rounded-2xl p-4 border-2 border-blue-500 shadow-lg relative">
+            <button
+              onClick={() => {
+                setShowApkBanner(false);
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("dashboard_apk_banner_visible", JSON.stringify(false));
+                }
+              }}
+              className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              aria-label="Close APK banner"
             >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="flex items-center justify-between pr-8">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-paypal-blue overflow-hidden">
-                  <img 
-                    src="https://i.ibb.co/JwH255BZ/photo-2026-02-27-14-47-30.jpg" 
-                    alt="OpenApp" 
-                    className="h-full w-full object-cover"
-                  />
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 border-2 border-blue-600">
+                  <Smartphone className="h-6 w-6 text-white" />
                 </div>
-                <div className="text-left">
-                  <h3 className="font-semibold text-foreground">OpenApp Utilities</h3>
-                  <p className="text-base text-muted-foreground">Access OpenApp platform and tools</p>
+                <div className="flex-1">
+                  <h3 className="font-bold text-black text-lg">🚀 Get OpenPay Mobile App</h3>
+                  <p className="text-sm text-gray-700">Download the official OpenPay APK for Android</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200">New Features</span>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200">Enhanced Security</span>
+                  </div>
                 </div>
               </div>
-              <ExternalLink className="h-5 w-5 text-muted-foreground" />
-            </button>
-          </CollapsibleContent>
-        </Collapsible>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    // Navigate to menu and open the APK modal
+                    navigate("/menu");
+                    setTimeout(() => {
+                      const modalEvent = new CustomEvent('openApkModal');
+                      window.dispatchEvent(modalEvent);
+                    }, 100);
+                  }}
+                  className="bg-blue-500 px-4 py-2 rounded-lg border-2 border-blue-600 hover:bg-blue-600 transition-colors flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4 text-white" />
+                  <span className="text-sm font-semibold text-white">Download APK</span>
+                </button>
+                <button
+                  onClick={() => navigate("/menu")}
+                  className="text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  More options →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OpenApp Banner */}
+      <div className="px-4 mt-2">
+        <div className="bg-white rounded-2xl border-2 border-blue-500 shadow-lg">
+          <button 
+            onClick={() => navigate("/openapp")} 
+            className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-2xl"
+            aria-label="Open OpenApp utilities"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500">
+                <Monitor className="h-5 w-5 text-white" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-black">OpenApp Utilities</h3>
+                <p className="text-sm text-gray-600">Access OpenApp platform and tools</p>
+              </div>
+            </div>
+            <ExternalLink className="h-5 w-5 text-blue-500" />
+          </button>
+        </div>
       </div>
 
       {/* Greeting */}

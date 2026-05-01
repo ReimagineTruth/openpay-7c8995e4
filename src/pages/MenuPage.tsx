@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
-import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot } from "lucide-react";
+import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot, QrCode, Bell, Settings, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { clearAllAppSecurityUnlocks } from "@/lib/appSecurity";
 import { canAccessRemittanceMerchant, isRemittanceUiEnabled } from "@/lib/remittanceAccess";
@@ -16,13 +16,20 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const MenuPage = () => {
-  const OPENPAY_APK_URL = "https://mega.nz/file/pFsECZjD#Lwdlo7tjgprWpU-N7UzKOy_aolGk5t4pgzHXA4VLm7M";
+  const OPENPAY_APK_URL = "https://median.co/share/rdzamax#apk";
   const OPENPAY_DESKTOP_EXE_URL = String(import.meta.env.VITE_OPENPAY_DESKTOP_EXE_URL || "").trim();
   const navigate = useNavigate();
   const remittanceUiEnabled = isRemittanceUiEnabled();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstall, setCanInstall] = useState(false);
   const [showApkModal, setShowApkModal] = useState(false);
+  const [showApkBanner, setShowApkBanner] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("menu_apk_banner_visible");
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
   const [welcomeClaimedAt, setWelcomeClaimedAt] = useState<string | null>(null);
   const [claimingWelcome, setClaimingWelcome] = useState(false);
   const [hasRemittanceAccess, setHasRemittanceAccess] = useState(false);
@@ -36,7 +43,17 @@ const MenuPage = () => {
       setCanInstall(true);
     };
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    
+    // Listen for APK modal open event from Dashboard
+    const openApkModalHandler = () => {
+      setShowApkModal(true);
+    };
+    window.addEventListener('openApkModal', openApkModalHandler);
+    
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener('openApkModal', openApkModalHandler);
+    };
   }, []);
 
   useEffect(() => {
@@ -113,13 +130,8 @@ const MenuPage = () => {
   };
 
   const handleCopyMegaKey = async () => {
-    const megaKey = "Lwdlo7tjgprWpU-N7UzKOy_aolGk5t4pgzHXA4VLm7M";
-    try {
-      await navigator.clipboard.writeText(megaKey);
-      toast.success("Mega key copied");
-    } catch {
-      toast.error("Copy failed");
-    }
+    // No longer needed since we're using median.co instead of Mega
+    toast.success("Download link copied - No key needed!");
   };
 
   const handleLogout = async () => {
@@ -312,12 +324,76 @@ const MenuPage = () => {
           ],
         }]
       : []),
+    {
+      title: "Quick Links",
+      layout: "grid-card",
+      color: "bg-teal-50",
+      textColor: "text-teal-900",
+      items: [
+        { icon: QrCode, label: "QR Scanner", action: () => navigate("/qr-scanner") },
+        { icon: Bell, label: "Notifications", action: () => navigate("/notifications") },
+        { icon: Settings, label: "Settings", action: () => navigate("/settings") },
+        { icon: Download, label: "Downloads", action: () => handleOpenApkModal() },
+        { icon: ExternalLink, label: "Support", action: () => window.open("https://t.me/openpayofficial", "_blank", "noopener,noreferrer") },
+        { icon: RefreshCw, label: "Refresh", action: () => window.location.reload() },
+      ],
+    },
   ];
 
   return (
     <div className="min-h-screen bg-[#0a3fa9] px-4 pt-8 pb-10 text-white">
       <div className="px-4 pt-8">
         <h1 className="text-3xl font-bold text-white mb-8">Services</h1>
+        
+        {/* APK Promotion Banner */}
+        {showApkBanner && (
+          <div className="mb-8 animate-in-up">
+            <div className="bg-white rounded-[2.5rem] p-6 border-2 border-blue-500 shadow-xl relative">
+              <button
+                onClick={() => {
+                  setShowApkBanner(false);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("menu_apk_banner_visible", JSON.stringify(false));
+                  }
+                }}
+                className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors z-10"
+                aria-label="Close APK banner"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 border-2 border-blue-600">
+                    <Smartphone className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-black text-xl mb-1">🚀 Get OpenPay Mobile App</h3>
+                    <p className="text-sm text-gray-700 mb-3">Download the official OpenPay APK for Android</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200">New Features</span>
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200">Enhanced Security</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleOpenApkModal}
+                    className="bg-blue-500 px-6 py-3 rounded-xl border-2 border-blue-600 hover:bg-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    <Download className="h-5 w-5 text-white" />
+                    <span className="text-sm font-semibold text-white">Download APK</span>
+                  </button>
+                  <button
+                    onClick={handleOpenApkModal}
+                    className="text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    View QR Code →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {sections.map((section) => (
           <div key={section.title} className="mb-8 animate-in-up">
@@ -332,19 +408,19 @@ const MenuPage = () => {
                       disabled ? "opacity-40 cursor-not-allowed" : "hover:scale-105"
                     }`}
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0a3fa9] shadow-sm border border-[#0a3fa9]/20">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500 shadow-sm border-2 border-blue-600">
                       <Icon className="h-6 w-6 text-white" />
                     </div>
-                    <span className="text-[11px] font-bold text-center leading-tight text-white dark:text-white/70">{label}</span>
+                    <span className="text-[11px] font-bold text-center leading-tight text-white">{label}</span>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="ios-glass overflow-hidden rounded-[2.5rem] border border-border/40 dark:border-white/5 shadow-xl shadow-black/5">
-                <div className={`px-6 py-4 ${section.color || "bg-secondary/10"}`}>
-                  <h2 className={`text-lg font-black tracking-tight ${section.textColor || "text-white"}`}>{section.title}</h2>
+              <div className="bg-white overflow-hidden rounded-[2.5rem] border-2 border-blue-500 shadow-xl">
+                <div className={`px-6 py-4 ${section.color || "bg-blue-50"}`}>
+                  <h2 className={`text-lg font-black tracking-tight ${section.textColor || "text-black"}`}>{section.title}</h2>
                 </div>
-                <div className="p-4 grid grid-cols-4 gap-y-8 gap-x-2">
+                <div className="p-4 grid grid-cols-4 gap-y-8 gap-x-2 bg-white">
                   {section.items.map(({ icon: Icon, label, action, disabled, subtitle }) => (
                     <button
                       key={label}
@@ -354,12 +430,12 @@ const MenuPage = () => {
                         disabled ? "opacity-40 cursor-not-allowed" : "hover:scale-105"
                       }`}
                     >
-                      <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-[#0a3fa9] shadow-sm border border-[#0a3fa9]/20">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-blue-500 shadow-sm border-2 border-blue-600">
                         <Icon className="h-7 w-7 text-white" />
                       </div>
                       <div className="flex flex-col items-center gap-0.5 px-1">
-                        <span className="text-[10px] font-bold text-center leading-tight text-white dark:text-white/40 line-clamp-2">{label}</span>
-                        {subtitle && <span className="text-[8px] text-white dark:text-white/60 text-center leading-tight line-clamp-1">{subtitle}</span>}
+                        <span className="text-[10px] font-bold text-center leading-tight text-black line-clamp-2">{label}</span>
+                        {subtitle && <span className="text-[8px] text-gray-600 text-center leading-tight line-clamp-1">{subtitle}</span>}
                       </div>
                     </button>
                   ))}
@@ -427,7 +503,7 @@ const MenuPage = () => {
               >
                 <span className="inline-flex items-center gap-2">
                   <Copy className="h-4 w-4 text-white" />
-                  If Mega asks key, copy Mega key
+                  Copy download link again
                 </span>
               </button>
 
@@ -443,7 +519,7 @@ const MenuPage = () => {
               </button>
 
               <p className="mt-4 text-sm text-foreground/80">
-                If download is blocked in Pi Browser, copy the link and open it in another browser on phone or tablet.
+                Download the OpenPay APK to enjoy all features on your Android device!
               </p>
               {canInstall && (
                 <button
