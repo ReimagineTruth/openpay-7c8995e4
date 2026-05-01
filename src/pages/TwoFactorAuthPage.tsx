@@ -236,7 +236,7 @@ const TwoFactorAuthPage = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
-            <AuthMark className="h-12 w-12" />
+            <AuthMark className="h-16 w-16" />
             <span className="text-white font-bold text-xl">OpenPay</span>
           </div>
           <div className="w-5" />

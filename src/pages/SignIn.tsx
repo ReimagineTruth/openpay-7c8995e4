@@ -81,7 +81,7 @@ const SignIn = () => {
     <div className="min-h-screen bg-gradient-to-b from-paypal-blue to-[#072a7a] px-6 py-10">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-sm flex-col justify-center">
         <div className="mb-8 text-center">
-          <AuthMark className="mx-auto mb-5 h-32 w-32" />
+          <AuthMark className="mx-auto mb-5 h-16 w-16" />
           <p className="mb-1 text-2xl font-bold tracking-tight text-white">OpenPay</p>
           <p className="text-sm font-medium text-white/85">
             {show2FA ? "Two-Factor Authentication" : "Welcome back"}
