@@ -210,15 +210,15 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden">
+      <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden modal-content">
         <DialogTitle className="sr-only">Transaction receipt</DialogTitle>
         <DialogDescription className="sr-only">Receipt details for the selected transaction.</DialogDescription>
-        <div className="bg-gradient-to-br from-paypal-blue to-[#0073e6] p-6 text-center text-white">
-          <CheckCircle className="mx-auto h-12 w-12 mb-2" />
-          <h2 className="text-xl font-bold">{typeLabel}</h2>
-          <p className="text-3xl font-bold mt-2">{formatCurrency(receipt.amount)}</p>
+        <div className="bg-gradient-to-br from-paypal-blue to-[#0073e6] p-6 text-center text-white animate-scaleIn">
+          <CheckCircle className="mx-auto h-12 w-12 mb-2 animate-bounce" />
+          <h2 className="text-xl font-bold animate-fadeInUp">{typeLabel}</h2>
+          <p className="text-3xl font-bold mt-2 animate-fadeInUp">{formatCurrency(receipt.amount)}</p>
           {receipt.platformFee && receipt.type === "send" && (
-            <p className="text-sm mt-1 text-white/80">Platform fee: {formatCurrency(receipt.platformFee)}</p>
+            <p className="text-sm mt-1 text-white/80 animate-fadeInUp">Platform fee: {formatCurrency(receipt.platformFee)}</p>
           )}
         </div>
 
@@ -265,10 +265,10 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
           )}
 
           <div className="pt-3 flex gap-2">
-            <Button onClick={handleSave} className="flex-1 rounded-full bg-paypal-blue text-white">
+            <Button onClick={handleSave} className="flex-1 rounded-full bg-paypal-blue text-white hover-lift hover-glow">
               <Download className="mr-2 h-4 w-4" /> Save Receipt
             </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full hover-lift">
               <X className="h-4 w-4" />
             </Button>
           </div>
