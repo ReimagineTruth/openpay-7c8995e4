@@ -289,12 +289,7 @@ const OpenPayAIPage = () => {
 
   const processUserMessage = async (message: string) => {
     const lowerMessage = message.toLowerCase();
-    
-    // Test API connectivity first
-    if (!OPENROUTER_API_KEY) {
-      return "⚠️ AI service is not configured. Please check your environment variables and restart the app.";
-    }
-    
+
     // Check for payment commands (improved regex)
     const paymentRegex = /(?:send|transfer|pay)\s+(\d+(?:\.\d{2})?)\s*(?:php|₱)?\s*(?:to\s*)?@?(\w+)/i;
     const paymentMatch = message.match(paymentRegex);
@@ -327,7 +322,7 @@ const OpenPayAIPage = () => {
     // Try AI for complex queries
     try {
       console.log("🤖 Attempting AI response for:", message);
-      const aiResponse = await callOpenRouterAPI(message);
+      const aiResponse = await callOpenPayAI(message);
       console.log("✅ AI response successful");
       return aiResponse;
     } catch (error) {
