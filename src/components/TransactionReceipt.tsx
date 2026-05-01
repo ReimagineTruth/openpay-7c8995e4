@@ -10,6 +10,7 @@ interface ReceiptData {
   ledgerTransactionId?: string;
   type: "send" | "receive" | "topup";
   amount: number;
+  platformFee?: number;
   otherPartyName?: string;
   otherPartyUsername?: string;
   note?: string;
@@ -166,6 +167,7 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
       ["Transaction ID", transactionIdPreview],
       [receipt.type === "send" ? "To" : "From", receipt.otherPartyName || "N/A"],
       ["Username", receipt.otherPartyUsername ? `@${receipt.otherPartyUsername}` : "N/A"],
+      ...(receipt.platformFee && receipt.type === "send" ? [["Platform Fee", formatCurrency(receipt.platformFee)] as [string, string]] : []),
       ["Note", receipt.note ? toPreviewText(receipt.note, 90) : "N/A"],
     ];
 
@@ -215,6 +217,9 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
           <CheckCircle className="mx-auto h-12 w-12 mb-2" />
           <h2 className="text-xl font-bold">{typeLabel}</h2>
           <p className="text-3xl font-bold mt-2">{formatCurrency(receipt.amount)}</p>
+          {receipt.platformFee && receipt.type === "send" && (
+            <p className="text-sm mt-1 text-white/80">Platform fee: {formatCurrency(receipt.platformFee)}</p>
+          )}
         </div>
 
         <div className="p-5 space-y-3">
@@ -244,6 +249,12 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Username</span>
               <span className="text-foreground">@{receipt.otherPartyUsername}</span>
+            </div>
+          )}
+          {receipt.platformFee && receipt.type === "send" && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Platform Fee</span>
+              <span className="text-foreground font-medium">{formatCurrency(receipt.platformFee)}</span>
             </div>
           )}
           {receipt.note && (

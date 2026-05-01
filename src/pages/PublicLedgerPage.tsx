@@ -423,6 +423,11 @@ const PublicLedgerPage = () => {
                         {privateView ? row.note : redactLedgerNote(row.note)}
                       </p>
                     )}
+                    {row.note && row.note.includes('Platform fee') && (
+                      <p className="text-[10px] text-blue-600 font-medium mt-1">
+                        📋 Platform Fee Transaction
+                      </p>
+                    )}
                     <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mt-1">
                       Status: <span className={row.status === "completed" ? "text-green-600" : "text-amber-600"}>{row.status || "unknown"}</span>
                     </p>

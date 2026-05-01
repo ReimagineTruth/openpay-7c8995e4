@@ -1425,6 +1425,7 @@ const Dashboard = () => {
       ledgerTransactionId: tx.id,
       type: tx.is_topup ? "topup" : tx.is_sent ? "send" : "receive",
       amount: tx.amount,
+      platformFee: tx.is_sent ? 0.01 : undefined, // Add platform fee for send transactions
       otherPartyName: tx.other_name,
       otherPartyUsername: tx.other_username || undefined,
       note: tx.note || undefined,
