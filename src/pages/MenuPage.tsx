@@ -350,12 +350,7 @@ const MenuPage = () => {
           <div className="mb-8 animate-in-up">
             <div className="bg-white rounded-[2.5rem] p-6 border-2 border-blue-500 shadow-xl relative">
               <button
-                onClick={() => {
-                  setShowApkBanner(false);
-                  if (typeof window !== "undefined") {
-                    localStorage.setItem("menu_apk_banner_visible", JSON.stringify(false));
-                  }
-                }}
+                onClick={() => setShowApkBanner(false)}
                 className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors z-10"
                 aria-label="Close APK banner"
               >

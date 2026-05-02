@@ -3420,11 +3420,11 @@ const Dashboard = () => {
         </div>
 
         {transactions.length === 0 ? (
-          <p className="py-8 text-center text-white/70">No transactions yet</p>
+          <p className="py-8 text-center text-white/70 animate-fadeInUp">No transactions yet</p>
         ) : (
-          <div className="paypal-surface divide-y divide-border/70 rounded-3xl">
-            {transactions.map((tx) => (
-                            <button key={tx.id} onClick={() => showReceipt(tx)} className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/40 transition">
+          <div className="paypal-surface divide-y divide-border/70 rounded-3xl animate-fadeInUp">
+            {transactions.map((tx, index) => (
+                            <button key={tx.id} onClick={() => showReceipt(tx)} className={`flex w-full items-center justify-between p-4 text-left hover:bg-secondary/40 transition hover-lift stagger-item ${tx.is_sent ? 'hover:shadow-blue-500/20' : tx.is_topup ? 'hover:shadow-green-500/20' : 'hover:shadow-purple-500/20'}`}>
                 <div className="flex items-center gap-3">
                   <div className="relative h-10 w-10">
                     {(() => {

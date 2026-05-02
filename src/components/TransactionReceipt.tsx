@@ -210,26 +210,45 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden modal-content">
+      <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden modal-content glass bg-white dark:bg-gray-900">
         <DialogTitle className="sr-only">Transaction receipt</DialogTitle>
         <DialogDescription className="sr-only">Receipt details for the selected transaction.</DialogDescription>
-        <div className="bg-gradient-to-br from-paypal-blue to-[#0073e6] p-6 text-center text-white animate-scaleIn">
-          <CheckCircle className="mx-auto h-12 w-12 mb-2 animate-bounce" />
-          <h2 className="text-xl font-bold animate-fadeInUp">{typeLabel}</h2>
-          <p className="text-3xl font-bold mt-2 animate-fadeInUp">{formatCurrency(receipt.amount)}</p>
-          {receipt.platformFee && receipt.type === "send" && (
-            <p className="text-sm mt-1 text-white/80 animate-fadeInUp">Platform fee: {formatCurrency(receipt.platformFee)}</p>
-          )}
+        <div className="bg-gradient-to-br from-paypal-blue via-blue-600 to-[#0073e6] p-6 text-center text-white animate-scaleIn relative overflow-hidden">
+          {/* Animated background particles */}
+          <div className="absolute inset-0">
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute h-1 w-1 rounded-full bg-white/30 animate-float"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${5 + Math.random() * 3}s`
+                }}
+              />
+            ))}
+          </div>
+          
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-white/20 blur-xl animate-pulse" />
+            <CheckCircle className="relative mx-auto h-16 w-16 mb-3 animate-bounce drop-shadow-2xl" />
+            <h2 className="text-2xl font-bold animate-fadeInUp">{typeLabel}</h2>
+            <p className="text-4xl font-black mt-2 animate-fadeInUp count-animation">{formatCurrency(receipt.amount)}</p>
+            {receipt.platformFee && receipt.type === "send" && (
+              <p className="text-sm mt-2 text-white/80 animate-fadeInUp">Platform fee: {formatCurrency(receipt.platformFee)}</p>
+            )}
+          </div>
         </div>
 
-        <div className="p-5 space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Date</span>
-            <span className="text-foreground font-medium">{format(receipt.date, "MMM d, yyyy h:mm a")}</span>
+        <div className="p-5 space-y-3 animate-fadeInUp bg-white dark:bg-gray-900" style={{ animationDelay: '0.3s' }}>
+          <div className="flex justify-between text-sm p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Date</span>
+            <span className="text-gray-900 dark:text-white font-medium">{format(receipt.date, "MMM d, yyyy h:mm a")}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Transaction ID</span>
-            <span className="text-foreground font-mono text-xs">{transactionIdPreview}</span>
+          <div className="flex justify-between text-sm p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Transaction ID</span>
+            <span className="text-gray-900 dark:text-white font-mono text-xs">{transactionIdPreview}</span>
           </div>
           {!!ledgerTransactionId && (
             <div className="flex justify-end">
@@ -240,35 +259,35 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
             </div>
           )}
           {receipt.otherPartyName && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{receipt.type === "send" ? "To" : "From"}</span>
-              <span className="text-foreground font-medium">{receipt.otherPartyName}</span>
+            <div className="flex justify-between text-sm p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+              <span className="text-gray-600 dark:text-gray-400 font-medium">{receipt.type === "send" ? "To" : "From"}</span>
+              <span className="text-gray-900 dark:text-white font-medium">{receipt.otherPartyName}</span>
             </div>
           )}
           {receipt.otherPartyUsername && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Username</span>
-              <span className="text-foreground">@{receipt.otherPartyUsername}</span>
+            <div className="flex justify-between text-sm p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+              <span className="text-gray-600 dark:text-gray-400 font-medium">Username</span>
+              <span className="text-gray-900 dark:text-white">@{receipt.otherPartyUsername}</span>
             </div>
           )}
           {receipt.platformFee && receipt.type === "send" && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Platform Fee</span>
-              <span className="text-foreground font-medium">{formatCurrency(receipt.platformFee)}</span>
+            <div className="flex justify-between text-sm p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+              <span className="text-gray-600 dark:text-gray-400 font-medium">Platform Fee</span>
+              <span className="text-gray-900 dark:text-white font-medium">{formatCurrency(receipt.platformFee)}</span>
             </div>
           )}
           {receipt.note && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Note</span>
-              <span className="max-w-[70%] text-right text-foreground break-words">{toPreviewText(receipt.note)}</span>
+            <div className="text-sm p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+              <span className="text-gray-600 dark:text-gray-400 font-medium block mb-1">Note</span>
+              <span className="text-gray-900 dark:text-white break-words">{toPreviewText(receipt.note)}</span>
             </div>
           )}
 
-          <div className="pt-3 flex gap-2">
-            <Button onClick={handleSave} className="flex-1 rounded-full bg-paypal-blue text-white hover-lift hover-glow">
+          <div className="pt-4 flex gap-2 animate-fadeInUp" style={{ animationDelay: '0.5s' }}>
+            <Button onClick={handleSave} className="flex-1 rounded-full bg-paypal-blue text-white btn-glow btn-press hover-lift-enhanced">
               <Download className="mr-2 h-4 w-4" /> Save Receipt
             </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full hover-lift">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full hover-lift border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
               <X className="h-4 w-4" />
             </Button>
           </div>

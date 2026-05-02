@@ -205,29 +205,35 @@ const PublicLedgerPage = () => {
   }, [transactionId]);
 
   return (
-    <div className="min-h-screen bg-background px-4 pt-4 pb-10">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/")} aria-label="Back to home">
-            <ArrowLeft className="h-6 w-6 text-foreground" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-paypal-dark">OpenLedger</h1>
-            <p className="text-xs text-muted-foreground">
-              {transactionId
-                ? `OpenLedger record for transaction ${transactionId.slice(0, 8)}...`
-                : "OpenLedger transaction history. User IDs are not shown."}
-            </p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-paypal-blue to-[#0073e6] px-4 py-8 text-white animate-fadeInUp">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8 animate-slideInDown">
+          <h1 className="text-3xl font-bold mb-2 animate-float">OpenLedger</h1>
+          <p className="text-white/80">Transparent financial records for all transactions</p>
         </div>
-        <button
-          onClick={() => (transactionId ? loadTransaction(transactionId) : loadPage(offset))}
-          className="paypal-surface flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-foreground"
-          disabled={loading}
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate("/")} aria-label="Back to home" className="hover-lift">
+              <ArrowLeft className="h-6 w-6 text-foreground" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-white">OpenLedger</h1>
+              <p className="text-xs text-white/80">
+                {transactionId
+                  ? `OpenLedger record for transaction ${transactionId.slice(0, 8)}...`
+                  : "OpenLedger transaction history. User IDs are not shown."}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => (transactionId ? loadTransaction(transactionId) : loadPage(offset))}
+            className="paypal-surface flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-white hover-lift"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {entries.length === 0 && !loading ? (

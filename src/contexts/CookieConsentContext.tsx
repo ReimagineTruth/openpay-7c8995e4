@@ -7,6 +7,7 @@ import {
   canUseMarketingCookies,
   loadUserPreferences,
   saveUserPreferences,
+  saveCookieConsent,
 } from "@/lib/userPreferencesStorage";
 
 interface CookieConsentContextType {
@@ -17,6 +18,7 @@ interface CookieConsentContextType {
   showCookieDialog: boolean;
   acceptAllCookies: () => void;
   showCookieSettings: () => void;
+  hideCookieDialog: () => void;
 }
 
 const CookieConsentContext = createContext<CookieConsentContextType | undefined>(undefined);
@@ -69,6 +71,15 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
   }, []);
 
   const acceptAllCookies = () => {
+    // Save cookie consent with timestamp to prevent banner from reappearing
+    saveCookieConsent({
+      necessary: true,
+      functional: true,
+      analytics: true,
+      marketing: true,
+    });
+
+    // Also update user preferences for compatibility
     saveUserPreferences({
       cookiesAccepted: true,
       analyticsConsent: true,
@@ -81,10 +92,17 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
       canUseAnalyticsCookies: true,
       canUseMarketingCookies: true,
     });
+
+    // Hide the dialog after accepting
+    setShowCookieDialog(false);
   };
 
   const showCookieSettings = () => {
     setShowCookieDialog(true);
+  };
+
+  const hideCookieDialog = () => {
+    setShowCookieDialog(false);
   };
 
   const value: CookieConsentContextType = {
@@ -92,6 +110,7 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
     showCookieDialog,
     acceptAllCookies,
     showCookieSettings,
+    hideCookieDialog,
   };
 
   return (

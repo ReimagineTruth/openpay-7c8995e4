@@ -49,6 +49,7 @@ import ButtonsCartPage from "./pages/buttons/ButtonsCartPage";
 import ButtonsDonatePage from "./pages/buttons/ButtonsDonatePage";
 import ButtonsSubscribePage from "./pages/buttons/ButtonsSubscribePage";
 import ButtonsEmbedsPage from "./pages/buttons/ButtonsEmbedsPage";
+import DownloadPage from "./pages/DownloadPage";
 import OpenPayGuidePage from "./pages/OpenPayGuidePage";
 import OpenPayAIPage from "./pages/OpenPayAIPage";
 import PublicLedgerPage from "./pages/PublicLedgerPage";
@@ -448,6 +449,7 @@ const AppRoutes = () => {
         <Route path="/openpay-official" element={<OpenPayOfficialPage />} />
         <Route path="/openapp" element={<OpenAppPage />} />
         <Route path="/openpay-desktop" element={<OpenPayDesktopPage />} />
+        <Route path="/download" element={<DownloadPage />} />
         <Route path="/live-customer-service" element={<LiveCustomerServicePage />} />
         <Route path="/support" element={<SupportPage />} />
         <Route path="/topup-history" element={<TopUpHistoryPage />} />
