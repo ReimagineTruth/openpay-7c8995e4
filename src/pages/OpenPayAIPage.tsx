@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import BrandLogo from "@/components/BrandLogo";
 import SplashScreen from "@/components/SplashScreen";
+import AuthMark from "@/components/AuthMark";
 
 // AI calls go through the openpay-ai-chat edge function (Lovable AI Gateway)
 
@@ -410,7 +411,16 @@ const OpenPayAIPage = () => {
   };
 
   if (loading) {
-    return <SplashScreen />;
+        return (
+      <div className="min-h-screen bg-gradient-to-br from-paypal-blue via-blue-600 to-[#072a7a] flex items-center justify-center px-6 relative overflow-hidden">
+        <div className="text-center">
+          <AuthMark className="mx-auto mb-6 h-16 w-16" />
+          <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
+          <p className="mt-1 text-sm text-white/80">Loading OpenPay AI...</p>
+          <div className="mx-auto mt-6 h-8 w-8 rounded-full border-2 border-white/35 border-t-white animate-spin" />
+        </div>
+      </div>
+    );;
   }
 
   return (

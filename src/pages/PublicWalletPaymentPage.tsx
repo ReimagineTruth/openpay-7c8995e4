@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import SplashScreen from "@/components/SplashScreen";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
+import AuthMark from "@/components/AuthMark";
 
 const db = supabase as any;
 
@@ -173,8 +174,26 @@ const PublicWalletPaymentPage = () => {
     }
   };
 
-  if (loading) return <SplashScreen message="Loading payment details..." />;
-  if (!sessionData) return <SplashScreen message="Payment session not found" />;
+  if (loading)     return (
+      <div className="min-h-screen bg-gradient-to-br from-paypal-blue via-blue-600 to-[#072a7a] flex items-center justify-center px-6 relative overflow-hidden">
+        <div className="text-center">
+          <AuthMark className="mx-auto mb-6 h-16 w-16" />
+          <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
+          <p className="mt-1 text-sm text-white/80">Loading payment details...</p>
+          <div className="mx-auto mt-6 h-8 w-8 rounded-full border-2 border-white/35 border-t-white animate-spin" />
+        </div>
+      </div>
+    );;
+  if (!sessionData)     return (
+      <div className="min-h-screen bg-gradient-to-br from-paypal-blue via-blue-600 to-[#072a7a] flex items-center justify-center px-6 relative overflow-hidden">
+        <div className="text-center">
+          <AuthMark className="mx-auto mb-6 h-16 w-16" />
+          <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
+          <p className="mt-1 text-sm text-white/80">Loading payment details...</p>
+          <div className="mx-auto mt-6 h-8 w-8 rounded-full border-2 border-white/35 border-t-white animate-spin" />
+        </div>
+      </div>
+    );;
 
   return (
     <div className="min-h-screen bg-background">

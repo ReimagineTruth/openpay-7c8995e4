@@ -775,6 +775,7 @@ const SendMoney = () => {
     ];
     const enablePurposeTable =
       String(import.meta.env.VITE_PAYMENT_PURPOSES_ENABLED || "false").toLowerCase() === "true";
+import AuthMark from "@/components/AuthMark";
 
     if (!enablePurposeTable) {
       setPaymentPurposes(fallbackPurposes);
@@ -988,7 +989,16 @@ const SendMoney = () => {
   );
 
   if (!isInitialLoadDone) {
-    return <SplashScreen message="Loading send..." />;
+        return (
+      <div className="min-h-screen bg-gradient-to-br from-paypal-blue via-blue-600 to-[#072a7a] flex items-center justify-center px-6 relative overflow-hidden">
+        <div className="text-center">
+          <AuthMark className="mx-auto mb-6 h-16 w-16" />
+          <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
+          <p className="mt-1 text-sm text-white/80">Loading send...</p>
+          <div className="mx-auto mt-6 h-8 w-8 rounded-full border-2 border-white/35 border-t-white animate-spin" />
+        </div>
+      </div>
+    );;
   }
 
   if (step === "amount") {

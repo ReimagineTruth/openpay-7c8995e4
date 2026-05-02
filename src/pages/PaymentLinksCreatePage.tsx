@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { loadUserPreferences, saveUserPreferences, getDisableContactCollection, getCustomerPaysFee, getOpenPayFeeAccount } from "@/lib/userPreferencesStorage";
+import AuthMark from "@/components/AuthMark";
 
 type Mode = "sandbox" | "live";
 type LinkType = "products" | "custom_amount";
@@ -497,7 +498,16 @@ const PaymentLinksCreatePage = () => {
   };
 
   if (loading) {
-    return <SplashScreen message="Loading payment links..." />;
+        return (
+      <div className="min-h-screen bg-gradient-to-br from-paypal-blue via-blue-600 to-[#072a7a] flex items-center justify-center px-6 relative overflow-hidden">
+        <div className="text-center">
+          <AuthMark className="mx-auto mb-6 h-16 w-16" />
+          <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
+          <p className="mt-1 text-sm text-white/80">Loading payment links...</p>
+          <div className="mx-auto mt-6 h-8 w-8 rounded-full border-2 border-white/35 border-t-white animate-spin" />
+        </div>
+      </div>
+    );;
   }
 
   if (showCreateForm) {

@@ -8,6 +8,7 @@ import TransactionReceipt, { type ReceiptData } from "@/components/TransactionRe
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AuthMark from "@/components/AuthMark";
 
 const db = supabase as any;
 
@@ -191,7 +192,16 @@ const PosThankYouPage = () => {
     });
   }, [amountInUsd, sessionData, transactionId]);
 
-  if (loading) return <SplashScreen message="Loading POS confirmation..." />;
+  if (loading)     return (
+      <div className="min-h-screen bg-gradient-to-br from-paypal-blue via-blue-600 to-[#072a7a] flex items-center justify-center px-6 relative overflow-hidden">
+        <div className="text-center">
+          <AuthMark className="mx-auto mb-6 h-16 w-16" />
+          <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
+          <p className="mt-1 text-sm text-white/80">Loading POS confirmation...</p>
+          <div className="mx-auto mt-6 h-8 w-8 rounded-full border-2 border-white/35 border-t-white animate-spin" />
+        </div>
+      </div>
+    );;
 
   return (
     <div className="min-h-screen bg-background px-4 py-10">

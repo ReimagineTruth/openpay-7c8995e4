@@ -301,6 +301,7 @@ const VirtualCardPage = () => {
             overflow: hidden !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+import AuthMark from "@/components/AuthMark";
           }
         }
       `}</style>
