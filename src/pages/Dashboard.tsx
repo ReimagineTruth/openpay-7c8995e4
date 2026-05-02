@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getAppCookie, loadUserPreferences, setAppCookie, upsertUserPreferences } from "@/lib/userPreferences";
+import { DigitalRateDisplay } from "@/components/ui/DigitalRateDisplay";
 import { isRemittanceUiEnabled } from "@/lib/remittanceAccess";
 import { isSolanaPayEnabled } from "@/lib/solanaPayAccess";
 import { playUiSound } from "@/lib/appSounds";
@@ -357,15 +358,7 @@ const Dashboard = () => {
   const swapPayoutPiAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * OUSD_TO_PI : 0;
   const swapPayoutMrwnAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * (1 / 0.5) * OUSD_TO_PI : 0;
   const showSwapPrice = swapWithdrawalType === "PI" || !mrwnComingSoon;
-  const [showOpenAppBanner, setShowOpenAppBanner] = useState(true); // Always visible for now
-  const [showApkBanner, setShowApkBanner] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("dashboard_apk_banner_visible");
-      return saved !== null ? JSON.parse(saved) : true;
-    }
-    return true;
-  });
-  const [refreshing, setRefreshing] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -566,10 +559,7 @@ const Dashboard = () => {
     localStorage.setItem("dashboard_shortcuts_visible", JSON.stringify(showShortcuts));
   }, [showShortcuts]);
 
-  useEffect(() => {
-    localStorage.setItem("dashboard_openapp_banner_visible", JSON.stringify(showOpenAppBanner));
-  }, [showOpenAppBanner]);
-
+  
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("openpay_amount_format", amountFormat);
@@ -1843,21 +1833,21 @@ const Dashboard = () => {
 
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-paypal-blue pb-64 text-white">
-      <div className="flex items-center justify-between px-4 pt-5">
+    <div className="min-h-screen overflow-x-hidden bg-paypal-blue pb-64 text-white animate-fadeIn">
+      <div className="flex items-center justify-between px-4 pt-5 animate-slideInDown">
         <div className="flex items-center gap-2">
           <CurrencySelector />
           
           {/* Mining Header Info */}
           <div 
             onClick={() => navigate("/mining")}
-            className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 transition-colors hover:bg-white/15 cursor-pointer"
+            className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 transition-all duration-300 hover:bg-white/15 cursor-pointer hover:scale-105 hover-lift"
           >
-            <Pickaxe className="h-4 w-4 text-white" />
+            <Pickaxe className="h-4 w-4 text-white animate-pulse-slow" />
             <div className="flex flex-col leading-none">
               <span className="text-[10px] font-black text-white/70 uppercase">Mining</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-black text-white">{miningBalance.toFixed(2)}</span>
+                <span className="text-sm font-black text-white count-animation">{miningBalance.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -1867,107 +1857,37 @@ const Dashboard = () => {
           <button
             onClick={loadDashboard}
             aria-label="Refresh dashboard"
-            className="paypal-surface flex h-10 w-10 items-center justify-center rounded-full"
+            className={`paypal-surface flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 hover:scale-110 hover-lift ${refreshing ? "animate-spin" : "hover-glow"}`}
             disabled={refreshing}
           >
-            <RefreshCw className={`h-5 w-5 text-foreground ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-5 w-5 text-foreground transition-transform duration-300 ${refreshing ? "animate-spin" : "hover:rotate-180"}`} />
           </button>
-          <button onClick={() => navigate("/notifications")} aria-label="Open notifications" className="paypal-surface relative flex h-10 w-10 items-center justify-center rounded-full">
-            <Bell className="h-5 w-5 text-foreground" />
+          <button 
+            onClick={() => navigate("/notifications")} 
+            aria-label="Open notifications" 
+            className="paypal-surface relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 hover:scale-110 hover-lift hover-glow"
+          >
+            <Bell className="h-5 w-5 text-foreground transition-transform duration-300 hover:animate-bounce" />
             {unreadNotifications > 0 && (
-              <span className="absolute right-0 top-0 min-w-[18px] rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4 text-white">
+              <span className="absolute right-0 top-0 min-w-[18px] rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4 text-white animate-pulse">
                 {Math.min(unreadNotifications, 99)}
               </span>
             )}
           </button>
-          <button onClick={() => navigate("/settings")} aria-label="Open settings" className="paypal-surface flex h-10 w-10 items-center justify-center rounded-full">
-            <Settings className="h-5 w-5 text-foreground" />
-          </button>
-        </div>
-      </div>
-
-      {/* OpenPay APK Promotion Banner */}
-      {showApkBanner && (
-        <div className="px-4 mt-3">
-          <div className="bg-white rounded-2xl p-4 border-2 border-blue-500 shadow-lg relative">
-            <button
-              onClick={() => {
-                setShowApkBanner(false);
-                if (typeof window !== "undefined") {
-                  localStorage.setItem("dashboard_apk_banner_visible", JSON.stringify(false));
-                }
-              }}
-              className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-              aria-label="Close APK banner"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="flex items-center justify-between pr-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 border-2 border-blue-600">
-                  <Smartphone className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-black text-lg">🚀 Get OpenPay Mobile App</h3>
-                  <p className="text-sm text-gray-700">Download the official OpenPay APK for Android</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200">New Features</span>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200">Enhanced Security</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => {
-                    // Navigate to menu and open the APK modal
-                    navigate("/menu");
-                    setTimeout(() => {
-                      const modalEvent = new CustomEvent('openApkModal');
-                      window.dispatchEvent(modalEvent);
-                    }, 100);
-                  }}
-                  className="bg-blue-500 px-4 py-2 rounded-lg border-2 border-blue-600 hover:bg-blue-600 transition-colors flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4 text-white" />
-                  <span className="text-sm font-semibold text-white">Download APK</span>
-                </button>
-                <button
-                  onClick={() => navigate("/menu")}
-                  className="text-xs text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  More options →
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* OpenApp Banner */}
-      <div className="px-4 mt-2">
-        <div className="bg-white rounded-2xl border-2 border-blue-500 shadow-lg">
           <button 
-            onClick={() => navigate("/openapp")} 
-            className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-2xl"
-            aria-label="Open OpenApp utilities"
+            onClick={() => navigate("/settings")} 
+            aria-label="Open settings" 
+            className="paypal-surface flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 hover:scale-110 hover-lift hover-glow"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500">
-                <Monitor className="h-5 w-5 text-white" />
-              </div>
-              <div className="text-left">
-                <h3 className="font-semibold text-black">OpenApp Utilities</h3>
-                <p className="text-sm text-gray-600">Access OpenApp platform and tools</p>
-              </div>
-            </div>
-            <ExternalLink className="h-5 w-5 text-blue-500" />
+            <Settings className="h-5 w-5 text-foreground transition-transform duration-300 hover:rotate-90" />
           </button>
         </div>
       </div>
 
+      
       {/* Greeting */}
-      <div className="px-4 mt-3">
-        <h1 className="text-2xl font-bold text-white">
+      <div className="px-4 mt-3 animate-fadeInUp">
+        <h1 className="text-2xl font-bold text-white transition-all duration-500">
           {activeSection === "cards"
             ? "OpenPay Cards"
             : activeSection === "buy"
@@ -1981,12 +1901,12 @@ const Dashboard = () => {
                   : `${getGreeting()}, ${userName.split(" ")[0] || "there"}`}
         </h1>
         {activeSection !== "cards" && activeSection !== "buy" && activeSection !== "swap" && activeSection !== "mining" && activeSection !== "analytics" && username && (
-          <p className="text-base text-white/80">@{username}</p>
+          <p className="text-base text-white/80 animate-fadeIn" style={{ animationDelay: "0.2s" }}>@{username}</p>
         )}
       </div>
 
-      <div className="mt-4 px-4">
-        <div className="paypal-surface overflow-x-auto rounded-2xl p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mt-4 px-4 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+        <div className="paypal-surface overflow-x-auto rounded-2xl p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden hover-lift">
           <div className="flex min-w-max gap-1">
             {([
               { key: "wallet", label: "Wallet" },
@@ -1998,36 +1918,32 @@ const Dashboard = () => {
               { key: "swap", label: "Swap" },
               { key: "mining", label: "Mining" },
               { key: "analytics", label: "Analytics" },
-            ] as Array<{ key: DashboardSection; label: string }>).map((item) => (
+            ] as Array<{ key: DashboardSection; label: string }>).map((item, index) => (
               <button
                 key={item.key}
                 onClick={() => setActiveSection(item.key)}
-                className={`rounded-xl px-4 py-2 text-base font-semibold transition ${
+                className={`rounded-xl px-4 py-2 text-base font-semibold transition-all duration-300 hover:scale-105 stagger-item ${
                   activeSection === item.key
-                    ? "bg-paypal-blue text-white"
-                    : "text-foreground hover:bg-secondary/70"
+                    ? "bg-paypal-blue text-white shadow-lg animate-glow"
+                    : "text-foreground hover:bg-secondary/70 hover-lift"
                 }`}
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {item.label}
               </button>
             ))}
           </div>
         </div>
-        <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-3">
-          <div className="space-y-1">
-            <p className="text-sm text-white/80">
-              Display currency: <span className="font-bold text-white">{currencyTag}</span>
-            </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              <p className="text-xs text-white/70">
-                Rate: <span className="font-semibold text-white">1 PI = {PI_TO_OUSD.toFixed(2)} OUSD</span>
-              </p>
-              <p className="text-xs text-white/70">
-                Rate: <span className="font-semibold text-white">1 USD = 1 OUSD</span>
-              </p>
-            </div>
-          </div>
-        </div>
+        <DigitalRateDisplay
+          rates={{
+            piToOusd: PI_TO_OUSD,
+            usdToOusd: 1,
+            currencyTag: currencyTag
+          }}
+          onRefresh={loadDashboard}
+          refreshing={refreshing}
+          className="mt-4 animate-fadeInUp"
+        />
       </div>
 
       {activeSection === "savings" && (

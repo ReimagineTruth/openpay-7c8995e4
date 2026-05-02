@@ -42,6 +42,8 @@ export interface UserPreferences {
   showBalance?: boolean;
   enableTwoFactor?: boolean;
   preferredPaymentMethod?: string;
+  showApkBanner?: boolean; // Show/hide the APK download banner in menu
+  showOpenAppBanner?: boolean; // Show/hide the OpenApp banner in dashboard
   
   // Timestamps
   lastUpdated?: string;
@@ -85,6 +87,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   showBalance: true,
   enableTwoFactor: false,
   preferredPaymentMethod: 'wallet',
+  showApkBanner: true, // Show APK banner by default
+  showOpenAppBanner: true, // Show OpenApp banner by default
   
   // Payment links defaults
   disableContactCollection: false,
@@ -392,6 +396,24 @@ export const getPreferredPaymentMethod = (): string => {
 
 export const setPreferredPaymentMethod = (method: string): void => {
   updateUserPreference('preferredPaymentMethod', method);
+};
+
+// APK Banner preference functions
+export const getShowApkBanner = (): boolean => {
+  return loadUserPreferences().showApkBanner !== false; // Default to true if undefined
+};
+
+export const setShowApkBanner = (show: boolean): void => {
+  updateUserPreference('showApkBanner', show);
+};
+
+// OpenApp Banner preference functions
+export const getShowOpenAppBanner = (): boolean => {
+  return loadUserPreferences().showOpenAppBanner !== false; // Default to true if undefined
+};
+
+export const setShowOpenAppBanner = (show: boolean): void => {
+  updateUserPreference('showOpenAppBanner', show);
 };
 
 // Helper to check if we should persist preferences

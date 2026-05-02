@@ -6,6 +6,9 @@ import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, Hel
 import { toast } from "sonner";
 import { clearAllAppSecurityUnlocks } from "@/lib/appSecurity";
 import { canAccessRemittanceMerchant, isRemittanceUiEnabled } from "@/lib/remittanceAccess";
+import { getShowApkBanner, setShowApkBanner, getShowOpenAppBanner, setShowOpenAppBanner } from "@/lib/userPreferencesStorage";
+import { CompactDigitalRateDisplay } from "@/components/ui/DigitalRateDisplay";
+import { PI_TO_USD } from "@/contexts/CurrencyContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import BrandLogo from "@/components/BrandLogo";
 import { QRCodeSVG } from "qrcode.react";
@@ -24,12 +27,20 @@ const MenuPage = () => {
   const [canInstall, setCanInstall] = useState(false);
   const [showApkModal, setShowApkModal] = useState(false);
   const [showApkBanner, setShowApkBanner] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("menu_apk_banner_visible");
-      return saved !== null ? JSON.parse(saved) : true;
-    }
-    return true;
+    return getShowApkBanner();
   });
+
+  const [showOpenAppBanner, setShowOpenAppBanner] = useState(() => {
+    return getShowOpenAppBanner();
+  });
+
+  const hideApkBanner = () => {
+    setShowApkBanner(false);
+  };
+
+  const hideOpenAppBanner = () => {
+    setShowOpenAppBanner(false);
+  };
   const [welcomeClaimedAt, setWelcomeClaimedAt] = useState<string | null>(null);
   const [claimingWelcome, setClaimingWelcome] = useState(false);
   const [hasRemittanceAccess, setHasRemittanceAccess] = useState(false);
@@ -341,46 +352,55 @@ const MenuPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a3fa9] px-4 pt-8 pb-10 text-white">
+    <div className="min-h-screen bg-[#0a3fa9] px-4 pt-8 pb-10 text-white animate-fadeIn">
       <div className="px-4 pt-8">
-        <h1 className="text-3xl font-bold text-white mb-8">Services</h1>
+        <h1 className="text-3xl font-bold text-white mb-8 animate-slideInDown">Services</h1>
+        
+        {/* Compact Rate Display */}
+        <CompactDigitalRateDisplay
+          rates={{
+            piToOusd: PI_TO_USD,
+            usdToOusd: 1
+          }}
+          className="mb-6 animate-fadeIn"
+        />
         
         {/* APK Promotion Banner */}
         {showApkBanner && (
-          <div className="mb-8 animate-in-up">
-            <div className="bg-white rounded-[2.5rem] p-6 border-2 border-blue-500 shadow-xl relative">
+          <div className="mb-8 animate-in-up hover-lift-enhanced">
+            <div className="bg-white rounded-[2.5rem] p-6 border-2 border-blue-500 shadow-xl relative transition-all duration-300 hover:shadow-2xl">
               <button
-                onClick={() => setShowApkBanner(false)}
-                className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors z-10"
+                onClick={hideApkBanner}
+                className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all duration-300 z-10 hover:scale-110 hover-lift"
                 aria-label="Close APK banner"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 transition-transform duration-300 hover:rotate-90" />
               </button>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 border-2 border-blue-600">
-                    <Smartphone className="h-7 w-7 text-white" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 border-2 border-blue-600 animate-pulse-slow hover-lift">
+                    <Smartphone className="h-7 w-7 text-white transition-transform duration-300 hover:scale-110" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-black text-xl mb-1">🚀 Get OpenPay Mobile App</h3>
-                    <p className="text-sm text-gray-700 mb-3">Download the official OpenPay APK for Android</p>
+                    <h3 className="font-bold text-black text-xl mb-1 animate-fadeIn">🚀 Get OpenPay Mobile App</h3>
+                    <p className="text-sm text-gray-700 mb-3 animate-fadeIn" style={{ animationDelay: "0.1s" }}>Download the official OpenPay APK for Android</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200">New Features</span>
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200">Enhanced Security</span>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200 animate-fadeIn hover-lift" style={{ animationDelay: "0.2s" }}>New Features</span>
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200 animate-fadeIn hover-lift" style={{ animationDelay: "0.3s" }}>Enhanced Security</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={handleOpenApkModal}
-                    className="bg-blue-500 px-6 py-3 rounded-xl border-2 border-blue-600 hover:bg-blue-600 transition-colors flex items-center gap-2"
+                    className="bg-blue-500 px-6 py-3 rounded-xl border-2 border-blue-600 hover:bg-blue-600 transition-all duration-300 flex items-center gap-2 hover:scale-105 hover-lift hover-glow btn-press"
                   >
-                    <Download className="h-5 w-5 text-white" />
+                    <Download className="h-5 w-5 text-white transition-transform duration-300" />
                     <span className="text-sm font-semibold text-white">Download APK</span>
                   </button>
                   <button
                     onClick={handleOpenApkModal}
-                    className="text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                    className="text-xs text-gray-600 hover:text-gray-800 transition-all duration-300 hover:scale-105 hover-lift"
                   >
                     View QR Code →
                   </button>
@@ -389,48 +409,50 @@ const MenuPage = () => {
             </div>
           </div>
         )}
-        
-        {sections.map((section) => (
-          <div key={section.title} className="mb-8 animate-in-up">
+
+        {sections.map((section, sectionIndex) => (
+          <div key={section.title} className="mb-8 animate-in-up hover-lift-enhanced" style={{ animationDelay: `${sectionIndex * 0.1}s` }}>
             {section.layout === "grid-top" ? (
               <div className="flex justify-between items-start gap-2 mb-4 px-1">
-                {section.items.map(({ icon: Icon, label, action, disabled }) => (
+                {section.items.map(({ icon: Icon, label, action, disabled }, itemIndex) => (
                   <button
                     key={label}
                     onClick={action}
                     disabled={disabled}
-                    className={`flex flex-col items-center gap-2 flex-1 transition ios-active ${
-                      disabled ? "opacity-40 cursor-not-allowed" : "hover:scale-105"
+                    className={`flex flex-col items-center gap-2 flex-1 transition-all duration-300 ios-active stagger-item hover:scale-110 hover-lift ${
+                      disabled ? "opacity-40 cursor-not-allowed" : "hover-glow"
                     }`}
+                    style={{ animationDelay: `${itemIndex * 0.05}s` }}
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500 shadow-sm border-2 border-blue-600">
-                      <Icon className="h-6 w-6 text-white" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500 shadow-sm border-2 border-blue-600 transition-transform duration-300 hover:scale-110 hover:rotate-6">
+                      <Icon className="h-6 w-6 text-white transition-transform duration-300" />
                     </div>
-                    <span className="text-[11px] font-bold text-center leading-tight text-white">{label}</span>
+                    <span className="text-[11px] font-bold text-center leading-tight text-white transition-colors duration-300">{label}</span>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="bg-white overflow-hidden rounded-[2.5rem] border-2 border-blue-500 shadow-xl">
-                <div className={`px-6 py-4 ${section.color || "bg-blue-50"}`}>
-                  <h2 className={`text-lg font-black tracking-tight ${section.textColor || "text-black"}`}>{section.title}</h2>
+              <div className="bg-white overflow-hidden rounded-[2.5rem] border-2 border-blue-500 shadow-xl transition-all duration-300 hover:shadow-2xl hover-lift-enhanced">
+                <div className={`px-6 py-4 ${section.color || "bg-blue-50"} transition-colors duration-300`}>
+                  <h2 className={`text-lg font-black tracking-tight ${section.textColor || "text-black"} transition-colors duration-300`}>{section.title}</h2>
                 </div>
                 <div className="p-4 grid grid-cols-4 gap-y-8 gap-x-2 bg-white">
-                  {section.items.map(({ icon: Icon, label, action, disabled, subtitle }) => (
+                  {section.items.map(({ icon: Icon, label, action, disabled, subtitle }, itemIndex) => (
                     <button
                       key={label}
                       onClick={action}
                       disabled={disabled}
-                      className={`flex flex-col items-center gap-2 transition ios-active ${
-                        disabled ? "opacity-40 cursor-not-allowed" : "hover:scale-105"
+                      className={`flex flex-col items-center gap-2 transition-all duration-300 ios-active stagger-item ${
+                        disabled ? "opacity-40 cursor-not-allowed" : "hover:scale-110 hover-lift hover-glow"
                       }`}
+                      style={{ animationDelay: `${itemIndex * 0.05}s` }}
                     >
-                      <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-blue-500 shadow-sm border-2 border-blue-600">
-                        <Icon className="h-7 w-7 text-white" />
+                      <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-blue-500 shadow-sm border-2 border-blue-600 transition-all duration-300 hover:scale-110 hover:rotate-6">
+                        <Icon className="h-7 w-7 text-white transition-transform duration-300" />
                       </div>
                       <div className="flex flex-col items-center gap-0.5 px-1">
-                        <span className="text-[10px] font-bold text-center leading-tight text-black line-clamp-2">{label}</span>
-                        {subtitle && <span className="text-[8px] text-gray-600 text-center leading-tight line-clamp-1">{subtitle}</span>}
+                        <span className="text-[10px] font-bold text-center leading-tight text-black line-clamp-2 transition-colors duration-300">{label}</span>
+                        {subtitle && <span className="text-[8px] text-gray-600 text-center leading-tight line-clamp-1 transition-colors duration-300">{subtitle}</span>}
                       </div>
                     </button>
                   ))}
