@@ -11,7 +11,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import BrandLogo from "@/components/BrandLogo";
-import SplashScreen from "@/components/SplashScreen";
 import AuthMark from "@/components/AuthMark";
 
 // AI calls go through the openpay-ai-chat edge function (Lovable AI Gateway)

@@ -15,7 +15,6 @@ import { Html5Qrcode } from "html5-qrcode";
 import { Info } from "lucide-react";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { loadAppSecuritySettings, isPinSetupCompleted } from "@/lib/appSecurity";
-import SplashScreen from "@/components/SplashScreen";
 import { playUiSound } from "@/lib/appSounds";
 import AuthMark from "@/components/AuthMark";
 

@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import SplashScreen from "@/components/SplashScreen";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import AuthMark from "@/components/AuthMark";

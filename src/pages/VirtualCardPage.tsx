@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import BrandLogo from "@/components/BrandLogo";
 import BottomNav from "@/components/BottomNav";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import SplashScreen from "@/components/SplashScreen";
 
 interface VirtualCardRecord {
   id: string;

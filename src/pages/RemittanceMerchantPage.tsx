@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { loadUserPreferences, upsertUserPreferences } from "@/lib/userPreferences";
 import BrandLogo from "@/components/BrandLogo";
-import SplashScreen from "@/components/SplashScreen";
 
 interface SelfProfile {
   id: string;

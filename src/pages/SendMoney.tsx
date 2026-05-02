@@ -14,7 +14,6 @@ import CurrencySelector from "@/components/CurrencySelector";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import NumberPad from "@/components/NumberPad";
 import { loadAppSecuritySettings, isPinSetupCompleted } from "@/lib/appSecurity";
-import SplashScreen from "@/components/SplashScreen";
  
 type PinReturnState = {
   pinVerified?: boolean;

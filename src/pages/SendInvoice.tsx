@@ -13,7 +13,6 @@ import { Info } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { loadAppSecuritySettings, isPinSetupCompleted } from "@/lib/appSecurity";
-import SplashScreen from "@/components/SplashScreen";
 import { playUiSound } from "@/lib/appSounds";
 import AuthMark from "@/components/AuthMark";
 

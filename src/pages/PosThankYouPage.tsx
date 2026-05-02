@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle2, ReceiptText, User, Mail, Phone, Calendar, DollarSign } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import SplashScreen from "@/components/SplashScreen";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
