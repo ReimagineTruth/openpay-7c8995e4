@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
+import AuthMark from "@/components/AuthMark";
 
 const db = supabase as any;
 
@@ -109,7 +110,16 @@ const MerchantCheckoutThankYouPage = () => {
     });
   }, [amountInUsd, mergedMerchantName, mergedMerchantUsername, mergedSessionId, transactionId]);
 
-  if (loading) return <SplashScreen message="Loading payment confirmation..." />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-600 animate-spin" />
+          <p className="mt-4 text-muted-foreground">Loading payment confirmation...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background px-4 py-10">

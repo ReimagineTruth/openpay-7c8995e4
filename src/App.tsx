@@ -145,6 +145,16 @@ const AppRoutes = () => {
       return;
     }
 
+    // Don't show route splash for dashboard and auth routes to prevent conflicts
+    const excludedRoutes = ['/dashboard', '/auth', '/'];
+    const isExcludedRoute = excludedRoutes.some(route => 
+      location.pathname === route || location.pathname.startsWith(route + '/')
+    );
+
+    if (isExcludedRoute) {
+      return;
+    }
+
     setShowRouteSplash(true);
     const timer = window.setTimeout(() => setShowRouteSplash(false), 500);
     return () => window.clearTimeout(timer);

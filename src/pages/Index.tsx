@@ -10,7 +10,7 @@ const Index = () => {
   useEffect(() => {
     Promise.all([
       supabase.auth.getSession(),
-      new Promise((resolve) => setTimeout(resolve, 900)),
+      new Promise((resolve) => setTimeout(resolve, 300)),
     ]).then(([{ data: { session } }]) => {
       if (session) {
         navigate("/dashboard");
@@ -23,11 +23,12 @@ const Index = () => {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-paypal-blue via-blue-600 to-[#072a7a] flex items-center justify-center px-6 relative overflow-hidden">
+      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-gradient-to-b from-paypal-blue to-[#072a7a]">
         <div className="text-center">
           <AuthMark className="mx-auto mb-6 h-16 w-16" />
           <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
           <p className="mt-1 text-sm text-white/80">Loading...</p>
+          <p className="mt-1 text-xs font-medium tracking-normal text-white/65">Powered by Pi Network</p>
           <div className="mx-auto mt-6 h-8 w-8 rounded-full border-2 border-white/35 border-t-white animate-spin" />
         </div>
       </div>

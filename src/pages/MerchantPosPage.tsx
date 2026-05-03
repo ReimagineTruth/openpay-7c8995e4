@@ -10,6 +10,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { playUiSound } from "@/lib/appSounds";
+import AuthMark from "@/components/AuthMark";
 
 type PosView = "home" | "receive" | "history" | "refund" | "settings";
 type PaymentStatus = "idle" | "waiting" | "success" | "failed";
@@ -562,7 +563,14 @@ const MerchantPosPage = () => {
   };
 
   if (loading) {
-    return <SplashScreen message="Loading OpenPay POS..." />;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-600 animate-spin" />
+          <p className="mt-4 text-muted-foreground">Loading OpenPay POS...</p>
+        </div>
+      </div>
+    );
   }
 
   const renderStatus = () => {
