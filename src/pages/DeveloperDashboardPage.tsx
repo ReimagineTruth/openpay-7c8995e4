@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AuthMark from "@/components/AuthMark";
 
 interface DeveloperApp {
   id: string;
@@ -104,8 +105,14 @@ const DeveloperDashboardPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-gradient-to-b from-paypal-blue to-[#072a7a]">
+        <div className="text-center">
+          <AuthMark className="mx-auto mb-6 h-16 w-16" />
+          <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
+          <p className="mt-1 text-sm text-white/80">Loading developer dashboard...</p>
+          <p className="mt-1 text-xs font-medium tracking-normal text-white/65">Powered by Pi Network</p>
+          <div className="mx-auto mt-6 h-8 w-8 rounded-full border-2 border-white/35 border-t-white animate-spin" />
+        </div>
       </div>
     );
   }

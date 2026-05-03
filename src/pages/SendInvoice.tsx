@@ -469,10 +469,10 @@ const SendInvoice = () => {
 
   if (pageLoading) {
         return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-paypal-blue flex items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-600 animate-spin" />
-          <p className="mt-4 text-muted-foreground">Loading invoices...</p>
+          <div className="mx-auto h-8 w-8 rounded-full border-2 border-white/35 border-t-white animate-spin" />
+          <p className="mt-4 text-white/80">Loading invoices...</p>
         </div>
       </div>
     );
