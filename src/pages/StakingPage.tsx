@@ -36,10 +36,10 @@ const parseStakeRewardFromNote = (note: string | null): number | null => {
 };
 
 const STAKE_OPTIONS = [
-  { days: 7, rate: 0.02 },
-  { days: 30, rate: 0.05 },
-  { days: 90, rate: 0.1 },
-  { days: 365, rate: 0.2 },
+  { days: 7, rate: 0.0002 },
+  { days: 30, rate: 0.01 },
+  { days: 90, rate: 0.04 },
+  { days: 365, rate: 0.06 },
 ];
 
 const StakingPage = () => {
@@ -195,7 +195,7 @@ const StakingPage = () => {
           <div className="mt-4 rounded-xl border border-border bg-secondary/20 p-3 text-sm text-foreground">
             <div className="flex items-center justify-between">
               <span>Reward rate</span>
-              <span className="font-semibold">{(selectedRate * 100).toFixed(0)}%</span>
+              <span className="font-semibold">{(selectedRate * 100).toFixed(2)}%</span>
             </div>
             <div className="mt-1 flex items-center justify-between">
               <span>Estimated reward</span>
