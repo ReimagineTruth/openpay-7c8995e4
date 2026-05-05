@@ -848,7 +848,7 @@ const MiningPage = () => {
         }
 
         // Create mock reward
-        const baseReward = 0.10;
+        const baseReward = 0.01;
         const mockReward = {
           id: crypto.randomUUID(),
           amount: baseReward,
@@ -900,7 +900,7 @@ const MiningPage = () => {
   };
 
   const MIN_MINING_CLAIM_OUSD = 10;
-  const currentDailyRate = 0.10 * (1 + Math.min(activeReferrals * 0.10, 1.0));
+  const currentDailyRate = 0.01 * (1 + Math.min(activeReferrals * 0.10, 1.0));
   const totalEarned = (rewards || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
   const canClaimAll = totalEarned >= MIN_MINING_CLAIM_OUSD;
 
@@ -1047,7 +1047,7 @@ const MiningPage = () => {
             <p className="text-3xl font-black tracking-tight text-paypal-blue">{activeReferrals}</p>
             <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-600">
               <TrendingUp className="h-3 w-3" />
-              <span>+{((currentDailyRate - 0.10) / 0.10 * 100).toFixed(0)}% Boost</span>
+              <span>+{((currentDailyRate - 0.01) / 0.01 * 100).toFixed(0)}% Boost</span>
             </div>
           </div>
           
@@ -1150,7 +1150,7 @@ const MiningPage = () => {
               <ul className="mt-3 space-y-3">
                 {[
                   "Tap once every 24 hours to stay active.",
-                  "Earn 0.10 OPEN base reward per session.",
+                  "Earn 0.01 OPEN base reward per session.",
                   "Get +10% bonus per active referral (max 100%).",
                   "Session locks and stops after 24 hours."
                 ].map((text, i) => (
