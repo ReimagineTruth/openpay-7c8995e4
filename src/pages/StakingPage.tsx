@@ -36,10 +36,10 @@ const parseStakeRewardFromNote = (note: string | null): number | null => {
 };
 
 const STAKE_OPTIONS = [
-  { days: 7, rate: 0.02 },
-  { days: 30, rate: 0.05 },
-  { days: 90, rate: 0.1 },
-  { days: 365, rate: 0.2 },
+  { days: 7, rate: 0.0002 },
+  { days: 30, rate: 0.01 },
+  { days: 90, rate: 0.04 },
+  { days: 365, rate: 0.06 },
 ];
 
 const StakingPage = () => {
