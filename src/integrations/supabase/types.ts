@@ -49,6 +49,122 @@ export type Database = {
           },
         ]
       }
+      affiliate_socials: {
+        Row: {
+          created_at: string
+          handle: string
+          id: string
+          platform: string
+          url: string | null
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          handle: string
+          id?: string
+          platform: string
+          url?: string | null
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          handle?: string
+          id?: string
+          platform?: string
+          url?: string | null
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      affiliate_task_submissions: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          proof_url: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reward_amount: number
+          status: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          proof_url?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reward_amount?: number
+          status?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          proof_url?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reward_amount?: number
+          status?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_task_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_tasks: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          id: string
+          proof_required: boolean
+          recurrence: string
+          reward_amount: number
+          task_type: string
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description: string
+          id?: string
+          proof_required?: boolean
+          recurrence?: string
+          reward_amount?: number
+          task_type: string
+          title: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          id?: string
+          proof_required?: boolean
+          recurrence?: string
+          reward_amount?: number
+          task_type?: string
+          title?: string
+        }
+        Relationships: []
+      }
       api_access_logs: {
         Row: {
           app_id: string
@@ -2893,6 +3009,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      review_affiliate_submission: {
+        Args: { p_approve: boolean; p_note?: string; p_submission_id: string }
+        Returns: Json
+      }
       revoke_my_merchant_api_key: {
         Args: { p_key_id: string }
         Returns: boolean
@@ -2937,6 +3057,10 @@ export type Database = {
           p_ip_address?: string
           p_pi_browser_used?: boolean
         }
+        Returns: Json
+      }
+      submit_affiliate_task: {
+        Args: { p_notes?: string; p_proof_url: string; p_task_id: string }
         Returns: Json
       }
       submit_my_loan_application: {
