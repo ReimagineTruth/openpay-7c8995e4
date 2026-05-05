@@ -168,7 +168,7 @@ const DownloadPage = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <BottomNav active="dashboard" />
+      <BottomNav active="home" />
     </div>
   );
 };
