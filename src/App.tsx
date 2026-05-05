@@ -41,6 +41,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AffiliatePage from "./pages/AffiliatePage";
+import AdminAffiliatePage from "./pages/AdminAffiliatePage";
 import MiningPage from "./pages/MiningPage";
 import StakingPage from "./pages/StakingPage";
 import ButtonsPage from "./pages/ButtonsPage";
@@ -397,6 +398,11 @@ const AppRoutes = () => {
         <Route path="/affiliate" element={
           <ProtectedRoute>
             <AffiliatePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/affiliate" element={
+          <ProtectedRoute>
+            <AdminAffiliatePage />
           </ProtectedRoute>
         } />
         <Route path="/mining" element={
