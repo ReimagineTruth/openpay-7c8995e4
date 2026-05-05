@@ -195,7 +195,7 @@ const StakingPage = () => {
           <div className="mt-4 rounded-xl border border-border bg-secondary/20 p-3 text-sm text-foreground">
             <div className="flex items-center justify-between">
               <span>Reward rate</span>
-              <span className="font-semibold">{(selectedRate * 100).toFixed(0)}%</span>
+              <span className="font-semibold">{(selectedRate * 100).toFixed(2)}%</span>
             </div>
             <div className="mt-1 flex items-center justify-between">
               <span>Estimated reward</span>
