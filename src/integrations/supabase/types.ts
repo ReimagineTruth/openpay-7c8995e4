@@ -1500,6 +1500,59 @@ export type Database = {
         }
         Relationships: []
       }
+      push_notifications_outbox: {
+        Row: {
+          attempts: number
+          body: string
+          created_at: string
+          id: string
+          last_error: string | null
+          notification_id: string | null
+          payload: Json
+          sent_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          notification_id?: string | null
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          notification_id?: string | null
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_notifications_outbox_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "app_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referral_rewards: {
         Row: {
           claimed_at: string | null
@@ -2482,6 +2535,16 @@ export type Database = {
             }
             Returns: string
           }
+      create_app_notification: {
+        Args: {
+          p_body: string
+          p_data?: Json
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       create_checkout_session_from_payment_link: {
         Args: {
           p_customer_email?: string
