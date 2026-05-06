@@ -9,7 +9,8 @@
     "strict": false,
     "noImplicitAny": false,
     "skipLibCheck": true,
-    "types": ["./deno.d.ts"]
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
   "include": ["**/*.ts", "**/*.d.ts"],
   "exclude": ["node_modules"]

@@ -1,12 +1,5 @@
-declare global {
-  const Deno: {
-    env: {
-      get(key: string): string | undefined;
-    };
-  };
-}
+// Type declarations for Deno modules used in this function
 
-// Module declarations for Deno imports
 declare module "https://deno.land/std@0.168.0/http/server.ts" {
   export function serve(handler: (req: Request) => Response | Promise<Response>): void;
 }
@@ -29,15 +22,12 @@ declare module "https://esm.sh/@supabase/supabase-js@2" {
   };
 }
 
-// Additional wildcard declarations for any Deno modules
-declare module "https://deno.land/*" {
-  const module: any;
-  export default module;
-}
-
-declare module "https://esm.sh/*" {
-  const module: any;
-  export default module;
+declare global {
+  const Deno: {
+    env: {
+      get(key: string): string | undefined;
+    };
+  };
 }
 
 export {};
