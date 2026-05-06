@@ -231,6 +231,21 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
         </div>
       </CollapsibleContent>
 
+      {/* Closed State Message */}
+      {!open && (
+        <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-blue-600" />
+            <span className="text-sm text-blue-800 font-medium">
+              {liveRateClosed ? 
+                "Rates temporarily unavailable - Check back later" : 
+                "Click to view current exchange rates and market data"
+              }
+            </span>
+          </div>
+        </div>
+      )}
+
           </Collapsible>
   );
 };
@@ -241,15 +256,21 @@ export const CompactDigitalRateDisplay: React.FC<{
   className?: string;
   liveRateClosed?: boolean;
 }> = ({ rates, className, liveRateClosed = false }) => {
+  const [open, setOpen] = useState(false);
+
   return (
     <div
       className={cn(
-        'bg-white rounded-xl p-3 border border-gray-200 shadow-sm',
+        'bg-white rounded-xl border border-gray-200 shadow-sm',
         'transition-all duration-300 hover:shadow-md hover-lift',
         className
       )}
     >
-      <div className="flex items-center justify-between gap-4">
+      {/* Header */}
+      <div 
+        className="flex items-center justify-between gap-4 p-3 cursor-pointer"
+        onClick={() => setOpen(!open)}
+      >
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${liveRateClosed ? 'bg-red-500' : 'bg-green-500'} ${liveRateClosed ? '' : 'animate-pulse'}`} />
           <span className="text-xs font-semibold text-gray-600">{liveRateClosed ? 'Rates' : 'Live Rates'}</span>
@@ -268,6 +289,31 @@ export const CompactDigitalRateDisplay: React.FC<{
             <span className="text-gray-600 font-medium">1 USD</span>
             <DigitalNumber value={rates.usdToOusd.toFixed(2)} className="text-blue-600 font-bold" />
             <span className="text-gray-600 font-medium">OUSD</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {open ? (
+            <ChevronUp className="h-4 w-4 text-gray-600" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-gray-600" />
+          )}
+        </div>
+      </div>
+
+      {/* Collapsible Content */}
+      <div className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="px-3 pb-3">
+          <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center gap-2">
+              <Activity className="h-3 w-3 text-blue-600" />
+              <span className="text-xs text-blue-800 font-medium">
+                {liveRateClosed ? 
+                  "Rates temporarily unavailable" : 
+                  "Real-time exchange rates updated automatically"
+                }
+              </span>
+            </div>
           </div>
         </div>
       </div>
