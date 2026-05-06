@@ -206,11 +206,41 @@ export const useRealtimePushNotifications = () => {
         )
         .subscribe();
 
+      // Unified stream: covers mining rewards, staking, disputes, merchant payments,
+      // request paid/declined, invoice paid, etc.
+      const appNotifChannel = supabase
+        .channel(`app-notif-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "app_notifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          async (payload) => {
+            const n = payload.new as { title?: string; message?: string; metadata?: Record<string, unknown> };
+            const event = String((n.metadata as any)?.event || "");
+            // Skip events already handled by dedicated channels above to avoid duplicates
+            if (
+              event === "payment_received" ||
+              event === "top_up_success" ||
+              event === "money_request_received" ||
+              event === "invoice_received"
+            ) {
+              return;
+            }
+            await maybeNotify(n.title || "Notification", n.message || "");
+          },
+        )
+        .subscribe();
+
       return () => {
         supabase.removeChannel(txChannel);
         supabase.removeChannel(requestChannel);
         supabase.removeChannel(invoiceChannel);
         supabase.removeChannel(supportChannel);
+        supabase.removeChannel(appNotifChannel);
       };
     };
 

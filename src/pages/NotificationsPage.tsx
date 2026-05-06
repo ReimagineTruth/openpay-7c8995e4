@@ -58,10 +58,10 @@ const NotificationsPage = () => {
           .limit(5),
         (supabase as any)
           .from("app_notifications")
-          .select("id, type, title, body, created_at")
+          .select("id, type, title, message, created_at")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
-          .limit(15),
+          .limit(50),
       ]);
 
       const notifications: NotificationItem[] = [];
@@ -109,7 +109,7 @@ const NotificationsPage = () => {
         notifications.push({
           id: `app-${item.id}`,
           title: item.title || "Notification",
-          description: item.body || String(item.type || "App event"),
+          description: item.message || item.body || String(item.type || "App event"),
           createdAt: item.created_at,
         });
       });
