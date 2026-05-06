@@ -63,6 +63,10 @@ const MenuPage = () => {
 
   });
 
+  const [showBannerDrawer, setShowBannerDrawer] = useState(true);
+
+  const [expandedBanner, setExpandedBanner] = useState<'openapp' | 'apk' | null>(null);
+
 
 
   const [showOpenAppBanner, setShowOpenAppBanner] = useState(() => {
@@ -85,6 +89,11 @@ const MenuPage = () => {
 
     setShowOpenAppBanner(false);
 
+  };
+
+  const hideOpenAppBannerFunc = () => {
+    setShowOpenAppBanner(false);
+    localStorage.setItem('showOpenAppBanner', 'false');
   };
 
   const [welcomeClaimedAt, setWelcomeClaimedAt] = useState<string | null>(null);
@@ -727,57 +736,114 @@ const MenuPage = () => {
 
             usdToOusd: 1
 
-          }}
+          }}/>
 
-          liveRateClosed={liveRateClosed}
-
-          className="mb-6 animate-fadeIn"
-
-        />
-
-        
-
-        {/* APK Promotion Banner */}
-
-        {showApkBanner && (
-
-          <div className="mb-8 animate-in-up hover-lift-enhanced">
-            <div className="bg-white rounded-[2.5rem] p-6 border-2 border-blue-500 shadow-xl relative transition-all duration-300 hover:shadow-2xl">
-              <button
-                onClick={hideApkBanner}
-                className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all duration-300 z-10 hover:scale-110 hover-lift"
-                aria-label="Close APK banner"
+        {/* Unified Banner Drawer */}
+        {(showOpenAppBanner || showApkBanner) && (
+          <div className="mb-6 animate-in-up">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-[2rem] border-2 border-blue-400 shadow-xl relative transition-all duration-300 overflow-hidden">
+              {/* Drawer Header */}
+              <div 
+                className="px-6 py-4 flex items-center justify-between bg-white/10 backdrop-blur-sm border-b border-white/20 cursor-pointer hover:bg-white/20 transition-all duration-300"
+                onClick={() => setShowBannerDrawer(!showBannerDrawer)}
               >
-                <X className="h-4 w-4 transition-transform duration-300 hover:rotate-90" />
-              </button>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 border-2 border-blue-600 animate-pulse-slow hover-lift">
-                    <Smartphone className="h-7 w-7 text-white transition-transform duration-300 hover:scale-110" />
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm border border-white/30">
+                    <Smartphone className="h-5 w-5 text-white" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-black text-xl mb-1 animate-fadeIn">🚀 Get OpenPay Mobile App</h3>
-                    <p className="text-sm text-gray-700 mb-3 animate-fadeIn" style={{ animationDelay: "0.1s" }}>Download the official OpenPay APK for Android</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200 animate-fadeIn hover-lift" style={{ animationDelay: "0.2s" }}>New Features</span>
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200 animate-fadeIn hover-lift" style={{ animationDelay: "0.3s" }}>Enhanced Security</span>
-                    </div>
+                  <h3 className="font-bold text-white text-lg">OpenPay Services</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowBannerDrawer(false);
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300 hover:scale-110 border border-white/30"
+                    aria-label="Close drawer"
+                  >
+                    <X className="h-4 w-4 transition-transform duration-300 hover:rotate-90" />
+                  </button>
+                  <div className={`transition-transform duration-300 ${showBannerDrawer ? 'rotate-180' : ''}`}>
+                    <Smartphone className="h-5 w-5 text-white" />
                   </div>
                 </div>
-                <div className="flex flex-col gap-3 sm:flex-shrink-0">
-                  <button
-                    onClick={handleOpenApkModal}
-                    className="bg-blue-500 px-6 py-3 rounded-xl border-2 border-blue-600 hover:bg-blue-600 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 hover-lift hover-glow btn-press w-full sm:w-auto"
-                  >
-                    <Download className="h-5 w-5 text-white transition-transform duration-300" />
-                    <span className="text-sm font-semibold text-white">Download APK</span>
-                  </button>
-                  <button
-                    onClick={handleOpenApkModal}
-                    className="text-xs text-gray-600 hover:text-gray-800 transition-all duration-300 hover:scale-105 hover-lift text-center sm:text-right"
-                  >
-                    View QR Code →
-                  </button>
+              </div>
+
+              {/* Banner Content */}
+              <div className={`transition-all duration-300 ease-in-out ${showBannerDrawer ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                <div className="p-4 sm:p-6 space-y-4">
+                  {/* OpenApp Banner */}
+                  {showOpenAppBanner && (
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 transition-all duration-300 hover:bg-white/15">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 animate-pulse-slow flex-shrink-0">
+                            <Smartphone className="h-6 w-6 text-white transition-transform duration-300 hover:scale-110" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-white text-lg mb-1 flex items-center gap-2">
+                              <span className="text-lg">🚀</span>
+                              <span className="truncate">OpenApp Utilities</span>
+                            </h4>
+                            <p className="text-sm text-blue-100 line-clamp-2">Advanced developer tools and utilities</p>
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              <span className="text-xs bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full border border-white/30 font-medium">• Advanced Tools</span>
+                              <span className="text-xs bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full border border-white/30 font-medium">• Developer Ready</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex sm:flex-shrink-0">
+                          <button
+                            onClick={() => navigate("/openapp")}
+                            className="w-full sm:w-auto bg-white text-blue-600 px-4 py-2.5 rounded-lg border border-white/30 hover:bg-blue-50 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 font-semibold shadow-lg"
+                          >
+                            <Smartphone className="h-4 w-4" />
+                            <span className="text-sm font-semibold">Open</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* APK Banner */}
+                  {showApkBanner && (
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 transition-all duration-300 hover:bg-white/15">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 animate-pulse-slow flex-shrink-0">
+                            <Download className="h-6 w-6 text-white transition-transform duration-300 hover:scale-110" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-white text-lg mb-1 flex items-center gap-2">
+                              <span className="text-lg">📱</span>
+                              <span className="truncate">Get OpenPay Mobile App</span>
+                            </h4>
+                            <p className="text-sm text-blue-100 line-clamp-2">Download the official OpenPay APK</p>
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              <span className="text-xs bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full border border-white/30 font-medium">• New Features</span>
+                              <span className="text-xs bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full border border-white/30 font-medium">• Enhanced Security</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-shrink-0">
+                          <button
+                            onClick={handleOpenApkModal}
+                            className="w-full sm:w-auto bg-white text-blue-600 px-4 py-2.5 rounded-lg border border-white/30 hover:bg-blue-50 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 font-semibold shadow-lg"
+                          >
+                            <Download className="h-4 w-4" />
+                            <span className="text-sm font-semibold">Download</span>
+                          </button>
+                          <button
+                            onClick={handleOpenApkModal}
+                            className="w-full sm:w-auto text-xs text-blue-100 hover:text-white transition-all duration-300 hover:scale-105 font-medium py-1"
+                          >
+                            View QR Code →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
