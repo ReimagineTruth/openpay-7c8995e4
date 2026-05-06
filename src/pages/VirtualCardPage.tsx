@@ -376,7 +376,14 @@ import AuthMark from "@/components/AuthMark";
               </div>
             </div>
 
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#1b1f31] to-[#2a3150] p-[6%] text-white shadow-xl shadow-black/30 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+            <div
+              className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#1b1f31] to-[#2a3150] p-[6%] text-white shadow-xl shadow-black/30"
+              style={{
+                backfaceVisibility: "hidden",
+                WebkitBackfaceVisibility: "hidden",
+                transform: "rotateY(180deg)",
+              }}
+            >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <BrandLogo className="h-6 w-6" />
