@@ -109,7 +109,7 @@ const NotificationsPage = () => {
         notifications.push({
           id: `app-${item.id}`,
           title: item.title || "Notification",
-          description: item.body || String(item.type || "App event"),
+          description: item.message || item.body || String(item.type || "App event"),
           createdAt: item.created_at,
         });
       });
