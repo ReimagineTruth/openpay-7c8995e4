@@ -377,7 +377,7 @@ import AuthMark from "@/components/AuthMark";
             </div>
 
             <div
-              className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#1b1f31] to-[#2a3150] p-[6%] text-white shadow-xl shadow-black/30"
+              className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30"
               style={{
                 backfaceVisibility: "hidden",
                 WebkitBackfaceVisibility: "hidden",
@@ -393,22 +393,24 @@ import AuthMark from "@/components/AuthMark";
                   Powered by Pi Network
                 </p>
               </div>
-              <div className="relative mt-[6%] h-[16%] rounded-md bg-black/70">
+              <div className="relative mt-[6%] h-[16%] rounded-md bg-white/20 border border-white/30">
                 <p
                   className="absolute inset-0 flex items-center justify-center px-3 text-base text-white/90"
                   style={{ fontFamily: '"Brush Script MT","Segoe Script","Lucida Handwriting",cursive' }}
                 >
-                  {signatureDisplay}
+                  {signatureDisplay || "Signature"}
                 </p>
               </div>
               <div className="mt-[10%] flex items-center justify-between">
-                <p className="text-xs uppercase tracking-wide text-white/70">Security Code</p>
-                <p className="rounded-md bg-white/20 px-2 py-1 text-sm font-semibold">{hideDetails ? "***" : (card?.cvc || "***")}</p>
+                <p className="text-xs uppercase tracking-wide text-white/70 font-semibold">Security Code</p>
+                <p className="rounded-md bg-white/20 px-3 py-2 text-sm font-semibold border border-white/30">{hideDetails ? "***" : (card?.cvc || "000")}</p>
               </div>
-              <p className="mt-[8%] text-sm text-white/80">
-                {hideDetails ? "**** **** **** ****" : maskedCardNumber}
-              </p>
-              <p className="mt-[8%] text-xs text-white/70">
+              <div className="mt-[8%]">
+                <p className="text-sm text-white/80 font-mono tracking-wider">
+                  {hideDetails ? "**** **** **** ****" : (maskedCardNumber || "0000 0000 0000 0000")}
+                </p>
+              </div>
+              <p className="mt-[8%] text-xs text-white/70 text-center">
                 Tap card to flip {isBackVisible ? "to front" : "to back"}
               </p>
             </div>
@@ -614,7 +616,7 @@ import AuthMark from "@/components/AuthMark";
       <div id="virtual-card-print-sheet" className="hidden">
         <div className="print-page">
           {isBackVisible ? (
-            <div className="print-card rounded-2xl bg-gradient-to-br from-[#1d2340] to-[#2f3558] p-[5.5%] text-white">
+            <div className="print-card rounded-2xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[5.5%] text-white">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <BrandLogo className="h-5 w-5" />
@@ -624,7 +626,7 @@ import AuthMark from "@/components/AuthMark";
                   Powered by Pi Network
                 </p>
               </div>
-              <div className="relative mt-[10%] h-[15%] rounded-[10px] bg-black/80">
+              <div className="relative mt-[10%] h-[15%] rounded-[10px] bg-white/20">
                 <p
                   className="absolute inset-0 flex items-center justify-center px-3 text-base text-white/90"
                   style={{ fontFamily: '"Brush Script MT","Segoe Script","Lucida Handwriting",cursive' }}
