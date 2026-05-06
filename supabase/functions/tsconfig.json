@@ -8,7 +8,9 @@
     "noEmit": true,
     "strict": false,
     "noImplicitAny": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["./deno.d.ts"]
   },
-  "include": ["**/*.ts", "**/*.d.ts"]
+  "include": ["**/*.ts", "**/*.d.ts"],
+  "exclude": ["node_modules"]
 }
