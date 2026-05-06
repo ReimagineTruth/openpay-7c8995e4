@@ -16,9 +16,11 @@ import { canAccessRemittanceMerchant, isRemittanceUiEnabled } from "@/lib/remitt
 
 import { getShowApkBanner, setShowApkBanner, getShowOpenAppBanner, setShowOpenAppBanner } from "@/lib/userPreferencesStorage";
 
-import { CompactDigitalRateDisplay } from "@/components/ui/DigitalRateDisplay";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 import { PI_TO_USD } from "@/contexts/CurrencyContext";
+
+import { CompactDigitalRateDisplay } from "@/components/ui/DigitalRateDisplay";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -39,6 +41,7 @@ type BeforeInstallPromptEvent = Event & {
 
 
 const MenuPage = () => {
+  const { liveRateClosed } = useCurrency();
 
   const OPENPAY_APK_URL = "https://median.co/share/rdzamax#apk";
 
@@ -726,6 +729,8 @@ const MenuPage = () => {
 
           }}
 
+          liveRateClosed={liveRateClosed}
+
           className="mb-6 animate-fadeIn"
 
         />
@@ -737,93 +742,49 @@ const MenuPage = () => {
         {showApkBanner && (
 
           <div className="mb-8 animate-in-up hover-lift-enhanced">
-
             <div className="bg-white rounded-[2.5rem] p-6 border-2 border-blue-500 shadow-xl relative transition-all duration-300 hover:shadow-2xl">
-
               <button
-
                 onClick={hideApkBanner}
-
                 className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all duration-300 z-10 hover:scale-110 hover-lift"
-
                 aria-label="Close APK banner"
-
               >
-
                 <X className="h-4 w-4 transition-transform duration-300 hover:rotate-90" />
-
               </button>
-
-              <div className="flex items-center justify-between">
-
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
-
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 border-2 border-blue-600 animate-pulse-slow hover-lift">
-
                     <Smartphone className="h-7 w-7 text-white transition-transform duration-300 hover:scale-110" />
-
                   </div>
-
-                  <div className="flex-1">
-
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-black text-xl mb-1 animate-fadeIn">🚀 Get OpenPay Mobile App</h3>
-
                     <p className="text-sm text-gray-700 mb-3 animate-fadeIn" style={{ animationDelay: "0.1s" }}>Download the official OpenPay APK for Android</p>
-
-                    <div className="flex items-center gap-2">
-
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200 animate-fadeIn hover-lift" style={{ animationDelay: "0.2s" }}>New Features</span>
-
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200 animate-fadeIn hover-lift" style={{ animationDelay: "0.3s" }}>Enhanced Security</span>
-
                     </div>
-
                   </div>
-
                 </div>
-
-                <div className="flex flex-col gap-3">
-
+                <div className="flex flex-col gap-3 sm:flex-shrink-0">
                   <button
-
                     onClick={handleOpenApkModal}
-
-                    className="bg-blue-500 px-6 py-3 rounded-xl border-2 border-blue-600 hover:bg-blue-600 transition-all duration-300 flex items-center gap-2 hover:scale-105 hover-lift hover-glow btn-press"
-
+                    className="bg-blue-500 px-6 py-3 rounded-xl border-2 border-blue-600 hover:bg-blue-600 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 hover-lift hover-glow btn-press w-full sm:w-auto"
                   >
-
                     <Download className="h-5 w-5 text-white transition-transform duration-300" />
-
                     <span className="text-sm font-semibold text-white">Download APK</span>
-
                   </button>
-
                   <button
-
                     onClick={handleOpenApkModal}
-
-                    className="text-xs text-gray-600 hover:text-gray-800 transition-all duration-300 hover:scale-105 hover-lift"
-
+                    className="text-xs text-gray-600 hover:text-gray-800 transition-all duration-300 hover:scale-105 hover-lift text-center sm:text-right"
                   >
-
                     View QR Code →
-
                   </button>
-
                 </div>
-
               </div>
-
             </div>
-
           </div>
-
         )}
 
-
-
         {sections.map((section, sectionIndex) => (
-
           <div key={section.title} className="mb-8 animate-in-up hover-lift-enhanced" style={{ animationDelay: `${sectionIndex * 0.1}s` }}>
 
             {section.layout === "grid-top" ? (

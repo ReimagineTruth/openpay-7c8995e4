@@ -338,6 +338,7 @@ interface CurrencyContextType {
   currencies: Currency[];
   currency: Currency;
   ratesUpdatedAt: string | null;
+  liveRateClosed: boolean;
   setCurrency: (c: Currency) => void;
   convert: (usdAmount: number) => number;
   format: (usdAmount: number) => string;
@@ -348,6 +349,7 @@ const CurrencyContext = createContext<CurrencyContextType>({
   currencies,
   currency: currencies[0],
   ratesUpdatedAt: null,
+  liveRateClosed: false,
   setCurrency: () => {},
   convert: (a) => a,
   format: (a) => `$${a.toFixed(2)}`,
@@ -360,6 +362,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [availableCurrencies, setAvailableCurrencies] = useState<Currency[]>(currencies);
   const [currency, setCurrencyState] = useState<Currency>(currencies[0]);
   const [ratesUpdatedAt, setRatesUpdatedAt] = useState<string | null>(null);
+  const [liveRateClosed, setLiveRateClosed] = useState(false);
   const useStaticPiRates = true;
 
   useEffect(() => {
@@ -497,8 +500,8 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const contextValue = useMemo(
-    () => ({ currencies: availableCurrencies, currency, ratesUpdatedAt, setCurrency, convert, format, formatCompact }),
-    [availableCurrencies, currency, ratesUpdatedAt],
+    () => ({ currencies: availableCurrencies, currency, ratesUpdatedAt, liveRateClosed, setCurrency, convert, format, formatCompact }),
+    [availableCurrencies, currency, ratesUpdatedAt, liveRateClosed],
   );
 
   return (

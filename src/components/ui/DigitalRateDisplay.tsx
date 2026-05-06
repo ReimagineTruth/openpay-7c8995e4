@@ -12,6 +12,7 @@ interface DigitalRateDisplayProps {
   };
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  liveRateClosed?: boolean;
 }
 
 interface RateCardProps {
@@ -144,7 +145,8 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
   className,
   rates,
   open = true,
-  onOpenChange
+  onOpenChange,
+  liveRateClosed = false
 }) => {
   const [previousRates, setPreviousRates] = useState(rates);
   const [lastUpdate, setLastUpdate] = useState(new Date());
@@ -174,8 +176,8 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <h3 className="text-lg font-bold text-gray-800">Live Rates</h3>
+            <div className={`w-2 h-2 rounded-full ${liveRateClosed ? 'bg-red-500' : 'bg-green-500'} ${liveRateClosed ? '' : 'animate-pulse'}`} />
+            <h3 className="text-lg font-bold text-gray-800">{liveRateClosed ? 'Rates' : 'Live Rates'}</h3>
           </div>
           <div className="text-xs text-gray-500">
             {lastUpdate.toLocaleTimeString()}
@@ -237,7 +239,8 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
 export const CompactDigitalRateDisplay: React.FC<{
   rates: { piToOusd: number; usdToOusd: number };
   className?: string;
-}> = ({ rates, className }) => {
+  liveRateClosed?: boolean;
+}> = ({ rates, className, liveRateClosed = false }) => {
   return (
     <div
       className={cn(
@@ -248,8 +251,8 @@ export const CompactDigitalRateDisplay: React.FC<{
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-xs font-semibold text-gray-600">Live Rates</span>
+          <div className={`w-2 h-2 rounded-full ${liveRateClosed ? 'bg-red-500' : 'bg-green-500'} ${liveRateClosed ? '' : 'animate-pulse'}`} />
+          <span className="text-xs font-semibold text-gray-600">{liveRateClosed ? 'Rates' : 'Live Rates'}</span>
         </div>
         
         <div className="flex items-center gap-3 text-xs">
