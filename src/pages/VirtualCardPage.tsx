@@ -343,7 +343,10 @@ import AuthMark from "@/components/AuthMark";
             style={{ transform: `rotateY(${flipTurns * 180}deg)` }}
             aria-label="Flip virtual card"
           >
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30 [backface-visibility:hidden]">
+            <div
+              className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30"
+              style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <BrandLogo className="h-8 w-8" />
@@ -373,7 +376,14 @@ import AuthMark from "@/components/AuthMark";
               </div>
             </div>
 
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#1b1f31] to-[#2a3150] p-[6%] text-white shadow-xl shadow-black/30 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+            <div
+              className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#1b1f31] to-[#2a3150] p-[6%] text-white shadow-xl shadow-black/30"
+              style={{
+                backfaceVisibility: "hidden",
+                WebkitBackfaceVisibility: "hidden",
+                transform: "rotateY(180deg)",
+              }}
+            >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <BrandLogo className="h-6 w-6" />
