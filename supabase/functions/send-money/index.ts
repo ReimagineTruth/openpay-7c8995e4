@@ -88,6 +88,11 @@ serve(async (req: Request) => {
           p_receiver_id: receiverId,
           p_amount: parsedAmount,
           p_note: note || "",
+          p_currency_code: typeof currency_code === "string" ? currency_code : "OUSD",
+          p_sender_amount: typeof sender_amount === "number" ? sender_amount : null,
+          p_sender_currency_code: typeof sender_currency_code === "string" ? sender_currency_code : null,
+          p_receiver_amount: typeof receiver_amount === "number" ? receiver_amount : null,
+          p_receiver_currency_code: typeof receiver_currency_code === "string" ? receiver_currency_code : null,
         });
         transactionId = legacy.data;
         transferError = legacy.error;
