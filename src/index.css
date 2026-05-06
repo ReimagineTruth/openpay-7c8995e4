@@ -4,93 +4,101 @@
 
 @layer base {
   :root {
-    --background: 212 63% 97%;
-    --foreground: 218 48% 15%;
+    /* Professional Fintech Color Palette */
+    --background: 220 35% 98%;
+    --foreground: 220 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 218 48% 15%;
+    --card-foreground: 220 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 218 48% 15%;
+    --popover-foreground: 220 25% 15%;
 
-    --primary: 220 89% 35%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 100% 96%;
-    --secondary-foreground: 220 89% 35%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 217 91% 60%;
 
-    --muted: 210 40% 95%;
+    --muted: 210 40% 96%;
     --muted-foreground: 215 16% 44%;
 
-    --accent: 210 100% 96%;
-    --accent-foreground: 220 89% 35%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 38% 89%;
-    --input: 214 38% 89%;
-    --ring: 220 89% 35%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    --paypal-blue: 220 89% 35%;
-    --paypal-light-blue: 200 100% 47%;
-    --paypal-dark: 218 49% 12%;
-    --paypal-success: 153 70% 37%;
+    /* Professional Brand Colors */
+    --paypal-blue: 217 91% 60%;
+    --paypal-light-blue: 200 100% 50%;
+    --paypal-dark: 220 25% 15%;
+    --paypal-success: 142 76% 36%;
+    --paypal-warning: 38 92% 50%;
+    --paypal-error: 0 84% 60%;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 217 91% 60%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
-    --background: 222 38% 10%;
-    --foreground: 210 40% 96%;
+    /* Professional Dark Mode */
+    --background: 220 25% 8%;
+    --foreground: 210 40% 95%;
 
-    --card: 222 32% 13%;
-    --card-foreground: 210 40% 96%;
+    --card: 220 25% 10%;
+    --card-foreground: 210 40% 95%;
 
-    --popover: 222 32% 13%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 210 40% 95%;
 
-    --primary: 218 92% 62%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 217 91% 70%;
+    --primary-foreground: 220 25% 8%;
 
-    --secondary: 222 22% 18%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 220 25% 15%;
+    --secondary-foreground: 210 40% 95%;
 
-    --muted: 222 22% 18%;
-    --muted-foreground: 215 20% 72%;
+    --muted: 220 25% 15%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 222 22% 18%;
-    --accent-foreground: 210 40% 96%;
+    --accent: 217 91% 70%;
+    --accent-foreground: 220 25% 8%;
 
-    --destructive: 0 75% 52%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 95%;
 
-    --border: 217 20% 24%;
-    --input: 217 20% 24%;
-    --ring: 218 92% 62%;
+    --border: 220 25% 20%;
+    --input: 220 25% 20%;
+    --ring: 217 91% 70%;
 
-    --paypal-blue: 218 92% 62%;
-    --paypal-light-blue: 199 100% 58%;
-    --paypal-dark: 210 40% 96%;
-    --paypal-success: 153 65% 45%;
+    /* Professional Dark Brand Colors */
+    --paypal-blue: 217 91% 70%;
+    --paypal-light-blue: 200 100% 60%;
+    --paypal-dark: 210 40% 95%;
+    --paypal-success: 142 76% 46%;
+    --paypal-warning: 38 92% 60%;
+    --paypal-error: 0 84% 70%;
 
-    --sidebar-background: 222 32% 12%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 218 92% 62%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 22% 18%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 217 20% 24%;
-    --sidebar-ring: 218 92% 62%;
+    --sidebar-background: 220 25% 8%;
+    --sidebar-foreground: 210 40% 95%;
+    --sidebar-primary: 217 91% 70%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 220 25% 15%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 220 25% 20%;
+    --sidebar-ring: 217 91% 70%;
   }
 }
 
@@ -107,31 +115,118 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
-    background-image: radial-gradient(circle at 20% -10%, hsl(201 100% 92%) 0%, hsl(212 63% 97%) 35%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
     min-height: 100vh;
+    letter-spacing: -0.011em;
   }
 
   .dark body {
-    background-image: radial-gradient(circle at 20% -10%, hsl(219 56% 24%) 0%, hsl(222 38% 10%) 45%);
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
   }
 }
 
 @layer utilities {
+  /* Professional Card Styles */
   .paypal-surface {
-    @apply bg-card/95 backdrop-blur-md border border-white/20 shadow-sm transition-all duration-300;
+    @apply bg-card/95 backdrop-blur-md border border-border shadow-lg transition-all duration-300;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
   .dark .paypal-surface {
-    @apply border-white/5 bg-card/80;
+    @apply border-border bg-card/90;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
   }
 
+  .paypal-surface:hover {
+    @apply shadow-xl;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .paypal-surface:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Premium Card Variant */
+  .premium-card {
+    @apply bg-card backdrop-blur-md border border-border transition-all duration-300;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .premium-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .premium-card:hover::before {
+    opacity: 1;
+  }
+
+  .premium-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  .dark .premium-card {
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .premium-card:hover {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Enhanced Button Styles */
   .ios-active {
     @apply active:scale-95 transition-transform duration-200 ease-out;
   }
 
+  .btn-primary {
+    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95;
+    border: 1px solid hsl(var(--border));
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-foreground px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:bg-accent hover:text-accent-foreground;
+  }
+
+  /* Professional Glass Effect */
   .ios-glass {
-    @apply bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-white/30 dark:border-white/10;
+    @apply bg-card/80 backdrop-blur-xl border border-border;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .ios-glass {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .animate-in-up {

@@ -348,6 +348,13 @@ const Dashboard = () => {
     }
     return true;
   });
+  const [showLiveRates, setShowLiveRates] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("dashboard_live_rates_visible");
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
   const [swapAmount, setSwapAmount] = useState("");
   const [swapWithdrawalType, setSwapWithdrawalType] = useState<WithdrawalType>("PI");
   const mrwnComingSoon = true; // MRWN price coming soon flag
@@ -558,6 +565,10 @@ const Dashboard = () => {
   useEffect(() => {
     localStorage.setItem("dashboard_shortcuts_visible", JSON.stringify(showShortcuts));
   }, [showShortcuts]);
+
+  useEffect(() => {
+    localStorage.setItem("dashboard_live_rates_visible", JSON.stringify(showLiveRates));
+  }, [showLiveRates]);
 
   
   useEffect(() => {
@@ -1940,8 +1951,8 @@ const Dashboard = () => {
             usdToOusd: 1,
             currencyTag: currencyTag
           }}
-          onRefresh={loadDashboard}
-          refreshing={refreshing}
+          open={showLiveRates}
+          onOpenChange={setShowLiveRates}
           className="mt-4 animate-fadeInUp"
         />
       </div>

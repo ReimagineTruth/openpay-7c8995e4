@@ -5,15 +5,12 @@ interface AuthMarkProps {
 }
 
 const AuthMark = ({ className }: AuthMarkProps) => (
-  <div className={cn("h-16 w-16 flex items-center justify-center", className)}>
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 100 100"
+  <div className={cn("h-12 w-12 flex items-center justify-center", className)}>
+    <img
+      src="/openpay-o-white.svg"
+      alt="OpenPay logo"
       className="h-full w-full object-contain"
-    >
-      <circle cx="44" cy="50" r="21" fill="none" stroke="#ffffff" strokeWidth="13" opacity="0.8"/>
-      <circle cx="56" cy="50" r="21" fill="none" stroke="#ffffff" strokeWidth="13"/>
-    </svg>
+    />
   </div>
 );
 

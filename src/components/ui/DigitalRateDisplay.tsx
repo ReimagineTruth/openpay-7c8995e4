@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, RefreshCw, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, ChevronUp, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface DigitalRateDisplayProps {
   className?: string;
@@ -9,8 +10,8 @@ interface DigitalRateDisplayProps {
     usdToOusd: number;
     currencyTag: string;
   };
-  onRefresh?: () => void;
-  refreshing?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 interface RateCardProps {
@@ -81,30 +82,30 @@ const RateCard: React.FC<RateCardProps> = ({
   const getTrendIcon = () => {
     switch (currentTrend) {
       case 'up':
-        return <TrendingUp className="h-3 w-3 text-green-400" />;
+        return <TrendingUp className="h-3 w-3 text-green-600" />;
       case 'down':
-        return <TrendingDown className="h-3 w-3 text-red-400" />;
+        return <TrendingDown className="h-3 w-3 text-red-600" />;
       default:
-        return <Activity className="h-3 w-3 text-blue-400" />;
+        return <Activity className="h-3 w-3 text-blue-600" />;
     }
   };
 
   const getTrendColor = () => {
     switch (currentTrend) {
       case 'up':
-        return 'text-green-400';
+        return 'text-green-600';
       case 'down':
-        return 'text-red-400';
+        return 'text-red-600';
       default:
-        return 'text-blue-400';
+        return 'text-blue-600';
     }
   };
 
   return (
     <div
       className={cn(
-        'relative bg-black/20 backdrop-blur-md rounded-xl p-4 border border-white/10',
-        'transition-all duration-300 hover:scale-105 hover-lift hover:bg-black/30',
+        'relative bg-white rounded-xl p-4 border border-gray-200 shadow-sm',
+        'transition-all duration-300 hover:scale-105 hover-lift hover:shadow-md',
         'group cursor-pointer',
         className
       )}
@@ -112,9 +113,9 @@ const RateCard: React.FC<RateCardProps> = ({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
-            <span className="text-xs font-bold text-white/70">{from}</span>
-            <span className="text-xs text-white/50">→</span>
-            <span className="text-xs font-bold text-white/70">{to}</span>
+            <span className="text-xs font-bold text-gray-600">{from}</span>
+            <span className="text-xs text-gray-400">→</span>
+            <span className="text-xs font-bold text-gray-600">{to}</span>
           </div>
           <div className={cn('flex items-center transition-colors duration-300', getTrendColor())}>
             {getTrendIcon()}
@@ -123,23 +124,18 @@ const RateCard: React.FC<RateCardProps> = ({
       </div>
       
       <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-bold text-white">
+        <span className="text-2xl font-bold text-gray-800">
           1 {from} =
         </span>
         <DigitalNumber
           value={currentRate.toFixed(4)}
-          className="text-2xl text-cyan-400"
+          className="text-2xl text-blue-600"
         />
-        <span className="text-lg text-white/70">{to}</span>
+        <span className="text-lg text-gray-600">{to}</span>
       </div>
 
-      {/* Digital effect overlay */}
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-      
-      {/* Scanning line effect */}
-      <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent -skew-x-12 animate-shimmer" />
-      </div>
+      {/* Subtle hover effect */}
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
     </div>
   );
 };
@@ -147,8 +143,8 @@ const RateCard: React.FC<RateCardProps> = ({
 export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
   className,
   rates,
-  onRefresh,
-  refreshing = false
+  open = true,
+  onOpenChange
 }) => {
   const [previousRates, setPreviousRates] = useState(rates);
   const [lastUpdate, setLastUpdate] = useState(new Date());
@@ -161,17 +157,14 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
     }
   }, [rates, previousRates]);
 
-  const handleRefresh = () => {
-    if (onRefresh && !refreshing) {
-      onRefresh();
-    }
-  };
 
   return (
-    <div
+    <Collapsible 
+      open={open} 
+      onOpenChange={onOpenChange}
       className={cn(
-        'relative bg-gradient-to-br from-blue-900/20 to-purple-900/20 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl',
-        'transition-all duration-500 hover:shadow-3xl hover-lift-enhanced',
+        'relative bg-white rounded-2xl p-6 border border-gray-200 shadow-lg',
+        'transition-all duration-500 hover:shadow-xl hover-lift-enhanced',
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -181,94 +174,62 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <h3 className="text-lg font-bold text-white">Live Rates</h3>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <h3 className="text-lg font-bold text-gray-800">Live Rates</h3>
           </div>
-          <div className="text-xs text-white/60">
+          <div className="text-xs text-gray-500">
             {lastUpdate.toLocaleTimeString()}
           </div>
         </div>
         
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/20',
-            'transition-all duration-300 hover:bg-white/20 hover:scale-105',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            refreshing && 'animate-spin'
-          )}
-        >
-          <RefreshCw className="h-4 w-4 text-white" />
-          <span className="text-xs text-white/80">Refresh</span>
-        </button>
+        <CollapsibleTrigger asChild>
+          <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+            {open ? (
+              <ChevronUp className="h-5 w-5" />
+            ) : (
+              <ChevronDown className="h-5 w-5" />
+            )}
+          </button>
+        </CollapsibleTrigger>
       </div>
 
-      {/* Currency Display */}
-      <div className="mb-6 p-3 bg-black/20 rounded-xl border border-white/10">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-white/70">Display Currency</span>
-          <div className="flex items-center gap-2">
-            <DigitalNumber
-              value={rates.currencyTag}
-              className="text-lg font-bold text-cyan-400"
-            />
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+      {/* Collapsible Content */}
+      <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
+        {/* Currency Display */}
+        <div className="mb-6 p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-600">Display Currency</span>
+            <div className="flex items-center gap-2">
+              <DigitalNumber
+                value={rates.currencyTag}
+                className="text-lg font-bold text-blue-600"
+              />
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Rate Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <RateCard
-          from="PI"
-          to="OUSD"
-          rate={rates.piToOusd}
-          previousRate={previousRates.piToOusd}
-          trend={rates.piToOusd > previousRates.piToOusd ? 'up' : rates.piToOusd < previousRates.piToOusd ? 'down' : 'stable'}
-        />
-        
-        <RateCard
-          from="USD"
-          to="OUSD"
-          rate={rates.usdToOusd}
-          previousRate={previousRates.usdToOusd}
-          trend={rates.usdToOusd > previousRates.usdToOusd ? 'up' : rates.usdToOusd < previousRates.usdToOusd ? 'down' : 'stable'}
-        />
-      </div>
-
-      {/* Digital Effects */}
-      <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-        {/* Corner accents */}
-        <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan-400/50 rounded-tl-xl" />
-        <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-400/50 rounded-tr-xl" />
-        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-cyan-400/50 rounded-bl-xl" />
-        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-cyan-400/50 rounded-br-xl" />
-        
-        {/* Scanning effect on hover */}
-        {isHovered && (
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent animate-shimmer" />
-        )}
-      </div>
-
-      {/* Particle effects */}
-      {isHovered && (
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-cyan-400 rounded-full animate-float opacity-60"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${i * 0.2}s`,
-                animationDuration: `${3 + Math.random() * 2}s`
-              }}
-            />
-          ))}
+        {/* Rate Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <RateCard
+            from="PI"
+            to="OUSD"
+            rate={rates.piToOusd}
+            previousRate={previousRates.piToOusd}
+            trend={rates.piToOusd > previousRates.piToOusd ? 'up' : rates.piToOusd < previousRates.piToOusd ? 'down' : 'stable'}
+          />
+          
+          <RateCard
+            from="USD"
+            to="OUSD"
+            rate={rates.usdToOusd}
+            previousRate={previousRates.usdToOusd}
+            trend={rates.usdToOusd > previousRates.usdToOusd ? 'up' : rates.usdToOusd < previousRates.usdToOusd ? 'down' : 'stable'}
+          />
         </div>
-      )}
-    </div>
+      </CollapsibleContent>
+
+          </Collapsible>
   );
 };
 
@@ -280,30 +241,30 @@ export const CompactDigitalRateDisplay: React.FC<{
   return (
     <div
       className={cn(
-        'bg-black/20 backdrop-blur-md rounded-xl p-3 border border-white/10',
-        'transition-all duration-300 hover:bg-black/30 hover-lift',
+        'bg-white rounded-xl p-3 border border-gray-200 shadow-sm',
+        'transition-all duration-300 hover:shadow-md hover-lift',
         className
       )}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          <span className="text-xs text-white/70">Rates</span>
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <span className="text-xs font-semibold text-gray-600">Live Rates</span>
         </div>
         
         <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1">
-            <span className="text-white/60">1 PI</span>
-            <DigitalNumber value={rates.piToOusd.toFixed(2)} className="text-cyan-400" />
-            <span className="text-white/60">OUSD</span>
+            <span className="text-gray-600 font-medium">1 PI</span>
+            <DigitalNumber value={rates.piToOusd.toFixed(2)} className="text-blue-600 font-bold" />
+            <span className="text-gray-600 font-medium">OUSD</span>
           </div>
           
-          <div className="w-px h-3 bg-white/20" />
+          <div className="w-px h-3 bg-gray-300" />
           
           <div className="flex items-center gap-1">
-            <span className="text-white/60">1 USD</span>
-            <DigitalNumber value={rates.usdToOusd.toFixed(2)} className="text-cyan-400" />
-            <span className="text-white/60">OUSD</span>
+            <span className="text-gray-600 font-medium">1 USD</span>
+            <DigitalNumber value={rates.usdToOusd.toFixed(2)} className="text-blue-600 font-bold" />
+            <span className="text-gray-600 font-medium">OUSD</span>
           </div>
         </div>
       </div>
