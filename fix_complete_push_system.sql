@@ -49,8 +49,6 @@ BEGIN
     
     -- Add to realtime publication
     ALTER PUBLICATION supabase_realtime ADD TABLE public.app_notifications;
-    
-    RAISE NOTICE 'Created app_notifications table';
   END IF;
 END $$;
 
@@ -81,8 +79,6 @@ BEGIN
     
     -- Grant permissions
     GRANT ALL ON public.notification_preferences TO authenticated;
-    
-    RAISE NOTICE 'Created notification_preferences table';
   END IF;
 END $$;
 
@@ -129,8 +125,6 @@ BEGIN
     
     -- Add to realtime publication
     ALTER PUBLICATION supabase_realtime ADD TABLE public.push_subscriptions;
-    
-    RAISE NOTICE 'Created push_subscriptions table';
   END IF;
 END $$;
 
@@ -170,8 +164,6 @@ BEGIN
     
     -- Grant permissions
     GRANT ALL ON public.push_notifications_outbox TO service_role;
-    
-    RAISE NOTICE 'Created push_notifications_outbox table';
   END IF;
 END $$;
 
@@ -235,7 +227,7 @@ SELECT 'push_notifications_outbox table exists' as status FROM information_schem
 WHERE table_name = 'push_notifications_outbox' AND table_schema = 'public';
 
 -- Show final status
-RAISE NOTICE 'Push notification system setup complete!';
-RAISE NOTICE 'Tables created: app_notifications, notification_preferences, push_subscriptions, push_notifications_outbox';
-RAISE NOTICE 'Functions created: queue_push_notification, cleanup_expired_push_notifications';
-RAISE NOTICE 'Triggers created: on_app_notification_created';
+SELECT 'Push notification system setup complete!' as status;
+SELECT 'Tables created: app_notifications, notification_preferences, push_subscriptions, push_notifications_outbox' as status;
+SELECT 'Functions created: queue_push_notification, cleanup_expired_push_notifications' as status;
+SELECT 'Triggers created: on_app_notification_created' as status;

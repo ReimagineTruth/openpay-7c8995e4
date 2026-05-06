@@ -14,9 +14,9 @@ BEGIN
       AND table_name IN ('app_notifications', 'notification_preferences', 'push_subscriptions', 'push_notifications_outbox');
     
     IF table_count = 4 THEN
-        RAISE NOTICE '✓ All required tables exist';
+        SELECT '✓ All required tables exist' as status;
     ELSE
-        RAISE NOTICE '✗ Missing tables. Found % out of 4', table_count;
+        SELECT '✗ Missing tables. Found ' || table_count || ' out of 4' as status;
     END IF;
 END $$;
 
@@ -30,9 +30,9 @@ BEGIN
     WHERE trigger_name = 'on_app_notification_created';
     
     IF trigger_count = 1 THEN
-        RAISE NOTICE '✓ Push notification trigger exists';
+        SELECT '✓ Push notification trigger exists' as status;
     ELSE
-        RAISE NOTICE '✗ Push notification trigger missing';
+        SELECT '✗ Push notification trigger missing' as status;
     END IF;
 END $$;
 
@@ -47,9 +47,9 @@ BEGIN
       AND routine_name IN ('queue_push_notification', 'cleanup_expired_push_notifications');
     
     IF function_count = 2 THEN
-        RAISE NOTICE '✓ All required functions exist';
+        SELECT '✓ All required functions exist' as status;
     ELSE
-        RAISE NOTICE '✗ Missing functions. Found % out of 2', function_count;
+        SELECT '✗ Missing functions. Found ' || function_count || ' out of 2' as status;
     END IF;
 END $$;
 
@@ -63,10 +63,10 @@ BEGIN
     WHERE id NOT IN (SELECT user_id FROM public.notification_preferences)
     LIMIT 1;
     
-    RAISE NOTICE '✓ Test notification preferences created (if users exist)';
+    SELECT '✓ Test notification preferences created (if users exist)' as status;
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE NOTICE 'ℹ Could not create test preferences (may be no users or permissions issue)';
+        SELECT 'ℹ Could not create test preferences (may be no users or permissions issue)' as status;
 END $$;
 
 -- Test 5: Show table structures
@@ -98,5 +98,5 @@ SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual
 FROM pg_policies 
 WHERE tablename = 'push_notifications_outbox';
 
-RAISE NOTICE 'Push notification system test complete!';
-RAISE NOTICE 'If all tests show ✓, the system is ready for use.';
+SELECT 'Push notification system test complete!' as status;
+SELECT 'If all tests show ✓, the system is ready for use.' as status;
