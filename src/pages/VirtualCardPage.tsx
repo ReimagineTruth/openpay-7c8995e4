@@ -343,7 +343,10 @@ import AuthMark from "@/components/AuthMark";
             style={{ transform: `rotateY(${flipTurns * 180}deg)` }}
             aria-label="Flip virtual card"
           >
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30 [backface-visibility:hidden]">
+            <div
+              className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30"
+              style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <BrandLogo className="h-8 w-8" />
