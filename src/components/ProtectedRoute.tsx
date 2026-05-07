@@ -50,7 +50,7 @@ const ProtectedRoute = ({ children, redirectTo = "/sign-in" }: ProtectedRoutePro
     return (
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-b from-paypal-blue to-[#072a7a]">
         <div className="text-center">
-          <BrandLogo className="mx-auto mb-6 h-32 w-32" />
+          <img src="/openpay-o-white.svg" alt="OpenPay" className="mx-auto mb-6 h-16 w-16" />
           <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
           <p className="mt-1 text-sm text-white/80">Loading...</p>
           <p className="mt-1 text-xs font-medium tracking-normal text-white/65">Powered by Pi Network</p>
