@@ -345,7 +345,12 @@ import AuthMark from "@/components/AuthMark";
           >
             <div
               className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30"
-              style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+              style={{
+                backfaceVisibility: "hidden",
+                WebkitBackfaceVisibility: "hidden",
+                transform: "rotateY(0deg) translateZ(1px)",
+                transformStyle: "preserve-3d",
+              }}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
