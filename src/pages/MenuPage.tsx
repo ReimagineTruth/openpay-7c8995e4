@@ -736,11 +736,13 @@ const MenuPage = () => {
 
             usdToOusd: 1
 
-          }}/>
+          }}
+          className="mb-6"
+        />
 
         {/* Unified Banner Drawer */}
         {(showOpenAppBanner || showApkBanner) && (
-          <div className="mb-6 animate-in-up">
+          <div className="mb-8 animate-in-up">
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-[2rem] border-2 border-blue-400 shadow-xl relative transition-all duration-300 overflow-hidden">
               {/* Drawer Header */}
               <div 
@@ -772,7 +774,7 @@ const MenuPage = () => {
 
               {/* Banner Content */}
               <div className={`transition-all duration-300 ease-in-out ${showBannerDrawer ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                <div className="p-4 sm:p-6 space-y-4">
+                <div className="p-4 sm:p-6 space-y-4 max-h-80 overflow-y-auto banner-scrollbar">
                   {/* OpenApp Banner */}
                   {showOpenAppBanner && (
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 transition-all duration-300 hover:bg-white/15">

@@ -1017,6 +1017,31 @@ button:focus, input:focus, textarea:focus, select:focus {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Custom scrollbar for banner content */
+.banner-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.6) rgba(59, 130, 246, 0.1);
+}
+
+.banner-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  display: block;
+}
+
+.banner-scrollbar::-webkit-scrollbar-track {
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 3px;
+}
+
+.banner-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.6);
+  border-radius: 3px;
+}
+
+.banner-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.8);
+}
+
 /* Responsive Typography */
 .text-responsive {
   font-size: clamp(0.875rem, 2vw, 1.125rem);
