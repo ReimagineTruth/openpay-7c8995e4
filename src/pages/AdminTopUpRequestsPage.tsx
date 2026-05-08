@@ -38,7 +38,7 @@ const PROVIDER_LOGOS: Record<string, string> = {
   Venmo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Venmo_Logo.svg/1920px-Venmo_Logo.svg.png",
   USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
   USDC: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png",
-  MRWN: "https://i.ibb.co/3s6J2QF/mrwn-logo.png",
+  MRWN: "https://i.ibb.co/6P2Q3yH/mrwn-token-logo.png",
 };
 
 const AdminTopUpRequestsPage = () => {
@@ -219,9 +219,9 @@ const AdminTopUpRequestsPage = () => {
                   <div className="text-right">
                     <p className="text-sm font-semibold text-paypal-blue">{row.amount.toFixed(2)} OPEN USD</p>
                     <div className="mt-1 inline-flex items-center justify-end gap-2 text-xs">
-                      {PROVIDER_LOGOS[row.provider] ? (
+                      {PROVIDER_LOGOS[row.provider] || PROVIDER_LOGOS[row.provider?.toUpperCase()] || PROVIDER_LOGOS[row.provider?.toLowerCase()] ? (
                         <img
-                          src={PROVIDER_LOGOS[row.provider]}
+                          src={PROVIDER_LOGOS[row.provider] || PROVIDER_LOGOS[row.provider?.toUpperCase()] || PROVIDER_LOGOS[row.provider?.toLowerCase()] || ''}
                           alt={row.provider}
                           className="h-6 w-auto object-contain rounded-sm"
                           onError={(e) => {

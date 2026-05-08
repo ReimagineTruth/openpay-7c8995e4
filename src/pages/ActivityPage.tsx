@@ -21,6 +21,7 @@ interface Transaction {
   is_sent?: boolean;
   is_topup?: boolean;
   is_withdrawal?: boolean;
+  provider?: string;
 }
 interface MerchantActivityEntry {
   activity_id: string;
@@ -195,8 +196,10 @@ const ActivityPage = () => {
       amount: tx.amount,
       otherPartyName: tx.other_name,
       otherPartyUsername: tx.other_username || undefined,
+      otherPartyAvatar: tx.other_avatar_url || undefined,
       note: tx.note || undefined,
       date: new Date(tx.created_at),
+      provider: tx.provider,
     });
     setReceiptOpen(true);
   };

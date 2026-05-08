@@ -226,8 +226,15 @@ const PublicLedgerPage = () => {
             </div>
           </div>
           <button
-            onClick={() => (transactionId ? loadTransaction(transactionId) : loadPage(offset))}
-            className="paypal-surface flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-white hover-lift"
+            onClick={() => {
+              if (loading) return;
+              if (transactionId) {
+                loadTransaction(transactionId);
+              } else {
+                loadPage(0);
+              }
+            }}
+            className="bg-blue-600 hover:bg-blue-700 flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />

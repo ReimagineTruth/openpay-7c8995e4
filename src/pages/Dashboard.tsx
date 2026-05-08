@@ -21,6 +21,7 @@ import { DigitalRateDisplay } from "@/components/ui/DigitalRateDisplay";
 import { isRemittanceUiEnabled } from "@/lib/remittanceAccess";
 import { isSolanaPayEnabled } from "@/lib/solanaPayAccess";
 import { playUiSound } from "@/lib/appSounds";
+import { playNotificationBellSound } from "@/lib/soundEffects";
 import { isPlaceholderOpenPayAccount } from "@/lib/openpayIdentity";
 
 interface Transaction {
@@ -1330,6 +1331,7 @@ const Dashboard = () => {
         },
         () => {
           void refreshUnread();
+          playNotificationBellSound();
         },
       )
       .subscribe();
@@ -1338,6 +1340,11 @@ const Dashboard = () => {
       supabase.removeChannel(channel);
     };
   }, [userId]);
+
+  const testNotificationSound = () => {
+    playNotificationBellSound();
+    toast.success("Testing notification bell sound");
+  };
 
   useEffect(() => {
     const envSandbox = String(import.meta.env.VITE_PI_SANDBOX || "false").toLowerCase() === "true";
