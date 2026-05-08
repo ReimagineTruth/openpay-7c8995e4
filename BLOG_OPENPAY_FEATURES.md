@@ -54,7 +54,7 @@ Related pages:
 - Virtual Card — Set up virtual card for spend routing. https://openpy.space/auth/virtual-card
 - Public Wallet Pay — Accept wallet payments via public payment page. https://openpy.space/auth/public-payment
 - OpenPay Official — Overview of supported flows. https://openpy.space/auth/openpay-official
-- OpenApp Directory — Discover apps in the Pi ecosystem. https://openapp7296.pinet.com/
+- OpenApp Directory — Discover apps in the Pi ecosystem. https://openappdev.space/
 
 ### Merchant POS
 Turn any device into a point-of-sale. Generate a checkout session, show a QR to the buyer, and capture payment with a receipt. Ideal for retail counters, food services, and pop-up stalls.
@@ -82,7 +82,7 @@ View overview: https://openpy.space/auth/openpay-official
 
 ### OpenApp Directory
 Discover Pi ecosystem applications for utility, commerce, and community experiences. Explore categories, trends, and integrations that pair well with OpenPay.
-Open directory: https://openapp7296.pinet.com/
+Open directory: https://openappdev.space/
 
 ## Merchant Tools & Portal
 

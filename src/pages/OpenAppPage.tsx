@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ExternalLink, Store, CreditCard, QrCode, Link2, BookOpen, Wallet, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const OPENAPP_URL = "https://openapp7296.pinet.com/";
+const OPENAPP_URL = "https://openappdev.space/";
 
 const OpenAppPage = () => {
   const navigate = useNavigate();

@@ -1277,7 +1277,7 @@ const MiningPage = () => {
           </div>
           <Button asChild variant="outline" className="mt-3 w-full rounded-2xl">
             <a
-              href="https://openapp7296.pinet.com/"
+              href="https://openappdev.space/"
               target="_blank"
               rel="noopener noreferrer"
             >
