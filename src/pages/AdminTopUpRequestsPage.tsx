@@ -32,10 +32,13 @@ const PROVIDER_LOGOS: Record<string, string> = {
   "Ewallet QR PH": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/QR_Ph_Logo.svg/960px-QR_Ph_Logo.svg.png?20250310160234",
   "Apple Pay": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Apple_Pay_logo.svg/1920px-Apple_Pay_logo.svg.png",
   "Google Pay": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Google_Pay_Logo.svg/1920px-Google_Pay_Logo.svg.png",
-  "Debit Card": "https://i.ibb.co/G3FGwngR/Visa-Inc-logo-2021-present-svg.png",
+  "Debit Card": "https://i.ibb.co/G3FGwngR/Visa-Inc-logo-design-2014-present-svg.png",
   "Credit Card": "https://i.ibb.co/9kkZmFDq/Mastercard-2019-logo-svg.png",
   Stripe: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/1920px-Stripe_Logo%2C_revised_2016.svg.png",
   Venmo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Venmo_Logo.svg/1920px-Venmo_Logo.svg.png",
+  USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
+  USDC: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png",
+  MRWN: "https://i.ibb.co/3s6J2QF/mrwn-logo.png",
 };
 
 const AdminTopUpRequestsPage = () => {
@@ -215,15 +218,22 @@ const AdminTopUpRequestsPage = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-paypal-blue">{row.amount.toFixed(2)} OPEN USD</p>
-                    <div className="mt-1 inline-flex items-center justify-end gap-2 text-xs text-muted-foreground">
+                    <div className="mt-1 inline-flex items-center justify-end gap-2 text-xs">
                       {PROVIDER_LOGOS[row.provider] ? (
                         <img
                           src={PROVIDER_LOGOS[row.provider]}
                           alt={row.provider}
-                          className="h-5 w-auto object-contain"
+                          className="h-6 w-auto object-contain rounded-sm"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
-                      ) : null}
-                      <span>{row.provider}</span>
+                      ) : (
+                        <div className="h-6 w-6 rounded-sm bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
+                          {row.provider?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                      )}
+                      <span className="font-semibold text-foreground">{row.provider}</span>
                     </div>
                   </div>
                 </div>
@@ -231,7 +241,7 @@ const AdminTopUpRequestsPage = () => {
                   <p>OpenPay name: {row.openpay_account_name}</p>
                   <p>OpenPay username: @{row.openpay_account_username}</p>
                   <p>Account number: {row.openpay_account_number}</p>
-                  <p className="sm:col-span-2">Reference: {row.reference_code}</p>
+                  <p className="sm:col-span-2 break-all">Reference: {row.reference_code}</p>
                   {row.proof_url && (
                     <p className="sm:col-span-2">
                       <button
@@ -307,7 +317,7 @@ const AdminTopUpRequestsPage = () => {
                 <p>OpenPay name: {previewRow.openpay_account_name}</p>
                 <p>OpenPay username: @{previewRow.openpay_account_username}</p>
                 <p>Account number: {previewRow.openpay_account_number}</p>
-                <p>Reference: {previewRow.reference_code}</p>
+                <p className="break-all">Reference: {previewRow.reference_code}</p>
               </div>
             </div>
           )}
