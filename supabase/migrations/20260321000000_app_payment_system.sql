@@ -260,7 +260,7 @@ BEGIN
   ) VALUES (
     p_app_id,
     p_plan_name,
-    p_plan_description,
+    COALESCE(p_plan_description, NULL),
     p_plan_type,
     p_amount,
     p_currency,
