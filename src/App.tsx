@@ -101,6 +101,9 @@ import SwapWithdrawalPage from "./pages/SwapWithdrawalPage";
 import ConfirmPinPage from "./pages/ConfirmPinPage";
 import SmartContractApiPage from "./pages/SmartContractApiPage";
 import DeveloperDashboardPage from "./pages/DeveloperDashboardPage";
+import AppDeveloperDashboardPage from "./pages/AppDeveloperDashboardPage";
+import AppPaymentCheckoutPage from "./pages/AppPaymentCheckoutPage";
+import AppPaymentSuccessPage from "./pages/AppPaymentSuccessPage";
 import NotFound from "./pages/NotFound";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { useRealtimePushNotifications } from "./hooks/useRealtimePushNotifications";
@@ -473,6 +476,13 @@ const AppRoutes = () => {
         <Route path="/confirm-pin" element={<ConfirmPinPage />} />
         <Route path="/smart-contract-api" element={<SmartContractApiPage />} />
         <Route path="/developer-dashboard" element={<DeveloperDashboardPage />} />
+        <Route path="/app-developer-dashboard" element={
+          <ProtectedRoute>
+            <AppDeveloperDashboardPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/app-payment/checkout" element={<AppPaymentCheckoutPage />} />
+        <Route path="/app-payment/success" element={<AppPaymentSuccessPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       </PageTransition>

@@ -456,6 +456,8 @@ const MenuPage = () => {
 
           { icon: Pointer, label: "Buttons", subtitle: "OpenPay", action: () => navigate("/buttons") },
 
+          { icon: Smartphone, label: "App Payments", subtitle: "Developer", action: () => navigate("/app-developer-dashboard") },
+
           ...(remittanceUiEnabled
 
             ? [{
