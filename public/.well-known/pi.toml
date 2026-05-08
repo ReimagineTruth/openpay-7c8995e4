@@ -6,7 +6,7 @@ code="OUSD"
 issuer="GCMWN3DUKHBAGVVWL244J375UMWAS3UTNCWVQDBKWLQHGCPZQURK7U3L"
 name="OpenUSD"
 desc="A stablecoin token pegged to USD value on Pi Network. OpenUSD provides a stable digital currency for transactions within the Pi ecosystem, designed for reliability and widespread adoption."
-image="https://openpy.space/assets/ousd-icon.svg"
+image="https://i.ibb.co/20r2wH8r/Untitled-design-4.png"
 # Additional optional fields for better token discovery
 conditions="Stablecoin pegged to USD value"
 display_decimals=2
