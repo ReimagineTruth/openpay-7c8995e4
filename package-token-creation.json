@@ -1,0 +1,26 @@
+{
+  "name": "ousd-token-creation",
+  "version": "1.0.0",
+  "description": "OpenUSD (OUSD) token creation script for Pi Network Testnet",
+  "main": "create-ousd-token.js",
+  "scripts": {
+    "create-token": "node create-ousd-token.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^12.0.0"
+  },
+  "keywords": [
+    "pi-network",
+    "stellar",
+    "token",
+    "ousd",
+    "stablecoin",
+    "cryptocurrency"
+  ],
+  "author": "OpenPay Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
