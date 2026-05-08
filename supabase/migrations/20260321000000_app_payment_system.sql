@@ -204,10 +204,10 @@ BEGIN
     developer_user_id
   ) VALUES (
     p_app_name,
-    p_app_description,
-    p_app_url,
-    p_app_logo_url,
-    p_webhook_url,
+    COALESCE(p_app_description, NULL),
+    COALESCE(p_app_url, NULL),
+    COALESCE(p_app_logo_url, NULL),
+    COALESCE(p_webhook_url, NULL),
     auth.uid()
   ) RETURNING id, app_secret_key, app_public_key INTO v_app_id, v_secret_key, v_public_key;
 
@@ -454,10 +454,10 @@ BEGIN
     END,
     'completed',
     jsonb_build_object(
-      'payment_link_id', v_link.id,
-      'customer_name', p_customer_name,
-      'customer_email', p_customer_email,
-      'customer_phone', p_customer_phone
+      'payment_link_id', v_link.id, 
+      'customer_name', COALESCE(p_customer_name, NULL),
+      'customer_email', COALESCE(p_customer_email, NULL),
+      'customer_phone', COALESCE(p_customer_phone, NULL)
     )
   ) RETURNING id INTO v_transaction_id;
 
