@@ -58,6 +58,7 @@ type BuyOnrampProvider =
   | "USDT"
   | "USDC"
   | "MRWN"
+  | "OUSD"
   | "Solana Pay"
   | "PayPal"
   | "Apple Pay"
@@ -75,6 +76,7 @@ type BuyPaymentMethod =
   | "USDT"
   | "USDC"
   | "MRWN"
+  | "OUSD"
   | "Solana Pay"
   | "Debit Card"
   | "Credit Card"
@@ -111,6 +113,7 @@ const getPaymentMethodIcon = (method: BuyPaymentMethod | null) => {
   if (method === "USDT") return { src: USDT_ICON_URL, fallback: USDT_ICON_FALLBACK_URL };
   if (method === "USDC") return { src: USDC_ICON_URL, fallback: USDC_ICON_FALLBACK_URL };
   if (method === "MRWN") return { src: MRWN_ICON_URL, fallback: "" };
+  if (method === "OUSD") return { src: OUSD_ICON_URL, fallback: "" };
   if (method === "Solana Pay") return { src: SOLANA_PAY_ICON_URL, fallback: "" };
   if (method === "Apple Pay") return { src: APPLE_PAY_ICON_URL, fallback: "" };
   if (method === "Google Pay") return { src: GOOGLE_PAY_ICON_URL, fallback: "" };
@@ -136,6 +139,7 @@ const MASTERCARD_ICON_URL = "https://i.ibb.co/9kkZmFDq/Mastercard-2019-logo-svg.
 const USDT_ICON_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Tether_Logo.svg/1920px-Tether_Logo.svg.png";
 const USDC_ICON_URL = "https://upload.wikimedia.org/wikipedia/fr/1/18/Logo-USDC-2023.png";
 const MRWN_ICON_URL = "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722deab5-1-removebg-preview.png";
+const OUSD_ICON_URL = "/openpay-o.svg";
 const USDT_ICON_FALLBACK_URL = "/icons/usdt.svg";
 const USDC_ICON_FALLBACK_URL = "/icons/usdc.svg";
 const SOLANA_PAY_ICON_URL = "https://cryptologos.cc/logos/solana-sol-logo.png?v=040";
@@ -1682,14 +1686,16 @@ const Dashboard = () => {
   const isUsdtBuyFlow = buyPaymentMethod === "USDT";
   const isUsdcBuyFlow = buyPaymentMethod === "USDC";
   const isMrwnBuyFlow = buyPaymentMethod === "MRWN";
+  const isOusdBuyFlow = buyPaymentMethod === "OUSD";
   const isUsdFiatBuyFlow =
     buyPaymentMethod !== "Ewallet" &&
     buyPaymentMethod !== "Pi Payment" &&
     buyPaymentMethod !== "USDT" &&
     buyPaymentMethod !== "USDC" &&
     buyPaymentMethod !== "MRWN" &&
+    buyPaymentMethod !== "OUSD" &&
     buyPaymentMethod !== "Solana Pay";
-  const buySpendUnit = isEwalletBuyFlow ? "PHP" : isUsdtBuyFlow ? "USDT" : isUsdcBuyFlow ? "USDC" : isMrwnBuyFlow ? "MRWN" : isUsdFiatBuyFlow ? "USD" : "PI";
+  const buySpendUnit = isEwalletBuyFlow ? "PHP" : isUsdtBuyFlow ? "USDT" : isUsdcBuyFlow ? "USDC" : isMrwnBuyFlow ? "MRWN" : isOusdBuyFlow ? "OUSD" : isUsdFiatBuyFlow ? "USD" : "PI";
   const buySpendRateText = isEwalletBuyFlow
     ? `${E_WALLET_PHP_PER_OUSD.toFixed(2)} PHP = 1 OPEN USD`
     : isUsdtBuyFlow
@@ -1698,7 +1704,9 @@ const Dashboard = () => {
         ? "1 USDC = 1 OPEN USD"
         : isMrwnBuyFlow
           ? "1 MRWN = 1 OPEN USD"
-          : isEwalletBuyFlow
+          : isOusdBuyFlow
+            ? "1 OUSD = 1 OPEN USD"
+            : isEwalletBuyFlow
             ? `${E_WALLET_PHP_PER_OUSD.toFixed(2)} PHP = 1 OPEN USD`
             : isUsdFiatBuyFlow
               ? "1 USD = 1 OPEN USD"
@@ -1718,6 +1726,7 @@ const Dashboard = () => {
     "USDT": 1,
     "USDC": 1,
     "MRWN": 1,
+    "OUSD": 1,
     "Solana Pay": 1,
     "PayPal": 1,
     "Apple Pay": 1,
@@ -1735,6 +1744,7 @@ const Dashboard = () => {
   const baseOnrampRows: Array<{ key: BuyOnrampProvider; disabled?: boolean; subtitle: string; delta?: string; recommended?: boolean }> = [
     { key: "Pi Payment", subtitle: "Active", recommended: true },
     { key: "MRWN", subtitle: "Active" },
+    { key: "OUSD", subtitle: "Active" },
     { key: "Ewallet QR PH", subtitle: "Active" },
     { key: "USDT", subtitle: "Active" },
     { key: "USDC", subtitle: "Active" },
@@ -1755,6 +1765,7 @@ const Dashboard = () => {
   const basePaymentMethodRows: Array<{ key: BuyPaymentMethod; recommended?: boolean; disabled?: boolean }> = [
     { key: "Pi Payment", recommended: true },
     { key: "MRWN" },
+    { key: "OUSD" },
     { key: "USDT" },
     { key: "USDC" },
     { key: "Ewallet" },
@@ -1772,6 +1783,7 @@ const Dashboard = () => {
   const baseSupportedBuyPaymentMethods: BuyPaymentMethod[] = [
     "Pi Payment",
     "MRWN",
+    "OUSD",
     "USDT",
     "USDC",
     "Ewallet",
@@ -1830,6 +1842,7 @@ const Dashboard = () => {
         "USDT": "/topup-usdt",
         "USDC": "/topup-usdc",
         "MRWN": "/topup-mrwn",
+        "OUSD": "/topup-ousd",
         "Solana Pay": "/topup-solana-pay",
         "PayPal": "/topup-paypal",
         "Debit Card": "/topup-debit",
@@ -2675,6 +2688,14 @@ const Dashboard = () => {
                   {buyPaymentMethod === "MRWN" && (
                     <img
                       src={MRWN_ICON_URL}
+                      alt=""
+                      className="h-10 w-auto object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  {buyPaymentMethod === "OUSD" && (
+                    <img
+                      src={OUSD_ICON_URL}
                       alt=""
                       className="h-10 w-auto object-contain"
                       referrerPolicy="no-referrer"
@@ -3652,6 +3673,8 @@ const Dashboard = () => {
                       ? `${targetOpenUsdAmount.toFixed(2)} USDC`
                       : row.key === "MRWN"
                         ? `${targetOpenUsdAmount.toFixed(2)} MRWN`
+                      : row.key === "OUSD"
+                        ? `${targetOpenUsdAmount.toFixed(2)} OUSD`
                       : row.key === "Solana Pay"
                         ? `${targetOpenUsdAmount.toFixed(2)} USDC`
                   : usdOnrampProviders.includes(row.key)
@@ -3674,6 +3697,8 @@ const Dashboard = () => {
                       setBuyPaymentMethod("USDC");
                     } else if (row.key === "MRWN") {
                       setBuyPaymentMethod("MRWN");
+                    } else if (row.key === "OUSD") {
+                      setBuyPaymentMethod("OUSD");
                     } else if (row.key === "Solana Pay") {
                       setBuyPaymentMethod("Solana Pay");
                     } else if (row.key === "Pi Payment") {
@@ -3741,6 +3766,14 @@ const Dashboard = () => {
                           <img
                             src={MRWN_ICON_URL}
                             alt="MRWN"
+                            className="h-10 w-auto object-contain"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        {row.key === "OUSD" && (
+                          <img
+                            src={OUSD_ICON_URL}
+                            alt="OUSD"
                             className="h-10 w-auto object-contain"
                             referrerPolicy="no-referrer"
                           />
@@ -3937,6 +3970,14 @@ const Dashboard = () => {
                           <img
                             src={MRWN_ICON_URL}
                             alt="MRWN"
+                            className="h-10 w-auto object-contain"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        {row.key === "OUSD" && (
+                          <img
+                            src={OUSD_ICON_URL}
+                            alt="OUSD"
                             className="h-10 w-auto object-contain"
                             referrerPolicy="no-referrer"
                           />

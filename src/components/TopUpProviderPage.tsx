@@ -36,7 +36,7 @@ const TopUpProviderPage = ({
   const usdDisplay = safeUsdAmount > 0 ? safeUsdAmount.toFixed(2) : "0.00";
 
   const openUsdDisplay = useMemo(() => usdDisplay, [usdDisplay]);
-  const providerUnit = providerName === "USDT" ? "USDT" : providerName === "USDC" ? "USDC" : providerName === "MRWN" ? "MRWN" : "USD";
+  const providerUnit = providerName === "USDT" ? "USDT" : providerName === "USDC" ? "USDC" : providerName === "MRWN" ? "MRWN" : providerName === "OUSD" ? "OUSD" : "USD";
   const conversionText =
     providerName === "USDT"
       ? "1 USDT = 1 OPEN USD"
@@ -44,7 +44,9 @@ const TopUpProviderPage = ({
         ? "1 USDC = 1 OPEN USD"
         : providerName === "MRWN"
           ? "1 MRWN = 1 OPEN USD"
-          : "1 OPEN USD = 1 USD";
+          : providerName === "OUSD"
+            ? "1 OUSD = 1 OPEN USD"
+            : "1 OPEN USD = 1 USD";
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [showSafetyAgreement, setShowSafetyAgreement] = useState(false);
   const [safetyAgreementChecked, setSafetyAgreementChecked] = useState(false);
