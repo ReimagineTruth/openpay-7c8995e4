@@ -43,6 +43,8 @@ serve(async (req) => {
       return await handleGetAnalytics(req, supabase)
     } else if (path === "get-subscriptions" && method === "GET") {
       return await handleGetSubscriptions(req, supabase)
+    } else if (path === "get-payment-links" && method === "GET") {
+      return await handleGetPaymentLinks(req, supabase)
     } else if (path === "cancel-subscription" && method === "POST") {
       return await handleCancelSubscription(req, supabase)
     } else {
@@ -499,6 +501,55 @@ async function handleGetSubscriptions(req: Request, supabase: any) {
 
   return new Response(
     JSON.stringify({ success: true, data }),
+    { 
+      status: 200, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    }
+  )
+}
+
+async function handleGetPaymentLinks(req: Request, supabase: any) {
+  const url = new URL(req.url)
+  const appId = url.searchParams.get("app_id")
+
+  if (!appId) {
+    return new Response(
+      JSON.stringify({ error: "app_id parameter required" }),
+      { 
+        status: 400, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      }
+    )
+  }
+
+  const { data, error } = await supabase
+    .from("app_payment_links")
+    .select(`
+      *,
+      app_payment_plans(plan_name, amount, currency)
+    `)
+    .eq("app_id", appId)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 400, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      }
+    )
+  }
+
+  // Add payment URLs to the response
+  const paymentLinksWithUrls = data?.map((link: any) => ({
+    ...link,
+    payment_url: `${supabaseUrl}/functions/v1/app-payments/checkout?token=${link.link_token}`
+  }))
+
+  return new Response(
+    JSON.stringify({ success: true, data: paymentLinksWithUrls }),
     { 
       status: 200, 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 

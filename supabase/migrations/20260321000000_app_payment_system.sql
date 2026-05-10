@@ -170,10 +170,10 @@ CREATE INDEX IF NOT EXISTS idx_app_payment_links_app_id ON public.app_payment_li
 -- Function to create a new app
 CREATE OR REPLACE FUNCTION public.create_app(
   p_app_name TEXT,
-  p_app_description TEXT DEFAULT NULL,
-  p_app_url TEXT DEFAULT NULL,
-  p_app_logo_url TEXT DEFAULT NULL,
-  p_webhook_url TEXT DEFAULT NULL
+  p_app_description TEXT,
+  p_app_url TEXT,
+  p_app_logo_url TEXT,
+  p_webhook_url TEXT
 )
 RETURNS TABLE (
   app_id UUID,
@@ -219,7 +219,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.create_app_payment_plan(
   p_app_id UUID,
   p_plan_name TEXT,
-  p_plan_description TEXT DEFAULT NULL,
+  p_plan_description TEXT,
   p_plan_type TEXT,
   p_amount NUMERIC(12,2),
   p_currency TEXT DEFAULT 'USD',
@@ -275,7 +275,7 @@ $$;
 -- Function to process app payment
 CREATE OR REPLACE FUNCTION public.process_app_payment(
   p_link_token TEXT,
-  p_payer_user_id UUID DEFAULT NULL,
+  p_payer_user_id UUID,
   p_payment_method TEXT DEFAULT 'wallet',
   p_customer_name TEXT DEFAULT NULL,
   p_customer_email TEXT DEFAULT NULL,

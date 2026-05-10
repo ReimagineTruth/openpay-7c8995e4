@@ -132,17 +132,26 @@ const AppDeveloperDashboardPage = () => {
 
   const loadApps = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please login to view apps");
+        return;
+      }
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-payments/get-apps`, {
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       const result = await response.json();
       
       if (result.success) {
         setApps(result.data);
+      } else {
+        toast.error(result.error || "Failed to load apps");
       }
     } catch (error) {
+      console.error('Load apps error:', error);
       toast.error("Failed to load apps");
     } finally {
       setLoading(false);
@@ -153,42 +162,82 @@ const AppDeveloperDashboardPage = () => {
     if (!selectedApp) return;
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please login to view plans");
+        return;
+      }
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-payments/get-plans?app_id=${selectedApp.id}`, {
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       const result = await response.json();
       
       if (result.success) {
         setPlans(result.data);
+      } else {
+        toast.error(result.error || "Failed to load plans");
       }
     } catch (error) {
+      console.error('Load plans error:', error);
       toast.error("Failed to load plans");
     }
   };
 
   const loadPaymentLinks = async () => {
-    // This would need to be implemented in the API
-    // For now, we'll use mock data
-    setPaymentLinks([]);
+    if (!selectedApp) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please login to view payment links");
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-payments/get-payment-links?app_id=${selectedApp.id}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        setPaymentLinks(result.data);
+      } else {
+        toast.error(result.error || "Failed to load payment links");
+      }
+    } catch (error) {
+      console.error('Load payment links error:', error);
+      toast.error("Failed to load payment links");
+    }
   };
 
   const loadAnalytics = async () => {
     if (!selectedApp) return;
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please login to view analytics");
+        return;
+      }
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-payments/get-analytics?app_id=${selectedApp.id}`, {
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       const result = await response.json();
       
       if (result.success) {
         setAnalytics(result.data.totals);
+      } else {
+        toast.error(result.error || "Failed to load analytics");
       }
     } catch (error) {
+      console.error('Load analytics error:', error);
       toast.error("Failed to load analytics");
     }
   };
@@ -201,13 +250,25 @@ const AppDeveloperDashboardPage = () => {
 
     setProcessing(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please login to create an app");
+        return;
+      }
+
+      // Prepare app data - handle data URL logos
+      const appData = {
+        ...newApp,
+        logo_url: newApp.logo_url?.startsWith('data:') ? null : newApp.logo_url
+      };
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-payments/create-app`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify(newApp)
+        body: JSON.stringify(appData)
       });
 
       const result = await response.json();
@@ -221,6 +282,7 @@ const AppDeveloperDashboardPage = () => {
         toast.error(result.error || "Failed to create app");
       }
     } catch (error) {
+      console.error('Create app error:', error);
       toast.error("Failed to create app");
     } finally {
       setProcessing(false);
@@ -235,11 +297,17 @@ const AppDeveloperDashboardPage = () => {
 
     setProcessing(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please login to create a plan");
+        return;
+      }
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-payments/create-plan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           ...newPlan,
@@ -261,6 +329,7 @@ const AppDeveloperDashboardPage = () => {
         toast.error(result.error || "Failed to create plan");
       }
     } catch (error) {
+      console.error('Create plan error:', error);
       toast.error("Failed to create plan");
     } finally {
       setProcessing(false);

@@ -1,0 +1,342 @@
+-- Migration fix for app payment system
+-- Fixes PostgreSQL parameter default value ordering issue
+
+-- Drop existing functions with incorrect parameter ordering
+DROP FUNCTION IF EXISTS public.create_app(TEXT, TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.create_app_payment_plan(UUID, TEXT, TEXT, TEXT, NUMERIC, TEXT, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS public.process_app_payment(TEXT, UUID, TEXT, TEXT, TEXT, TEXT);
+
+-- Recreate functions with correct parameter ordering
+CREATE OR REPLACE FUNCTION public.create_app(
+  p_app_name TEXT,
+  p_app_description TEXT,
+  p_app_url TEXT,
+  p_app_logo_url TEXT,
+  p_webhook_url TEXT
+)
+RETURNS TABLE (
+  app_id UUID,
+  app_secret_key TEXT,
+  app_public_key TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_app_id UUID;
+  v_secret_key TEXT;
+  v_public_key TEXT;
+BEGIN
+  -- Validate input
+  IF p_app_name IS NULL OR TRIM(p_app_name) = '' THEN
+    RAISE EXCEPTION 'App name is required';
+  END IF;
+
+  -- Create the app
+  INSERT INTO public.app_registry (
+    app_name,
+    app_description,
+    app_url,
+    app_logo_url,
+    webhook_url,
+    developer_user_id
+  ) VALUES (
+    p_app_name,
+    p_app_description,
+    p_app_url,
+    p_app_logo_url,
+    p_webhook_url,
+    auth.uid()
+  ) RETURNING id, app_secret_key, app_public_key INTO v_app_id, v_secret_key, v_public_key;
+
+  RETURN QUERY SELECT v_app_id, v_secret_key, v_public_key;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.create_app_payment_plan(
+  p_app_id UUID,
+  p_plan_name TEXT,
+  p_plan_description TEXT,
+  p_plan_type TEXT,
+  p_amount NUMERIC(12,2),
+  p_currency TEXT DEFAULT 'USD',
+  p_trial_days INTEGER DEFAULT 0,
+  p_setup_fee NUMERIC(12,2) DEFAULT 0
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_plan_id UUID;
+BEGIN
+  -- Validate app ownership
+  IF NOT EXISTS (
+    SELECT 1 FROM public.app_registry 
+    WHERE id = p_app_id AND developer_user_id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'App not found or access denied';
+  END IF;
+
+  -- Validate plan type
+  IF p_plan_type NOT IN ('one_time', 'recurring_monthly', 'recurring_yearly') THEN
+    RAISE EXCEPTION 'Invalid plan type';
+  END IF;
+
+  -- Create the plan
+  INSERT INTO public.app_payment_plans (
+    app_id,
+    plan_name,
+    plan_description,
+    plan_type,
+    amount,
+    currency,
+    trial_days,
+    setup_fee
+  ) VALUES (
+    p_app_id,
+    p_plan_name,
+    p_plan_description,
+    p_plan_type,
+    p_amount,
+    p_currency,
+    p_trial_days,
+    p_setup_fee
+  ) RETURNING id INTO v_plan_id;
+
+  RETURN v_plan_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.process_app_payment(
+  p_link_token TEXT,
+  p_payer_user_id UUID,
+  p_payment_method TEXT DEFAULT 'wallet',
+  p_customer_name TEXT DEFAULT NULL,
+  p_customer_email TEXT DEFAULT NULL,
+  p_customer_phone TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+  transaction_id UUID,
+  status TEXT,
+  message TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_link RECORD;
+  v_plan RECORD;
+  v_app RECORD;
+  v_subscription_id UUID;
+  v_transaction_id UUID;
+  v_fee_amount NUMERIC(12,2);
+  v_net_amount NUMERIC(12,2);
+  v_payer_balance NUMERIC(12,2);
+  v_dev_balance NUMERIC(12,2);
+BEGIN
+  -- Get payment link and validate
+  SELECT * INTO v_link
+  FROM public.app_payment_links
+  WHERE link_token = p_link_token
+    AND is_active = true
+    AND (expires_at IS NULL OR expires_at > now())
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT NULL::UUID, 'error', 'Invalid or expired payment link'::TEXT;
+    RETURN;
+  END IF;
+
+  -- Check usage limit
+  IF v_link.max_usage IS NOT NULL AND v_link.usage_count >= v_link.max_usage THEN
+    RETURN QUERY SELECT NULL::UUID, 'error', 'Payment link usage limit exceeded'::TEXT;
+    RETURN;
+  END IF;
+
+  -- Get plan details
+  SELECT * INTO v_plan
+  FROM public.app_payment_plans
+  WHERE id = v_link.plan_id AND is_active = true;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT NULL::UUID, 'error', 'Payment plan not found or inactive'::TEXT;
+    RETURN;
+  END IF;
+
+  -- Get app details
+  SELECT * INTO v_app
+  FROM public.app_registry
+  WHERE id = v_link.app_id AND status = 'active';
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT NULL::UUID, 'error', 'App not found or inactive'::TEXT;
+    RETURN;
+  END IF;
+
+  -- Calculate fees (2% platform fee)
+  v_fee_amount := v_plan.amount * 0.02;
+  v_net_amount := v_plan.amount - v_fee_amount;
+
+  -- Process wallet payment
+  IF p_payment_method = 'wallet' THEN
+    -- Get payer balance
+    SELECT balance INTO v_payer_balance
+    FROM public.wallets
+    WHERE user_id = p_payer_user_id
+    FOR UPDATE;
+
+    IF v_payer_balance IS NULL THEN
+      RETURN QUERY SELECT NULL::UUID, 'error', 'Payer wallet not found'::TEXT;
+    RETURN;
+    END IF;
+
+    IF v_payer_balance < v_plan.amount THEN
+      RETURN QUERY SELECT NULL::UUID, 'error', 'Insufficient balance'::TEXT;
+    RETURN;
+    END IF;
+
+    -- Get developer wallet
+    SELECT balance INTO v_dev_balance
+    FROM public.wallets
+    WHERE user_id = v_app.developer_user_id
+    FOR UPDATE;
+
+    IF v_dev_balance IS NULL THEN
+      -- Create developer wallet if it doesn't exist
+      INSERT INTO public.wallets (user_id, balance, updated_at)
+      VALUES (v_app.developer_user_id, 0, now());
+      
+      v_dev_balance := 0;
+    END IF;
+
+    -- Process balance transfers
+    UPDATE public.wallets
+    SET balance = v_payer_balance - v_plan.amount,
+        updated_at = now()
+    WHERE user_id = p_payer_user_id;
+
+    UPDATE public.wallets
+    SET balance = v_dev_balance + v_net_amount,
+        updated_at = now()
+    WHERE user_id = v_app.developer_user_id;
+  END IF;
+
+  -- Handle subscription logic
+  IF v_plan.plan_type IN ('recurring_monthly', 'recurring_yearly') THEN
+    -- Check if subscription already exists
+    SELECT id INTO v_subscription_id
+    FROM public.app_subscriptions
+    WHERE app_id = v_link.app_id
+      AND subscriber_user_id = p_payer_user_id
+      AND status = 'active'
+    FOR UPDATE;
+
+    IF v_subscription_id IS NULL THEN
+      -- Create new subscription
+      INSERT INTO public.app_subscriptions (
+        app_id,
+        plan_id,
+        subscriber_user_id,
+        current_period_start,
+        current_period_end,
+        trial_end
+      ) VALUES (
+        v_link.app_id,
+        v_link.plan_id,
+        p_payer_user_id,
+        now(),
+        CASE 
+          WHEN v_plan.plan_type = 'recurring_monthly' THEN now() + INTERVAL '1 month'
+          WHEN v_plan.plan_type = 'recurring_yearly' THEN now() + INTERVAL '1 year'
+        END,
+        CASE 
+          WHEN v_plan.trial_days > 0 THEN now() + (v_plan.trial_days || ' days')::INTERVAL
+          ELSE NULL
+        END
+      ) RETURNING id INTO v_subscription_id;
+    END IF;
+  END IF;
+
+  -- Create transaction record
+  INSERT INTO public.app_payment_transactions (
+    app_id,
+    plan_id,
+    subscription_id,
+    payer_user_id,
+    amount,
+    currency,
+    fee_amount,
+    net_amount,
+    payment_method,
+    transaction_type,
+    status,
+    metadata
+  ) VALUES (
+    v_link.app_id,
+    v_link.plan_id,
+    v_subscription_id,
+    p_payer_user_id,
+    v_plan.amount,
+    v_plan.currency,
+    v_fee_amount,
+    v_net_amount,
+    p_payment_method,
+    CASE 
+      WHEN v_plan.plan_type = 'one_time' THEN 'one_time'
+      ELSE 'recurring'
+    END,
+    'completed',
+    jsonb_build_object(
+      'payment_link_id', v_link.id, 
+      'customer_name', COALESCE(p_customer_name, NULL),
+      'customer_email', COALESCE(p_customer_email, NULL),
+      'customer_phone', COALESCE(p_customer_phone, NULL)
+    )
+  ) RETURNING id INTO v_transaction_id;
+
+  -- Update link usage count
+  UPDATE public.app_payment_links
+  SET usage_count = usage_count + 1,
+      updated_at = now()
+  WHERE id = v_link.id;
+
+  -- Update analytics
+  INSERT INTO public.app_analytics (
+    app_id,
+    date,
+    total_revenue,
+    total_transactions,
+    unique_payers,
+    new_subscriptions,
+    active_subscriptions
+  ) VALUES (
+    v_link.app_id,
+    CURRENT_DATE,
+    v_net_amount,
+    1,
+    1,
+    CASE WHEN v_subscription_id IS NOT NULL THEN 1 ELSE 0 END,
+    CASE WHEN v_subscription_id IS NOT NULL THEN 1 ELSE 0 END
+  ) ON CONFLICT (app_id, date) DO UPDATE SET
+    total_revenue = app_analytics.total_revenue + EXCLUDED.total_revenue,
+    total_transactions = app_analytics.total_transactions + EXCLUDED.total_transactions,
+    unique_payers = app_analytics.unique_payers + EXCLUDED.unique_payers,
+    new_subscriptions = app_analytics.new_subscriptions + EXCLUDED.new_subscriptions,
+    active_subscriptions = app_analytics.active_subscriptions + EXCLUDED.active_subscriptions,
+    updated_at = now();
+
+  RETURN QUERY SELECT 
+    v_transaction_id::UUID,
+    'success'::TEXT,
+    'Payment processed successfully'::TEXT;
+END;
+$$;
+
+-- Grant permissions
+GRANT EXECUTE ON FUNCTION public.create_app(TEXT, TEXT, TEXT, TEXT, TEXT) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.create_app_payment_plan(UUID, TEXT, TEXT, TEXT, NUMERIC, TEXT, INTEGER, NUMERIC) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.process_app_payment(TEXT, UUID, TEXT, TEXT, TEXT, TEXT) TO authenticated, service_role;
