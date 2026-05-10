@@ -7,7 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import AdminMrwainAuth from "./pages/AdminMrwainAuth";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
+import AuthCallbackPage from "./pages/AuthCallback";
+import AuthCallback from "./pages/AuthCallback";
 import TwoFactorAuthPage from "./pages/TwoFactorAuthPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ForgotMpinPage from "./pages/ForgotMpinPage";
@@ -252,7 +253,7 @@ const AppRoutes = () => {
         <Route path="/master-topup" element={<AdminMasterTopUp />} />
         <Route path="/signin" element={<Navigate to="/sign-in?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-in?mode=signup" replace />} />
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />

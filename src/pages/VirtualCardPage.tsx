@@ -10,6 +10,8 @@ import BrandLogo from "@/components/BrandLogo";
 import BottomNav from "@/components/BottomNav";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import AuthMark from "@/components/AuthMark";
+import { PhantomConnect } from "@/components/ui/PhantomConnect";
+import { isSolanaPayEnabled } from "@/lib/solanaPayAccess";
 
 interface VirtualCardRecord {
   id: string;
@@ -335,12 +337,15 @@ import AuthMark from "@/components/AuthMark";
           Your virtual card is linked to your OpenPay balance: <span className="font-semibold text-foreground">{formatCurrency(balance)}</span>
         </div>
 
-        <div id="virtual-card-print-area" className="mx-auto mt-4 w-full max-w-[420px] [perspective:1200px]">
+        <div id="virtual-card-print-area" className="mx-auto mt-4 w-full max-w-[420px]" style={{ perspective: "1200px" }}>
           <button
             type="button"
             onClick={handleFlip}
-            className="relative w-full aspect-[1.586] rounded-3xl text-left [transform-style:preserve-3d] transition-transform duration-700"
-            style={{ transform: `rotateY(${flipTurns * 180}deg)` }}
+            className="relative w-full aspect-[1.586] rounded-3xl text-left transition-transform duration-700"
+            style={{ 
+              transformStyle: "preserve-3d",
+              transform: `rotateY(${flipTurns * 180}deg)`
+            }}
             aria-label="Flip virtual card"
           >
             <div
@@ -348,8 +353,9 @@ import AuthMark from "@/components/AuthMark";
               style={{
                 backfaceVisibility: "hidden",
                 WebkitBackfaceVisibility: "hidden",
-                transform: "rotateY(0deg) translateZ(1px)",
+                transform: "rotateY(0deg)",
                 transformStyle: "preserve-3d",
+                zIndex: 1,
               }}
             >
               <div className="flex items-start justify-between">
@@ -387,6 +393,8 @@ import AuthMark from "@/components/AuthMark";
                 backfaceVisibility: "hidden",
                 WebkitBackfaceVisibility: "hidden",
                 transform: "rotateY(180deg)",
+                transformStyle: "preserve-3d",
+                zIndex: 2,
               }}
             >
               <div className="flex items-center justify-between gap-2">
@@ -398,6 +406,7 @@ import AuthMark from "@/components/AuthMark";
                   Powered by Pi Network
                 </p>
               </div>
+              <div className="mt-[8%] h-[20%] w-full bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800 rounded-md"></div>
               <div className="relative mt-[6%] h-[16%] rounded-md bg-white/20 border border-white/30">
                 <p
                   className="absolute inset-0 flex items-center justify-center px-3 text-base text-white/90"
@@ -407,12 +416,16 @@ import AuthMark from "@/components/AuthMark";
                 </p>
               </div>
               <div className="mt-[10%] flex items-center justify-between">
-                <p className="text-xs uppercase tracking-wide text-white/70 font-semibold">Security Code</p>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-white/70 font-semibold">Security Code</p>
+                  <p className="text-[10px] text-white/60">CVV</p>
+                </div>
                 <p className="rounded-md bg-white/20 px-3 py-2 text-sm font-semibold border border-white/30">{hideDetails ? "***" : (card?.cvc || "000")}</p>
               </div>
               <div className="mt-[8%]">
-                <p className="text-sm text-white/80 font-mono tracking-wider">
-                  {hideDetails ? "**** **** **** ****" : (maskedCardNumber || "0000 0000 0000 0000")}
+                <p className="text-[10px] uppercase tracking-wide text-white/60 mb-1">Card Number</p>
+                <p className="text-sm text-white/90 font-mono tracking-wider">
+                  {hideDetails ? "**** **** **** ****" : (formatCardNumber(card?.card_number || "") || "0000 0000 0000 0000")}
                 </p>
               </div>
               <p className="mt-[8%] text-xs text-white/70 text-center">
@@ -617,8 +630,8 @@ import AuthMark from "@/components/AuthMark";
             </div>
           )}
         </div>
-      </div>
-      <div id="virtual-card-print-sheet" className="hidden">
+
+        <div id="virtual-card-print-sheet" className="hidden">
         <div className="print-page">
           {isBackVisible ? (
             <div className="print-card rounded-2xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[5.5%] text-white">
@@ -683,6 +696,7 @@ import AuthMark from "@/components/AuthMark";
           )}
         </div>
       </div>
+      </div>
 
       <Dialog open={showGuide} onOpenChange={setShowGuide}>
         <DialogContent className="rounded-3xl sm:max-w-md">
@@ -739,6 +753,13 @@ import AuthMark from "@/components/AuthMark";
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* Phantom Connect Wallet Integration */}
+      {isSolanaPayEnabled() && (
+        <div className="no-print mx-4 mt-4">
+          <PhantomConnect compact={true} showBalance={true} showTransactions={false} />
+        </div>
+      )}
 
       <div className="no-print">
         <BottomNav active="menu" />

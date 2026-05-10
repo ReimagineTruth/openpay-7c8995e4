@@ -23,6 +23,7 @@ import { isSolanaPayEnabled } from "@/lib/solanaPayAccess";
 import { playUiSound } from "@/lib/appSounds";
 import { playNotificationBellSound } from "@/lib/soundEffects";
 import { isPlaceholderOpenPayAccount } from "@/lib/openpayIdentity";
+import { PhantomConnect } from "@/components/ui/PhantomConnect";
 
 interface Transaction {
   id: string;
@@ -3363,6 +3364,13 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Phantom Connect Wallet Integration */}
+      {isSolanaPayEnabled() && (
+        <div className="mx-4 mt-4">
+          <PhantomConnect compact={false} showBalance={true} showTransactions={true} />
+        </div>
+      )}
+
       {userAccount && (
         <div className="mx-4 mt-4 paypal-surface rounded-3xl p-4">
           <div className="flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:justify-between">
@@ -3978,11 +3986,13 @@ const Dashboard = () => {
                       ? `${targetOpenUsdAmount.toFixed(2)} USDC`
                       : row.key === "MRWN"
                         ? `${targetOpenUsdAmount.toFixed(2)} MRWN`
-                        : row.key === "Solana Pay"
-                          ? `${targetOpenUsdAmount.toFixed(2)} USDC`
-                          : usdPaymentMethods.includes(row.key)
-                            ? `${targetOpenUsdAmount.toFixed(2)} USD`
-                            : `${(targetOpenUsdAmount * OUSD_TO_PI).toFixed(5)} PI`;
+                        : row.key === "OUSD"
+                          ? `${targetOpenUsdAmount.toFixed(2)} OUSD`
+                          : row.key === "Solana Pay"
+                            ? `${targetOpenUsdAmount.toFixed(2)} USDC`
+                            : usdPaymentMethods.includes(row.key)
+                              ? `${targetOpenUsdAmount.toFixed(2)} USD`
+                              : `${(targetOpenUsdAmount * OUSD_TO_PI).toFixed(5)} PI`;
               return (
                 <button
                   key={row.key}
