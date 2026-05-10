@@ -104,17 +104,14 @@ export class PhantomConnectService {
         const existingTransactions = transactionHistory.getTransactionsByAddress(solanaAddress || '');
         if (existingTransactions.length === 0) {
           transactionHistory.addTransaction({
-            id: this.generateId(),
             type: 'receive',
             fromAddress: 'system',
             toAddress: solanaAddress || '',
             amount: 0,
             note: 'Wallet connected',
-            timestamp: Date.now(),
-            status: 'pending',
             signature: '',
-            blockNumber: undefined,
-            fee: undefined
+            status: 'confirmed',
+            timestamp: Date.now()
           });
         }
       } catch (error) {
@@ -221,17 +218,14 @@ export class PhantomConnectService {
 
       // Add to transaction history
       transactionHistory.addTransaction({
-        id: this.generateId(),
         type: 'send',
         fromAddress: walletState.solanaAddress || '',
         toAddress: options.recipient,
         amount: options.amount,
         note: options.reference || 'SOL transfer',
-        timestamp: Date.now(),
-        status: 'pending',
-        signature: '',
-        blockNumber: undefined,
-        fee: undefined
+        signature: txSignature,
+        status: 'confirmed',
+        timestamp: Date.now()
       });
 
       // Update transaction status

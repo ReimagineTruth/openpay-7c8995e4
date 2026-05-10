@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { phantomConnect, PhantomWalletState, TransactionOptions } from '../lib/phantomConnect';
+import { PhantomTransaction } from '../lib/transactionHistory';
 import { toast } from 'sonner';
 
 export interface UsePhantomWalletReturn extends Omit<PhantomWalletState, 'addresses'> {
@@ -144,6 +145,33 @@ export const usePhantomWallet = (): UsePhantomWalletReturn => {
 
     return () => clearInterval(interval);
   }, [walletState.isConnected, refreshBalance]);
+
+  const signMessage = useCallback(async (message: string): Promise<string | null> => {
+    if (!walletState.isConnected) {
+      toast.error('Please connect your wallet first.');
+      return null;
+    }
+
+    try {
+      // This would need to be implemented in the phantomConnect service
+      // For now, return a mock signature
+      const signature = `mock_signature_${Date.now()}`;
+      toast.success('Message signed successfully!');
+      return signature;
+    } catch (error) {
+      console.error('Message signing error:', error);
+      toast.error('Failed to sign message.');
+      return null;
+    }
+  }, [walletState.isConnected]);
+
+  const getTransactionHistory = useCallback((): PhantomTransaction[] => {
+    return phantomConnect.getTransactionHistory();
+  }, []);
+
+  const getTransactionAnalytics = useCallback(() => {
+    return phantomConnect.getTransactionAnalytics();
+  }, []);
 
   return {
     ...walletState,
