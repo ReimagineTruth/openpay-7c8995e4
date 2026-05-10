@@ -7,7 +7,7 @@ import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 
-type WithdrawalType = "PI" | "MRWN";
+type WithdrawalType = "PI" | "MRWN" | "OUSD";
 import BrandLogo from "@/components/BrandLogo";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { loadAppSecuritySettings, saveAppSecuritySettings } from "@/lib/appSecurity";
@@ -369,7 +369,8 @@ const Dashboard = () => {
   const swapFeeAmount = safeSwapAmount > 0 ? Number((safeSwapAmount * 0.02).toFixed(2)) : 0;
   const swapPayoutPiAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * OUSD_TO_PI : 0;
   const swapPayoutMrwnAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * (1 / 0.5) * OUSD_TO_PI : 0;
-  const showSwapPrice = swapWithdrawalType === "PI" || !mrwnComingSoon;
+  const swapPayoutOusdAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) : 0; // 1:1 for OUSD
+  const showSwapPrice = swapWithdrawalType === "PI" || swapWithdrawalType === "OUSD" || !mrwnComingSoon;
     const [refreshing, setRefreshing] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [agreementChecked, setAgreementChecked] = useState(false);
@@ -1764,8 +1765,8 @@ const Dashboard = () => {
     solanaPayEnabled ? baseOnrampRows : baseOnrampRows.filter((row) => row.key !== "Solana Pay");
   const basePaymentMethodRows: Array<{ key: BuyPaymentMethod; recommended?: boolean; disabled?: boolean }> = [
     { key: "Pi Payment", recommended: true },
-    { key: "MRWN" },
     { key: "OUSD" },
+    { key: "MRWN" },
     { key: "USDT" },
     { key: "USDC" },
     { key: "Ewallet" },
@@ -2719,21 +2720,111 @@ const Dashboard = () => {
 
       {activeSection === "swap" && (
         <div className="mx-4 mt-4 space-y-4">
-          <div className="paypal-surface rounded-3xl p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xl font-semibold text-foreground">Swap Withdrawal</p>
-              <div className="flex items-center gap-2">
+          <div className="paypal-surface rounded-3xl p-6">
+            <div className="mb-6">
+              <p className="text-xl font-semibold text-foreground mb-2">Swap Withdrawal</p>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <span>Select withdrawal type</span>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">Choose one</span>
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSwapWithdrawalType("PI")}
+                    className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
+                      swapWithdrawalType === "PI"
+                        ? "border-blue-400 bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl shadow-blue-500/25 scale-105"
+                        : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
+                    } cursor-pointer`}
+                  >
+                    {swapWithdrawalType === "PI" && (
+                      <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
+                        <div className="h-2 w-2 rounded-full bg-white"></div>
+                      </div>
+                    )}
+                    <div className="flex flex-col items-center justify-center gap-2 h-full">
+                      <div className={`relative transition-transform duration-300 ${
+                        swapWithdrawalType === "PI" ? "scale-110" : "group-hover:scale-105"
+                      }`}>
+                        <img src={PI_PAYMENT_ICON_URL} alt="PI" className="h-6 w-6 drop-shadow-md" />
+                      </div>
+                      <div className="text-center">
+                        <span className={`text-xs font-bold transition-colors duration-300 ${
+                          swapWithdrawalType === "PI" ? "text-blue-600" : "text-foreground group-hover:text-white"
+                        }`}>Pi Network</span>
+                        <div className={`text-[10px] transition-opacity duration-300 ${
+                          swapWithdrawalType === "PI" ? "opacity-100 text-blue-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
+                        }`}>Fast & Secure</div>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSwapWithdrawalType("OUSD")}
+                    className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
+                      swapWithdrawalType === "OUSD"
+                        ? "border-green-400 bg-gradient-to-br from-green-50 to-green-100 shadow-xl shadow-green-500/25 scale-105"
+                        : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
+                    } cursor-pointer`}
+                  >
+                    {swapWithdrawalType === "OUSD" && (
+                      <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <div className="h-2 w-2 rounded-full bg-white"></div>
+                      </div>
+                    )}
+                    <div className="flex flex-col items-center justify-center gap-2 h-full">
+                      <div className={`relative transition-transform duration-300 ${
+                        swapWithdrawalType === "OUSD" ? "scale-110" : "group-hover:scale-105"
+                      }`}>
+                        <img src={OUSD_ICON_URL} alt="OUSD" className="h-6 w-6 drop-shadow-md" />
+                      </div>
+                      <div className="text-center">
+                        <span className={`text-xs font-bold transition-colors duration-300 ${
+                          swapWithdrawalType === "OUSD" ? "text-green-600" : "text-foreground group-hover:text-white"
+                        }`}>OUSD</span>
+                        <div className={`text-[10px] transition-opacity duration-300 ${
+                          swapWithdrawalType === "OUSD" ? "opacity-100 text-green-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
+                        }`}>1:1 Rate</div>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSwapWithdrawalType("MRWN")}
+                    className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
+                      swapWithdrawalType === "MRWN"
+                        ? "border-purple-400 bg-gradient-to-br from-purple-50 to-purple-100 shadow-xl shadow-purple-500/25 scale-105"
+                        : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
+                    } cursor-pointer`}
+                  >
+                    {swapWithdrawalType === "MRWN" && (
+                      <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-purple-500 flex items-center justify-center">
+                        <div className="h-2 w-2 rounded-full bg-white"></div>
+                      </div>
+                    )}
+                    <div className="flex flex-col items-center justify-center gap-2 h-full">
+                      <div className={`relative transition-transform duration-300 ${
+                        swapWithdrawalType === "MRWN" ? "scale-110" : "group-hover:scale-105"
+                      }`}>
+                        <img src={MRWN_ICON_URL} alt="MRWN" className="h-6 w-6 drop-shadow-md" />
+                      </div>
+                      <div className="text-center">
+                        <span className={`text-xs font-bold transition-colors duration-300 ${
+                          swapWithdrawalType === "MRWN" ? "text-purple-600" : "text-foreground group-hover:text-white"
+                        }`}>MRWN</span>
+                        <div className={`text-[10px] transition-opacity duration-300 ${
+                          swapWithdrawalType === "MRWN" ? "opacity-100 text-purple-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
+                        }`}>Coming Soon</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2">
                 <span className="rounded-full border border-border/70 px-3 py-1 text-xs font-semibold text-muted-foreground">
                   OUSD → {swapWithdrawalType} payout
                 </span>
-                <select
-                  value={swapWithdrawalType}
-                  onChange={(e) => setSwapWithdrawalType(e.target.value as "PI" | "MRWN")}
-                  className="h-8 rounded-lg border border-border/70 bg-background px-2 text-xs font-medium text-foreground"
-                >
-                  <option value="PI">PI</option>
-                  <option value="MRWN">MRWN</option>
-                </select>
               </div>
             </div>
             <div className="rounded-2xl bg-secondary/30 p-4">
@@ -2758,10 +2849,13 @@ const Dashboard = () => {
                 <div className="mt-2 flex items-center justify-between">
                   <span className="font-semibold">You will receive</span>
                   <span className="inline-flex items-center gap-2 font-semibold text-paypal-blue">
+                    <img src={swapWithdrawalType === "PI" ? PI_PAYMENT_ICON_URL : swapWithdrawalType === "OUSD" ? OUSD_ICON_URL : MRWN_ICON_URL} alt={swapWithdrawalType} className="h-4 w-4" />
                     {(() => {
                     if (showSwapPrice) {
                       if ((swapWithdrawalType as WithdrawalType) === "PI") {
                         return <>{swapPayoutPiAmount.toFixed(4)} PI</>;
+                      } else if ((swapWithdrawalType as WithdrawalType) === "OUSD") {
+                        return <>{swapPayoutOusdAmount.toFixed(2)} OUSD</>;
                       } else if ((swapWithdrawalType as WithdrawalType) === "MRWN") {
                         return <>Coming Soon MRWN</>;
                       } else {
@@ -2770,6 +2864,8 @@ const Dashboard = () => {
                     } else {
                       if ((swapWithdrawalType as WithdrawalType) === "PI") {
                         return <>{swapPayoutPiAmount.toFixed(4)} PI</>;
+                      } else if ((swapWithdrawalType as WithdrawalType) === "OUSD") {
+                        return <>{swapPayoutOusdAmount.toFixed(2)} OUSD</>;
                       } else if ((swapWithdrawalType as WithdrawalType) === "MRWN") {
                         return <>Coming Soon MRWN</>;
                       } else {
