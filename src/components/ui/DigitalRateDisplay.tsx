@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Activity, ChevronUp, ChevronDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, ChevronUp, ChevronDown, Scale, Info } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
+import RegulatoryStatusModal from '@/components/RegulatoryStatusModal';
 
 interface DigitalRateDisplayProps {
   className?: string;
@@ -151,6 +153,7 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
   const [previousRates, setPreviousRates] = useState(rates);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isHovered, setIsHovered] = useState(false);
+  const [regulatoryModalOpen, setRegulatoryModalOpen] = useState(false);
 
   useEffect(() => {
     if (previousRates.piToOusd !== rates.piToOusd || previousRates.usdToOusd !== rates.usdToOusd) {
@@ -161,17 +164,18 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
 
 
   return (
-    <Collapsible 
-      open={open} 
-      onOpenChange={onOpenChange}
-      className={cn(
-        'relative bg-white rounded-2xl p-6 border border-gray-200 shadow-lg',
-        'transition-all duration-500 hover:shadow-xl hover-lift-enhanced',
-        className
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <>
+      <Collapsible 
+        open={open} 
+        onOpenChange={onOpenChange}
+        className={cn(
+          'relative bg-white rounded-2xl p-6 border border-gray-200 shadow-lg',
+          'transition-all duration-500 hover:shadow-xl hover-lift-enhanced',
+          className
+        )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -184,15 +188,29 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
           </div>
         </div>
         
-        <CollapsibleTrigger asChild>
-          <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
-            {open ? (
-              <ChevronUp className="h-5 w-5" />
-            ) : (
-              <ChevronDown className="h-5 w-5" />
-            )}
-          </button>
-        </CollapsibleTrigger>
+        <div className="flex items-center gap-2">
+          {/* Regulatory Status Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRegulatoryModalOpen(true)}
+            className="flex items-center gap-2 h-8 px-3 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <Scale className="h-4 w-4" />
+            <span className="text-xs font-medium">Regulatory</span>
+            <Info className="h-3 w-3" />
+          </Button>
+          
+          <CollapsibleTrigger asChild>
+            <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+              {open ? (
+                <ChevronUp className="h-5 w-5" />
+              ) : (
+                <ChevronDown className="h-5 w-5" />
+              )}
+            </button>
+          </CollapsibleTrigger>
+        </div>
       </div>
 
       {/* Collapsible Content */}
@@ -245,8 +263,14 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
           </div>
         </div>
       )}
+      </Collapsible>
 
-          </Collapsible>
+      {/* Regulatory Status Modal */}
+      <RegulatoryStatusModal 
+        open={regulatoryModalOpen} 
+        onOpenChange={setRegulatoryModalOpen} 
+      />
+    </>
   );
 };
 
@@ -257,15 +281,17 @@ export const CompactDigitalRateDisplay: React.FC<{
   liveRateClosed?: boolean;
 }> = ({ rates, className, liveRateClosed = false }) => {
   const [open, setOpen] = useState(false);
+  const [regulatoryModalOpen, setRegulatoryModalOpen] = useState(false);
 
   return (
-    <div
-      className={cn(
-        'bg-white rounded-xl border border-gray-200 shadow-sm',
-        'transition-all duration-300 hover:shadow-md hover-lift',
-        className
-      )}
-    >
+    <>
+      <div
+        className={cn(
+          'bg-white rounded-xl border border-gray-200 shadow-sm',
+          'transition-all duration-300 hover:shadow-md hover-lift',
+          className
+        )}
+      >
       {/* Header */}
       <div 
         className="flex items-center justify-between gap-4 p-3 cursor-pointer"
@@ -276,7 +302,7 @@ export const CompactDigitalRateDisplay: React.FC<{
           <span className="text-xs font-semibold text-gray-600">{liveRateClosed ? 'Rates' : 'Live Rates'}</span>
         </div>
         
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-2 text-xs">
           <div className="flex items-center gap-1">
             <span className="text-gray-600 font-medium">1 PI</span>
             <DigitalNumber value={rates.piToOusd.toFixed(2)} className="text-blue-600 font-bold" />
@@ -293,6 +319,20 @@ export const CompactDigitalRateDisplay: React.FC<{
         </div>
 
         <div className="flex items-center gap-1">
+          {/* Regulatory Status Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setRegulatoryModalOpen(true);
+            }}
+            className="flex items-center gap-1 h-6 px-2 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <Scale className="h-3 w-3" />
+            <Info className="h-2 w-2" />
+          </Button>
+          
           {open ? (
             <ChevronUp className="h-4 w-4 text-gray-600" />
           ) : (
@@ -318,6 +358,13 @@ export const CompactDigitalRateDisplay: React.FC<{
         </div>
       </div>
     </div>
+
+      {/* Regulatory Status Modal */}
+      <RegulatoryStatusModal 
+        open={regulatoryModalOpen} 
+        onOpenChange={setRegulatoryModalOpen} 
+      />
+    </>
   );
 };
 
