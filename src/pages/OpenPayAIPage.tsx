@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, Sparkles, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb, ChevronDown as ChevronIcon, Menu as MenuIcon } from "lucide-react";
+import { Send, Bot, User, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, Sparkles, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb, ChevronDown as ChevronIcon, Menu as MenuIcon, Compass, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
@@ -105,6 +105,9 @@ const OpenPayAIPage = () => {
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [pageActive, setPageActive] = useState(true);
   const [userInteracted, setUserInteracted] = useState(false);
+  const [commandNavigation, setCommandNavigation] = useState<{ route: string; featureName: string } | null>(null);
+  const [showCommandModal, setShowCommandModal] = useState(false);
+  const [pendingUserMessage, setPendingUserMessage] = useState<string>("");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -772,7 +775,7 @@ const OpenPayAIPage = () => {
       // Find recipient user
       const { data: recipientData, error: recipientError } = await supabase
         .from("profiles")
-        .select("user_id")
+        .select("id")
         .eq("username", pendingPayment.recipient)
         .single();
       
@@ -796,7 +799,7 @@ const OpenPayAIPage = () => {
       const { data: recipientWallet } = await supabase
         .from("wallets")
         .select("balance")
-        .eq("user_id", recipientData.user_id)
+        .eq("user_id", recipientData.id)
         .single();
       
       if (recipientWallet) {
@@ -806,13 +809,13 @@ const OpenPayAIPage = () => {
             balance: recipientWallet.balance + pendingPayment.amount,
             updated_at: new Date().toISOString()
           })
-          .eq("user_id", recipientData.user_id);
+          .eq("user_id", recipientData.id);
       } else {
         // Create wallet for recipient if they don't have one
         await supabase
           .from("wallets")
           .insert({
-            user_id: recipientData.user_id,
+            user_id: recipientData.id,
             balance: pendingPayment.amount,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -826,7 +829,7 @@ const OpenPayAIPage = () => {
         .insert({
           transaction_id: transactionId,
           sender_id: userId,
-          receiver_id: recipientData.user_id,
+          receiver_id: recipientData.id,
           amount: pendingPayment.amount,
           type: 'transfer',
           status: 'completed',
@@ -908,6 +911,59 @@ const OpenPayAIPage = () => {
       return `❌ Failed to process transaction. Please try again or contact support.`;
     }
   };
+  
+  // Help response generator
+  const generateHelpResponse = (): string => {
+    return `🤖 **OpenPay AI Commands & Features**\n\n## 🚀 Quick Navigation Commands\nJust type any of these to instantly open the feature:\n\n• **dashboard** or **home** - Main dashboard\n• **menu** - Main menu\n• **wallet** - Wallet balance\n• **cards** or **virtual cards** - Virtual cards\n• **transactions** or **history** - Transaction history\n• **send**, **transfer**, or **pay** - Send money\n• **topup**, **top up**, or **add funds** - Add funds\n• **merchant**, **business**, or **store** - Merchant POS\n• **pos** - Point of sale\n• **payment links** or **links** - Create payment links\n• **invoices** or **billing** - Send invoices\n• **support**, **help center**, or **contact** - Get help\n• **mining**, **earn**, or **ads** - Earn rewards\n• **staking** or **invest** - Investment options\n• **affiliate**, **referral**, or **rewards** - Referral program\n• **kyc**, **verification**, or **verify** - Identity verification\n• **security** or **privacy** - Security settings\n• **notifications** or **alerts** - Manage notifications\n• **profile** - User profile\n• **settings** - Account settings\n• **logout** or **sign out** - Sign out\n• **ai** or **openpay ai** - AI Assistant\n\n## 💸 **Direct Transaction Commands**\nSend money instantly with these commands:\n\n• **send to @username amount** - Send money to user\n• **transfer @username amount** - Transfer funds\n• **pay @username amount** - Make payment\n• **send username amount** - Alternative format\n\n## 💬 AI Assistant Commands\n• **balance** - Check current balance & predictions\n• **spending** - Analyze spending patterns\n• **health score** - Financial wellness check\n• **advice** - Get personalized recommendations\n• **forecast** - Balance predictions\n• **history** - Transaction insights\n\n## 💡 Tips\n• Type any command directly (e.g., "send money")\n• Use natural language (e.g., "I want to top up my account")\n• Ask questions about any feature\n• Type "help" anytime to see this menu\n• All commands navigate to exact pages - no 404 errors\n\n🎯 **Try these examples:**\n• "send to @john 50" - Send $50 to @john\n• "transfer @mary 25.50" - Send $25.50 to @mary\n• "pay @david 100 dollars" - Send $100 to @david\n• "Open wallet"\n• "Show me my transactions"\n• "I want to send money"\n• "Take me to merchant dashboard"\n• "Check my balance"\n• "Help me with KYC"\n• "Take me to AI assistant"`;
+  };
+  
+  // Handle command navigation confirmation
+  const handleNavigateToFeature = () => {
+    if (commandNavigation) {
+      navigate(commandNavigation.route);
+      setShowCommandModal(false);
+      setCommandNavigation(null);
+      setPendingUserMessage("");
+      
+      // Add confirmation message
+      const confirmationMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `🚀 **Navigating to ${commandNavigation.featureName}**\n\n✅ Taking you to the ${commandNavigation.featureName} page now.\n\n💡 You can always come back to this AI assistant by typing "ai" or "help".`,
+        timestamp: new Date().toISOString(),
+        type: "text"
+      };
+      
+      setMessages(prev => [...prev, confirmationMessage]);
+      saveMessage(confirmationMessage);
+    }
+  };
+  
+  // Handle AI fallback when user wants to stay in chat
+  const handleStayInChat = async () => {
+    setShowCommandModal(false);
+    const navigation = commandNavigation;
+    const originalMessage = pendingUserMessage;
+    
+    setCommandNavigation(null);
+    setPendingUserMessage("");
+    
+    if (navigation && originalMessage) {
+      // Process the original message with AI instead of navigating
+      const aiResponse = await callOpenPayAI(`Tell me about ${navigation.featureName}. ${originalMessage}`);
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `💬 **About ${navigation.featureName}:**\n\n${aiResponse}\n\n💡 If you'd like to go to the ${navigation.featureName} page later, just type "${navigation.route.replace('/', '')}" anytime!`,
+        timestamp: new Date().toISOString(),
+        type: "text"
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
+      saveMessage(aiMessage);
+    }
+  };
 
   const processUserMessage = async (message: string) => {
     const lowerMessage = message.toLowerCase().trim();
@@ -937,7 +993,19 @@ const OpenPayAIPage = () => {
     // Feature command recognition and routing - check AFTER payment commands
     const featureCommand = parseFeatureCommand(lowerMessage);
     if (featureCommand) {
-      return await executeFeatureCommand(featureCommand);
+      // Store the command info and show modal instead of direct navigation
+      const featureName = featureCommand.replace('/', '').charAt(0).toUpperCase() + featureCommand.replace('/', '').slice(1);
+      setCommandNavigation({ route: featureCommand, featureName });
+      setPendingUserMessage(message);
+      setShowCommandModal(true);
+      
+      // Return a temporary message while waiting for user decision
+      return `🤖 I can help you with ${featureName}! Would you like me to:
+
+📋 **Option 1:** Take you directly to the ${featureName} page
+💬 **Option 2:** Answer your questions about ${featureName} here in chat
+
+Please choose an option or let me know how you'd like to proceed!`;
     }
     
     // Help command
@@ -1268,8 +1336,8 @@ const OpenPayAIPage = () => {
           </div>
         </div>
 
-        {/* Enhanced Insights Sidebar - Desktop Only */}
-        <div className="hidden lg:block lg:w-80 bg-white border-r border-border/70 p-4 overflow-y-auto">
+        {/* Enhanced Insights Sidebar - Mobile & Desktop */}
+        <div className="lg:w-80 bg-white border-r border-border/70 p-4 overflow-y-auto lg:block block max-h-96 lg:max-h-none lg:h-auto">
           <div className="space-y-4">
             {/* User Profile Section */}
             <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
@@ -1454,8 +1522,8 @@ const OpenPayAIPage = () => {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-gray-50 min-h-0">
-          <ScrollArea className="flex-1 p-4">
+        <div className="flex-1 flex flex-col bg-gray-50 min-h-0 lg:min-h-0">
+          <ScrollArea className="flex-1 p-4 lg:p-6">
             <div className="max-w-3xl mx-auto space-y-4">
               {messages.length === 0 && (
                 <div className="text-center py-8">
@@ -1502,7 +1570,7 @@ const OpenPayAIPage = () => {
                         <Wallet className="h-5 w-5 text-blue-600" />
                         Banking Features
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 text-sm">
                         <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("What's my current balance and spending forecast?")}>
                           <p className="font-medium">💰 Smart Balance</p>
                           <p className="text-xs text-gray-600">View balance with AI predictions</p>
@@ -1535,7 +1603,7 @@ const OpenPayAIPage = () => {
                         <Store className="h-5 w-5 text-blue-600" />
                         Merchant Services
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 text-sm">
                         <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I optimize my merchant account for better sales?")}>
                           <p className="font-medium">🏪 Merchant Optimization</p>
                           <p className="text-xs text-gray-600">AI sales recommendations</p>
@@ -1568,8 +1636,8 @@ const OpenPayAIPage = () => {
                         <Coins className="h-5 w-5 text-blue-600" />
                         Earning & Rewards
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Optimize my mining strategy for maximum returns")}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 text-sm">
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Optimize my mining strategy for maximum returns?")}>
                           <p className="font-medium">⛏️ Smart Mining</p>
                           <p className="text-xs text-gray-600">AI-optimized mining</p>
                         </div>
@@ -1593,8 +1661,8 @@ const OpenPayAIPage = () => {
                         <Shield className="h-5 w-5 text-blue-600" />
                         Security & Support
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Analyze my account security and suggest improvements")}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 text-sm">
+                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Analyze my account security and suggest improvements?")}>
                           <p className="font-medium">🔐 Security Audit</p>
                           <p className="text-xs text-gray-600">AI security analysis</p>
                         </div>
@@ -2132,6 +2200,65 @@ const OpenPayAIPage = () => {
                 Confirm & Submit
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Command Navigation Confirmation Modal */}
+      <Dialog open={showCommandModal} onOpenChange={setShowCommandModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Compass className="h-5 w-5 text-blue-600" />
+              Feature Navigation
+            </DialogTitle>
+            <DialogDescription>
+              How would you like to proceed with {commandNavigation?.featureName}?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Compass className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-blue-900">Go to {commandNavigation?.featureName} Page</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Navigate directly to the {commandNavigation?.featureName} page for full functionality and features.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <MessageCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-green-900">Ask AI Assistant</h4>
+                  <p className="text-sm text-green-700 mt-1">
+                    Get information about {commandNavigation?.featureName} right here in the chat.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              onClick={handleStayInChat} 
+              className="flex-1"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Ask AI
+            </Button>
+            <Button 
+              onClick={handleNavigateToFeature} 
+              className="bg-blue-600 hover:bg-blue-700 flex-1"
+            >
+              <Compass className="h-4 w-4 mr-2" />
+              Navigate
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
