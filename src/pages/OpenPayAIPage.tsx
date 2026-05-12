@@ -737,16 +737,110 @@ const OpenPayAIPage = () => {
     if (!pendingPayment) return;
 
     try {
-      // Here you would integrate with your actual payment system
-      // For now, we'll simulate the transaction
+      const { data: walletData } = await supabase
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", userId)
+        .single();
       
-      toast.success(`Payment of $${pendingPayment.amount.toFixed(2)} to @${pendingPayment.recipient} initiated`);
+      const currentBalance = walletData?.balance || 0;
+      
+      if (pendingPayment.amount > currentBalance) {
+        toast.error("Insufficient balance. Transaction cancelled.");
+        setPendingPayment(null);
+        setShowPaymentConfirm(false);
+        return;
+      }
+      
+      // Deduct amount from sender's wallet
+      const { error: senderError } = await supabase
+        .from("wallets")
+        .update({ 
+          balance: currentBalance - pendingPayment.amount,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", userId);
+      
+      if (senderError) {
+        console.error('Failed to deduct from sender wallet:', senderError);
+        toast.error("Transaction failed. Please try again.");
+        setPendingPayment(null);
+        setShowPaymentConfirm(false);
+        return;
+      }
+      
+      // Find recipient user
+      const { data: recipientData, error: recipientError } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("username", pendingPayment.recipient)
+        .single();
+      
+      if (recipientError || !recipientData) {
+        // Refund if recipient not found
+        await supabase
+          .from("wallets")
+          .update({ 
+            balance: currentBalance,
+            updated_at: new Date().toISOString()
+          })
+          .eq("user_id", userId);
+        
+        toast.error(`User @${pendingPayment.recipient} not found. Transaction cancelled.`);
+        setPendingPayment(null);
+        setShowPaymentConfirm(false);
+        return;
+      }
+      
+      // Add to recipient's wallet
+      const { data: recipientWallet } = await supabase
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", recipientData.user_id)
+        .single();
+      
+      if (recipientWallet) {
+        await supabase
+          .from("wallets")
+          .update({ 
+            balance: recipientWallet.balance + pendingPayment.amount,
+            updated_at: new Date().toISOString()
+          })
+          .eq("user_id", recipientData.user_id);
+      } else {
+        // Create wallet for recipient if they don't have one
+        await supabase
+          .from("wallets")
+          .insert({
+            user_id: recipientData.user_id,
+            balance: pendingPayment.amount,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+      }
+      
+      // Create transaction record
+      const transactionId = `TXN${Date.now().toString().slice(-6)}`;
+      await supabase
+        .from("transactions")
+        .insert({
+          transaction_id: transactionId,
+          sender_id: userId,
+          receiver_id: recipientData.user_id,
+          amount: pendingPayment.amount,
+          type: 'transfer',
+          status: 'completed',
+          description: `Transfer to @${pendingPayment.recipient}`,
+          created_at: new Date().toISOString()
+        });
+      
+      toast.success(`Payment of $${pendingPayment.amount.toFixed(2)} to @${pendingPayment.recipient} completed!`);
       
       // Add confirmation message
       const confirmationMessage: Message = {
         id: (Date.now() + 2).toString(),
         role: "assistant",
-        content: `✅ **Transaction Completed Successfully!**\n\n📋 **Payment Details:**\n• Recipient: @${pendingPayment.recipient}\n• Amount: $${pendingPayment.amount.toFixed(2)}\n• Status: Completed\n• Transaction ID: TXN${Date.now().toString().slice(-6)}\n• Time: ${new Date().toLocaleString()}\n\n💰 **Updated Balance:** Available in your wallet\n\n🎯 **What's next?**\n• Check your transaction history\n• Send more money\n• View your balance\n• Get financial advice`,
+        content: `✅ **Transaction Completed Successfully!**\n\n📋 **Payment Details:**\n• Recipient: @${pendingPayment.recipient}\n• Amount: $${pendingPayment.amount.toFixed(2)}\n• Status: Completed\n• Transaction ID: ${transactionId}\n• Time: ${new Date().toLocaleString()}\n\n💰 **Updated Balance:** $${(currentBalance - pendingPayment.amount).toFixed(2)}\n\n🎯 **What's next?**\n• Check your transaction history\n• Send more money\n• View your balance\n• Get financial advice`,
         timestamp: new Date().toISOString(),
         type: "text"
       };
@@ -770,6 +864,7 @@ const OpenPayAIPage = () => {
       }
       
     } catch (error) {
+      console.error('Transaction error:', error);
       toast.error("Payment failed. Please try again.");
       setPendingPayment(null);
       setShowPaymentConfirm(false);
