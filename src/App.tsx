@@ -106,7 +106,7 @@ import DeveloperDashboardPage from "./pages/DeveloperDashboardPage";
 import AppDeveloperDashboardPage from "./pages/AppDeveloperDashboardPage";
 import AppPaymentCheckoutPage from "./pages/AppPaymentCheckoutPage";
 import AppPaymentSuccessPage from "./pages/AppPaymentSuccessPage";
-import NotFound from "./pages/NotFound";
+import NotFoundPage from "./pages/NotFoundPage";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { useRealtimePushNotifications } from "./hooks/useRealtimePushNotifications";
 import AppSecurityGate from "./components/AppSecurityGate";
@@ -490,7 +490,7 @@ const AppRoutes = () => {
         } />
         <Route path="/app-payment/checkout" element={<AppPaymentCheckoutPage />} />
         <Route path="/app-payment/success" element={<AppPaymentSuccessPage />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       </PageTransition>
       <AppSecurityGate />

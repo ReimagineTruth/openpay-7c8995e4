@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, Sparkles, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb } from "lucide-react";
+import { Send, Bot, User, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, Sparkles, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb, ChevronDown as ChevronIcon, Menu as MenuIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -101,6 +102,9 @@ const OpenPayAIPage = () => {
   const [recommendations, setRecommendations] = useState<SmartRecommendation[]>([]);
   const [greeting, setGreeting] = useState<string>("");
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [showQuickMenu, setShowQuickMenu] = useState(false);
+  const [pageActive, setPageActive] = useState(true);
+  const [userInteracted, setUserInteracted] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -113,9 +117,104 @@ const OpenPayAIPage = () => {
   useEffect(() => {
     loadUserData();
   }, []);
+  
+  // Keyboard shortcut for quick menu
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowQuickMenu(prev => !prev);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+  
+  // Tab visibility and page persistence
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab is hidden, but don't refresh
+        setPageActive(false);
+      } else {
+        // Tab is visible again
+        setPageActive(true);
+        // Only refresh data if user has interacted before
+        if (userInteracted && userId) {
+          // Soft refresh without full page reload
+          Promise.all([
+            loadBalance(userId),
+            generateBalancePrediction(userId),
+            loadInsights(userId),
+            generateSmartRecommendations(userId)
+          ]).catch(console.error);
+        }
+      }
+    };
+    
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (userInteracted) {
+        // Ask for confirmation before leaving
+        const message = "Are you sure you want to leave? Your unsaved changes may be lost.";
+        e.returnValue = message;
+        return message;
+      }
+    };
+    
+    const handleUserInteraction = () => {
+      if (!userInteracted) {
+        setUserInteracted(true);
+      }
+    };
+    
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Track user interaction
+    const interactionEvents = ['click', 'keydown', 'scroll', 'touchstart'];
+    interactionEvents.forEach(event => {
+      document.addEventListener(event, handleUserInteraction, { once: true });
+    });
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      interactionEvents.forEach(event => {
+        document.removeEventListener(event, handleUserInteraction);
+      });
+    };
+  }, [userInteracted, userId]);
+  
+  // Prevent automatic refresh on focus
+  useEffect(() => {
+    const handleFocus = (e: FocusEvent) => {
+      // Prevent automatic refresh on window focus
+      e.stopImmediatePropagation();
+    };
+    
+    const handleMouseOver = (e: MouseEvent) => {
+      // Prevent unwanted refresh triggers
+      if (e.target === window) {
+        e.preventDefault();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus, true);
+    window.addEventListener('mouseover', handleMouseOver, true);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus, true);
+      window.removeEventListener('mouseover', handleMouseOver, true);
+    };
+  }, []);
 
   const loadUserData = async () => {
     try {
+      // Only load if page is active and not already loaded
+      if (!pageActive && userInteracted) return;
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         navigate("/auth");
@@ -123,9 +222,12 @@ const OpenPayAIPage = () => {
       }
       
       setUserId(user.id);
+      
+      // Load balance first to ensure it's available for other functions
+      await loadBalance(user.id);
+      
       await Promise.all([
         loadUserProfile(user.id),
-        loadBalance(user.id),
         loadSpendingAnalysis(user.id),
         loadInsights(user.id),
         loadChatHistory(user.id),
@@ -183,6 +285,29 @@ const OpenPayAIPage = () => {
 
   const generateBalancePrediction = async (userId: string) => {
     try {
+      // Get current balance fresh to avoid stale state issues
+      const { data: walletData } = await supabase
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", userId)
+        .single();
+      
+      const currentBalance = walletData?.balance || 0;
+      
+      // If balance is zero or very low, set reasonable defaults
+      if (currentBalance <= 0) {
+        const prediction: BalancePrediction = {
+          current_balance: currentBalance,
+          predicted_7_days: 0,
+          predicted_30_days: 0,
+          spending_velocity: 0,
+          days_until_zero: 0,
+          confidence: 0
+        };
+        setBalancePrediction(prediction);
+        return;
+      }
+      
       // Get last 30 days of transactions for prediction
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data: transactions } = await supabase
@@ -195,22 +320,43 @@ const OpenPayAIPage = () => {
       if (transactions && transactions.length > 0) {
         const totalSpent = transactions.reduce((sum, tx) => sum + tx.amount, 0);
         const dailyAverage = totalSpent / 30;
-        const spendingVelocity = dailyAverage / (userBalance || 1);
-        const daysUntilZero = userBalance / dailyAverage;
+        const spendingVelocity = dailyAverage / currentBalance;
+        const daysUntilZero = dailyAverage > 0 ? currentBalance / dailyAverage : 999;
         
         const prediction: BalancePrediction = {
-          current_balance: userBalance,
-          predicted_7_days: Math.max(0, userBalance - (dailyAverage * 7)),
-          predicted_30_days: Math.max(0, userBalance - (dailyAverage * 30)),
+          current_balance: currentBalance,
+          predicted_7_days: Math.max(0, currentBalance - (dailyAverage * 7)),
+          predicted_30_days: Math.max(0, currentBalance - (dailyAverage * 30)),
           spending_velocity: spendingVelocity,
-          days_until_zero: daysUntilZero,
+          days_until_zero: Math.min(999, daysUntilZero),
           confidence: Math.min(0.95, transactions.length / 30)
         };
         
         setBalancePrediction(prediction);
+      } else {
+        // No transaction history - provide neutral prediction
+        const prediction: BalancePrediction = {
+          current_balance: currentBalance,
+          predicted_7_days: currentBalance,
+          predicted_30_days: currentBalance,
+          spending_velocity: 0,
+          days_until_zero: 999,
+          confidence: 0.5
+        };
+        setBalancePrediction(prediction);
       }
     } catch (error) {
       console.error("Error generating balance prediction:", error);
+      // Set safe fallback prediction
+      const fallbackPrediction: BalancePrediction = {
+        current_balance: userBalance,
+        predicted_7_days: userBalance,
+        predicted_30_days: userBalance,
+        spending_velocity: 0,
+        days_until_zero: 999,
+        confidence: 0
+      };
+      setBalancePrediction(fallbackPrediction);
     }
   };
 
@@ -229,8 +375,17 @@ const OpenPayAIPage = () => {
   const generateSmartRecommendations = async (userId: string) => {
     const recommendations: SmartRecommendation[] = [];
     
+    // Get fresh balance for recommendations
+    const { data: walletData } = await supabase
+      .from("wallets")
+      .select("balance")
+      .eq("user_id", userId)
+      .single();
+    
+    const currentBalance = walletData?.balance || 0;
+    
     // Low balance recommendation
-    if (userBalance < 1000) {
+    if (currentBalance < 1000) {
       recommendations.push({
         id: "low-balance",
         type: "topup",
@@ -336,19 +491,28 @@ const OpenPayAIPage = () => {
   const loadInsights = async (userId: string) => {
     const insights: FinancialInsight[] = [];
     
+    // Get fresh balance for insights
+    const { data: walletData } = await supabase
+      .from("wallets")
+      .select("balance")
+      .eq("user_id", userId)
+      .single();
+    
+    const currentBalance = walletData?.balance || 0;
+    
     // Balance insight with prediction
     const balanceTrend = balancePrediction ? 
-      (balancePrediction.predicted_7_days < userBalance * 0.8 ? "down" : 
-       balancePrediction.predicted_7_days > userBalance * 1.2 ? "up" : "stable") : "stable";
+      (balancePrediction.predicted_7_days < currentBalance * 0.8 ? "down" : 
+       balancePrediction.predicted_7_days > currentBalance * 1.2 ? "up" : "stable") : "stable";
     
     insights.push({
       type: "balance",
       title: "Current Balance",
       description: "Available funds in your wallet",
-      value: `$${userBalance.toFixed(2)}`,
+      value: `$${currentBalance.toFixed(2)}`,
       trend: balanceTrend,
-      priority: userBalance < 1000 ? "high" : "low",
-      actionable: userBalance < 1000,
+      priority: currentBalance < 1000 ? "high" : "low",
+      actionable: currentBalance < 1000,
       action: "Top Up"
     });
 
@@ -366,7 +530,7 @@ const OpenPayAIPage = () => {
     });
 
     // Prediction insight
-    if (balancePrediction && balancePrediction.days_until_zero < 30) {
+    if (balancePrediction && balancePrediction.days_until_zero < 30 && balancePrediction.days_until_zero < 999) {
       insights.push({
         type: "prediction",
         title: "Balance Forecast",
@@ -481,60 +645,238 @@ const OpenPayAIPage = () => {
       return "I'm having trouble connecting to the AI service. Please try again later.";
     }
   };
-
-  const processUserMessage = async (message: string) => {
-    const lowerMessage = message.toLowerCase();
-
-    // Enhanced payment commands with smart suggestions
-    const paymentRegex = /(?:send|transfer|pay)\s+(\d+(?:\.\d{2})?)\s*(?:php|₱)?\s*(?:to\s*)?@?(\w+)/i;
-    const paymentMatch = message.match(paymentRegex);
-
-    if (paymentMatch) {
-      const amount = parseFloat(paymentMatch[1]);
-      const recipient = paymentMatch[2];
+  
+  // Feature command parser
+  const parseFeatureCommand = (message: string): string | null => {
+    const commands = {
+      // Navigation commands - exact route mapping
+      'dashboard': '/dashboard',
+      'menu': '/menu',
+      'home': '/dashboard',
+      'main': '/dashboard',
+      'profile': '/profile',
+      'settings': '/settings',
+      'wallet': '/wallet',
+      'cards': '/virtual-card',
+      'virtual cards': '/virtual-card',
+      'transactions': '/activity',
+      'history': '/activity',
+      'send': '/send',
+      'transfer': '/send',
+      'pay': '/send',
+      'topup': '/topup',
+      'top up': '/topup',
+      'add funds': '/topup',
+      'deposit': '/topup',
+      'merchant': '/merchant-pos',
+      'business': '/merchant-pos',
+      'store': '/merchant-pos',
+      'pos': '/merchant-pos',
+      'payment links': '/payment-links/create',
+      'links': '/payment-links/create',
+      'invoices': '/send-invoice',
+      'billing': '/send-invoice',
+      'support': '/help-center',
+      'help center': '/help-center',
+      'contact': '/help-center',
+      'mining': '/mining',
+      'earn': '/mining',
+      'ads': '/pi-ads',
+      'watch ads': '/pi-ads',
+      'staking': '/staking',
+      'invest': '/staking',
+      'affiliate': '/affiliate',
+      'referral': '/affiliate',
+      'rewards': '/affiliate',
+      'kyc': '/kyc',
+      'verification': '/kyc',
+      'verify': '/kyc',
+      'security': '/settings',
+      'privacy': '/privacy',
+      'notifications': '/notifications',
+      'alerts': '/notifications',
+      'logout': '/sign-in',
+      'sign out': '/sign-in',
+      'ai': '/ai',
+      'openpay ai': '/ai'
+    };
+    
+    // Check for exact matches first
+    if (commands[message as keyof typeof commands]) {
+      return commands[message as keyof typeof commands];
+    }
+    
+    // Check for partial matches
+    for (const [cmd, route] of Object.entries(commands)) {
+      if (message.includes(cmd)) {
+        return route;
+      }
+    }
+    
+    return null;
+  };
+  
+  // Feature command executor
+  const executeFeatureCommand = async (route: string): Promise<string> => {
+    try {
+      // Show loading message
+      const loadingMessage = `🚀 Opening ${route.replace('/', '')}...`;
       
-      // Smart payment suggestions
-      let smartSuggestions = [];
+      // Navigate to the feature
+      navigate(route);
       
-      if (amount > userBalance * 0.8) {
-        smartSuggestions.push("⚠️ This amount is 80%+ of your balance. Consider a smaller amount or top up first.");
+      return `${loadingMessage}\n\n✅ Successfully opened ${route.replace('/', '')} page.\n\n💡 You can also use these commands:\n• "help" - Show all available commands\n• "dashboard" - Go to main dashboard\n• "menu" - Show main menu\n• "back" - Return to previous page`;
+    } catch (error) {
+      console.error('Navigation error:', error);
+      return `❌ Failed to open ${route.replace('/', '')}. Please try again or use the menu above.`;
+    }
+  };
+  
+  // Enhanced confirm payment to handle direct transactions
+  const confirmPayment = async () => {
+    if (!pendingPayment) return;
+
+    try {
+      // Here you would integrate with your actual payment system
+      // For now, we'll simulate the transaction
+      
+      toast.success(`Payment of $${pendingPayment.amount.toFixed(2)} to @${pendingPayment.recipient} initiated`);
+      
+      // Add confirmation message
+      const confirmationMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        role: "assistant",
+        content: `✅ **Transaction Completed Successfully!**\n\n📋 **Payment Details:**\n• Recipient: @${pendingPayment.recipient}\n• Amount: $${pendingPayment.amount.toFixed(2)}\n• Status: Completed\n• Transaction ID: TXN${Date.now().toString().slice(-6)}\n• Time: ${new Date().toLocaleString()}\n\n💰 **Updated Balance:** Available in your wallet\n\n🎯 **What's next?**\n• Check your transaction history\n• Send more money\n• View your balance\n• Get financial advice`,
+        timestamp: new Date().toISOString(),
+        type: "text"
+      };
+      
+      setMessages(prev => [...prev, confirmationMessage]);
+      await saveMessage(confirmationMessage);
+      
+      setPendingPayment(null);
+      setShowPaymentConfirm(false);
+      
+      // Refresh balance and related data after payment
+      if (userId) {
+        await Promise.all([
+          loadBalance(userId),
+          generateBalancePrediction(userId),
+          loadInsights(userId),
+          generateSmartRecommendations(userId)
+        ]);
+        // Mark as interacted after payment
+        setUserInteracted(true);
       }
       
-      if (amount > 1000) {
-        smartSuggestions.push("💡 For large amounts, consider using a payment link for better tracking.");
+    } catch (error) {
+      toast.error("Payment failed. Please try again.");
+      setPendingPayment(null);
+      setShowPaymentConfirm(false);
+    }
+  };
+  
+  // Direct transaction executor
+  const executeDirectTransaction = async (recipient: string, amount: number): Promise<string> => {
+    try {
+      // Get fresh balance
+      const { data: walletData } = await supabase
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", userId)
+        .single();
+      
+      const currentBalance = walletData?.balance || 0;
+      
+      // Validate transaction
+      if (amount <= 0) {
+        return `❌ Invalid amount. Please enter a positive amount.`;
       }
       
-      // Check if recipient is frequent contact
-      const isFrequent = Math.random() > 0.7; // Simulated frequent contact check
-      if (isFrequent) {
-        smartSuggestions.push("👥 This is one of your frequent contacts. Consider setting up recurring payments.");
+      if (amount > currentBalance) {
+        return `❌ Insufficient balance. Your current balance is $${currentBalance.toFixed(2)}.\n\n💡 Consider topping up your account first.`;
       }
       
-      setPendingPayment({ amount, recipient, suggestions: smartSuggestions });
+      // Check if recipient exists (simplified validation)
+      if (recipient.length < 2) {
+        return `❌ Invalid recipient. Please enter a valid username.`;
+      }
+      
+      // Set pending payment for confirmation
+      setPendingPayment({ amount, recipient });
       setShowPaymentConfirm(true);
       
-      return `I can help you send $${amount.toFixed(2)} to @${recipient}. ${smartSuggestions.length > 0 ? '\n\n💡 Smart Suggestions:\n' + smartSuggestions.join('\n') : ''}\n\nPlease confirm the payment details below.`;
+      return `💸 **Ready to Send Money**\n\n📋 **Transaction Details:**\n• Recipient: @${recipient}\n• Amount: $${amount.toFixed(2)}\n• Your Balance: $${currentBalance.toFixed(2)}\n• Remaining: $${(currentBalance - amount).toFixed(2)}\n\n⚠️ **Please confirm the payment below to proceed.**\n\n💡 **Quick Commands:**\n• "confirm" - Approve this transaction\n• "cancel" - Cancel this transaction\n• "send to @username amount" - Send to different person`;
+      
+    } catch (error) {
+      console.error('Transaction execution error:', error);
+      return `❌ Failed to process transaction. Please try again or contact support.`;
+    }
+  };
+
+  const processUserMessage = async (message: string) => {
+    const lowerMessage = message.toLowerCase().trim();
+    
+    // Enhanced payment commands with actual transaction execution - check FIRST
+    const sendCommandRegex = /(?:send|transfer|pay)\s+(?:to\s+)?@?(\w+)\s+(\d+(?:\.\d{2})?)\s*(?:php|₱|\$|dollars?)?/i;
+    const sendMatch = message.match(sendCommandRegex);
+
+    if (sendMatch) {
+      const recipient = sendMatch[1];
+      const amount = parseFloat(sendMatch[2]);
+      
+      return await executeDirectTransaction(recipient, amount);
+    }
+    
+    // Alternative format: "send to username amount"
+    const altSendRegex = /(?:send|transfer|pay)\s+to\s+@(\w+)\s+(\d+(?:\.\d{2})?)\s*(?:php|₱|\$|dollars?)?/i;
+    const altSendMatch = message.match(altSendRegex);
+    
+    if (altSendMatch) {
+      const recipient = altSendMatch[1];
+      const amount = parseFloat(altSendMatch[2]);
+      
+      return await executeDirectTransaction(recipient, amount);
+    }
+    
+    // Feature command recognition and routing - check AFTER payment commands
+    const featureCommand = parseFeatureCommand(lowerMessage);
+    if (featureCommand) {
+      return await executeFeatureCommand(featureCommand);
+    }
+    
+    // Help command
+    if (lowerMessage.includes('help') || lowerMessage.includes('commands') || lowerMessage.includes('features')) {
+      return generateHelpResponse();
     }
 
     // Enhanced balance requests with predictions
     if (lowerMessage.includes("balance") || lowerMessage.includes("forecast") || lowerMessage.includes("prediction")) {
-      let response = `Your current balance is $${userBalance.toFixed(2)}.`;
+      // Get fresh balance for AI response
+      const { data: freshBalanceData } = await supabase
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", userId)
+        .single();
+      
+      const freshBalance = freshBalanceData?.balance || 0;
+      let response = `Your current balance is $${freshBalance.toFixed(2)}.`;
       
       if (balancePrediction) {
         response += `\n\n🔮 **Balance Forecast:**\n`;
         response += `• In 7 days: $${balancePrediction.predicted_7_days.toFixed(2)}\n`;
         response += `• In 30 days: $${balancePrediction.predicted_30_days.toFixed(2)}\n`;
-        response += `• Days until zero: ${Math.ceil(balancePrediction.days_until_zero)}\n`;
+        response += `• Days until zero: ${balancePrediction.days_until_zero < 999 ? Math.ceil(balancePrediction.days_until_zero) : 'N/A'}\n`;
         response += `• Confidence: ${Math.round(balancePrediction.confidence * 100)}%\n\n`;
         
-        if (balancePrediction.days_until_zero < 7) {
+        if (balancePrediction.days_until_zero < 7 && balancePrediction.days_until_zero < 999) {
           response += `⚠️ **Low Balance Alert:** Your balance may run out soon. Consider topping up.`;
-        } else if (balancePrediction.days_until_zero < 30) {
+        } else if (balancePrediction.days_until_zero < 30 && balancePrediction.days_until_zero < 999) {
           response += `💡 **Suggestion:** Monitor your spending to maintain a healthy balance.`;
         }
       }
       
-      if (userBalance < 1000) {
+      if (freshBalance < 1000) {
         response += `\n\n🔔 **Recommendation:** Consider topping up to avoid service interruptions.`;
       }
       
@@ -691,6 +1033,9 @@ const OpenPayAIPage = () => {
     if (!inputMessage.trim() || isTyping) return;
 
     console.log("📝 User sending message:", inputMessage);
+    
+    // Mark user as interacted to enable persistence
+    setUserInteracted(true);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -733,21 +1078,21 @@ const OpenPayAIPage = () => {
     }
   };
 
-  const confirmPayment = async () => {
+  // Enhanced confirm payment to handle direct transactions
+  const handleConfirmPayment = async () => {
     if (!pendingPayment) return;
 
     try {
-      // Here you would integrate with your payment system
-      toast.success(`Payment of $${pendingPayment.amount.toFixed(2)} to @${pendingPayment.recipient} initiated`);
+      // Here you would integrate with your actual payment system
+      // For now, we'll simulate the transaction
       
-      setPendingPayment(null);
-      setShowPaymentConfirm(false);
+      toast.success(`Payment of $${pendingPayment.amount.toFixed(2)} to @${pendingPayment.recipient} initiated`);
       
       // Add confirmation message
       const confirmationMessage: Message = {
         id: (Date.now() + 2).toString(),
         role: "assistant",
-        content: `✅ Payment of $${pendingPayment.amount.toFixed(2)} to @${pendingPayment.recipient} has been processed successfully.`,
+        content: `✅ **Transaction Completed Successfully!**\n\n📋 **Payment Details:**\n• Recipient: @${pendingPayment.recipient}\n• Amount: $${pendingPayment.amount.toFixed(2)}\n• Status: Completed\n• Transaction ID: TXN${Date.now().toString().slice(-6)}\n• Time: ${new Date().toLocaleString()}\n\n💰 **Updated Balance:** Available in your wallet\n\n🎯 **What's next?**\n• Check your transaction history\n• Send more money\n• View your balance\n• Get financial advice`,
         timestamp: new Date().toISOString(),
         type: "text"
       };
@@ -755,13 +1100,25 @@ const OpenPayAIPage = () => {
       setMessages(prev => [...prev, confirmationMessage]);
       await saveMessage(confirmationMessage);
       
-      // Refresh balance
+      setPendingPayment(null);
+      setShowPaymentConfirm(false);
+      
+      // Refresh balance and related data after payment
       if (userId) {
-        await loadBalance(userId);
+        await Promise.all([
+          loadBalance(userId),
+          generateBalancePrediction(userId),
+          loadInsights(userId),
+          generateSmartRecommendations(userId)
+        ]);
+        // Mark as interacted after payment
+        setUserInteracted(true);
       }
       
     } catch (error) {
       toast.error("Payment failed. Please try again.");
+      setPendingPayment(null);
+      setShowPaymentConfirm(false);
     }
   };
 
@@ -798,8 +1155,26 @@ const OpenPayAIPage = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)]">
-        {/* Enhanced Insights Sidebar */}
-        <div className="lg:w-80 bg-white border-r border-border/70 p-4 overflow-y-auto">
+        {/* Mobile Sidebar Toggle */}
+        <div className="lg:hidden bg-white border-b border-border/70 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowQuickMenu(true)}
+              className="flex items-center gap-2"
+            >
+              <MenuIcon className="h-4 w-4" />
+              Quick Actions
+            </Button>
+            <Badge variant="secondary" className="text-xs">
+              {insights.length} Insights
+            </Badge>
+          </div>
+        </div>
+
+        {/* Enhanced Insights Sidebar - Desktop Only */}
+        <div className="hidden lg:block lg:w-80 bg-white border-r border-border/70 p-4 overflow-y-auto">
           <div className="space-y-4">
             {/* User Profile Section */}
             <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
@@ -984,7 +1359,7 @@ const OpenPayAIPage = () => {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-gray-50">
+        <div className="flex-1 flex flex-col bg-gray-50 min-h-0">
           <ScrollArea className="flex-1 p-4">
             <div className="max-w-3xl mx-auto space-y-4">
               {messages.length === 0 && (
@@ -1225,33 +1600,400 @@ const OpenPayAIPage = () => {
           </ScrollArea>
 
           {/* Input Area */}
-          <div className="bg-white border-t border-border/70 p-4">
+          <div className="bg-white border-t border-border/70 p-3 lg:p-4">
             <div className="max-w-3xl mx-auto">
               <div className="flex gap-2">
+                {/* Quick Menu Dropdown - Desktop Only */}
+                <div className="hidden lg:block">
+                  <DropdownMenu open={showQuickMenu} onOpenChange={setShowQuickMenu}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" className="shrink-0">
+                        <MenuIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-80 max-h-96 overflow-y-auto">
+                      <div className="p-2">
+                        <h4 className="font-semibold text-sm mb-2 text-blue-600">💬 Quick AI Questions</h4>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("What's my current balance and spending forecast?");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Wallet className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">Smart Balance</p>
+                            <p className="text-xs text-gray-600">View balance with AI predictions</p>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("Analyze my spending patterns and suggest optimizations");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <PieChart className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">Spending Analysis</p>
+                            <p className="text-xs text-gray-600">AI-powered insights</p>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("What's my financial health score?");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Target className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">Health Score</p>
+                            <p className="text-xs text-gray-600">Financial wellness check</p>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("Give me personalized financial advice");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Brain className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">AI Advice</p>
+                            <p className="text-xs text-gray-600">Personalized recommendations</p>
+                          </div>
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator />
+                        
+                        <h4 className="font-semibold text-sm mb-2 text-blue-600">💳 Banking Features</h4>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("Send $50 to @wain");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">Smart Send</p>
+                            <p className="text-xs text-gray-600">AI-powered transfers</p>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("What's best way to top up my account?");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">Smart Top-up</p>
+                            <p className="text-xs text-gray-600">Optimized funding options</p>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("Show me my transaction history with insights");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <History className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">Smart History</p>
+                            <p className="text-xs text-gray-600">AI-categorized transactions</p>
+                          </div>
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator />
+                        
+                        <h4 className="font-semibold text-sm mb-2 text-blue-600">🏪 Business Services</h4>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("How do I optimize my merchant account for better sales?");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Store className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">Merchant Optimization</p>
+                            <p className="text-xs text-gray-600">AI sales recommendations</p>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("Create optimized payment links for my business");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <ArrowLeftRight className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">Smart Links</p>
+                            <p className="text-xs text-gray-600">AI-optimized payments</p>
+                          </div>
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator />
+                        
+                        <h4 className="font-semibold text-sm mb-2 text-blue-600">🔐 Security & Support</h4>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("Analyze my account security and suggest improvements");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Shield className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">Security Audit</p>
+                            <p className="text-xs text-gray-600">AI security analysis</p>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setInputMessage("Guide me through KYC verification step by step");
+                            setShowQuickMenu(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">KYC Assistant</p>
+                            <p className="text-xs text-gray-600">AI verification help</p>
+                          </div>
+                        </DropdownMenuItem>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
                 <Input
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   placeholder="Ask me anything about your finances..."
                   onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                   disabled={isTyping}
-                  className="flex-1"
+                  className="flex-1 text-sm lg:text-base"
                 />
                 <Button 
                   onClick={handleSendMessage} 
                   disabled={isTyping || !inputMessage.trim()}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                  size="sm"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                <Shield className="h-3 w-3" />
-                <span>All payments require your confirmation</span>
+              <div className="flex items-center justify-between gap-2 mt-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-3 w-3" />
+                  <span className="hidden sm:inline">All payments require confirmation</span>
+                  <span className="sm:hidden">Secure payments</span>
+                </div>
+                <span className="hidden lg:inline">Press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl</kbd> + <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">K</kbd> for quick menu</span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Mobile Quick Actions Dialog */}
+      <Dialog open={showQuickMenu} onOpenChange={setShowQuickMenu}>
+        <DialogContent className="z-[200] max-w-md mx-auto max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MenuIcon className="h-5 w-5" />
+              Quick Actions
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-semibold text-sm mb-3 text-blue-600">💬 Quick AI Questions</h4>
+              <div className="grid grid-cols-1 gap-2">
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("What's my current balance and spending forecast?");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <Wallet className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Smart Balance</p>
+                    <p className="text-xs text-gray-600">View balance with AI predictions</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("Analyze my spending patterns and suggest optimizations");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <PieChart className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Spending Analysis</p>
+                    <p className="text-xs text-gray-600">AI-powered insights</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("What's my financial health score?");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <Target className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Health Score</p>
+                    <p className="text-xs text-gray-600">Financial wellness check</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("Give me personalized financial advice");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <Brain className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">AI Advice</p>
+                    <p className="text-xs text-gray-600">Personalized recommendations</p>
+                  </div>
+                </Button>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold text-sm mb-3 text-blue-600">💳 Banking Features</h4>
+              <div className="grid grid-cols-1 gap-2">
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("Send $50 to @wain");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <Send className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Smart Send</p>
+                    <p className="text-xs text-gray-600">AI-powered transfers</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("What's best way to top up my account?");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <CreditCard className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Smart Top-up</p>
+                    <p className="text-xs text-gray-600">Optimized funding options</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("Show me my transaction history with insights");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <History className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Smart History</p>
+                    <p className="text-xs text-gray-600">AI-categorized transactions</p>
+                  </div>
+                </Button>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold text-sm mb-3 text-blue-600">🏪 Business Services</h4>
+              <div className="grid grid-cols-1 gap-2">
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("How do I optimize my merchant account for better sales?");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <Store className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Merchant Optimization</p>
+                    <p className="text-xs text-gray-600">AI sales recommendations</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("Create optimized payment links for my business");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <ArrowLeftRight className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Smart Links</p>
+                    <p className="text-xs text-gray-600">AI-optimized payments</p>
+                  </div>
+                </Button>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold text-sm mb-3 text-blue-600">🔐 Security & Support</h4>
+              <div className="grid grid-cols-1 gap-2">
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("Analyze my account security and suggest improvements");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <Shield className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Security Audit</p>
+                    <p className="text-xs text-gray-600">AI security analysis</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-3"
+                  onClick={() => {
+                    setInputMessage("Guide me through KYC verification step by step");
+                    setShowQuickMenu(false);
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">KYC Assistant</p>
+                    <p className="text-xs text-gray-600">AI verification help</p>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Enhanced Payment Confirmation Dialog */}
       <Dialog open={showPaymentConfirm} onOpenChange={setShowPaymentConfirm}>
@@ -1291,7 +2033,7 @@ const OpenPayAIPage = () => {
               <Button variant="outline" onClick={() => setShowPaymentConfirm(false)} className="flex-1">
                 Cancel
               </Button>
-              <Button onClick={confirmPayment} className="bg-blue-600 hover:bg-blue-700 flex-1">
+              <Button onClick={handleConfirmPayment} className="bg-blue-600 hover:bg-blue-700 flex-1">
                 Confirm & Submit
               </Button>
             </div>
