@@ -350,10 +350,11 @@ const Dashboard = () => {
   const [showShortcuts, setShowShortcuts] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("dashboard_shortcuts_visible");
-      return saved !== null ? JSON.parse(saved) : true;
+      return saved !== null ? JSON.parse(saved) : false;
     }
-    return true;
+    return false;
   });
+  const [showDashboardExplore, setShowDashboardExplore] = useState(false);
   const [showLiveRates, setShowLiveRates] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("dashboard_live_rates_visible");
@@ -377,6 +378,7 @@ const Dashboard = () => {
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showReceiveOptions, setShowReceiveOptions] = useState(false);
+  const [showRecentActivity, setShowRecentActivity] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinAction, setPinAction] = useState<(() => Promise<void>) | null>(null);
   const [showBuyOptions, setShowBuyOptions] = useState(false);
@@ -1448,6 +1450,76 @@ const Dashboard = () => {
     setReceiptOpen(true);
   };
 
+  const renderActivityRow = (tx: Transaction) => {
+    const inferredMethod = inferTopupPaymentMethod(tx);
+    const methodIcon = getPaymentMethodIcon(inferredMethod);
+    const isOut = tx.is_sent && !tx.is_topup;
+    const amtRaw = isOut ? (tx.sender_amount ?? tx.amount) : (tx.receiver_amount ?? tx.amount);
+    const amt = Number(amtRaw || 0);
+    const code = String((isOut ? tx.sender_currency_code : tx.receiver_currency_code) || tx.currency_code || "OUSD").toUpperCase();
+    const ousdAmount = convertAmountToOusd(amt, code, currencies);
+    const activityLabel = tx.is_topup ? "Buy" : tx.is_sent ? "Sent" : "Received";
+
+    return (
+      <button
+        key={tx.id}
+        type="button"
+        onClick={() => {
+          setShowRecentActivity(false);
+          showReceipt(tx);
+        }}
+        className={`flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-secondary/40 ${
+          tx.is_sent ? "hover:shadow-blue-500/10" : tx.is_topup ? "hover:shadow-green-500/10" : "hover:shadow-purple-500/10"
+        }`}
+      >
+        <div className="relative h-10 w-10 shrink-0">
+          {tx.is_topup && methodIcon ? (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-paypal-light-blue/50 bg-secondary overflow-hidden">
+              <img
+                src={methodIcon.src}
+                alt=""
+                className="h-6 w-6 object-contain"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  if (!methodIcon.fallback) return;
+                  e.currentTarget.src = methodIcon.fallback;
+                }}
+              />
+            </div>
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-paypal-light-blue/50 bg-secondary">
+              <span className="text-xs font-bold text-secondary-foreground">{getInitials(tx.other_name || "Unknown")}</span>
+            </div>
+          )}
+          {tx.other_avatar_url ? (
+            <img
+              src={tx.other_avatar_url}
+              alt={tx.other_name || "Profile"}
+              className="absolute inset-0 h-full w-full rounded-full border border-paypal-light-blue/50 object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          ) : null}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-foreground">{tx.other_name}</p>
+          <p className="text-xs text-muted-foreground">
+            {activityLabel} · {format(new Date(tx.created_at), "MMM d, yyyy")}
+            {tx.other_username ? ` · @${tx.other_username}` : ""}
+          </p>
+          {tx.note ? <p className="mt-0.5 text-xs text-muted-foreground">{toPreviewText(tx.note)}</p> : null}
+        </div>
+        <div className="shrink-0 text-right">
+          <p className={`font-semibold ${isOut ? "text-red-500" : "text-paypal-success"}`}>
+            {balanceHidden ? "****" : `${isOut ? "-" : "+"}${formatCompactCurrency(ousdAmount)}`}
+          </p>
+          <p className="text-[10px] font-semibold uppercase text-muted-foreground">{getPiCodeLabel(currency.code)}</p>
+        </div>
+      </button>
+    );
+  };
+
   const copyAccountNumber = async () => {
     if (!userAccount?.account_number) return;
     try {
@@ -1868,6 +1940,10 @@ const Dashboard = () => {
     Boolean(userAccount?.account_username) &&
     !isPlaceholderOpenPayAccount(userAccount?.account_name || "", userAccount?.account_username || "");
   const pendingCollectionCount = pendingRequestCount + pendingInvoiceCount;
+  const pendingSecurityItems =
+    Number(!hasRealOpenPayAccount) +
+    Number(kycStatus !== "approved") +
+    Number(!virtualCardActive);
   const recommendationCards = [
     !hasRealOpenPayAccount
       ? {
@@ -1956,7 +2032,60 @@ const Dashboard = () => {
     icon: typeof TrendingUp;
     onClick: () => void;
   }>;
-
+  const dashboardFeatureCards = [
+    {
+      id: "wallet-snapshot",
+      title: "Wallet Snapshot",
+      description: walletView === "merchant" ? "Merchant balances, outgoing transfers, and available funds." : "Personal balance, savings access, and quick fund movement.",
+      stat: walletView === "merchant"
+        ? `${balanceHidden ? "****" : formatCompactCurrency(selectedMerchantBalance?.available_balance ?? 0)} available`
+        : `${balanceHidden ? "****" : formatCompactCurrency(balance)} live balance`,
+      badge: walletView === "merchant" ? "Merchant" : "Personal",
+      icon: Wallet,
+      onClick: () => setActiveSection("wallet" as DashboardSection),
+    },
+    {
+      id: "security-kyc",
+      title: "KYC & Security",
+      description: "Track verification progress and unlock higher-trust account features.",
+      stat:
+        kycStatus === "approved"
+          ? "Verified profile"
+          : pendingSecurityItems > 0
+            ? `${pendingSecurityItems} setup items left`
+            : "Review status",
+      badge: kycStatus === "approved" ? "Secure" : "Action needed",
+      icon: ShieldCheck,
+      onClick: () => navigate(kycStatus === "not_submitted" ? "/kyc" : "/kyc-status"),
+    },
+    {
+      id: "collections",
+      title: "Collections & Requests",
+      description: "Stay on top of receive links, invoices, and money requests waiting for action.",
+      stat: pendingCollectionCount > 0 ? `${pendingCollectionCount} pending items` : "No pending collections",
+      badge: pendingCollectionCount > 0 ? "Pending" : "Clear",
+      icon: QrCode,
+      onClick: () => setShowReceiveOptions(true),
+    },
+    {
+      id: "payments-commerce",
+      title: "Cards & Commerce",
+      description: "Jump into cards, merchant tools, and checkout-ready wallet features.",
+      stat: virtualCardActive ? "Virtual card active" : "Card setup available",
+      badge: virtualCardActive ? "Ready" : "Cards",
+      icon: CreditCard,
+      onClick: () => navigate("/virtual-card"),
+    },
+  ] as Array<{
+    id: string;
+    title: string;
+    description: string;
+    stat: string;
+    badge: string;
+    icon: typeof Wallet;
+    onClick: () => void;
+  }>;
+  const recentActivityCount = transactions.length;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-paypal-blue pb-64 text-white animate-fadeIn">
@@ -3356,7 +3485,7 @@ const Dashboard = () => {
             </div>
           )}
 
-          <div className="relative mt-10 flex justify-center">
+          <div className="relative mt-6 flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
               onClick={toggleBalanceHidden}
@@ -3364,6 +3493,27 @@ const Dashboard = () => {
             >
               {balanceHidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               {balanceHidden ? "Show balance" : "Hide balance"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowRecentActivity(true)}
+              className="ios-active flex items-center gap-2 rounded-full border border-paypal-blue/20 bg-paypal-blue/10 px-6 py-2.5 text-sm font-bold text-paypal-blue transition-colors hover:bg-paypal-blue/15"
+            >
+              <Activity className="h-4 w-4" />
+              Recent activity
+              {recentActivityCount > 0 && (
+                <span className="rounded-full bg-paypal-blue px-2 py-0.5 text-[10px] font-black text-white">
+                  {recentActivityCount > 99 ? "99+" : recentActivityCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/ledger")}
+              className="ios-active flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-white/15 backdrop-blur-sm"
+            >
+              <BookOpen className="h-4 w-4" />
+              OpenLedger
             </button>
           </div>
         </div>
@@ -3533,6 +3683,38 @@ const Dashboard = () => {
         </div>
       )}
 
+      <div className="mx-4 mt-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="h-5 w-5 text-white" />
+            <h2 className="text-lg font-bold text-white">OpenPay Dashboard</h2>
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-white/70">Core sections</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {dashboardFeatureCards.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={item.onClick}
+              className="paypal-surface rounded-[2rem] p-4 text-left text-foreground transition hover:-translate-y-0.5 hover:bg-secondary/50"
+            >
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-paypal-blue/10 text-paypal-blue shadow-inner">
+                  <item.icon className="h-6 w-6" />
+                </div>
+                <span className="rounded-full bg-paypal-blue/10 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-paypal-blue">
+                  {item.badge}
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-foreground">{item.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+              <p className="mt-4 text-sm font-semibold text-paypal-blue">{item.stat}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Analytics and Mining Cards */}
       <Collapsible 
         open={showShortcuts} 
@@ -3602,91 +3784,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div className="mt-6 px-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">Recent activity</h2>
-          <button onClick={() => navigate("/activity")} className="text-sm font-semibold text-white/80 hover:text-white">
-            See more
-          </button>
-        </div>
-
-        {transactions.length === 0 ? (
-          <p className="py-8 text-center text-white/70 animate-fadeInUp">No transactions yet</p>
-        ) : (
-          <div className="paypal-surface divide-y divide-border/70 rounded-3xl animate-fadeInUp">
-            {transactions.map((tx, index) => (
-                            <button key={tx.id} onClick={() => showReceipt(tx)} className={`flex w-full items-center justify-between p-4 text-left hover:bg-secondary/40 transition hover-lift stagger-item ${tx.is_sent ? 'hover:shadow-blue-500/20' : tx.is_topup ? 'hover:shadow-green-500/20' : 'hover:shadow-purple-500/20'}`}>
-                <div className="flex items-center gap-3">
-                  <div className="relative h-10 w-10">
-                    {(() => {
-                      const inferredMethod = inferTopupPaymentMethod(tx);
-                      const methodIcon = getPaymentMethodIcon(inferredMethod);
-                      if (tx.is_topup && methodIcon) {
-                        return (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-paypal-light-blue/50 bg-secondary overflow-hidden">
-                            <img
-                              src={methodIcon.src}
-                              alt=""
-                              className="h-6 w-6 object-contain"
-                              referrerPolicy="no-referrer"
-                              onError={(e) => {
-                                if (!methodIcon.fallback) return;
-                                e.currentTarget.src = methodIcon.fallback;
-                              }}
-                            />
-                          </div>
-                        );
-                      }
-                      return (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-paypal-light-blue/50 bg-secondary">
-                          <span className="text-xs font-bold text-secondary-foreground">
-                            {getInitials(tx.other_name || "Unknown")}
-                          </span>
-                        </div>
-                      );
-                    })()}
-                    {tx.other_avatar_url ? (
-                      <img
-                        src={tx.other_avatar_url}
-                        alt={tx.other_name || "Profile"}
-                        className="absolute inset-0 h-full w-full rounded-full border border-paypal-light-blue/50 object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">{tx.other_name}</p>
-                    {tx.other_username && <p className="text-xs text-muted-foreground">@{tx.other_username}</p>}
-                    <p className="text-xs text-muted-foreground">{format(new Date(tx.created_at), "MMM d, yyyy")}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {tx.is_topup ? "Buy" : tx.is_sent ? "Payment" : "Received"}
-                    </p>
-                    {tx.note && <p className="text-xs text-muted-foreground">{toPreviewText(tx.note)}</p>}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className={`font-semibold ${tx.is_sent && !tx.is_topup ? "text-red-500" : "text-paypal-success"}`}>
-                    {balanceHidden ? "****" : (() => {
-                      const isOut = tx.is_sent && !tx.is_topup;
-                      const amtRaw = isOut ? (tx.sender_amount ?? tx.amount) : (tx.receiver_amount ?? tx.amount);
-                      const amt = Number(amtRaw || 0);
-                      const code = String((isOut ? tx.sender_currency_code : tx.receiver_currency_code) || tx.currency_code || 'OUSD').toUpperCase();
-                      const ousdAmount = convertAmountToOusd(amt, code, currencies);
-                      const sign = isOut ? '-' : '+';
-                      return sign + formatCompactCurrency(ousdAmount);
-                    })()}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">
-                    {getPiCodeLabel(currency.code)}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
 
         </>
       )}
@@ -3714,6 +3811,49 @@ const Dashboard = () => {
       
       <BottomNav active="home" />
       <TransactionReceipt open={receiptOpen} onOpenChange={setReceiptOpen} receipt={receiptData} />
+
+      <Dialog open={showRecentActivity} onOpenChange={setShowRecentActivity}>
+        <DialogContent className="top-auto bottom-0 flex max-h-[85vh] translate-y-0 flex-col rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 sm:max-w-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0">
+          <DialogTitle className="text-center text-2xl font-bold text-foreground">Recent activity</DialogTitle>
+          <DialogDescription className="text-center text-sm text-muted-foreground">
+            {recentActivityCount > 0
+              ? `${recentActivityCount} transaction${recentActivityCount === 1 ? "" : "s"} on your wallet`
+              : "Your wallet transactions will appear here"}
+          </DialogDescription>
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
+            {transactions.length === 0 ? (
+              <div className="rounded-2xl border border-border/70 bg-secondary/30 px-4 py-10 text-center">
+                <p className="text-sm text-muted-foreground">No transactions yet</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRecentActivity(false);
+                    setShowReceiveOptions(true);
+                  }}
+                  className="mt-3 text-sm font-semibold text-paypal-blue"
+                >
+                  Receive your first payment
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-border/70 divide-y divide-border/70">
+                {transactions.map((tx) => renderActivityRow(tx))}
+              </div>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 h-11 w-full rounded-2xl font-bold"
+            onClick={() => {
+              setShowRecentActivity(false);
+              navigate("/activity");
+            }}
+          >
+            See full activity
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showReceiveOptions} onOpenChange={setShowReceiveOptions}>
         <DialogContent className="top-auto bottom-0 translate-y-0 rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 sm:max-w-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0">
