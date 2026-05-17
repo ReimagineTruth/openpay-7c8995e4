@@ -11,6 +11,8 @@ interface DigitalRateDisplayProps {
     piToOusd: number;
     usdToOusd: number;
     currencyTag: string;
+    currencyCode?: string;
+    currencyRate?: number;
   };
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -156,11 +158,33 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
   const [regulatoryModalOpen, setRegulatoryModalOpen] = useState(false);
 
   useEffect(() => {
-    if (previousRates.piToOusd !== rates.piToOusd || previousRates.usdToOusd !== rates.usdToOusd) {
+    if (
+      previousRates.piToOusd !== rates.piToOusd ||
+      previousRates.usdToOusd !== rates.usdToOusd ||
+      previousRates.currencyCode !== rates.currencyCode ||
+      previousRates.currencyRate !== rates.currencyRate
+    ) {
       setPreviousRates(rates);
       setLastUpdate(new Date());
     }
   }, [rates, previousRates]);
+
+  const displayCurrencyCode = (rates.currencyCode || "OUSD").toUpperCase();
+  const displayCurrencyRate = Number.isFinite(Number(rates.currencyRate)) ? Number(rates.currencyRate) : rates.piToOusd;
+  const primaryCard =
+    displayCurrencyCode === "OUSD"
+      ? { from: "PI", to: "OUSD", rate: rates.piToOusd, previousRate: previousRates.piToOusd }
+      : { from: "PI", to: displayCurrencyCode, rate: displayCurrencyRate, previousRate: previousRates.currencyRate ?? previousRates.piToOusd };
+  const secondaryRate =
+    displayCurrencyCode === "OUSD"
+      ? rates.usdToOusd
+      : displayCurrencyRate > 0
+        ? 1 / displayCurrencyRate
+        : 0;
+  const secondaryCard =
+    displayCurrencyCode === "OUSD"
+      ? { from: "USD", to: "OUSD", rate: secondaryRate, previousRate: previousRates.usdToOusd }
+      : { from: displayCurrencyCode, to: "OUSD", rate: secondaryRate, previousRate: previousRates.currencyRate && previousRates.currencyRate > 0 ? 1 / previousRates.currencyRate : secondaryRate };
 
 
   return (
@@ -232,19 +256,19 @@ export const DigitalRateDisplay: React.FC<DigitalRateDisplayProps> = ({
         {/* Rate Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <RateCard
-            from="PI"
-            to="OUSD"
-            rate={rates.piToOusd}
-            previousRate={previousRates.piToOusd}
-            trend={rates.piToOusd > previousRates.piToOusd ? 'up' : rates.piToOusd < previousRates.piToOusd ? 'down' : 'stable'}
+            from={primaryCard.from}
+            to={primaryCard.to}
+            rate={primaryCard.rate}
+            previousRate={primaryCard.previousRate}
+            trend={primaryCard.rate > (primaryCard.previousRate ?? primaryCard.rate) ? 'up' : primaryCard.rate < (primaryCard.previousRate ?? primaryCard.rate) ? 'down' : 'stable'}
           />
           
           <RateCard
-            from="USD"
-            to="OUSD"
-            rate={rates.usdToOusd}
-            previousRate={previousRates.usdToOusd}
-            trend={rates.usdToOusd > previousRates.usdToOusd ? 'up' : rates.usdToOusd < previousRates.usdToOusd ? 'down' : 'stable'}
+            from={secondaryCard.from}
+            to={secondaryCard.to}
+            rate={secondaryCard.rate}
+            previousRate={secondaryCard.previousRate}
+            trend={secondaryCard.rate > (secondaryCard.previousRate ?? secondaryCard.rate) ? 'up' : secondaryCard.rate < (secondaryCard.previousRate ?? secondaryCard.rate) ? 'down' : 'stable'}
           />
         </div>
       </CollapsibleContent>

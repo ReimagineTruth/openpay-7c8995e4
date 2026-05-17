@@ -1,50 +1,41 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, Camera, CheckCircle, AlertCircle, User, FileText, Shield, Eye, EyeOff, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Camera, CheckCircle, FileText, Loader2, Shield, Upload, User } from "lucide-react";
 import { toast } from "sonner";
-import BottomNav from "@/components/BottomNav";
-import { supabase } from "@/integrations/supabase/client";
-import BrandLogo from "@/components/BrandLogo";
 
-interface KycApplication {
-  id?: string;
-  user_id: string;
-  full_name: string;
-  date_of_birth: string;
-  nationality: string;
-  residential_address: string;
-  phone_number: string;
-  email: string;
-  occupation: string;
-  employer_name?: string;
-  source_of_funds: string;
-  annual_income_range: string;
-  political_exposure: boolean;
-  id_document_type: string;
-  id_document_number: string;
-  id_document_issue_date: string;
-  id_document_expiry_date: string;
-  id_document_front_url?: string;
-  id_document_back_url?: string;
-  selfie_url?: string;
-  proof_of_address_url?: string;
-  status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'additional_info_required';
-  rejection_reason?: string;
-  admin_notes?: string;
-  submitted_at: string;
-  reviewed_at?: string;
-  reviewed_by?: string;
-}
+import { Button } from "@/components/ui/button";
+import BottomNav from "@/components/BottomNav";
+import BrandLogo from "@/components/BrandLogo";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  KYC_DOCUMENT_TYPE_OPTIONS,
+  KYC_INCOME_RANGE_OPTIONS,
+  KYC_SOURCE_OF_FUNDS_OPTIONS,
+  type KycApplicationRecord,
+  isLikelyStoragePath,
+  normalizeKycApplication,
+} from "@/lib/kyc";
+
+type UploadField = "id_document_front" | "id_document_back" | "selfie" | "proof_of_address";
+
+type UploadState = Record<`${UploadField}_url`, string>;
+
+const emptyUploadState: UploadState = {
+  id_document_front_url: "",
+  id_document_back_url: "",
+  selfie_url: "",
+  proof_of_address_url: "",
+};
 
 const KycPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [currentApplication, setCurrentApplication] = useState<KycApplication | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  
-  // Form state
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [uploadingField, setUploadingField] = useState<UploadField | null>(null);
+  const [currentApplication, setCurrentApplication] = useState<KycApplicationRecord | null>(null);
+  const [storedDocumentPaths, setStoredDocumentPaths] = useState<UploadState>(emptyUploadState);
+  const [uploadedUrls, setUploadedUrls] = useState<UploadState>(emptyUploadState);
+
   const [formData, setFormData] = useState({
     full_name: "",
     date_of_birth: "",
@@ -63,156 +54,222 @@ const KycPage = () => {
     id_document_expiry_date: "",
   });
 
-  // File upload state
-  const [uploadedFiles, setUploadedFiles] = useState({
-    id_document_front: null as File | null,
-    id_document_back: null as File | null,
-    selfie: null as File | null,
-    proof_of_address: null as File | null,
-  });
+  const canEditExisting = currentApplication?.status === "additional_info_required";
+  const showReadOnlyState =
+    currentApplication && currentApplication.status !== "rejected" && currentApplication.status !== "additional_info_required";
 
-  const [uploadedUrls, setUploadedUrls] = useState({
-    id_document_front_url: "",
-    id_document_back_url: "",
-    selfie_url: "",
-    proof_of_address_url: "",
-  });
+  const prefilledName = useMemo(() => formData.full_name.trim(), [formData.full_name]);
 
-  useEffect(() => {
-    loadExistingApplication();
-  }, []);
-
-  const loadExistingApplication = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // For now, we'll use a mock implementation since the table doesn't exist yet
-      // This will be updated after we create the database schema
-      console.log('Loading existing KYC application for user:', user.id);
-      
-      // Mock data for testing - remove this after database schema is created
-      const mockData = null;
-      
-      if (mockData) {
-        setCurrentApplication(mockData);
-        setFormData({
-          full_name: mockData.full_name || "",
-          date_of_birth: mockData.date_of_birth || "",
-          nationality: mockData.nationality || "",
-          residential_address: mockData.residential_address || "",
-          phone_number: mockData.phone_number || "",
-          email: mockData.email || "",
-          occupation: mockData.occupation || "",
-          employer_name: mockData.employer_name || "",
-          source_of_funds: mockData.source_of_funds || "",
-          annual_income_range: mockData.annual_income_range || "",
-          political_exposure: mockData.political_exposure || false,
-          id_document_type: mockData.id_document_type || "",
-          id_document_number: mockData.id_document_number || "",
-          id_document_issue_date: mockData.id_document_issue_date || "",
-          id_document_expiry_date: mockData.id_document_expiry_date || "",
-        });
-        setUploadedUrls({
-          id_document_front_url: mockData.id_document_front_url || "",
-          id_document_back_url: mockData.id_document_back_url || "",
-          selfie_url: mockData.selfie_url || "",
-          proof_of_address_url: mockData.proof_of_address_url || "",
-        });
-      }
-    } catch (error) {
-      console.error('Error loading KYC application:', error);
-    }
-  };
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({
+  const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
-  const handleFileUpload = async (fileType: string, file: File) => {
-    if (!file) return;
+  const buildSignedUrl = async (pathOrUrl: string | null | undefined) => {
+    if (!pathOrUrl) return "";
+    if (!isLikelyStoragePath(pathOrUrl)) return String(pathOrUrl);
+    const { data, error } = await supabase.storage.from("kyc-documents").createSignedUrl(String(pathOrUrl), 3600);
+    if (error) {
+      console.warn("Failed to sign KYC document URL", error);
+      return "";
+    }
+    return data.signedUrl;
+  };
 
-    setUploading(true);
+  const populateFromApplication = async (application: KycApplicationRecord | null) => {
+    if (!application) return;
+
+    setFormData({
+      full_name: application.full_name || "",
+      date_of_birth: application.date_of_birth || "",
+      nationality: application.nationality || "",
+      residential_address: application.residential_address || "",
+      phone_number: application.phone_number || "",
+      email: application.email || "",
+      occupation: application.occupation || "",
+      employer_name: application.employer_name || "",
+      source_of_funds: application.source_of_funds || "",
+      annual_income_range: application.annual_income_range || "",
+      political_exposure: Boolean(application.political_exposure),
+      id_document_type: application.id_document_type || "",
+      id_document_number: application.id_document_number || "",
+      id_document_issue_date: application.id_document_issue_date || "",
+      id_document_expiry_date: application.id_document_expiry_date || "",
+    });
+
+    const paths: UploadState = {
+      id_document_front_url: application.id_document_front_url || "",
+      id_document_back_url: application.id_document_back_url || "",
+      selfie_url: application.selfie_url || "",
+      proof_of_address_url: application.proof_of_address_url || "",
+    };
+    setStoredDocumentPaths(paths);
+
+    const [front, back, selfie, address] = await Promise.all([
+      buildSignedUrl(paths.id_document_front_url),
+      buildSignedUrl(paths.id_document_back_url),
+      buildSignedUrl(paths.selfie_url),
+      buildSignedUrl(paths.proof_of_address_url),
+    ]);
+    setUploadedUrls({
+      id_document_front_url: front,
+      id_document_back_url: back,
+      selfie_url: selfie,
+      proof_of_address_url: address,
+    });
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      setInitialLoading(true);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          navigate("/sign-in?mode=signin", { replace: true });
+          return;
+        }
+
+        const [{ data: profile }, { data: appRows, error: appError }] = await Promise.all([
+          supabase.from("profiles").select("full_name, username").eq("id", user.id).maybeSingle(),
+          (supabase as any)
+            .from("kyc_applications")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("submitted_at", { ascending: false })
+            .limit(1),
+        ]);
+
+        if (appError) {
+          throw appError;
+        }
+
+        setFormData((prev) => ({
+          ...prev,
+          full_name: prev.full_name || String(profile?.full_name || ""),
+          email: prev.email || String(user.email || ""),
+        }));
+
+        const latest = Array.isArray(appRows) && appRows[0] ? normalizeKycApplication(appRows[0]) : null;
+        setCurrentApplication(latest);
+        await populateFromApplication(latest);
+      } catch (error) {
+        console.error("Error loading KYC application:", error);
+        toast.error("Failed to load your KYC application");
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    void load();
+  }, [navigate]);
+
+  const handleFileUpload = async (field: UploadField, file: File) => {
+    setUploadingField(field);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${fileType}_${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('kyc-documents')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const fileName = `${user.id}/${field}_${Date.now()}.${fileExt}`;
+      const { error } = await supabase.storage.from("kyc-documents").upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+      if (error) throw error;
 
-      if (uploadError) throw uploadError;
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("kyc-documents")
+        .createSignedUrl(fileName, 3600);
+      if (signedError) throw signedError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('kyc-documents')
-        .getPublicUrl(fileName);
-
-      setUploadedUrls(prev => ({
+      setStoredDocumentPaths((prev) => ({
         ...prev,
-        [`${fileType}_url`]: publicUrl
+        [`${field}_url`]: fileName,
+      }));
+      setUploadedUrls((prev) => ({
+        ...prev,
+        [`${field}_url`]: signedData.signedUrl,
       }));
 
-      setUploadedFiles(prev => ({
-        ...prev,
-        [fileType]: file
-      }));
-
-      toast.success(`${fileType.replace('_', ' ')} uploaded successfully`);
+      toast.success(`${field.replace(/_/g, " ")} uploaded`);
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error(`Failed to upload ${fileType.replace('_', ' ')}`);
+      console.error("Upload error:", error);
+      toast.error(`Failed to upload ${field.replace(/_/g, " ")}`);
     } finally {
-      setUploading(false);
+      setUploadingField(null);
     }
   };
 
+  const validateForm = () => {
+    if (
+      !formData.full_name ||
+      !formData.date_of_birth ||
+      !formData.nationality ||
+      !formData.residential_address ||
+      !formData.phone_number ||
+      !formData.email ||
+      !formData.occupation ||
+      !formData.source_of_funds ||
+      !formData.annual_income_range ||
+      !formData.id_document_type ||
+      !formData.id_document_number ||
+      !formData.id_document_issue_date ||
+      !formData.id_document_expiry_date
+    ) {
+      toast.error("Please fill in all required fields");
+      return false;
+    }
+    if (!storedDocumentPaths.id_document_front_url || !storedDocumentPaths.selfie_url) {
+      toast.error("Upload ID document front and selfie before submitting");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
-    if (!formData.full_name || !formData.date_of_birth || !formData.nationality || 
-        !formData.residential_address || !formData.phone_number || !formData.email ||
-        !formData.occupation || !formData.source_of_funds || !formData.annual_income_range ||
-        !formData.id_document_type || !formData.id_document_number || 
-        !formData.id_document_issue_date || !formData.id_document_expiry_date) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    if (!uploadedUrls.id_document_front_url || !uploadedUrls.selfie_url) {
-      toast.error('Please upload ID document front and selfie');
-      return;
-    }
-
+    if (!validateForm()) return;
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
 
-      // For now, we'll store the application in localStorage since the table doesn't exist yet
-      // This will be updated after we create the database schema
-      const applicationData: KycApplication = {
+      const payload = {
         user_id: user.id,
         ...formData,
-        ...uploadedUrls,
-        status: 'pending',
-        submitted_at: new Date().toISOString(),
+        employer_name: formData.employer_name || null,
+        ...storedDocumentPaths,
+        status: "pending",
+        rejection_reason: null,
+        admin_notes: null,
+        reviewed_at: null,
+        reviewed_by: null,
       };
 
-      // Mock submission - store in localStorage for now
-      localStorage.setItem('kyc_application', JSON.stringify(applicationData));
+      if (currentApplication?.id && canEditExisting) {
+        const { error } = await (supabase as any)
+          .from("kyc_applications")
+          .update(payload)
+          .eq("id", currentApplication.id)
+          .eq("user_id", user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("kyc_applications").insert(payload);
+        if (error) throw error;
+      }
 
-      toast.success('KYC application submitted successfully');
-      navigate('/kyc-status');
+      toast.success("KYC application submitted successfully");
+      navigate("/kyc-status");
     } catch (error) {
-      console.error('Submit error:', error);
-      toast.error('Failed to submit KYC application');
+      console.error("Submit error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to submit KYC application");
     } finally {
       setLoading(false);
     }
@@ -220,25 +277,66 @@ const KycPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved': return 'text-green-600 bg-green-50';
-      case 'rejected': return 'text-red-600 bg-red-50';
-      case 'under_review': return 'text-blue-600 bg-blue-50';
-      case 'additional_info_required': return 'text-orange-600 bg-orange-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case "approved":
+        return "text-green-700 bg-green-50";
+      case "rejected":
+        return "text-red-700 bg-red-50";
+      case "under_review":
+        return "text-blue-700 bg-blue-50";
+      case "additional_info_required":
+        return "text-orange-700 bg-orange-50";
+      default:
+        return "text-gray-700 bg-gray-50";
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'approved': return 'Approved';
-      case 'rejected': return 'Rejected';
-      case 'under_review': return 'Under Review';
-      case 'additional_info_required': return 'Additional Info Required';
-      default: return 'Pending';
-    }
+  const renderUploadCard = (field: UploadField, label: string, required = false, accept = "image/*,.pdf", icon = Upload) => {
+    const preview = uploadedUrls[`${field}_url`];
+    const Icon = icon;
+    return (
+      <div>
+        <label className="mb-2 block text-sm font-medium text-foreground">
+          {label} {required ? "*" : ""}
+        </label>
+        <div className="rounded-lg border-2 border-dashed border-border p-4">
+          <input
+            type="file"
+            accept={accept}
+            onChange={(e) => e.target.files?.[0] && void handleFileUpload(field, e.target.files[0])}
+            className="hidden"
+            id={field}
+          />
+          <label htmlFor={field} className="cursor-pointer">
+            <div className="flex flex-col items-center">
+              {preview ? (
+                <div className="relative">
+                  <img src={preview} alt={label} className="h-24 w-24 rounded object-cover" />
+                  <CheckCircle className="absolute -right-2 -top-2 h-6 w-6 text-green-600" />
+                </div>
+              ) : (
+                <>
+                  {uploadingField === field ? <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" /> : <Icon className="mb-2 h-8 w-8 text-muted-foreground" />}
+                  <p className="text-sm text-muted-foreground">Click to upload {label.toLowerCase()}</p>
+                </>
+              )}
+            </div>
+          </label>
+        </div>
+      </div>
+    );
   };
 
-  if (currentApplication && currentApplication.status !== 'rejected') {
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-[#f8fbff] pb-24">
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-paypal-blue" />
+        </div>
+      </div>
+    );
+  }
+
+  if (showReadOnlyState && currentApplication) {
     return (
       <div className="min-h-screen bg-[#f8fbff] pb-24">
         <div className="px-4 pt-6">
@@ -247,7 +345,7 @@ const KycPage = () => {
               <button onClick={() => navigate("/menu")} className="paypal-surface flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
                 <ArrowLeft className="h-5 w-5 text-foreground" />
               </button>
-              <h1 className="text-xl font-bold text-paypal-dark">KYC Status</h1>
+              <h1 className="text-xl font-bold text-paypal-dark">KYC Verification</h1>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
               <BrandLogo className="h-full w-full text-paypal-blue" />
@@ -255,64 +353,34 @@ const KycPage = () => {
           </div>
 
           <div className="paypal-surface rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Application Status</h2>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(currentApplication.status)}`}>
-                {getStatusText(currentApplication.status)}
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Current application</p>
+                <h2 className="text-lg font-semibold text-foreground">{prefilledName || "KYC application"}</h2>
+              </div>
+              <span className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(currentApplication.status)}`}>
+                {currentApplication.status.replace(/_/g, " ")}
               </span>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Full Name</p>
-                <p className="font-medium text-foreground">{currentApplication.full_name}</p>
-              </div>
+            <p className="text-sm text-muted-foreground">
+              Your identity verification is already in progress or completed. Open the status page for the latest review details.
+            </p>
 
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Email</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl bg-secondary/40 p-3">
+                <p className="text-xs text-muted-foreground">Submitted</p>
+                <p className="font-medium text-foreground">{new Date(currentApplication.submitted_at).toLocaleString()}</p>
+              </div>
+              <div className="rounded-xl bg-secondary/40 p-3">
+                <p className="text-xs text-muted-foreground">Email</p>
                 <p className="font-medium text-foreground">{currentApplication.email}</p>
               </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Submitted Date</p>
-                <p className="font-medium text-foreground">
-                  {new Date(currentApplication.submitted_at).toLocaleDateString()}
-                </p>
-              </div>
-
-              {currentApplication.rejection_reason && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-red-800">Rejection Reason</p>
-                      <p className="text-sm text-red-700 mt-1">{currentApplication.rejection_reason}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {currentApplication.admin_notes && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-blue-800">Admin Notes</p>
-                      <p className="text-sm text-blue-700 mt-1">{currentApplication.admin_notes}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {(currentApplication.status as string) === 'rejected' && (
-              <Button 
-                onClick={() => window.location.reload()} 
-                className="w-full mt-6 bg-paypal-blue hover:bg-[#004dc5]"
-              >
-                Submit New Application
-              </Button>
-            )}
+            <Button onClick={() => navigate("/kyc-status")} className="mt-6 w-full bg-paypal-blue hover:bg-[#004dc5]">
+              View KYC Status
+            </Button>
           </div>
         </div>
         <BottomNav active="menu" />
@@ -337,355 +405,154 @@ const KycPage = () => {
 
         <div className="mb-6 paypal-surface rounded-2xl p-4 shadow-sm">
           <div className="flex items-start gap-3">
-            <Shield className="h-5 w-5 text-paypal-blue mt-0.5" />
+            <Shield className="mt-0.5 h-5 w-5 text-paypal-blue" />
             <div>
-              <h3 className="font-semibold text-foreground mb-1">Identity Verification</h3>
+              <h3 className="mb-1 font-semibold text-foreground">Real identity verification</h3>
               <p className="text-sm text-muted-foreground">
-                Complete KYC verification to unlock full account features and higher transaction limits.
+                Submit your legal identity details and supporting documents to unlock higher trust, higher limits, and admin-reviewed verification.
               </p>
             </div>
           </div>
         </div>
 
+        {currentApplication?.status === "rejected" ? (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <p className="font-semibold">Previous KYC application was rejected.</p>
+            <p className="mt-1">{currentApplication.rejection_reason || "Please review your details and submit a new application."}</p>
+          </div>
+        ) : null}
+
+        {currentApplication?.status === "additional_info_required" ? (
+          <div className="mb-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800">
+            <p className="font-semibold">Additional information requested.</p>
+            <p className="mt-1">{currentApplication.admin_notes || "Update your KYC application and submit it again for review."}</p>
+          </div>
+        ) : null}
+
         <div className="space-y-6">
-          {/* Personal Information */}
           <div className="paypal-surface rounded-2xl p-6 shadow-sm">
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+            <h3 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
               <User className="h-4 w-4 text-paypal-blue" />
               Personal Information
             </h3>
-            
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Full Name *</label>
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => handleInputChange('full_name', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                  placeholder="Enter your full legal name"
-                />
+                <label className="mb-1 block text-sm font-medium text-foreground">Full Name *</label>
+                <input value={formData.full_name} onChange={(e) => handleInputChange("full_name", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Enter your full legal name" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Date of Birth *</label>
-                <input
-                  type="date"
-                  value={formData.date_of_birth}
-                  onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                />
+                <label className="mb-1 block text-sm font-medium text-foreground">Date of Birth *</label>
+                <input type="date" value={formData.date_of_birth} onChange={(e) => handleInputChange("date_of_birth", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Nationality *</label>
-                <input
-                  type="text"
-                  value={formData.nationality}
-                  onChange={(e) => handleInputChange('nationality', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                  placeholder="Enter your nationality"
-                />
+                <label className="mb-1 block text-sm font-medium text-foreground">Nationality *</label>
+                <input value={formData.nationality} onChange={(e) => handleInputChange("nationality", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Enter your nationality" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Residential Address *</label>
-                <textarea
-                  value={formData.residential_address}
-                  onChange={(e) => handleInputChange('residential_address', e.target.value)}
-                  className="w-full h-20 rounded-lg border border-border bg-background px-3 text-foreground resize-none"
-                  placeholder="Enter your complete residential address"
-                />
+                <label className="mb-1 block text-sm font-medium text-foreground">Residential Address *</label>
+                <textarea value={formData.residential_address} onChange={(e) => handleInputChange("residential_address", e.target.value)} className="h-20 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-foreground" placeholder="Enter your full residential address" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Phone Number *</label>
-                <input
-                  type="tel"
-                  value={formData.phone_number}
-                  onChange={(e) => handleInputChange('phone_number', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                  placeholder="+1 234 567 8900"
-                />
+                <label className="mb-1 block text-sm font-medium text-foreground">Phone Number *</label>
+                <input value={formData.phone_number} onChange={(e) => handleInputChange("phone_number", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="+63..." />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Email Address *</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                  placeholder="your.email@example.com"
-                />
+                <label className="mb-1 block text-sm font-medium text-foreground">Email Address *</label>
+                <input type="email" value={formData.email} onChange={(e) => handleInputChange("email", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="name@example.com" />
               </div>
             </div>
           </div>
 
-          {/* Financial Information */}
           <div className="paypal-surface rounded-2xl p-6 shadow-sm">
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+            <h3 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
               <FileText className="h-4 w-4 text-paypal-blue" />
               Financial Information
             </h3>
-            
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Occupation *</label>
-                <input
-                  type="text"
-                  value={formData.occupation}
-                  onChange={(e) => handleInputChange('occupation', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                  placeholder="Enter your occupation"
-                />
+                <label className="mb-1 block text-sm font-medium text-foreground">Occupation *</label>
+                <input value={formData.occupation} onChange={(e) => handleInputChange("occupation", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Enter your occupation" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Employer Name</label>
-                <input
-                  type="text"
-                  value={formData.employer_name}
-                  onChange={(e) => handleInputChange('employer_name', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                  placeholder="Enter employer name (if applicable)"
-                />
+                <label className="mb-1 block text-sm font-medium text-foreground">Employer Name</label>
+                <input value={formData.employer_name} onChange={(e) => handleInputChange("employer_name", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Employer or company name" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Source of Funds *</label>
-                <select
-                  value={formData.source_of_funds}
-                  onChange={(e) => handleInputChange('source_of_funds', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                >
+                <label className="mb-1 block text-sm font-medium text-foreground">Source of Funds *</label>
+                <select value={formData.source_of_funds} onChange={(e) => handleInputChange("source_of_funds", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground">
                   <option value="">Select source of funds</option>
-                  <option value="employment">Employment Income</option>
-                  <option value="business">Business Income</option>
-                  <option value="investments">Investments</option>
-                  <option value="inheritance">Inheritance</option>
-                  <option value="savings">Personal Savings</option>
-                  <option value="other">Other</option>
+                  {KYC_SOURCE_OF_FUNDS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Annual Income Range *</label>
-                <select
-                  value={formData.annual_income_range}
-                  onChange={(e) => handleInputChange('annual_income_range', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                >
+                <label className="mb-1 block text-sm font-medium text-foreground">Annual Income Range *</label>
+                <select value={formData.annual_income_range} onChange={(e) => handleInputChange("annual_income_range", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground">
                   <option value="">Select income range</option>
-                  <option value="0-25000">Under $25,000</option>
-                  <option value="25000-50000">$25,000 - $50,000</option>
-                  <option value="50000-100000">$50,000 - $100,000</option>
-                  <option value="100000-250000">$100,000 - $250,000</option>
-                  <option value="250000+">$250,000+</option>
+                  {KYC_INCOME_RANGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="political_exposure"
-                  checked={formData.political_exposure}
-                  onChange={(e) => handleInputChange('political_exposure', e.target.checked)}
-                  className="h-4 w-4 rounded border-border"
-                />
-                <label htmlFor="political_exposure" className="text-sm text-foreground">
-                  I am a politically exposed person (PEP) or related to one
-                </label>
-              </div>
+              <label className="flex items-center gap-3 text-sm text-foreground">
+                <input type="checkbox" checked={formData.political_exposure} onChange={(e) => handleInputChange("political_exposure", e.target.checked)} className="h-4 w-4 rounded border-border" />
+                I am a politically exposed person (PEP) or closely related to one
+              </label>
             </div>
           </div>
 
-          {/* ID Documents */}
           <div className="paypal-surface rounded-2xl p-6 shadow-sm">
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+            <h3 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
               <FileText className="h-4 w-4 text-paypal-blue" />
               Identity Documents
             </h3>
-            
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">ID Document Type *</label>
-                <select
-                  value={formData.id_document_type}
-                  onChange={(e) => handleInputChange('id_document_type', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                >
+                <label className="mb-1 block text-sm font-medium text-foreground">ID Document Type *</label>
+                <select value={formData.id_document_type} onChange={(e) => handleInputChange("id_document_type", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground">
                   <option value="">Select document type</option>
-                  <option value="passport">Passport</option>
-                  <option value="national_id">National ID Card</option>
-                  <option value="drivers_license">Driver's License</option>
-                  <option value="residence_permit">Residence Permit</option>
+                  {KYC_DOCUMENT_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">ID Document Number *</label>
-                <input
-                  type="text"
-                  value={formData.id_document_number}
-                  onChange={(e) => handleInputChange('id_document_number', e.target.value)}
-                  className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                  placeholder="Enter document number"
-                />
+                <label className="mb-1 block text-sm font-medium text-foreground">Document Number *</label>
+                <input value={formData.id_document_number} onChange={(e) => handleInputChange("id_document_number", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Enter document number" />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Issue Date *</label>
-                  <input
-                    type="date"
-                    value={formData.id_document_issue_date}
-                    onChange={(e) => handleInputChange('id_document_issue_date', e.target.value)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                  />
+                  <label className="mb-1 block text-sm font-medium text-foreground">Issue Date *</label>
+                  <input type="date" value={formData.id_document_issue_date} onChange={(e) => handleInputChange("id_document_issue_date", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Expiry Date *</label>
-                  <input
-                    type="date"
-                    value={formData.id_document_expiry_date}
-                    onChange={(e) => handleInputChange('id_document_expiry_date', e.target.value)}
-                    className="w-full h-10 rounded-lg border border-border bg-background px-3 text-foreground"
-                  />
+                  <label className="mb-1 block text-sm font-medium text-foreground">Expiry Date *</label>
+                  <input type="date" value={formData.id_document_expiry_date} onChange={(e) => handleInputChange("id_document_expiry_date", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" />
                 </div>
               </div>
 
-              {/* File Uploads */}
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">ID Document Front *</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(e) => e.target.files?.[0] && handleFileUpload('id_document_front', e.target.files[0])}
-                      className="hidden"
-                      id="id_front"
-                    />
-                    <label htmlFor="id_front" className="cursor-pointer">
-                      <div className="flex flex-col items-center">
-                        {uploadedUrls.id_document_front_url ? (
-                          <div className="relative">
-                            <img src={uploadedUrls.id_document_front_url} alt="ID Front" className="h-20 w-20 object-cover rounded" />
-                            <CheckCircle className="absolute -top-2 -right-2 h-6 w-6 text-green-600" />
-                          </div>
-                        ) : (
-                          <>
-                            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">Click to upload ID front</p>
-                          </>
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">ID Document Back</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(e) => e.target.files?.[0] && handleFileUpload('id_document_back', e.target.files[0])}
-                      className="hidden"
-                      id="id_back"
-                    />
-                    <label htmlFor="id_back" className="cursor-pointer">
-                      <div className="flex flex-col items-center">
-                        {uploadedUrls.id_document_back_url ? (
-                          <div className="relative">
-                            <img src={uploadedUrls.id_document_back_url} alt="ID Back" className="h-20 w-20 object-cover rounded" />
-                            <CheckCircle className="absolute -top-2 -right-2 h-6 w-6 text-green-600" />
-                          </div>
-                        ) : (
-                          <>
-                            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">Click to upload ID back (if applicable)</p>
-                          </>
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Selfie Photo *</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => e.target.files?.[0] && handleFileUpload('selfie', e.target.files[0])}
-                      className="hidden"
-                      id="selfie"
-                    />
-                    <label htmlFor="selfie" className="cursor-pointer">
-                      <div className="flex flex-col items-center">
-                        {uploadedUrls.selfie_url ? (
-                          <div className="relative">
-                            <img src={uploadedUrls.selfie_url} alt="Selfie" className="h-20 w-20 object-cover rounded" />
-                            <CheckCircle className="absolute -top-2 -right-2 h-6 w-6 text-green-600" />
-                          </div>
-                        ) : (
-                          <>
-                            <Camera className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">Click to upload selfie photo</p>
-                          </>
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Proof of Address</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(e) => e.target.files?.[0] && handleFileUpload('proof_of_address', e.target.files[0])}
-                      className="hidden"
-                      id="proof_of_address"
-                    />
-                    <label htmlFor="proof_of_address" className="cursor-pointer">
-                      <div className="flex flex-col items-center">
-                        {uploadedUrls.proof_of_address_url ? (
-                          <div className="relative">
-                            <img src={uploadedUrls.proof_of_address_url} alt="Proof of Address" className="h-20 w-20 object-cover rounded" />
-                            <CheckCircle className="absolute -top-2 -right-2 h-6 w-6 text-green-600" />
-                          </div>
-                        ) : (
-                          <>
-                            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">Click to upload proof of address</p>
-                            <p className="text-xs text-muted-foreground mt-1">Utility bill, bank statement, etc.</p>
-                          </>
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                </div>
+                {renderUploadCard("id_document_front", "ID Document Front", true)}
+                {renderUploadCard("id_document_back", "ID Document Back")}
+                {renderUploadCard("selfie", "Selfie Photo", true, "image/*", Camera)}
+                {renderUploadCard("proof_of_address", "Proof of Address")}
               </div>
             </div>
           </div>
 
-          <Button 
-            onClick={handleSubmit}
-            disabled={loading || uploading}
-            className="w-full bg-paypal-blue hover:bg-[#004dc5] h-12"
-          >
+          <Button onClick={handleSubmit} disabled={loading || Boolean(uploadingField)} className="h-12 w-full bg-paypal-blue hover:bg-[#004dc5]">
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Submitting Application...
               </>
+            ) : currentApplication?.status === "rejected" ? (
+              "Submit New KYC Application"
+            ) : canEditExisting ? (
+              "Resubmit KYC Application"
             ) : (
-              'Submit KYC Application'
+              "Submit KYC Application"
             )}
           </Button>
         </div>

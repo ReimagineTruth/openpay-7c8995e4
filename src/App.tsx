@@ -92,6 +92,7 @@ import MerchantCheckoutPage from "./pages/MerchantCheckoutPage";
 import MerchantCheckoutThankYouPage from "./pages/MerchantCheckoutThankYouPage";
 import PosThankYouPage from "./pages/PosThankYouPage";
 import PublicWalletPaymentPage from "./pages/PublicWalletPaymentPage";
+import UsernamePayPage from "./pages/UsernamePayPage";
 import OpenAppPage from "./pages/OpenAppPage";
 import OpenPayDesktopPage from "./pages/OpenPayDesktopPage";
 import VirtualCardPage from "./pages/VirtualCardPage";
@@ -197,6 +198,7 @@ const AppRoutes = () => {
                            location.pathname.startsWith('/buttons') ||
                            location.pathname.startsWith('/merchant') ||
                            location.pathname.startsWith('/payment-link') ||
+                           location.pathname.startsWith('/pay/') ||
                            location.pathname.startsWith('/public-payment') ||
                            location.pathname.startsWith('/admin') ||
                            location.pathname.startsWith('/forgot') ||
@@ -212,6 +214,7 @@ const AppRoutes = () => {
         // Only redirect if not already on sign-in page and not on a public path
         const publicPaths = ['/', '/auth', '/sign-in', '/signin', '/signup', '/terms', 'privacy', 'about-openpay', 'legal', 'help-center'];
         const isPublicPath = publicPaths.some(path => location.pathname === path) || 
+                            location.pathname.startsWith('/pay/') ||
                             location.pathname.startsWith('/forgot') ||
                             location.pathname.startsWith('/reset') ||
                             location.pathname.startsWith('/two-factor');
@@ -465,6 +468,7 @@ const AppRoutes = () => {
         <Route path="/payment-link/:token" element={<MerchantCheckoutPage />} />
         <Route path="/merchant-checkout" element={<MerchantCheckoutPage />} />
         <Route path="/public-payment" element={<PublicWalletPaymentPage />} />
+        <Route path="/pay/:username" element={<UsernamePayPage />} />
         <Route path="/merchant-checkout/thank-you" element={<MerchantCheckoutThankYouPage />} />
         <Route path="/pos-thank-you" element={<PosThankYouPage />} />
         <Route path="/virtual-card" element={<VirtualCardPage />} />

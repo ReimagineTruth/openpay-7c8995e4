@@ -1863,6 +1863,99 @@ const Dashboard = () => {
   };
 
   const openBuyOptions = () => setShowBuyOptions(true);
+  const hasRealOpenPayAccount =
+    Boolean(userAccount?.account_number) &&
+    Boolean(userAccount?.account_username) &&
+    !isPlaceholderOpenPayAccount(userAccount?.account_name || "", userAccount?.account_username || "");
+  const pendingCollectionCount = pendingRequestCount + pendingInvoiceCount;
+  const recommendationCards = [
+    !hasRealOpenPayAccount
+      ? {
+          id: "setup-account",
+          title: "Finish your OpenPay account",
+          description: "Complete your profile so people can find and pay you faster.",
+          cta: "Complete setup",
+          badge: "Setup",
+          icon: ShieldCheck,
+          onClick: () => navigate("/setup-profile"),
+        }
+      : null,
+    transactions.length === 0
+      ? {
+          id: "receive-first-payment",
+          title: "Receive your first payment",
+          description: "Open your receive tools to share QR, account details, or invoice links.",
+          cta: "Open receive",
+          badge: "Recommended",
+          icon: QrCode,
+          onClick: () => setShowReceiveOptions(true),
+        }
+      : null,
+    balance <= 0
+      ? {
+          id: "buy-balance",
+          title: "Add funds to your wallet",
+          description: "Buy OpenUSD so you can send, shop, or activate more wallet features.",
+          cta: "Buy OpenUSD",
+          badge: "Top up",
+          icon: CircleDollarSign,
+          onClick: () => setActiveSection("buy"),
+        }
+      : null,
+    !virtualCardActive
+      ? {
+          id: "virtual-card",
+          title: "Open your virtual card",
+          description: "Use your wallet balance for online checkout and card-based payments.",
+          cta: "View card",
+          badge: "Cards",
+          icon: CreditCard,
+          onClick: () => navigate("/virtual-card"),
+        }
+      : null,
+    kycStatus !== "approved"
+      ? {
+          id: "kyc",
+          title: kycStatus === "not_submitted" ? "Complete KYC verification" : "Check your KYC status",
+          description:
+            kycStatus === "not_submitted"
+              ? "Unlock loans and higher-trust account features by verifying your identity."
+              : "Stay on top of your verification progress and resolve any missing information.",
+          cta: kycStatus === "not_submitted" ? "Start KYC" : "View status",
+          badge: "Verification",
+          icon: ShieldCheck,
+          onClick: () => navigate(kycStatus === "not_submitted" ? "/kyc" : "/kyc-status"),
+        }
+      : null,
+    pendingCollectionCount > 0
+      ? {
+          id: "pending-collections",
+          title: "Review pending collections",
+          description: "You have requests or invoices waiting for attention in Receive.",
+          cta: "Open receive",
+          badge: `${pendingCollectionCount} pending`,
+          icon: Clock,
+          onClick: () => setShowReceiveOptions(true),
+        }
+      : null,
+    {
+      id: "analytics",
+      title: "Track your wallet activity",
+      description: "See balance trends, payment flow, and performance in analytics.",
+      cta: "Open analytics",
+      badge: "Insights",
+      icon: TrendingUp,
+      onClick: () => setActiveSection("analytics"),
+    },
+  ].filter(Boolean).slice(0, 3) as Array<{
+    id: string;
+    title: string;
+    description: string;
+    cta: string;
+    badge: string;
+    icon: typeof TrendingUp;
+    onClick: () => void;
+  }>;
 
 
   return (
@@ -1971,7 +2064,9 @@ const Dashboard = () => {
           rates={{
             piToOusd: PI_TO_OUSD,
             usdToOusd: 1,
-            currencyTag: currencyTag
+            currencyTag: currencyTag,
+            currencyCode: currency.code,
+            currencyRate: currency.rate,
           }}
           open={showLiveRates}
           onOpenChange={setShowLiveRates}
@@ -3397,6 +3492,43 @@ const Dashboard = () => {
             >
               Open Virtual Card
             </button>
+          </div>
+        </div>
+      )}
+
+      {recommendationCards.length > 0 && (
+        <div className="mx-4 mt-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-white" />
+              <h2 className="text-lg font-bold text-white">Recommended for you</h2>
+            </div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-white/70">Smart next steps</p>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {recommendationCards.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={item.onClick}
+                className="paypal-surface rounded-[2rem] p-4 text-left text-foreground transition hover:-translate-y-0.5 hover:bg-secondary/50"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-paypal-blue/10 text-paypal-blue shadow-inner">
+                    <item.icon className="h-6 w-6" />
+                  </div>
+                  <span className="rounded-full bg-paypal-blue/10 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-paypal-blue">
+                    {item.badge}
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-foreground">{item.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+                <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-paypal-blue">
+                  {item.cta}
+                  <ExternalLink className="h-4 w-4" />
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       )}

@@ -113,6 +113,15 @@ const ReceivePage = () => {
     return `${window.location.origin}/send?${params.toString()}`;
   }, [currencyCode, normalizedAmount, profile?.id]);
 
+  const usernamePayLink = useMemo(() => {
+    if (!profile?.username || typeof window === "undefined") return "";
+    const params = new URLSearchParams({
+      currency: currencyCode,
+    });
+    if (normalizedAmount) params.set("amount", normalizedAmount);
+    return `${window.location.origin}/pay/${encodeURIComponent(profile.username)}?${params.toString()}`;
+  }, [currencyCode, normalizedAmount, profile?.username]);
+
   const shortDisplayLink = useMemo(() => {
     if (!webPayLink) return "";
     try {
@@ -125,6 +134,11 @@ const ReceivePage = () => {
       return webPayLink.length > 48 ? `${webPayLink.slice(0, 48)}...` : webPayLink;
     }
   }, [webPayLink, currencyCode]);
+
+  const shortUsernamePayLink = useMemo(() => {
+    if (!usernamePayLink) return "";
+    return usernamePayLink.length > 52 ? `${usernamePayLink.slice(0, 52)}...` : usernamePayLink;
+  }, [usernamePayLink]);
 
   const shortReceiveQrDisplay = useMemo(() => {
     if (!receiveQrValue) return "";
@@ -500,6 +514,41 @@ const ReceivePage = () => {
           </div>
 
         <div className="mt-6 space-y-4">
+          {profile?.username && (
+            <div className="animate-in-up rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm">
+              <p className="inline-flex rounded-md bg-emerald-600/80 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
+                OpenPay tag link
+              </p>
+              <p className="mt-2 text-sm text-white/80">
+                Cash App style username link for <span className="font-bold text-white">@{profile.username}</span>
+              </p>
+              <div className="mt-3 rounded-2xl bg-white/12 px-3 py-3">
+                <p className="break-all text-sm font-medium leading-relaxed text-white/95">{shortUsernamePayLink || "Loading link..."}</p>
+              </div>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="ios-active h-12 flex-1 rounded-2xl border-white/10 bg-white/50 dark:bg-white/5 font-bold text-gray-800 shadow-sm"
+                  onClick={() => handleCopy(usernamePayLink, "OpenPay tag link")}
+                  disabled={!usernamePayLink}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy
+                </Button>
+                <Button
+                  type="button"
+                  className="ios-active h-12 flex-1 rounded-2xl bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-700"
+                  onClick={() => handleShare(usernamePayLink)}
+                  disabled={!usernamePayLink}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="animate-in-up rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm">
             <p className="inline-flex rounded-md bg-blue-700/70 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
               Payment request link
