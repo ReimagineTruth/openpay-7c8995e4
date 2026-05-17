@@ -494,7 +494,7 @@ const SendInvoice = () => {
 
       <div className="px-4 space-y-4">
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Create invoice</h2>
+          <h2 className="inline-flex rounded-md bg-blue-700 px-2 py-1 text-sm font-semibold text-white">Create invoice</h2>
           <Input
             placeholder="Search person by name, username, email, or account number"
             value={search}
@@ -528,10 +528,10 @@ const SendInvoice = () => {
               </div>
             ) : (
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Select recipient</p>
+                <p className="inline-flex rounded-sm bg-blue-700/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Select recipient</p>
                 <div className="mt-2 max-h-40 overflow-auto rounded-xl border border-border">
                   {isAccountNumberSearch && accountLookupLoading && (
-                    <p className="border-b border-border px-3 py-2 text-sm text-muted-foreground">Searching account number...</p>
+                    <p className="border-b border-border px-3 py-2 text-sm text-gray-700">Searching account number...</p>
                   )}
                   {isAccountNumberSearch && !accountLookupLoading && accountLookupResult && (
                     <button
@@ -548,10 +548,10 @@ const SendInvoice = () => {
                         )}
                         <div className="flex-1">
                           <p className="font-medium text-gray-800">{accountLookupResult.full_name}</p>
-                          {accountLookupResult.username && <p className="text-sm text-muted-foreground">@{accountLookupResult.username}</p>}
-                          <p className="text-xs text-muted-foreground">Matched by account number</p>
+                          {accountLookupResult.username && <p className="text-sm text-gray-700">@{accountLookupResult.username}</p>}
+                          <p className="text-xs text-gray-700">Matched by account number</p>
                         </div>
-                        <Info className="h-4 w-4 text-muted-foreground" />
+                        <Info className="h-4 w-4 text-gray-700" />
                       </div>
                     </button>
                   )}
@@ -571,13 +571,13 @@ const SendInvoice = () => {
                         )}
                         <div>
                           <p className="font-medium text-gray-800">{p.full_name}</p>
-                          {p.username && <p className="text-sm text-muted-foreground">@{p.username}</p>}
+                          {p.username && <p className="text-sm text-gray-700">@{p.username}</p>}
                         </div>
                       </div>
                     </button>
                   ))}
                   {filteredWithoutAccountMatch.length === 0 && !accountLookupResult && !accountLookupLoading && (
-                    <p className="px-3 py-4 text-sm text-muted-foreground">No users found</p>
+                    <p className="px-3 py-4 text-sm text-gray-700">No users found</p>
                   )}
                 </div>
               </div>
@@ -593,7 +593,7 @@ const SendInvoice = () => {
             className="bg-white text-gray-800 placeholder:text-gray-400"
           />
           <div>
-            <p className="mb-1 text-sm text-muted-foreground">Invoice currency</p>
+            <p className="inline-flex rounded-sm bg-blue-700/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Invoice currency</p>
             <div className="relative">
               {(invoiceCurrencyCode === "PI" || invoiceCurrencyCode === "OUSD") && (
                 <img
@@ -633,9 +633,9 @@ const SendInvoice = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Received invoices</h2>
+          <h2 className="inline-flex rounded-md bg-blue-700 px-2 py-1 text-sm font-semibold text-white">Received invoices</h2>
           <div>
-            <p className="mb-1 text-sm text-muted-foreground">Payment currency</p>
+            <p className="inline-flex rounded-sm bg-blue-700/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Payment currency</p>
             <div className="relative">
               {(payCurrencyCode === "PI" || payCurrencyCode === "OUSD") && (
                 <img
@@ -708,7 +708,7 @@ const SendInvoice = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Sent invoices</h2>
+          <h2 className="inline-flex rounded-md bg-blue-700 px-2 py-1 text-sm font-semibold text-white">Sent invoices</h2>
           {sent.length === 0 && <p className="text-sm text-muted-foreground">No sent invoices</p>}
           {sent.map((invoice) => {
             const recipient = profileMap.get(invoice.recipient_id);

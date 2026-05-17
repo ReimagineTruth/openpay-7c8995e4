@@ -668,9 +668,9 @@ const RequestMoney = () => {
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Receive via QR</h2>
-              <p className="text-sm text-gray-600">{selfProfile?.full_name || "Your account"}</p>
-              {selfProfile?.username && <p className="text-sm text-gray-600">@{selfProfile.username}</p>}
+              <h2 className="inline-flex rounded-md bg-blue-700 px-2 py-1 text-sm font-semibold text-white">Receive via QR</h2>
+              <p className="mt-2 text-sm text-gray-700">{selfProfile?.full_name || "Your account"}</p>
+              {selfProfile?.username && <p className="text-sm text-gray-700">@{selfProfile.username}</p>}
               {/* Debug info removed */}
             </div>
             <Button type="button" variant="secondary" className="bg-blue-600 text-white hover:bg-blue-700 border-blue-700" onClick={() => setShowScanner(true)}>
@@ -696,13 +696,13 @@ const RequestMoney = () => {
               <p className="text-sm text-muted-foreground">Loading QR code...</p>
             )}
           </div>
-          <p className="text-xs text-white/70">
+          <p className="text-xs font-medium text-gray-700">
             Ask sender to scan this QR to open Express Send with your account.
           </p>
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Create request</h2>
+          <h2 className="inline-flex rounded-md bg-blue-700 px-2 py-1 text-sm font-semibold text-white">Create request</h2>
           <Input
             placeholder="Search person by name, username, email, or account number"
             value={search}
@@ -736,10 +736,10 @@ const RequestMoney = () => {
               </div>
             ) : (
               <div>
-                <p className="text-xs uppercase tracking-wide text-white/70">Select recipient</p>
+                <p className="inline-flex rounded-sm bg-blue-700/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Select recipient</p>
                 <div className="mt-2 max-h-40 overflow-auto rounded-xl border border-border">
                   {isAccountNumberSearch && accountLookupLoading && (
-                    <p className="border-b border-border px-3 py-2 text-sm text-white/70">Searching account number...</p>
+                    <p className="border-b border-border px-3 py-2 text-sm text-gray-700">Searching account number...</p>
                   )}
                   {isAccountNumberSearch && !accountLookupLoading && accountLookupResult && (
                     <button
@@ -757,9 +757,9 @@ const RequestMoney = () => {
                         <div className="flex-1">
                           <p className="font-medium text-gray-800">{accountLookupResult.full_name}</p>
                           {accountLookupResult.username && <p className="text-sm text-gray-600">@{accountLookupResult.username}</p>}
-                          <p className="text-xs text-white/70">Matched by account number</p>
+                          <p className="text-xs text-gray-700">Matched by account number</p>
                         </div>
-                        <Info className="h-4 w-4 text-white/70" />
+                        <Info className="h-4 w-4 text-gray-700" />
                       </div>
                     </button>
                   )}
@@ -785,7 +785,7 @@ const RequestMoney = () => {
                     </button>
                   ))}
                   {filteredWithoutAccountMatch.length === 0 && !accountLookupResult && !accountLookupLoading && (
-                    <p className="px-3 py-4 text-sm text-white/70">No users found</p>
+                    <p className="px-3 py-4 text-sm text-gray-700">No users found</p>
                   )}
                 </div>
               </div>
@@ -801,7 +801,7 @@ const RequestMoney = () => {
             className="bg-white text-gray-800 placeholder:text-gray-400"
           />
           <div>
-            <p className="mb-1 text-sm text-muted-foreground">Requested currency</p>
+            <p className="inline-flex rounded-sm bg-blue-700/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Requested currency</p>
             <div className="relative">
               {(createCurrencyCode === "PI" || createCurrencyCode === "OUSD") && (
                 <img
@@ -835,9 +835,9 @@ const RequestMoney = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Incoming requests</h2>
+          <h2 className="inline-flex rounded-md bg-blue-700 px-2 py-1 text-sm font-semibold text-white">Incoming requests</h2>
           <div>
-            <p className="mb-1 text-sm text-muted-foreground">Payment currency</p>
+            <p className="inline-flex rounded-sm bg-blue-700/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Payment currency</p>
             <div className="relative">
               {(payCurrencyCode === "PI" || payCurrencyCode === "OUSD") && (
                 <img
@@ -911,7 +911,7 @@ const RequestMoney = () => {
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <h2 className="font-semibold" style={{ color: '#0a3fa9' }}>Sent requests</h2>
+          <h2 className="inline-flex rounded-md bg-blue-700 px-2 py-1 text-sm font-semibold text-white">Sent requests</h2>
           {outgoing.length === 0 && <p className="text-sm text-muted-foreground">No requests sent yet</p>}
           {outgoing.map((request) => {
             const payer = profileMap.get(request.payer_id);

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Share2, ChevronDown } from "lucide-react";
+import { ArrowLeft, Copy, Expand, Share2 } from "lucide-react";
 import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { loadUserPreferences, upsertUserPreferences } from "@/lib/userPreferences";
@@ -35,6 +36,7 @@ const ReceivePage = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [qrPrefsLoaded, setQrPrefsLoaded] = useState(false);
   const [downloadLink, setDownloadLink] = useState("");
+  const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -123,6 +125,41 @@ const ReceivePage = () => {
       return webPayLink.length > 48 ? `${webPayLink.slice(0, 48)}...` : webPayLink;
     }
   }, [webPayLink, currencyCode]);
+
+  const shortReceiveQrDisplay = useMemo(() => {
+    if (!receiveQrValue) return "";
+    return receiveQrValue.length > 96 ? `${receiveQrValue.slice(0, 96)}...` : receiveQrValue;
+  }, [receiveQrValue]);
+
+  const getReadableTextColor = (hexColor: string) => {
+    const normalized = hexColor.replace("#", "");
+    const expanded =
+      normalized.length === 3
+        ? normalized
+            .split("")
+            .map((char) => char + char)
+            .join("")
+        : normalized;
+
+    if (!/^[0-9a-fA-F]{6}$/.test(expanded)) return "#111827";
+
+    const red = parseInt(expanded.slice(0, 2), 16);
+    const green = parseInt(expanded.slice(2, 4), 16);
+    const blue = parseInt(expanded.slice(4, 6), 16);
+    const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+
+    return luminance > 0.65 ? "#111827" : "#ffffff";
+  };
+
+  const storeQrTextColor = useMemo(
+    () => (storeQrDesign === "badge" ? "#ffffff" : getReadableTextColor(storeQrBackground)),
+    [storeQrBackground, storeQrDesign],
+  );
+
+  const storeQrMutedTextColor = useMemo(
+    () => (storeQrDesign === "badge" ? "#e5e7eb" : storeQrTextColor === "#ffffff" ? "rgba(255,255,255,0.82)" : "#4b5563"),
+    [storeQrDesign, storeQrTextColor],
+  );
 
   const handleCopy = async (value: string, label: string) => {
     if (!value) return;
@@ -427,8 +464,8 @@ const ReceivePage = () => {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-6">
-            <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-foreground">Your QR Code</p>
+          <div className="rounded-3xl border border-white/20 bg-white/10 p-6 backdrop-blur-sm">
+            <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-white/75">Your QR Code</p>
             <div className="flex justify-center rounded-2xl border border-white/20 bg-white p-4">
               {receiveQrValue ? (
                 <QRCodeSVG
@@ -447,16 +484,30 @@ const ReceivePage = () => {
                 <p className="text-sm text-gray-500">Loading QR code...</p>
               )}
             </div>
-            <p className="mt-4 text-center text-[11px] font-bold text-foreground uppercase tracking-tight">
+            <p className="mt-4 text-center text-[11px] font-bold uppercase tracking-tight text-white/80">
               Scan to pay in Express Send
             </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-4 h-11 w-full rounded-2xl border-white/20 bg-white/70 font-bold text-gray-800 shadow-sm hover:bg-white"
+              onClick={() => setShowQrModal(true)}
+              disabled={!receiveQrValue}
+            >
+              <Expand className="mr-2 h-4 w-4" />
+              View QR Full Screen
+            </Button>
           </div>
 
         <div className="mt-6 space-y-4">
-          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 animate-in-up">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-foreground">Payment request link</p>
-            <p className="mt-2 break-all text-sm font-medium text-gray-800 leading-snug">{shortDisplayLink || "Loading link..."}</p>
-            <div className="mt-4 flex gap-3">
+          <div className="animate-in-up rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm">
+            <p className="inline-flex rounded-md bg-blue-700/70 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
+              Payment request link
+            </p>
+            <div className="mt-3 rounded-2xl bg-white/12 px-3 py-3">
+              <p className="break-all text-sm font-medium leading-relaxed text-white/95">{shortDisplayLink || "Loading link..."}</p>
+            </div>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
@@ -479,9 +530,18 @@ const ReceivePage = () => {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 animate-in-up" style={{ animationDelay: "100ms" }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-foreground">OpenPay QR link</p>
-            <p className="mt-2 break-all text-xs font-medium text-gray-800 leading-snug">{receiveQrValue || "Loading link..."}</p>
+          <div className="animate-in-up rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm" style={{ animationDelay: "100ms" }}>
+            <p className="inline-flex rounded-md bg-blue-700/70 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
+              OpenPay QR link
+            </p>
+            <div className="mt-3 rounded-2xl bg-white/12 px-3 py-3">
+              <p
+                className="overflow-hidden text-ellipsis break-all text-xs font-medium leading-relaxed text-white/95"
+                title={receiveQrValue || "Loading link..."}
+              >
+                {shortReceiveQrDisplay || "Loading link..."}
+              </p>
+            </div>
             <div className="mt-4 grid gap-3">
               <Button
                 type="button"
@@ -524,11 +584,13 @@ const ReceivePage = () => {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 print:hidden animate-in-up" style={{ animationDelay: "200ms" }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-foreground">Printable Store QR</p>
-            <div className="mt-4 grid gap-3">
+          <div className="animate-in-up rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm print:hidden" style={{ animationDelay: "200ms" }}>
+            <p className="inline-flex rounded-md bg-blue-700/70 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
+              Printable Store QR
+            </p>
+            <div className="mt-4 space-y-4">
               <div className="space-y-1">
-                <p className="px-1 text-[10px] font-bold text-foreground uppercase">Store name</p>
+                <p className="inline-flex rounded-sm bg-blue-700/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Store name</p>
                 <Input
                   value={storeQrName}
                   onChange={(e) => setStoreQrName(e.target.value)}
@@ -537,7 +599,7 @@ const ReceivePage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <p className="px-1 text-[10px] font-bold text-foreground uppercase">Merchant username</p>
+                <p className="inline-flex rounded-sm bg-blue-700/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Merchant username</p>
                 <Input
                   value={storeMerchantUsername}
                   onChange={(e) => setStoreMerchantUsername(e.target.value)}
@@ -545,9 +607,18 @@ const ReceivePage = () => {
                   className="h-11 rounded-xl border-none bg-white dark:bg-white/5 font-bold text-gray-800 shadow-sm"
                 />
               </div>
+              <div className="space-y-1">
+                <p className="inline-flex rounded-sm bg-blue-700/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">QR text</p>
+                <Input
+                  value={storeQrTagline}
+                  onChange={(e) => setStoreQrTagline(e.target.value)}
+                  placeholder="Scan to pay"
+                  className="h-11 rounded-xl border-none bg-white dark:bg-white/5 font-bold text-gray-800 shadow-sm"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-foreground uppercase">Accent</p>
+                  <p className="inline-flex rounded-sm bg-blue-700/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Accent</p>
                   <input
                     type="color"
                     value={storeQrAccent}
@@ -556,7 +627,7 @@ const ReceivePage = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-foreground uppercase">Background</p>
+                  <p className="inline-flex rounded-sm bg-blue-700/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Background</p>
                   <input
                     type="color"
                     value={storeQrBackground}
@@ -564,9 +635,10 @@ const ReceivePage = () => {
                     className="h-11 w-full rounded-xl border-none bg-white dark:bg-white/5 font-bold text-gray-800 shadow-sm"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <p className="px-1 text-[10px] font-bold text-foreground uppercase">Template</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                    <p className="inline-flex rounded-sm bg-blue-700/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Template</p>
                   <select
                     value={storeQrDesign}
                     onChange={(e) => setStoreQrDesign(e.target.value as "clean" | "gradient" | "badge")}
@@ -578,7 +650,7 @@ const ReceivePage = () => {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <p className="px-1 text-[10px] font-bold text-foreground uppercase">Size</p>
+                  <p className="inline-flex rounded-sm bg-blue-700/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Size</p>
                   <select
                     value={printSize}
                     onChange={(e) => setPrintSize(e.target.value as "small" | "medium" | "large")}
@@ -596,7 +668,7 @@ const ReceivePage = () => {
           <div id="print-store-qr-wrapper">
             <div
               id="print-store-qr-card"
-              className="mx-auto rounded-3xl border-2 p-5 shadow-sm"
+              className="mx-auto rounded-3xl border-2 p-4 shadow-sm sm:p-5"
               style={{
                 borderColor: storeQrAccent,
                 width: `${printSizeConfig.cardWidth}px`,
@@ -617,7 +689,7 @@ const ReceivePage = () => {
                 >
                   OpenPay
                 </p>
-                <p className="mt-1 text-center text-sm font-semibold" style={{ color: storeQrDesign === "badge" ? "#e5e7eb" : "#1f2937" }}>
+                <p className="mt-1 text-center text-sm font-semibold" style={{ color: storeQrDesign === "badge" ? "#e5e7eb" : storeQrTextColor }}>
                   {storeQrName || "OpenPay Store"}
                 </p>
               </div>
@@ -654,13 +726,13 @@ const ReceivePage = () => {
                   </>
                 ) : null}
               </div>
-              <p className="mt-3 text-center text-xs font-semibold tracking-wide text-white">
+              <p className="mt-3 text-center text-xs font-semibold tracking-wide" style={{ color: storeQrTextColor }}>
                 {storeQrTagline || "SCAN TO PAY"}
               </p>
-              <p className="mt-1 text-center text-[11px] font-medium text-white">
+              <p className="mt-1 text-center text-[11px] font-medium" style={{ color: storeQrMutedTextColor }}>
                 {normalizedMerchantUsername ? `Manual pay: @${normalizedMerchantUsername}` : "Manual payment available in OpenPay app"}
               </p>
-              <p className="mt-2 text-center text-[10px] text-white">
+              <p className="mt-2 text-center text-[10px]" style={{ color: storeQrMutedTextColor }}>
                 Powered by OpenPay
               </p>
             </div>
@@ -691,8 +763,66 @@ const ReceivePage = () => {
             Open Express Send
           </Button>
         </div>
-        </div>
       </div>
+
+      <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
+        <DialogContent className="rounded-3xl border-white/20 bg-white p-5 sm:max-w-xl">
+          <DialogTitle className="text-center text-xl font-bold text-gray-900">Receive QR Code</DialogTitle>
+          <DialogDescription className="text-center text-sm text-gray-500">
+            Let the sender scan this code in OpenPay Express Send.
+          </DialogDescription>
+          <div className="rounded-3xl border border-gray-200 bg-white p-4">
+            <div className="flex justify-center rounded-2xl bg-white p-2">
+              {receiveQrValue ? (
+                <QRCodeSVG
+                  value={receiveQrValue}
+                  size={320}
+                  level="H"
+                  includeMargin
+                  imageSettings={{
+                    src: "/openpay-logo.jpg",
+                    height: 56,
+                    width: 56,
+                    excavate: true,
+                  }}
+                />
+              ) : (
+                <p className="text-sm text-gray-500">Loading QR code...</p>
+              )}
+            </div>
+            <p className="mt-4 text-center text-sm font-semibold text-gray-900">
+              {profile?.full_name || "OpenPay User"}
+            </p>
+            {profile?.username && (
+              <p className="mt-1 text-center text-sm text-gray-500">@{profile.username}</p>
+            )}
+            <p className="mt-3 text-center text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
+              Scan to pay
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-2xl font-bold text-gray-800"
+              onClick={() => handleCopy(receiveQrValue, "QR link")}
+              disabled={!receiveQrValue}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy QR Link
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-2xl bg-blue-600 font-bold text-white hover:bg-blue-700"
+              onClick={() => handleShare(webPayLink)}
+              disabled={!webPayLink}
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              Share Payment Link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
