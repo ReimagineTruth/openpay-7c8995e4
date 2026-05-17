@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, HelpCircle, ArrowLeft, Check, Delete } from "lucide-react";
+import { HelpCircle, ArrowLeft, Check, Delete } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { hashSecret, loadAppSecuritySettings } from "@/lib/appSecurity";
 import { toast } from "sonner";
@@ -62,7 +62,7 @@ const TransactionPinModal = ({ open, onOpenChange, onSuccess, title = "Confirm y
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden rounded-3xl border-none h-[90vh] sm:h-auto">
+      <DialogContent showCloseButton={false} className="sm:max-w-[425px] p-0 overflow-hidden rounded-3xl border-none h-[90vh] sm:h-auto">
         <div className="flex flex-col bg-white h-full">
           {/* Header */}
           <div className="flex items-center justify-between px-6 pt-6">
@@ -72,17 +72,13 @@ const TransactionPinModal = ({ open, onOpenChange, onSuccess, title = "Confirm y
             >
               <ArrowLeft className="h-7 w-7" />
             </button>
-            <div className="flex items-center gap-4">
-              <button className="text-gray-600 hover:text-gray-900">
-                <HelpCircle className="h-7 w-7" />
-              </button>
-              <button 
-                onClick={() => onOpenChange(false)}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <X className="h-7 w-7" />
-              </button>
-            </div>
+            <button
+              type="button"
+              className="text-gray-600 hover:text-gray-900"
+              aria-label="PIN help"
+            >
+              <HelpCircle className="h-7 w-7" />
+            </button>
           </div>
 
           {/* PIN Display Area */}

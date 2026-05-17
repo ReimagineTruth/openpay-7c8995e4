@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle, Download, ExternalLink, X } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { playUiSound } from "@/lib/appSounds";
@@ -229,28 +229,25 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-3xl p-0 overflow-hidden">
+      <DialogContent showCloseButton={false} className="max-w-md rounded-3xl p-0 overflow-hidden">
         <DialogTitle className="sr-only">Transaction receipt</DialogTitle>
         <DialogDescription className="sr-only">Receipt details for the selected transaction.</DialogDescription>
         
         {/* Blue Background Header */}
         <div className="bg-gradient-to-br from-paypal-blue via-blue-600 to-[#0073e6] px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <button onClick={() => onOpenChange(false)} className="text-white">
+          <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="text-white"
+                aria-label="Close receipt"
+              >
                 <ArrowLeft className="h-6 w-6" />
               </button>
               <div>
                 <h1 className="text-xl font-bold text-white">Transaction Receipt</h1>
                 <p className="text-xs text-white/80">Transaction details</p>
               </div>
-            </div>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
           </div>
         </div>
 

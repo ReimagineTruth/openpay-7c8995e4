@@ -236,7 +236,7 @@ const OpenPayDesktopPage = () => {
       </div>
 
       <Dialog open={showApkModal} onOpenChange={setShowApkModal}>
-        <DialogContent className="rounded-3xl p-0 sm:max-w-2xl [&>button]:hidden">
+        <DialogContent showCloseButton={false} className="rounded-3xl p-0 sm:max-w-2xl">
           <div className="relative bg-white px-6 py-6 text-foreground">
             <button
               type="button"

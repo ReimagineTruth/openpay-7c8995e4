@@ -184,7 +184,7 @@ const OpenPayTutorial = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onC
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-md rounded-3xl p-0 overflow-hidden bg-white shadow-2xl border border-gray-200">
+        <DialogContent showCloseButton={false} className="max-w-md rounded-3xl p-0 overflow-hidden bg-white shadow-2xl border border-gray-200">
           <DialogTitle className="sr-only">OpenPay Tutorial</DialogTitle>
           <DialogDescription className="sr-only">Interactive step-by-step guide to use OpenPay features</DialogDescription>
           

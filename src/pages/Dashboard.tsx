@@ -24,6 +24,15 @@ import { playUiSound } from "@/lib/appSounds";
 import { playNotificationBellSound } from "@/lib/soundEffects";
 import { isPlaceholderOpenPayAccount } from "@/lib/openpayIdentity";
 import { PhantomConnect } from "@/components/ui/PhantomConnect";
+import DashboardSectionTabs from "@/components/dashboard/DashboardSectionTabs";
+import DashboardSectionQuickBar from "@/components/dashboard/DashboardSectionQuickBar";
+import DashboardRecommendations from "@/components/dashboard/DashboardRecommendations";
+import {
+  DASHBOARD_SECTION_NAV,
+  DASHBOARD_SECTION_TITLES,
+  getDashboardSectionSubtitle,
+  type DashboardSection,
+} from "@/lib/dashboardSectionMeta";
 
 interface Transaction {
   id: string;
@@ -51,7 +60,6 @@ interface UserAccount {
   account_username: string;
 }
 
-type DashboardSection = "wallet" | "savings" | "credit" | "loans" | "cards" | "buy" | "swap" | "mining" | "analytics";
 type MerchantMode = "sandbox" | "live";
 type BuyOnrampProvider =
   | "Pi Payment"
@@ -2014,6 +2022,39 @@ const Dashboard = () => {
           onClick: () => setShowReceiveOptions(true),
         }
       : null,
+    creditScoreDisplay >= 120 && !loan
+      ? {
+          id: "apply-loan",
+          title: "You are loan-ready",
+          description: "Your credit score qualifies you to preview and apply for an OpenPay loan.",
+          cta: "Open loans",
+          badge: "Loans",
+          icon: HandCoins,
+          onClick: () => setActiveSection("loans"),
+        }
+      : null,
+    (savings?.savings_balance ?? 0) <= 0 && balance > 10
+      ? {
+          id: "grow-savings",
+          title: "Move funds into savings",
+          description: "Park part of your wallet balance in savings and track APY growth.",
+          cta: "Open savings",
+          badge: "Savings",
+          icon: PiggyBank,
+          onClick: () => setActiveSection("savings"),
+        }
+      : null,
+    !activeMiningSession && miningBalance < 1
+      ? {
+          id: "start-mining",
+          title: "Start a mining session",
+          description: "Earn daily OUSD rewards by completing your mining session.",
+          cta: "Open mining",
+          badge: "Mining",
+          icon: Pickaxe,
+          onClick: () => setActiveSection("mining"),
+        }
+      : null,
     {
       id: "analytics",
       title: "Track your wallet activity",
@@ -2023,7 +2064,7 @@ const Dashboard = () => {
       icon: TrendingUp,
       onClick: () => setActiveSection("analytics"),
     },
-  ].filter(Boolean).slice(0, 3) as Array<{
+  ].filter(Boolean).slice(0, 4) as Array<{
     id: string;
     title: string;
     description: string;
@@ -2035,46 +2076,86 @@ const Dashboard = () => {
   const dashboardFeatureCards = [
     {
       id: "wallet-snapshot",
-      title: "Wallet Snapshot",
-      description: walletView === "merchant" ? "Merchant balances, outgoing transfers, and available funds." : "Personal balance, savings access, and quick fund movement.",
+      title: "Wallet",
+      description: walletView === "merchant" ? "Merchant balances and available funds." : "Personal balance and quick transfers.",
       stat: walletView === "merchant"
         ? `${balanceHidden ? "****" : formatCompactCurrency(selectedMerchantBalance?.available_balance ?? 0)} available`
-        : `${balanceHidden ? "****" : formatCompactCurrency(balance)} live balance`,
+        : `${balanceHidden ? "****" : formatCompactCurrency(balance)} balance`,
       badge: walletView === "merchant" ? "Merchant" : "Personal",
       icon: Wallet,
-      onClick: () => setActiveSection("wallet" as DashboardSection),
+      onClick: () => setActiveSection("wallet"),
     },
     {
-      id: "security-kyc",
-      title: "KYC & Security",
-      description: "Track verification progress and unlock higher-trust account features.",
-      stat:
-        kycStatus === "approved"
-          ? "Verified profile"
-          : pendingSecurityItems > 0
-            ? `${pendingSecurityItems} setup items left`
-            : "Review status",
-      badge: kycStatus === "approved" ? "Secure" : "Action needed",
-      icon: ShieldCheck,
-      onClick: () => navigate(kycStatus === "not_submitted" ? "/kyc" : "/kyc-status"),
+      id: "savings",
+      title: "Savings",
+      description: "Move funds and track APY on your savings wallet.",
+      stat: `${balanceHidden ? "****" : formatCompactCurrency(savings?.savings_balance ?? 0)} saved`,
+      badge: `${(savings?.apy ?? 0).toFixed(1)}% APY`,
+      icon: PiggyBank,
+      onClick: () => setActiveSection("savings"),
     },
     {
-      id: "collections",
-      title: "Collections & Requests",
-      description: "Stay on top of receive links, invoices, and money requests waiting for action.",
-      stat: pendingCollectionCount > 0 ? `${pendingCollectionCount} pending items` : "No pending collections",
-      badge: pendingCollectionCount > 0 ? "Pending" : "Clear",
-      icon: QrCode,
-      onClick: () => setShowReceiveOptions(true),
+      id: "credit",
+      title: "Credit",
+      description: "Monitor score progress and loan readiness.",
+      stat: `${creditScoreDisplay} score`,
+      badge: creditScoreDisplay >= 120 ? "Loan ready" : "Building",
+      icon: Scale,
+      onClick: () => setActiveSection("credit"),
     },
     {
-      id: "payments-commerce",
-      title: "Cards & Commerce",
-      description: "Jump into cards, merchant tools, and checkout-ready wallet features.",
-      stat: virtualCardActive ? "Virtual card active" : "Card setup available",
+      id: "loans",
+      title: "Loans",
+      description: "Preview terms, apply, and manage repayments.",
+      stat: `${balanceHidden ? "****" : formatCompactCurrency(availableToBorrow)} available`,
+      badge: loan?.status === "active" ? "Active loan" : "Apply",
+      icon: HandCoins,
+      onClick: () => setActiveSection("loans"),
+    },
+    {
+      id: "cards",
+      title: "Cards",
+      description: "Virtual card for online checkout and commerce.",
+      stat: virtualCardActive ? "Card active" : "Setup card",
       badge: virtualCardActive ? "Ready" : "Cards",
       icon: CreditCard,
-      onClick: () => navigate("/virtual-card"),
+      onClick: () => setActiveSection("cards"),
+    },
+    {
+      id: "buy",
+      title: "Buy",
+      description: "Add OpenUSD using your preferred payment method.",
+      stat: buyOpenUsdMeetsMinimum ? `${buyOpenUsdDisplay} OUSD` : "Min 1 OUSD",
+      badge: buyOnrampProvider,
+      icon: CircleDollarSign,
+      onClick: () => setActiveSection("buy"),
+    },
+    {
+      id: "swap",
+      title: "Swap",
+      description: "Withdraw OUSD to PI, OUSD, or MRWN.",
+      stat: swapMeetsMinimum ? `${safeSwapAmount.toFixed(2)} OUSD` : "Min 10 OUSD",
+      badge: `${swapWithdrawalType} payout`,
+      icon: ArrowLeftRight,
+      onClick: () => setActiveSection("swap"),
+    },
+    {
+      id: "mining",
+      title: "Mining",
+      description: "Earn daily OUSD through mining sessions.",
+      stat: `${miningBalance.toFixed(2)} OUSD`,
+      badge: activeMiningSession ? "Session live" : "Start",
+      icon: Pickaxe,
+      onClick: () => setActiveSection("mining"),
+    },
+    {
+      id: "analytics",
+      title: "Analytics",
+      description: "Track sent, received, and top-up performance.",
+      stat: personalAnalytics ? `${personalAnalytics.summary.transaction_count} txns` : "Insights",
+      badge: "Reports",
+      icon: TrendingUp,
+      onClick: () => setActiveSection("analytics"),
     },
   ] as Array<{
     id: string;
@@ -2086,6 +2167,62 @@ const Dashboard = () => {
     onClick: () => void;
   }>;
   const recentActivityCount = transactions.length;
+  const activeSectionMeta = DASHBOARD_SECTION_NAV.find((item) => item.key === activeSection);
+  const sectionQuickActions: Record<DashboardSection, import("@/components/dashboard/DashboardSectionQuickBar").DashboardQuickAction[]> = {
+    wallet: [
+      { id: "send", label: "Send", icon: CircleDollarSign, onClick: () => navigate("/send"), variant: "primary" },
+      { id: "receive", label: "Receive", icon: QrCode, onClick: () => setShowReceiveOptions(true) },
+      { id: "buy", label: "Buy", icon: CircleDollarSign, onClick: () => setActiveSection("buy") },
+      { id: "activity", label: "Activity", icon: Activity, onClick: () => navigate("/activity") },
+    ],
+    savings: [
+      { id: "to-savings", label: "To savings", icon: PiggyBank, onClick: () => setActiveSection("savings"), variant: "primary" },
+      { id: "wallet", label: "Wallet", icon: Wallet, onClick: () => setActiveSection("wallet") },
+      { id: "analytics", label: "Insights", icon: TrendingUp, onClick: () => setActiveSection("analytics") },
+    ],
+    credit: [
+      { id: "build", label: "Build score", icon: TrendingUp, onClick: () => navigate("/send"), variant: "primary" },
+      { id: "loans", label: "Loans", icon: HandCoins, onClick: () => setActiveSection("loans") },
+      { id: "kyc", label: "KYC", icon: ShieldCheck, onClick: () => navigate(kycStatus === "not_submitted" ? "/kyc" : "/kyc-status") },
+    ],
+    loans: [
+      { id: "apply", label: "Apply", icon: HandCoins, onClick: () => setLoanView("form"), variant: "primary" },
+      { id: "credit", label: "Credit", icon: Scale, onClick: () => setActiveSection("credit") },
+      { id: "kyc", label: "KYC status", icon: ShieldCheck, onClick: () => navigate(kycStatus === "not_submitted" ? "/kyc" : "/kyc-status") },
+    ],
+    cards: [
+      { id: "manage", label: "Manage card", icon: CreditCard, onClick: () => navigate("/virtual-card"), variant: "primary" },
+      { id: "buy", label: "Add funds", icon: CircleDollarSign, onClick: () => setActiveSection("buy") },
+      { id: "activity", label: "Card activity", icon: Activity, onClick: () => navigate("/activity") },
+    ],
+    buy: [
+      { id: "confirm", label: "Confirm buy", icon: CircleDollarSign, onClick: handleBuyOpenUsd, variant: "primary", disabled: !buyOpenUsdMeetsMinimum },
+      { id: "methods", label: "Payment methods", icon: CreditCard, onClick: () => setShowPaymentMethodPicker(true) },
+      { id: "history", label: "Top-up history", icon: Clock, onClick: () => navigate("/topup-history") },
+    ],
+    swap: [
+      {
+        id: "continue",
+        label: "Continue swap",
+        icon: ArrowLeftRight,
+        onClick: () => navigate(`/swap-withdrawal?amount=${safeSwapAmount.toFixed(2)}&type=${swapWithdrawalType}`),
+        variant: "primary",
+        disabled: !swapMeetsMinimum,
+      },
+      { id: "withdrawals", label: "Withdrawals", icon: FileText, onClick: () => navigate("/swap-withdrawal") },
+      { id: "rates", label: "Live rates", icon: TrendingUp, onClick: () => setShowLiveRates(true) },
+    ],
+    mining: [
+      { id: "session", label: activeMiningSession ? "Mining session" : "Start mining", icon: Pickaxe, onClick: () => navigate("/mining"), variant: "primary" },
+      { id: "staking", label: "Staking", icon: Coins, onClick: () => navigate("/staking") },
+      { id: "analytics", label: "Insights", icon: TrendingUp, onClick: () => setActiveSection("analytics") },
+    ],
+    analytics: [
+      { id: "refresh", label: "Refresh", icon: RefreshCw, onClick: () => void loadPersonalAnalytics(), variant: "primary", disabled: personalAnalyticsLoading },
+      { id: "activity", label: "Full activity", icon: Activity, onClick: () => navigate("/activity") },
+      { id: "wallet", label: "Wallet", icon: Wallet, onClick: () => setActiveSection("wallet") },
+    ],
+  };
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-paypal-blue pb-64 text-white animate-fadeIn">
@@ -2143,52 +2280,23 @@ const Dashboard = () => {
       {/* Greeting */}
       <div className="px-4 mt-3 animate-fadeInUp">
         <h1 className="text-2xl font-bold text-white transition-all duration-500">
-          {activeSection === "cards"
-            ? "OpenPay Cards"
-            : activeSection === "buy"
-              ? "Buy OpenUSD"
-              : activeSection === "swap"
-                ? "Swap"
-                : activeSection === "mining"
-                  ? "Mining"
-                : activeSection === "analytics"
-                  ? "Analytics Dashboard"
-                  : `${getGreeting()}, ${userName.split(" ")[0] || "there"}`}
+          {activeSection === "wallet"
+            ? `${getGreeting()}, ${userName.split(" ")[0] || "there"}`
+            : DASHBOARD_SECTION_TITLES[activeSection]}
         </h1>
-        {activeSection !== "cards" && activeSection !== "buy" && activeSection !== "swap" && activeSection !== "mining" && activeSection !== "analytics" && username && (
-          <p className="text-base text-white/80 animate-fadeIn" style={{ animationDelay: "0.2s" }}>@{username}</p>
-        )}
+        <p className="mt-1 text-sm text-white/80 animate-fadeIn" style={{ animationDelay: "0.15s" }}>
+          {getDashboardSectionSubtitle(activeSection, username)}
+        </p>
       </div>
 
       <div className="mt-4 px-4 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
-        <div className="paypal-surface overflow-x-auto rounded-2xl p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden hover-lift">
-          <div className="flex min-w-max gap-1">
-            {([
-              { key: "wallet", label: "Wallet" },
-              { key: "savings", label: "Savings" },
-              { key: "credit", label: "Credit" },
-              { key: "loans", label: "Loans" },
-              { key: "cards", label: "Cards" },
-              { key: "buy", label: "Buy" },
-              { key: "swap", label: "Swap" },
-              { key: "mining", label: "Mining" },
-              { key: "analytics", label: "Analytics" },
-            ] as Array<{ key: DashboardSection; label: string }>).map((item, index) => (
-              <button
-                key={item.key}
-                onClick={() => setActiveSection(item.key)}
-                className={`rounded-xl px-4 py-2 text-base font-semibold transition-all duration-300 hover:scale-105 stagger-item ${
-                  activeSection === item.key
-                    ? "bg-paypal-blue text-white shadow-lg animate-glow"
-                    : "text-foreground hover:bg-secondary/70 hover-lift"
-                }`}
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <DashboardSectionTabs activeSection={activeSection} onChange={setActiveSection} />
+        {activeSectionMeta ? (
+          <p className="mt-2 text-center text-xs font-semibold text-white/70">
+            {activeSectionMeta.description}
+          </p>
+        ) : null}
+        <DashboardSectionQuickBar actions={sectionQuickActions[activeSection]} className="mt-3 justify-center sm:justify-start" />
         <DigitalRateDisplay
           rates={{
             piToOusd: PI_TO_OUSD,
@@ -2435,15 +2543,23 @@ const Dashboard = () => {
               <span className="text-xs font-semibold text-muted-foreground">From recent activity</span>
             </div>
             <div className="divide-y divide-border/70 rounded-2xl border border-border/70">
-              {creditActivityRows.map((row) => (row.count > 0 && (
-                <div key={row.key} className="flex items-center justify-between px-3 py-2.5">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{row.label}</p>
-                    <p className="text-xs text-muted-foreground">{row.count} actions</p>
-                  </div>
-                  <p className="text-sm font-semibold text-paypal-blue">+{row.count * row.points} pts</p>
-                </div>
-              )))}
+              {creditActivityRows.every((row) => row.count === 0) ? (
+                <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                  Complete buys, sends, and checkouts to grow your credit score.
+                </p>
+              ) : (
+                creditActivityRows.map((row) =>
+                  row.count > 0 ? (
+                    <div key={row.key} className="flex items-center justify-between px-3 py-2.5">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{row.label}</p>
+                        <p className="text-xs text-muted-foreground">{row.count} actions</p>
+                      </div>
+                      <p className="text-sm font-semibold text-paypal-blue">+{row.count * row.points} pts</p>
+                    </div>
+                  ) : null,
+                )
+              )}
             </div>
           </div>
         </div>
@@ -3646,42 +3762,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {recommendationCards.length > 0 && (
-        <div className="mx-4 mt-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-white" />
-              <h2 className="text-lg font-bold text-white">Recommended for you</h2>
-            </div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/70">Smart next steps</p>
-          </div>
-          <div className="grid gap-3 lg:grid-cols-3">
-            {recommendationCards.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={item.onClick}
-                className="paypal-surface rounded-[2rem] p-4 text-left text-foreground transition hover:-translate-y-0.5 hover:bg-secondary/50"
-              >
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-paypal-blue/10 text-paypal-blue shadow-inner">
-                    <item.icon className="h-6 w-6" />
-                  </div>
-                  <span className="rounded-full bg-paypal-blue/10 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-paypal-blue">
-                    {item.badge}
-                  </span>
-                </div>
-                <h3 className="text-base font-bold text-foreground">{item.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
-                <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-paypal-blue">
-                  {item.cta}
-                  <ExternalLink className="h-4 w-4" />
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <DashboardRecommendations items={recommendationCards} className="mx-4 mt-4" />
 
       <div className="mx-4 mt-4">
         <div className="mb-3 flex items-center justify-between">
@@ -3689,9 +3770,9 @@ const Dashboard = () => {
             <LayoutGrid className="h-5 w-5 text-white" />
             <h2 className="text-lg font-bold text-white">OpenPay Dashboard</h2>
           </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/70">Core sections</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-white/70">All sections</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {dashboardFeatureCards.map((item) => (
             <button
               key={item.id}

@@ -59,7 +59,7 @@ const OpenPayAppModal = ({ isOpen, onClose }: OpenPayAppModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md rounded-3xl p-0 overflow-hidden bg-white shadow-2xl border border-gray-200">
+      <DialogContent showCloseButton={false} className="max-w-md rounded-3xl p-0 overflow-hidden bg-white shadow-2xl border border-gray-200">
         <DialogTitle className="sr-only">OpenPay App</DialogTitle>
         <DialogDescription className="sr-only">Download and explore OpenPay mobile applications</DialogDescription>
         
