@@ -1367,7 +1367,7 @@ GRANT EXECUTE ON FUNCTION public.admin_refund_self_send(UUID, TEXT, TEXT, TEXT) 
 
 -- >>> MIGRATION: 20260216101000_supported_currencies_realtime.sql
 -- USD-based FX rates for the app.
--- Product rule: 1 PI = 3.14 USD.
+-- Product rule: 1 PI = 1 USD.
 
 CREATE TABLE IF NOT EXISTS public.supported_currencies (
   iso_code TEXT PRIMARY KEY,
@@ -1462,7 +1462,7 @@ SELECT
   v.code,
   'Ã°Å¸ÂÂ³Ã¯Â¸Â',
   CASE
-    WHEN v.code = 'PI' THEN 3.14
+    WHEN v.code = 'PI' THEN 1
     WHEN v.code = 'USD' THEN 1
     ELSE 1
   END,
@@ -1490,10 +1490,10 @@ SET
   is_active = true,
   updated_at = now();
 
--- Apply fixed USD rates (1 PI = 3.14 USD).
+-- Apply fixed USD rates (1 PI = 1 USD).
 UPDATE public.supported_currencies
 SET usd_rate = CASE iso_code
-  WHEN 'PI' THEN 3.14
+  WHEN 'PI' THEN 1
   WHEN 'USD' THEN 1
   WHEN 'EUR' THEN 0.8429
   WHEN 'GBP' THEN 0.7344
@@ -1624,7 +1624,7 @@ BEGIN
 
   -- Hard business rule.
   UPDATE public.supported_currencies
-  SET usd_rate = CASE WHEN iso_code = 'PI' THEN 3.14 ELSE 1 END,
+  SET usd_rate = CASE WHEN iso_code = 'PI' THEN 1 ELSE 1 END,
       updated_at = now()
   WHERE iso_code IN ('PI', 'USD');
 
@@ -2583,7 +2583,7 @@ ALTER TABLE public.remittance_merchants
 ADD CONSTRAINT remittance_merchants_qr_background_hex_chk
 CHECK (qr_background ~* '^#[0-9a-f]{6}$');
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_remittance_merchants_username_unique
+CREATE INDEX IF NOT EXISTS idx_remittance_merchants_username
 ON public.remittance_merchants (LOWER(merchant_username))
 WHERE merchant_username <> '';
 

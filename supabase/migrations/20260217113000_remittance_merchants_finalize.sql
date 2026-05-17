@@ -11,7 +11,7 @@ ALTER TABLE public.remittance_merchants
 ADD CONSTRAINT remittance_merchants_qr_background_hex_chk
 CHECK (qr_background ~* '^#[0-9a-f]{6}$');
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_remittance_merchants_username_unique
+CREATE INDEX IF NOT EXISTS idx_remittance_merchants_username
 ON public.remittance_merchants (LOWER(merchant_username))
 WHERE merchant_username <> '';
 

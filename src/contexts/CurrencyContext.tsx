@@ -9,7 +9,7 @@ export interface Currency {
   rate: number; // rate relative to PI (1 PI = rate units)
 }
 
-export const PI_TO_USD = 3.14;
+export const PI_TO_USD = 1;
 const PI_RATE_OVERRIDES: Record<string, number> = {
   USD: PI_TO_USD,
   EUR: 0.8429 * PI_TO_USD,
@@ -114,7 +114,7 @@ const PI_RATE_OVERRIDES: Record<string, number> = {
 };
 
 const baseCurrencies: Currency[] = [
-  { code: "OUSD", symbol: "$", name: "Open USD", flag: "OP", rate: 3.14 },
+  { code: "OUSD", symbol: "$", name: "Open USD", flag: "OP", rate: 1 },
   { code: "PI", symbol: "\u03C0", name: "Pi", flag: "PI", rate: 1 },
   { code: "MRWN", symbol: "M", name: "MRWN", flag: "MR", rate: 0.5 },
   { code: "USD", symbol: "$", name: "US Dollar", flag: "\u{1F1FA}\u{1F1F8}", rate: 3.14 },

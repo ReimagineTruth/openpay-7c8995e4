@@ -11,7 +11,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Profiles table
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL DEFAULT '',
   username TEXT UNIQUE,
@@ -21,7 +21,7 @@ CREATE TABLE public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Wallets table
-CREATE TABLE public.wallets (
+CREATE TABLE IF NOT EXISTS public.wallets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   balance NUMERIC(12,2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
@@ -30,7 +30,7 @@ CREATE TABLE public.wallets (
 ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
 
 -- Transactions table
-CREATE TABLE public.transactions (
+CREATE TABLE IF NOT EXISTS public.transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sender_id UUID NOT NULL REFERENCES auth.users(id),
   receiver_id UUID NOT NULL REFERENCES auth.users(id),
@@ -42,7 +42,7 @@ CREATE TABLE public.transactions (
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 
 -- Contacts table
-CREATE TABLE public.contacts (
+CREATE TABLE IF NOT EXISTS public.contacts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   contact_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -124,7 +124,7 @@ CREATE POLICY "Users can remove contacts"
 
 -- >>> MIGRATION: 20260215043000_menu_features.sql
 -- Payment requests
-CREATE TABLE public.payment_requests (
+CREATE TABLE IF NOT EXISTS public.payment_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   requester_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   payer_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -150,7 +150,7 @@ CREATE POLICY "Requester or payer can update payment requests"
   WITH CHECK (requester_id = auth.uid() OR payer_id = auth.uid());
 
 -- Invoices
-CREATE TABLE public.invoices (
+CREATE TABLE IF NOT EXISTS public.invoices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sender_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   recipient_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -177,7 +177,7 @@ CREATE POLICY "Sender or recipient can update invoices"
   WITH CHECK (sender_id = auth.uid() OR recipient_id = auth.uid());
 
 -- Support tickets
-CREATE TABLE public.support_tickets (
+CREATE TABLE IF NOT EXISTS public.support_tickets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   subject TEXT NOT NULL,
@@ -1317,7 +1317,7 @@ GRANT EXECUTE ON FUNCTION public.admin_refund_self_send(UUID, TEXT, TEXT, TEXT) 
 
 -- >>> MIGRATION: 20260216101000_supported_currencies_realtime.sql
 -- USD-based FX rates for the app.
--- Product rule: 1 PI = 3.14 USD.
+-- Product rule: 1 PI = 1 USD.
 
 CREATE TABLE IF NOT EXISTS public.supported_currencies (
   iso_code TEXT PRIMARY KEY,
@@ -1410,7 +1410,7 @@ SELECT
   v.code,
   'ðŸ³ï¸',
   CASE
-    WHEN v.code = 'PI' THEN 3.14
+    WHEN v.code = 'PI' THEN 1
     WHEN v.code = 'USD' THEN 1
     ELSE 1
   END,
@@ -1438,10 +1438,10 @@ SET
   is_active = true,
   updated_at = now();
 
--- Apply fixed USD rates (1 PI = 3.14 USD).
+-- Apply fixed USD rates (1 PI = 1 USD).
 UPDATE public.supported_currencies
 SET usd_rate = CASE iso_code
-  WHEN 'PI' THEN 3.14
+  WHEN 'PI' THEN 1
   WHEN 'USD' THEN 1
   WHEN 'EUR' THEN 0.8429
   WHEN 'GBP' THEN 0.7344
@@ -1572,7 +1572,7 @@ BEGIN
 
   -- Hard business rule.
   UPDATE public.supported_currencies
-  SET usd_rate = CASE WHEN iso_code = 'PI' THEN 3.14 ELSE 1 END,
+  SET usd_rate = CASE WHEN iso_code = 'PI' THEN 1 ELSE 1 END,
       updated_at = now()
   WHERE iso_code IN ('PI', 'USD');
 
@@ -2489,7 +2489,11 @@ FOR EACH ROW
 EXECUTE FUNCTION public.set_common_updated_at();
 
 INSERT INTO public.remittance_merchants (user_id, merchant_name, merchant_username)
-SELECT p.id, COALESCE(NULLIF(p.full_name, ''), 'OpenPay Remittance Center'), COALESCE(NULLIF(p.username, ''), '')
+SELECT p.id, COALESCE(NULLIF(p.full_name, ''), 'OpenPay Remittance Center'), 
+       CASE 
+         WHEN p.username IS NULL OR p.username = '' THEN ''
+         ELSE p.username || '-' || SUBSTRING(p.id::text, 1, 8)
+       END
 FROM public.profiles p
 ON CONFLICT (user_id) DO NOTHING;
 
@@ -2509,7 +2513,7 @@ ALTER TABLE public.remittance_merchants
 ADD CONSTRAINT remittance_merchants_qr_background_hex_chk
 CHECK (qr_background ~* '^#[0-9a-f]{6}$');
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_remittance_merchants_username_unique
+CREATE INDEX IF NOT EXISTS idx_remittance_merchants_username
 ON public.remittance_merchants (LOWER(merchant_username))
 WHERE merchant_username <> '';
 

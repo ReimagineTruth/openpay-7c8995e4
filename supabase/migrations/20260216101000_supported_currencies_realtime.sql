@@ -1,5 +1,5 @@
 -- USD-based FX rates for the app.
--- Product rule: 1 PI = 3.14 USD.
+-- Product rule: 1 PI = 1 USD.
 
 CREATE TABLE IF NOT EXISTS public.supported_currencies (
   iso_code TEXT PRIMARY KEY,
@@ -92,7 +92,7 @@ SELECT
   v.code,
   '🏳️',
   CASE
-    WHEN v.code = 'PI' THEN 3.14
+    WHEN v.code = 'PI' THEN 1
     WHEN v.code = 'USD' THEN 1
     ELSE 1
   END,
@@ -120,10 +120,10 @@ SET
   is_active = true,
   updated_at = now();
 
--- Apply fixed USD rates (1 PI = 3.14 USD).
+-- Apply fixed USD rates (1 PI = 1 USD).
 UPDATE public.supported_currencies
 SET usd_rate = CASE iso_code
-  WHEN 'PI' THEN 3.14
+  WHEN 'PI' THEN 1
   WHEN 'USD' THEN 1
   WHEN 'EUR' THEN 0.8429
   WHEN 'GBP' THEN 0.7344
@@ -254,7 +254,7 @@ BEGIN
 
   -- Hard business rule.
   UPDATE public.supported_currencies
-  SET usd_rate = CASE WHEN iso_code = 'PI' THEN 3.14 ELSE 1 END,
+  SET usd_rate = CASE WHEN iso_code = 'PI' THEN 1 ELSE 1 END,
       updated_at = now()
   WHERE iso_code IN ('PI', 'USD');
 
