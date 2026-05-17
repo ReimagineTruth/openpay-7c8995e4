@@ -311,7 +311,6 @@ const VirtualCardPage = () => {
             overflow: hidden !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-import AuthMark from "@/components/AuthMark";
           }
         }
       `}</style>
@@ -341,96 +340,100 @@ import AuthMark from "@/components/AuthMark";
           <button
             type="button"
             onClick={handleFlip}
-            className="relative w-full aspect-[1.586] rounded-3xl text-left transition-transform duration-700"
-            style={{ 
-              transformStyle: "preserve-3d",
-              transform: `rotateY(${flipTurns * 180}deg)`
-            }}
+            className="relative w-full aspect-[1.586] rounded-3xl text-left"
             aria-label="Flip virtual card"
           >
             <div
-              className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30"
+              className="relative h-full w-full rounded-3xl transition-transform duration-700"
               style={{
-                backfaceVisibility: "hidden",
-                WebkitBackfaceVisibility: "hidden",
-                transform: "rotateY(0deg)",
                 transformStyle: "preserve-3d",
-                zIndex: 1,
+                WebkitTransformStyle: "preserve-3d",
+                transform: isBackVisible ? "rotateY(180deg)" : "rotateY(0deg)",
+                WebkitTransform: isBackVisible ? "rotateY(180deg)" : "rotateY(0deg)",
               }}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <BrandLogo className="h-8 w-8" />
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-white/80">OpenPay</p>
-                    <p className="text-sm font-semibold">Virtual Credit Card</p>
+              <div
+                className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30"
+                style={{
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                  transform: "rotateY(0deg) translateZ(1px)",
+                  WebkitTransform: "rotateY(0deg) translateZ(1px)",
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <BrandLogo className="h-8 w-8" />
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.25em] text-white/80">OpenPay</p>
+                      <p className="text-sm font-semibold">Virtual Credit Card</p>
+                    </div>
                   </div>
+                  <CreditCard className="h-6 w-6 text-white/90" />
                 </div>
-                <CreditCard className="h-6 w-6 text-white/90" />
-              </div>
-              <div className="mt-[8%] h-[17%] w-[22%] rounded-lg bg-white/20" />
-              <p className="mt-[6%] text-[clamp(1rem,4.3vw,1.5rem)] font-semibold tracking-[0.14em]">
-                {hideDetails ? "**** **** **** ****" : (formatCardNumber(card?.card_number || "") || "0000 0000 0000 0000")}
-              </p>
-              <div className="mt-[7%] flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-white/75">Cardholder</p>
-                  <p className="text-sm font-semibold">{hideDetails ? "OPENPAY USER" : (card?.cardholder_name || "OPENPAY USER")}</p>
-                  <p className="text-xs text-white/80">@{hideDetails ? "hidden" : (card?.card_username || "openpay")}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[11px] uppercase tracking-wide text-white/75">Valid Thru</p>
-                  <p className="text-sm font-semibold">
-                    {String(card?.expiry_month || 1).padStart(2, "0")}/{String((card?.expiry_year || 2026) % 100).padStart(2, "0")}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30"
-              style={{
-                backfaceVisibility: "hidden",
-                WebkitBackfaceVisibility: "hidden",
-                transform: "rotateY(180deg)",
-                transformStyle: "preserve-3d",
-                zIndex: 2,
-              }}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <BrandLogo className="h-6 w-6" />
-                  <p className="text-sm font-semibold tracking-wide text-white/90">OpenPay</p>
-                </div>
-                <p className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[9px] font-medium uppercase tracking-wide text-white/80">
-                  Powered by Pi Network
-                </p>
-              </div>
-              <div className="mt-[8%] h-[20%] w-full bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800 rounded-md"></div>
-              <div className="relative mt-[6%] h-[16%] rounded-md bg-white/20 border border-white/30">
-                <p
-                  className="absolute inset-0 flex items-center justify-center px-3 text-base text-white/90"
-                  style={{ fontFamily: '"Brush Script MT","Segoe Script","Lucida Handwriting",cursive' }}
-                >
-                  {signatureDisplay || "Signature"}
-                </p>
-              </div>
-              <div className="mt-[10%] flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-white/70 font-semibold">Security Code</p>
-                  <p className="text-[10px] text-white/60">CVV</p>
-                </div>
-                <p className="rounded-md bg-white/20 px-3 py-2 text-sm font-semibold border border-white/30">{hideDetails ? "***" : (card?.cvc || "000")}</p>
-              </div>
-              <div className="mt-[8%]">
-                <p className="text-[10px] uppercase tracking-wide text-white/60 mb-1">Card Number</p>
-                <p className="text-sm text-white/90 font-mono tracking-wider">
+                <div className="mt-[8%] h-[17%] w-[22%] rounded-lg bg-white/20" />
+                <p className="mt-[6%] text-[clamp(1rem,4.3vw,1.5rem)] font-semibold tracking-[0.14em]">
                   {hideDetails ? "**** **** **** ****" : (formatCardNumber(card?.card_number || "") || "0000 0000 0000 0000")}
                 </p>
+                <div className="mt-[7%] flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-white/75">Cardholder</p>
+                    <p className="text-sm font-semibold">{hideDetails ? "OPENPAY USER" : (card?.cardholder_name || "OPENPAY USER")}</p>
+                    <p className="text-xs text-white/80">@{hideDetails ? "hidden" : (card?.card_username || "openpay")}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] uppercase tracking-wide text-white/75">Valid Thru</p>
+                    <p className="text-sm font-semibold">
+                      {String(card?.expiry_month || 1).padStart(2, "0")}/{String((card?.expiry_year || 2026) % 100).padStart(2, "0")}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="mt-[8%] text-xs text-white/70 text-center">
-                Tap card to flip {isBackVisible ? "to front" : "to back"}
-              </p>
+
+              <div
+                className="absolute inset-0 rounded-3xl bg-gradient-to-br from-paypal-blue to-[#0073e6] p-[6%] text-white shadow-xl shadow-[#004bba]/30"
+                style={{
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                  transform: "rotateY(180deg) translateZ(1px)",
+                  WebkitTransform: "rotateY(180deg) translateZ(1px)",
+                }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <BrandLogo className="h-6 w-6" />
+                    <p className="text-sm font-semibold tracking-wide text-white/90">OpenPay</p>
+                  </div>
+                  <p className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[9px] font-medium uppercase tracking-wide text-white/80">
+                    Powered by Pi Network
+                  </p>
+                </div>
+                <div className="mt-[8%] h-[20%] w-full rounded-md bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800" />
+                <div className="relative mt-[6%] h-[16%] rounded-md border border-white/30 bg-white/20">
+                  <p
+                    className="absolute inset-0 flex items-center justify-center px-3 text-base text-white/90"
+                    style={{ fontFamily: '"Brush Script MT","Segoe Script","Lucida Handwriting",cursive' }}
+                  >
+                    {signatureDisplay || "Signature"}
+                  </p>
+                </div>
+                <div className="mt-[10%] flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-white/70">Security Code</p>
+                    <p className="text-[10px] text-white/60">CVV</p>
+                  </div>
+                  <p className="rounded-md border border-white/30 bg-white/20 px-3 py-2 text-sm font-semibold">{hideDetails ? "***" : (card?.cvc || "000")}</p>
+                </div>
+                <div className="mt-[8%]">
+                  <p className="mb-1 text-[10px] uppercase tracking-wide text-white/60">Card Number</p>
+                  <p className="font-mono text-sm tracking-wider text-white/90">
+                    {hideDetails ? "**** **** **** ****" : (formatCardNumber(card?.card_number || "") || "0000 0000 0000 0000")}
+                  </p>
+                </div>
+                <p className="mt-[8%] text-center text-xs text-white/70">
+                  Tap card to flip to front
+                </p>
+              </div>
             </div>
           </button>
         </div>

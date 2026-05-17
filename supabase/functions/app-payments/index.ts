@@ -9,6 +9,44 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!
+
+function createAdminClient() {
+  return createClient(supabaseUrl, supabaseServiceKey)
+}
+
+function createUserClient(authHeader: string) {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+  })
+}
+
+async function requireUser(req: Request) {
+  const authHeader = req.headers.get("Authorization")
+  if (!authHeader?.startsWith("Bearer ")) {
+    return { error: errorResponse("Authorization required", 401) }
+  }
+
+  const supabase = createUserClient(authHeader)
+  const token = authHeader.replace("Bearer ", "")
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+
+  if (error || !user) {
+    return { error: errorResponse("Invalid token", 401) }
+  }
+
+  return { supabase, user }
+}
+
+function errorResponse(message: string, status = 400) {
+  return new Response(
+    JSON.stringify({ error: message }),
+    {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    }
+  )
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -22,7 +60,7 @@ serve(async (req) => {
     const method = req.method
 
     // Initialize Supabase client
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createAdminClient()
 
     // Route handling
     if (path === "create-app" && method === "POST") {
@@ -58,8 +96,9 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error("Error in app-payments function:", error)
+    const message = error instanceof Error ? error.message : "Unexpected error"
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
@@ -69,40 +108,43 @@ serve(async (req) => {
 })
 
 async function handleCreateApp(req: Request, supabase: any) {
-  const { app_name, app_description, app_url, app_logo_url, webhook_url } = await req.json()
-
-  if (!app_name) {
-    return new Response(
-      JSON.stringify({ error: "App name is required" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+  const auth = await requireUser(req)
+  if (auth.error) {
+    return auth.error
   }
 
-  const { data, error } = await supabase.rpc("create_app", {
-    p_app_name: app_name,
-    p_app_description: app_description,
-    p_app_url: app_url,
-    p_app_logo_url: app_logo_url,
-    p_webhook_url: webhook_url
-  })
+  const body = await req.json()
+  const appName = body.app_name ?? body.name
+  const appDescription = body.app_description ?? body.description ?? null
+  const appUrl = body.app_url ?? body.url ?? null
+  const appLogoUrl = body.app_logo_url ?? body.logo_url ?? null
+  const webhookUrl = body.webhook_url ?? null
+
+  if (!appName || !String(appName).trim()) {
+    return errorResponse("App name is required")
+  }
+
+  const { data, error } = await supabase
+    .from("app_registry")
+    .insert({
+      app_name: String(appName).trim(),
+      app_description: typeof appDescription === "string" && appDescription.trim() ? appDescription.trim() : null,
+      app_url: typeof appUrl === "string" && appUrl.trim() ? appUrl.trim() : null,
+      app_logo_url: typeof appLogoUrl === "string" && appLogoUrl.trim() ? appLogoUrl.trim() : null,
+      webhook_url: typeof webhookUrl === "string" && webhookUrl.trim() ? webhookUrl.trim() : null,
+      developer_user_id: auth.user.id,
+    })
+    .select("id, app_secret_key, app_public_key")
+    .single()
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse(error.message)
   }
 
   return new Response(
     JSON.stringify({ 
       success: true, 
-      data: Array.isArray(data) ? data[0] : data 
+      data: data
     }),
     { 
       status: 200, 
@@ -112,37 +154,38 @@ async function handleCreateApp(req: Request, supabase: any) {
 }
 
 async function handleCreatePlan(req: Request, supabase: any) {
-  const { app_id, plan_name, plan_description, plan_type, amount, currency, trial_days, setup_fee } = await req.json()
-
-  if (!app_id || !plan_name || !plan_type || !amount) {
-    return new Response(
-      JSON.stringify({ error: "Missing required fields" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+  const auth = await requireUser(req)
+  if (auth.error) {
+    return auth.error
   }
 
-  const { data, error } = await supabase.rpc("create_app_payment_plan", {
-    p_app_id: app_id,
-    p_plan_name: plan_name,
-    p_plan_description: plan_description,
-    p_plan_type: plan_type,
+  const body = await req.json()
+  const appId = body.app_id
+  const planName = body.plan_name ?? body.name
+  const planDescription = body.plan_description ?? body.description ?? null
+  const planType = body.plan_type ?? body.type
+  const amount = body.amount
+  const currency = body.currency
+  const trialDays = body.trial_days
+  const setupFee = body.setup_fee
+
+  if (!appId || !planName || !planType || !amount) {
+    return errorResponse("Missing required fields")
+  }
+
+  const { data, error } = await auth.supabase.rpc("create_app_payment_plan", {
+    p_app_id: appId,
+    p_plan_name: planName,
+    p_plan_description: planDescription,
+    p_plan_type: planType,
     p_amount: amount,
     p_currency: currency || "USD",
-    p_trial_days: trial_days || 0,
-    p_setup_fee: setup_fee || 0
+    p_trial_days: trialDays || 0,
+    p_setup_fee: setupFee || 0
   })
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse(error.message)
   }
 
   return new Response(
@@ -158,44 +201,18 @@ async function handleCreatePlan(req: Request, supabase: any) {
 }
 
 async function handleGetApps(req: Request, supabase: any) {
-  const authHeader = req.headers.get("Authorization")
-  if (!authHeader) {
-    return new Response(
-      JSON.stringify({ error: "Authorization required" }),
-      { 
-        status: 401, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+  const auth = await requireUser(req)
+  if (auth.error) {
+    return auth.error
   }
 
-  const token = authHeader.replace("Bearer ", "")
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-  if (authError || !user) {
-    return new Response(
-      JSON.stringify({ error: "Invalid token" }),
-      { 
-        status: 401, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
-  }
-
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("app_registry")
     .select("*")
-    .eq("developer_user_id", user.id)
     .order("created_at", { ascending: false })
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse(error.message)
   }
 
   return new Response(
@@ -208,20 +225,19 @@ async function handleGetApps(req: Request, supabase: any) {
 }
 
 async function handleGetPlans(req: Request, supabase: any) {
+  const auth = await requireUser(req)
+  if (auth.error) {
+    return auth.error
+  }
+
   const url = new URL(req.url)
   const appId = url.searchParams.get("app_id")
 
   if (!appId) {
-    return new Response(
-      JSON.stringify({ error: "app_id parameter required" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse("app_id parameter required")
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("app_payment_plans")
     .select("*")
     .eq("app_id", appId)
@@ -229,13 +245,7 @@ async function handleGetPlans(req: Request, supabase: any) {
     .order("created_at", { ascending: false })
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse(error.message)
   }
 
   return new Response(
@@ -248,21 +258,20 @@ async function handleGetPlans(req: Request, supabase: any) {
 }
 
 async function handleCreatePaymentLink(req: Request, supabase: any) {
+  const auth = await requireUser(req)
+  if (auth.error) {
+    return auth.error
+  }
+
   const { app_id, plan_id, link_name, link_description, redirect_url, custom_data, expires_at, max_usage } = await req.json()
 
   if (!app_id || !plan_id || !link_name) {
-    return new Response(
-      JSON.stringify({ error: "Missing required fields" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse("Missing required fields")
   }
 
   const linkToken = generateRandomToken()
   
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("app_payment_links")
     .insert({
       app_id,
@@ -279,13 +288,7 @@ async function handleCreatePaymentLink(req: Request, supabase: any) {
     .single()
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse(error.message)
   }
 
   return new Response(
@@ -308,13 +311,7 @@ async function handleGetPaymentLink(req: Request, supabase: any) {
   const token = url.searchParams.get("token")
 
   if (!token) {
-    return new Response(
-      JSON.stringify({ error: "token parameter required" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse("token parameter required")
   }
 
   const { data, error } = await supabase
@@ -329,13 +326,7 @@ async function handleGetPaymentLink(req: Request, supabase: any) {
     .single()
 
   if (error || !data) {
-    return new Response(
-      JSON.stringify({ error: "Payment link not found or inactive" }),
-      { 
-        status: 404, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse("Payment link not found or inactive", 404)
   }
 
   return new Response(
@@ -392,22 +383,21 @@ async function handleProcessPayment(req: Request, supabase: any) {
 }
 
 async function handleGetAnalytics(req: Request, supabase: any) {
+  const auth = await requireUser(req)
+  if (auth.error) {
+    return auth.error
+  }
+
   const url = new URL(req.url)
   const appId = url.searchParams.get("app_id")
   const startDate = url.searchParams.get("start_date")
   const endDate = url.searchParams.get("end_date")
 
   if (!appId) {
-    return new Response(
-      JSON.stringify({ error: "app_id parameter required" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse("app_id parameter required")
   }
 
-  let query = supabase
+  let query = auth.supabase
     .from("app_analytics")
     .select("*")
     .eq("app_id", appId)
@@ -423,13 +413,7 @@ async function handleGetAnalytics(req: Request, supabase: any) {
   const { data, error } = await query.order("date", { ascending: false })
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse(error.message)
   }
 
   // Calculate totals
@@ -467,11 +451,16 @@ async function handleGetAnalytics(req: Request, supabase: any) {
 }
 
 async function handleGetSubscriptions(req: Request, supabase: any) {
+  const auth = await requireUser(req)
+  if (auth.error) {
+    return auth.error
+  }
+
   const url = new URL(req.url)
   const appId = url.searchParams.get("app_id")
   const userId = url.searchParams.get("user_id")
 
-  let query = supabase
+  let query = auth.supabase
     .from("app_subscriptions")
     .select(`
       *,
@@ -490,13 +479,7 @@ async function handleGetSubscriptions(req: Request, supabase: any) {
   const { data, error } = await query.order("created_at", { ascending: false })
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse(error.message)
   }
 
   return new Response(
@@ -509,20 +492,19 @@ async function handleGetSubscriptions(req: Request, supabase: any) {
 }
 
 async function handleGetPaymentLinks(req: Request, supabase: any) {
+  const auth = await requireUser(req)
+  if (auth.error) {
+    return auth.error
+  }
+
   const url = new URL(req.url)
   const appId = url.searchParams.get("app_id")
 
   if (!appId) {
-    return new Response(
-      JSON.stringify({ error: "app_id parameter required" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse("app_id parameter required")
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("app_payment_links")
     .select(`
       *,
@@ -533,13 +515,7 @@ async function handleGetPaymentLinks(req: Request, supabase: any) {
     .order("created_at", { ascending: false })
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse(error.message)
   }
 
   // Add payment URLs to the response
@@ -558,19 +534,18 @@ async function handleGetPaymentLinks(req: Request, supabase: any) {
 }
 
 async function handleCancelSubscription(req: Request, supabase: any) {
+  const auth = await requireUser(req)
+  if (auth.error) {
+    return auth.error
+  }
+
   const { subscription_id } = await req.json()
 
   if (!subscription_id) {
-    return new Response(
-      JSON.stringify({ error: "subscription_id is required" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse("subscription_id is required")
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("app_subscriptions")
     .update({
       status: "canceled",
@@ -581,13 +556,7 @@ async function handleCancelSubscription(req: Request, supabase: any) {
     .single()
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    return errorResponse(error.message)
   }
 
   return new Response(

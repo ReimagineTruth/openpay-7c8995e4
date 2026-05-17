@@ -93,6 +93,18 @@ const copyToClipboard = async (text: string, label: string) => {
   }
 };
 
+const APP_PAYMENTS_SETUP_ERROR =
+  "App payments is not deployed in this Supabase project yet. Apply migrations 20260321000000_app_payment_system.sql and 20260517100000_fix_app_payments_auth.sql, then redeploy the app-payments function.";
+
+const isMissingAppPaymentsSchema = (message: string) => {
+  const normalized = message.toLowerCase();
+  return normalized.includes("app_registry")
+    || normalized.includes("app_payment_plans")
+    || normalized.includes("app_payment_links")
+    || normalized.includes("public.create_app")
+    || normalized.includes("schema cache");
+};
+
 const AppDeveloperDashboardPage = () => {
   const navigate = useNavigate();
   const [apps, setApps] = useState<App[]>([]);
@@ -146,9 +158,22 @@ const AppDeveloperDashboardPage = () => {
       const result = await response.json();
       
       if (result.success) {
-        setApps(result.data);
+        const nextApps = result.data || [];
+        setApps(nextApps);
+        setSelectedApp((current) => {
+          if (!nextApps.length) return null;
+          if (current) {
+            const refreshedSelection = nextApps.find((app: App) => app.id === current.id);
+            if (refreshedSelection) return refreshedSelection;
+          }
+          return nextApps[0];
+        });
       } else {
-        toast.error(result.error || "Failed to load apps");
+        toast.error(
+          result?.error && isMissingAppPaymentsSchema(result.error)
+            ? APP_PAYMENTS_SETUP_ERROR
+            : (result.error || "Failed to load apps")
+        );
       }
     } catch (error) {
       console.error('Load apps error:', error);
@@ -258,32 +283,47 @@ const AppDeveloperDashboardPage = () => {
 
       // Prepare app data - handle data URL logos
       const appData = {
-        ...newApp,
-        logo_url: newApp.logo_url?.startsWith('data:') ? null : newApp.logo_url
+        app_name: newApp.name.trim(),
+        app_description: newApp.description.trim() || null,
+        app_url: newApp.url.trim() || null,
+        app_logo_url: newApp.logo_url?.startsWith('data:') ? null : (newApp.logo_url || null),
+        webhook_url: newApp.webhook_url.trim() || null,
       };
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-payments/create-app`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify(appData)
-      });
+      let created = false;
+      let lastError = "Failed to create app";
 
-      const result = await response.json();
-      
-      if (result.success) {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-payments/create-app`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify(appData)
+        });
+
+        const result = await response.json().catch(() => null);
+        if (response.ok && result?.success) {
+          created = true;
+        } else if (result?.error) {
+          lastError = result.error;
+        }
+      } catch (error) {
+        console.error("Create app edge function error:", error);
+      }
+
+      if (created) {
         toast.success("App created successfully");
         setShowCreateApp(false);
         setNewApp({ name: "", description: "", url: "", logo_url: "", webhook_url: "" });
-        loadApps();
+        await loadApps();
       } else {
-        toast.error(result.error || "Failed to create app");
+        toast.error(isMissingAppPaymentsSchema(lastError) ? APP_PAYMENTS_SETUP_ERROR : lastError);
       }
     } catch (error) {
       console.error('Create app error:', error);
-      toast.error("Failed to create app");
+      toast.error(error instanceof Error ? error.message : "Failed to create app");
     } finally {
       setProcessing(false);
     }
@@ -310,9 +350,12 @@ const AppDeveloperDashboardPage = () => {
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          ...newPlan,
           app_id: selectedApp.id,
+          plan_name: newPlan.name.trim(),
+          plan_description: newPlan.description.trim() || null,
+          plan_type: newPlan.type,
           amount: parseFloat(newPlan.amount),
+          currency: newPlan.currency,
           trial_days: parseInt(newPlan.trial_days),
           setup_fee: parseFloat(newPlan.setup_fee)
         })
@@ -331,6 +374,60 @@ const AppDeveloperDashboardPage = () => {
     } catch (error) {
       console.error('Create plan error:', error);
       toast.error("Failed to create plan");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const createPaymentLink = async () => {
+    if (!selectedApp) {
+      toast.error("Select an app first");
+      return;
+    }
+
+    if (!newLink.name.trim() || !newLink.plan_id) {
+      toast.error("Link name and plan are required");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please login to create a payment link");
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-payments/create-payment-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          app_id: selectedApp.id,
+          plan_id: newLink.plan_id,
+          link_name: newLink.name.trim(),
+          link_description: newLink.description.trim() || null,
+          redirect_url: newLink.redirect_url.trim() || null,
+          max_usage: newLink.max_usage ? parseInt(newLink.max_usage) : null,
+          expires_at: newLink.expires_at || null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Payment link created successfully");
+        setShowCreateLink(false);
+        setNewLink({ name: "", description: "", plan_id: "", redirect_url: "", max_usage: "", expires_at: "" });
+        await loadPaymentLinks();
+      } else {
+        toast.error(result.error || "Failed to create payment link");
+      }
+    } catch (error) {
+      console.error("Create payment link error:", error);
+      toast.error("Failed to create payment link");
     } finally {
       setProcessing(false);
     }
@@ -929,6 +1026,91 @@ const AppDeveloperDashboardPage = () => {
                 Copy Public Key
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCreateLink} onOpenChange={setShowCreateLink}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Create Payment Link</DialogTitle>
+          <DialogDescription>
+            Create a hosted payment link for {selectedApp?.app_name}
+          </DialogDescription>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Link Name *</label>
+              <Input
+                value={newLink.name}
+                onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
+                placeholder="Starter checkout"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <Input
+                value={newLink.description}
+                onChange={(e) => setNewLink({ ...newLink, description: e.target.value })}
+                placeholder="Optional description"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Payment Plan *</label>
+              <select
+                value={newLink.plan_id}
+                onChange={(e) => setNewLink({ ...newLink, plan_id: e.target.value })}
+                className="mt-1 w-full rounded-md border border-border bg-white px-3 py-2"
+              >
+                <option value="">Select a plan</option>
+                {plans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.plan_name} - {plan.currency} {plan.amount.toFixed(2)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Redirect URL</label>
+              <Input
+                value={newLink.redirect_url}
+                onChange={(e) => setNewLink({ ...newLink, redirect_url: e.target.value })}
+                placeholder="https://myapp.com/thank-you"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Max Usage</label>
+              <Input
+                type="number"
+                min="1"
+                value={newLink.max_usage}
+                onChange={(e) => setNewLink({ ...newLink, max_usage: e.target.value })}
+                placeholder="Leave blank for unlimited"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Expires At</label>
+              <Input
+                type="datetime-local"
+                value={newLink.expires_at}
+                onChange={(e) => setNewLink({ ...newLink, expires_at: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <Button
+              onClick={createPaymentLink}
+              disabled={processing || plans.length === 0}
+              className="w-full"
+            >
+              {processing ? "Creating..." : "Create Payment Link"}
+            </Button>
+            {plans.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Create at least one payment plan before creating a payment link.
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -12,9 +12,17 @@ declare module "https://deno.land/std@0.168.0/http/server.ts" {
 }
 
 declare module "https://esm.sh/@supabase/supabase-js@2" {
-  export function createClient(url: string, key: string): {
+  export function createClient(
+    url: string,
+    key: string,
+    options?: {
+      global?: { headers?: Record<string, string> };
+      auth?: { persistSession?: boolean; autoRefreshToken?: boolean };
+    },
+  ): {
     auth: {
-      getUser(token: string): Promise<{ data: { user: any } | null; error: any }>;
+      getUser(token?: string): Promise<{ data: { user: any } | null; error: any }>;
+      getClaims(token: string): Promise<{ data: { claims: any } | null; error: any }>;
       admin: {
         listUsers(): Promise<{ data: { users: any[] } | null; error: any }>;
       };
@@ -39,5 +47,3 @@ declare module "https://esm.sh/*" {
   const module: any;
   export default module;
 }
-
-export {};
