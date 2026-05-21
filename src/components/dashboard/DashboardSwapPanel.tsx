@@ -1,5 +1,6 @@
 import { ArrowDownUp, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MRWN_SWAP_OUSD_PER_TOKEN } from "@/lib/mrwnRates";
 import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
 
 export type SwapWithdrawalType = "PI" | "MRWN" | "OUSD" | "OUSD_SOL";
@@ -40,7 +41,7 @@ const WITHDRAWAL_OPTIONS: {
   {
     id: "MRWN",
     label: "MRWN",
-    sublabel: "OUSD → MRWN payout",
+    sublabel: `${MRWN_SWAP_OUSD_PER_TOKEN} OUSD = 1 MRWN`,
     iconUrl:
       "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722deab5-1-removebg-preview.png",
     accent: "from-amber-500/15 to-orange-500/10",

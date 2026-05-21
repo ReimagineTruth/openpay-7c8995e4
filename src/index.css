@@ -230,7 +230,7 @@
   }
 
   .animate-in-up {
-    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   .animate-in-fade {
@@ -417,12 +417,63 @@ body {
 }
 
 /* Animation utility classes */
+.animate-fadeIn {
+  animation: fadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-slideInDown {
+  animation: fadeInDown 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 .animate-fadeInUp {
-  animation: fadeInUp 0.6s ease-out;
+  animation: fadeInUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .animate-fadeInDown {
-  animation: fadeInDown 0.6s ease-out;
+  animation: fadeInDown 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Dashboard entrance */
+.dashboard-page-enter {
+  animation: dashboardPageEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.dashboard-header-enter {
+  animation: fadeInDown 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.dashboard-intro-enter {
+  animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.06s forwards;
+  opacity: 0;
+}
+
+.dashboard-controls-enter {
+  animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
+  opacity: 0;
+}
+
+.dashboard-section-enter {
+  animation: dashboardSectionEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes dashboardPageEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dashboardSectionEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-slideInLeft {
@@ -643,6 +694,11 @@ button:focus, input:focus, textarea:focus, select:focus {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .dashboard-intro-enter,
+  .dashboard-controls-enter {
+    opacity: 1 !important;
   }
 }
 

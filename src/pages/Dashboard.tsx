@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
@@ -28,6 +28,7 @@ import DashboardSectionTabs from "@/components/dashboard/DashboardSectionTabs";
 import DashboardSectionQuickBar from "@/components/dashboard/DashboardSectionQuickBar";
 import DashboardRecommendations from "@/components/dashboard/DashboardRecommendations";
 import DashboardSwapPanel from "@/components/dashboard/DashboardSwapPanel";
+import { MRWN_SWAP_OUSD_PER_TOKEN } from "@/lib/mrwnRates";
 import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
 import {
   DASHBOARD_SECTION_NAV,
@@ -401,6 +402,7 @@ const Dashboard = () => {
   const [lastAdRunAt, setLastAdRunAt] = useState(0);
   const [piSdkInitialized, setPiSdkInitialized] = useState(false);
   const [activeSection, setActiveSection] = useState<DashboardSection>("wallet");
+  const dashboardTopRef = useRef<HTMLDivElement>(null);
   const [savings, setSavings] = useState<SavingsDashboard | null>(null);
   const [savingsTransfers, setSavingsTransfers] = useState<SavingsTransferActivity[]>([]);
   const [creditScore, setCreditScore] = useState(0);
@@ -474,7 +476,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currency, currencies } = useCurrency();
-  const mrwnToOusd = currencies.find((c) => c.code === "MRWN")?.rate ?? 0.5;
+  const mrwnToOusd = currencies.find((c) => c.code === "MRWN")?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN;
   const swapPayoutPiAmount = swapNetAmount > 0 ? swapNetAmount * OUSD_TO_PI : 0;
   const swapPayoutMrwnAmount = swapNetAmount > 0 && mrwnToOusd > 0 ? swapNetAmount / mrwnToOusd : 0;
   const swapPayoutOusdAmount = swapNetAmount > 0 ? swapNetAmount : 0;
@@ -1317,6 +1319,23 @@ const Dashboard = () => {
       setActiveSection('analytics');
     }
   }, [location.search, setActiveSection]);
+
+  const scrollDashboardToTop = useCallback((behavior: ScrollBehavior = "smooth") => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, left: 0, behavior });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    dashboardTopRef.current?.scrollIntoView({ behavior, block: "start" });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!location.pathname.startsWith("/dashboard")) return;
+    scrollDashboardToTop("auto");
+  }, [location.pathname, location.key, scrollDashboardToTop]);
+
+  useEffect(() => {
+    scrollDashboardToTop("smooth");
+  }, [activeSection, scrollDashboardToTop]);
 
   useEffect(() => {
     if (!userId) return;
@@ -2253,8 +2272,9 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-paypal-blue pb-64 text-white animate-fadeIn">
-      <div className="flex items-center justify-between px-4 pt-5 animate-slideInDown">
+    <div className="min-h-screen overflow-x-hidden bg-paypal-blue pb-64 text-white dashboard-page-enter">
+      <div ref={dashboardTopRef} className="h-0 w-0" aria-hidden tabIndex={-1} />
+      <div className="flex items-center justify-between px-4 pt-5 dashboard-header-enter">
         <div className="flex items-center gap-2">
           <CurrencySelector />
           
@@ -2306,18 +2326,18 @@ const Dashboard = () => {
 
       
       {/* Greeting */}
-      <div className="px-4 mt-3 animate-fadeInUp">
-        <h1 className="text-2xl font-bold text-white transition-all duration-500">
+      <div className="dashboard-intro-enter px-4 mt-3">
+        <h1 className="text-2xl font-bold text-white transition-all duration-300">
           {activeSection === "wallet"
             ? `${getGreeting()}, ${userName.split(" ")[0] || "there"}`
             : DASHBOARD_SECTION_TITLES[activeSection]}
         </h1>
-        <p className="mt-1 text-sm text-white/80 animate-fadeIn" style={{ animationDelay: "0.15s" }}>
+        <p className="mt-1 text-sm text-white/80">
           {getDashboardSectionSubtitle(activeSection, username)}
         </p>
       </div>
 
-      <div className="mt-4 px-4 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
+      <div className="dashboard-controls-enter mt-4 px-4">
         <DashboardSectionTabs activeSection={activeSection} onChange={setActiveSection} />
         {activeSectionMeta ? (
           <p className="mt-2 text-center text-xs font-semibold text-white/70">
@@ -2336,13 +2356,14 @@ const Dashboard = () => {
             }}
             open={showLiveRates}
             onOpenChange={setShowLiveRates}
-            className="mt-4 animate-fadeInUp"
+            className="mt-4"
           />
         ) : null}
       </div>
 
+      <div key={activeSection} className="dashboard-section-enter">
       {activeSection === "savings" && (
-        <div className="mx-4 mt-4 animate-in-up">
+        <div className="mx-4 mt-4">
           <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
@@ -2502,7 +2523,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "credit" && (
-        <div className="mx-4 mt-4 animate-in-up">
+        <div className="mx-4 mt-4">
           <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
@@ -2596,7 +2617,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "loans" && (
-        <div className="mx-4 mt-4 animate-in-up">
+        <div className="mx-4 mt-4">
           <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
@@ -2826,7 +2847,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "cards" && (
-        <div className="mx-4 mt-4 animate-in-up">
+        <div className="mx-4 mt-4">
           <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
@@ -2910,7 +2931,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "buy" && (
-        <div className="mx-4 mt-4 animate-in-up">
+        <div className="mx-4 mt-4">
           <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
@@ -3101,7 +3122,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "swap" && (
-        <div className="mx-4 mt-4 animate-in-up">
+        <div className="mx-4 mt-4">
           <DashboardSwapPanel
             withdrawalType={swapWithdrawalType}
             onWithdrawalTypeChange={setSwapWithdrawalType}
@@ -3149,7 +3170,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "mining" && (
-        <div className="mx-4 mt-4 animate-in-up">
+        <div className="mx-4 mt-4">
           <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
@@ -3214,7 +3235,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "analytics" && (
-        <div className="mx-4 mt-4 animate-in-up space-y-4">
+        <div className="mx-4 mt-4 space-y-4">
           <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
             <div className="relative mb-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
@@ -3392,7 +3413,7 @@ const Dashboard = () => {
 
       {activeSection === "wallet" && (
         <>
-      <div className="mx-4 mt-4 animate-in-up">
+      <div className="mx-4 mt-4">
         <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
           
           <div className="relative mb-6 flex flex-wrap items-center gap-3">
@@ -3730,7 +3751,7 @@ const Dashboard = () => {
                 key={item.id}
                 onClick={item.action}
                 style={{ animationDelay: `${idx * 50}ms` }}
-                className="paypal-surface ios-active flex flex-col items-center justify-center rounded-[2rem] p-5 text-center shadow-lg shadow-black/5 animate-in-up text-foreground"
+                className="paypal-surface ios-active flex flex-col items-center justify-center rounded-[2rem] p-5 text-center shadow-lg shadow-black/5 text-foreground"
               >
                 <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${item.color} shadow-inner`}>
                   <item.icon className={`h-6 w-6 ${item.iconColor}`} />
@@ -3767,6 +3788,7 @@ const Dashboard = () => {
 
         </>
       )}
+      </div>
 
       <div className="fixed bottom-32 left-0 right-0 z-40 px-4">
         <div className="mx-auto flex max-w-md items-center gap-3">

@@ -31,6 +31,8 @@ const ADMIN_PROFILE_USERNAMES = new Set(["openpay", "wainfoundation"]);
 const PI_LOGO_URL =
   "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
 const MRWN_LOGO_URL = "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722deab5-1-removebg-preview.png";
+import { MRWN_SWAP_OUSD_PER_TOKEN } from "@/lib/mrwnRates";
+
 const WITHDRAWAL_FEE_RATE = 0.02;
 
 const AdminSwapWithdrawalsPage = () => {
@@ -220,7 +222,7 @@ const AdminSwapWithdrawalsPage = () => {
                   <p>OpenPay username: @{row.openpay_account_username}</p>
                   <p>Account number: {row.openpay_account_number}</p>
                   <p className="sm:col-span-2">
-                    {row.withdrawal_type} to send: {((row.amount * (1 - WITHDRAWAL_FEE_RATE)) / (row.withdrawal_type === "PI" ? PI_TO_USD : 0.5)).toFixed(4)} {row.withdrawal_type} (after 2% fee)
+                    {row.withdrawal_type} to send: {((row.amount * (1 - WITHDRAWAL_FEE_RATE)) / (row.withdrawal_type === "PI" ? PI_TO_USD : MRWN_SWAP_OUSD_PER_TOKEN)).toFixed(4)} {row.withdrawal_type} (after 2% fee)
                   </p>
                   <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
                     <span>{row.withdrawal_type} wallet: {row.withdrawal_type === "PI" ? row.pi_wallet_address : row.mrwn_wallet_address}</span>

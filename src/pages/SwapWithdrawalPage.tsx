@@ -10,6 +10,7 @@ import { loadAppSecuritySettings, isPinSetupCompleted } from "@/lib/appSecurity"
 import { playGoogleWalletSuccessSound } from "@/lib/soundEffects";
 import { PI_TO_USD } from "@/contexts/CurrencyContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { MRWN_SWAP_OUSD_PER_TOKEN } from "@/lib/mrwnRates";
 import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
 
 type WithdrawalType = "PI" | "MRWN" | "OUSD" | "OUSD_SOL";
@@ -412,7 +413,7 @@ const SwapWithdrawalPage = () => {
             <p>2. When you submit, your OpenUSD is moved to the settlement account {SETTLEMENT_USERNAME} ({SETTLEMENT_ACCOUNT_NUMBER}).</p>
             {showPrice ? (
               <>
-                <p>3. After admin approval, you receive {swapTypeLabel(withdrawalType)} to your wallet. Rate is always 1 {swapTypeLabel(withdrawalType)} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : withdrawalType === "OUSD" || withdrawalType === "OUSD_SOL" ? "1.00" : (selectedCurrency?.rate || 0.5).toFixed(2)} OPEN USD.</p>
+                <p>3. After admin approval, you receive {swapTypeLabel(withdrawalType)} to your wallet. Rate is always 1 {swapTypeLabel(withdrawalType)} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : withdrawalType === "OUSD" || withdrawalType === "OUSD_SOL" ? "1.00" : (selectedCurrency?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN).toFixed(2)} OPEN USD.</p>
                 <p>4. A 2% processing fee applies to withdrawals.</p>
               </>
             ) : (
@@ -431,12 +432,12 @@ const SwapWithdrawalPage = () => {
                   <span className="inline-flex items-center gap-1 font-semibold">
                     <img src={withdrawalType === "PI" ? PI_LOGO_URL : withdrawalType === "OUSD" ? OUSD_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-4 w-4" />
                     <span>{withdrawalType === "PI" ? "π" : withdrawalType === "OUSD" ? "O" : "M"}</span>
-                    <span>{withdrawalType === "PI" ? formattedPiPrice : withdrawalType === "OUSD" ? "1.00" : (selectedCurrency?.rate || 0.5).toFixed(2)}</span>
+                    <span>{withdrawalType === "PI" ? formattedPiPrice : withdrawalType === "OUSD" ? "1.00" : (selectedCurrency?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN).toFixed(2)}</span>
                   </span>
                 </div>
                   <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>Fixed</span>
-                    <span>1 {withdrawalType} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : withdrawalType === "OUSD" ? "1.00" : (selectedCurrency?.rate || 0.5).toFixed(2)} OPEN USD</span>
+                    <span>1 {withdrawalType} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : withdrawalType === "OUSD" ? "1.00" : (selectedCurrency?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN).toFixed(2)} OPEN USD</span>
                   </div>
               </div>
             )}
@@ -596,7 +597,7 @@ const SwapWithdrawalPage = () => {
                       }`}>MRWN</span>
                       <div className={`text-[10px] transition-opacity duration-300 ${
                         withdrawalType === "MRWN" ? "opacity-100 text-purple-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                      }`}>OUSD → MRWN</div>
+                      }`}>10 OUSD = 1 MRWN</div>
                     </div>
                   </div>
                 </button>

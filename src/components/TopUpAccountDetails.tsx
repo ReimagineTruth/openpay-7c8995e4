@@ -462,45 +462,45 @@ const TopUpAccountDetails = ({
       </div>
 
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-        <DialogContent className="rounded-3xl sm:max-w-md">
-          <DialogTitle className="text-lg font-bold text-foreground">Confirm Top Up Request</DialogTitle>
+        <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto rounded-3xl p-5 sm:p-6">
+          <DialogTitle className="pr-8 text-lg font-bold text-foreground">Confirm Top Up Request</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             Review your details before submitting this top up request.
           </DialogDescription>
-          <div className="mt-2 rounded-2xl border border-border p-3 text-sm text-foreground space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Amount</span>
+          <div className="mt-2 space-y-3 rounded-2xl border border-border p-4 text-sm text-foreground">
+            <div className="flex items-center justify-between gap-3">
+              <span className="shrink-0 text-muted-foreground">Amount</span>
               <span className="font-semibold">{safeAmount.toFixed(2)} OPEN USD</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Provider</span>
-              <span className="font-semibold">{providerName}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="shrink-0 text-muted-foreground">Provider</span>
+              <span className="text-right font-semibold">{providerName}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Account</span>
-              <span className="font-semibold">{openpayAccountNumber || "N/A"}</span>
+            <div className="space-y-1 border-t border-border/70 pt-3">
+              <span className="text-xs font-medium text-muted-foreground">Account</span>
+              <p className="break-all font-mono text-xs leading-relaxed">{openpayAccountNumber || "N/A"}</p>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Reference</span>
-              <span className="font-semibold">{referenceCode || "N/A"}</span>
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Reference</span>
+              <p className="break-all font-mono text-xs leading-relaxed">{referenceCode || "N/A"}</p>
             </div>
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"
-              className="flex-1 h-11 rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]"
+              variant="outline"
+              className="h-11 w-full rounded-2xl sm:flex-1"
+              onClick={() => setShowConfirmModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="h-11 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5] sm:flex-1"
               onClick={handleConfirmSubmit}
               disabled={submitting || uploading}
             >
               Confirm & Submit
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 rounded-2xl"
-              onClick={() => setShowConfirmModal(false)}
-            >
-              Cancel
             </Button>
           </div>
         </DialogContent>
