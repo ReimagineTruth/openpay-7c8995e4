@@ -374,7 +374,7 @@ const Dashboard = () => {
   const [showLiveRates, setShowLiveRates] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("dashboard_live_rates_visible");
-      return saved !== null ? JSON.parse(saved) : true;
+      return saved !== null ? JSON.parse(saved) : false;
     }
     return true;
   });
@@ -2345,7 +2345,7 @@ const Dashboard = () => {
           </p>
         ) : null}
         <DashboardSectionQuickBar actions={sectionQuickActions[activeSection]} className="mt-3 justify-center sm:justify-start" />
-        {activeSection !== "swap" ? (
+        {activeSection !== "swap" && activeSection !== "wallet" ? (
           <DigitalRateDisplay
             rates={{
               piToOusd: PI_TO_OUSD,
@@ -3553,6 +3553,20 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="mx-4 mt-4">
+        <DigitalRateDisplay
+          rates={{
+            piToOusd: PI_TO_OUSD,
+            usdToOusd: 1,
+            currencyTag: currencyTag,
+            currencyCode: currency.code,
+            currencyRate: currency.rate,
+          }}
+          open={showLiveRates}
+          onOpenChange={setShowLiveRates}
+        />
       </div>
 
       
