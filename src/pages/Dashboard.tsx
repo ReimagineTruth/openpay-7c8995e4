@@ -7,7 +7,7 @@ import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 
-type WithdrawalType = "PI" | "MRWN" | "OUSD";
+type WithdrawalType = "PI" | "MRWN" | "OUSD" | "OUSD_SOL";
 import BrandLogo from "@/components/BrandLogo";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { loadAppSecuritySettings, saveAppSecuritySettings } from "@/lib/appSecurity";
@@ -27,6 +27,8 @@ import { PhantomConnect } from "@/components/ui/PhantomConnect";
 import DashboardSectionTabs from "@/components/dashboard/DashboardSectionTabs";
 import DashboardSectionQuickBar from "@/components/dashboard/DashboardSectionQuickBar";
 import DashboardRecommendations from "@/components/dashboard/DashboardRecommendations";
+import DashboardSwapPanel from "@/components/dashboard/DashboardSwapPanel";
+import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
 import {
   DASHBOARD_SECTION_NAV,
   DASHBOARD_SECTION_TITLES,
@@ -68,6 +70,7 @@ type BuyOnrampProvider =
   | "USDC"
   | "MRWN"
   | "OUSD"
+  | "OUSD_SOL"
   | "Solana Pay"
   | "PayPal"
   | "Apple Pay"
@@ -86,6 +89,7 @@ type BuyPaymentMethod =
   | "USDC"
   | "MRWN"
   | "OUSD"
+  | "OUSD_SOL"
   | "Solana Pay"
   | "Debit Card"
   | "Credit Card"
@@ -101,6 +105,8 @@ const inferTopupPaymentMethod = (tx: Transaction): BuyPaymentMethod | null => {
   if (hint.includes("usdt") || hint.includes("tether")) return "USDT";
   if (hint.includes("usdc")) return "USDC";
   if (hint.includes("mrwn")) return "MRWN";
+  if (hint.includes("ousd sol") || hint.includes("ousd_sol")) return "OUSD_SOL";
+  if (hint.includes("ousd")) return "OUSD";
   if (hint.includes("paypal")) return "PayPal";
   if (hint.includes("ewallet") || hint.includes("qr ph") || hint.includes("qrph") || hint.includes("jqr")) return "Ewallet";
   if (hint.includes("solana")) return "Solana Pay";
@@ -123,6 +129,7 @@ const getPaymentMethodIcon = (method: BuyPaymentMethod | null) => {
   if (method === "USDC") return { src: USDC_ICON_URL, fallback: USDC_ICON_FALLBACK_URL };
   if (method === "MRWN") return { src: MRWN_ICON_URL, fallback: "" };
   if (method === "OUSD") return { src: OUSD_ICON_URL, fallback: "" };
+  if (method === "OUSD_SOL") return { src: OUSD_SOL_LOGO_URL, fallback: OUSD_ICON_URL };
   if (method === "Solana Pay") return { src: SOLANA_PAY_ICON_URL, fallback: "" };
   if (method === "Apple Pay") return { src: APPLE_PAY_ICON_URL, fallback: "" };
   if (method === "Google Pay") return { src: GOOGLE_PAY_ICON_URL, fallback: "" };
@@ -372,15 +379,11 @@ const Dashboard = () => {
   });
   const [swapAmount, setSwapAmount] = useState("");
   const [swapWithdrawalType, setSwapWithdrawalType] = useState<WithdrawalType>("PI");
-  const mrwnComingSoon = true; // MRWN price coming soon flag
   const parsedSwapAmount = Number(swapAmount);
   const safeSwapAmount = Number.isFinite(parsedSwapAmount) && parsedSwapAmount > 0 ? parsedSwapAmount : 0;
   const swapMeetsMinimum = safeSwapAmount >= 10;
   const swapFeeAmount = safeSwapAmount > 0 ? Number((safeSwapAmount * 0.02).toFixed(2)) : 0;
-  const swapPayoutPiAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * OUSD_TO_PI : 0;
-  const swapPayoutMrwnAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) * (1 / 0.5) * OUSD_TO_PI : 0;
-  const swapPayoutOusdAmount = safeSwapAmount > 0 ? (safeSwapAmount - swapFeeAmount) : 0; // 1:1 for OUSD
-  const showSwapPrice = swapWithdrawalType === "PI" || swapWithdrawalType === "OUSD" || !mrwnComingSoon;
+  const swapNetAmount = safeSwapAmount > 0 ? safeSwapAmount - swapFeeAmount : 0;
     const [refreshing, setRefreshing] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [agreementChecked, setAgreementChecked] = useState(false);
@@ -471,6 +474,11 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currency, currencies } = useCurrency();
+  const mrwnToOusd = currencies.find((c) => c.code === "MRWN")?.rate ?? 0.5;
+  const swapPayoutPiAmount = swapNetAmount > 0 ? swapNetAmount * OUSD_TO_PI : 0;
+  const swapPayoutMrwnAmount = swapNetAmount > 0 && mrwnToOusd > 0 ? swapNetAmount / mrwnToOusd : 0;
+  const swapPayoutOusdAmount = swapNetAmount > 0 ? swapNetAmount : 0;
+  const swapPayoutOusdSolAmount = swapNetAmount > 0 ? swapNetAmount : 0;
   const currencyLabel = currency.code === "OUSD" ? "OPEN USD" : currency.code;
   const piCurrencyLabel = currency.code === "OUSD" ? "OPEN USD" : `PI ${currency.code}`;
   const cardCurrencyLabel = currency.code === "PI" ? "PI" : currency.code === "OUSD" ? "OPEN USD" : `PI ${currency.code}`;
@@ -1769,6 +1777,7 @@ const Dashboard = () => {
   const isUsdcBuyFlow = buyPaymentMethod === "USDC";
   const isMrwnBuyFlow = buyPaymentMethod === "MRWN";
   const isOusdBuyFlow = buyPaymentMethod === "OUSD";
+  const isOusdSolBuyFlow = buyPaymentMethod === "OUSD_SOL";
   const isUsdFiatBuyFlow =
     buyPaymentMethod !== "Ewallet" &&
     buyPaymentMethod !== "Pi Payment" &&
@@ -1776,8 +1785,21 @@ const Dashboard = () => {
     buyPaymentMethod !== "USDC" &&
     buyPaymentMethod !== "MRWN" &&
     buyPaymentMethod !== "OUSD" &&
+    buyPaymentMethod !== "OUSD_SOL" &&
     buyPaymentMethod !== "Solana Pay";
-  const buySpendUnit = isEwalletBuyFlow ? "PHP" : isUsdtBuyFlow ? "USDT" : isUsdcBuyFlow ? "USDC" : isMrwnBuyFlow ? "MRWN" : isOusdBuyFlow ? "OUSD" : isUsdFiatBuyFlow ? "USD" : "PI";
+  const buySpendUnit = isEwalletBuyFlow
+    ? "PHP"
+    : isUsdtBuyFlow
+      ? "USDT"
+      : isUsdcBuyFlow
+        ? "USDC"
+        : isMrwnBuyFlow
+          ? "MRWN"
+          : isOusdBuyFlow || isOusdSolBuyFlow
+            ? "OUSD"
+            : isUsdFiatBuyFlow
+              ? "USD"
+              : "PI";
   const buySpendRateText = isEwalletBuyFlow
     ? `${E_WALLET_PHP_PER_OUSD.toFixed(2)} PHP = 1 OPEN USD`
     : isUsdtBuyFlow
@@ -1786,7 +1808,7 @@ const Dashboard = () => {
         ? "1 USDC = 1 OPEN USD"
         : isMrwnBuyFlow
           ? "1 MRWN = 1 OPEN USD"
-          : isOusdBuyFlow
+          : isOusdBuyFlow || isOusdSolBuyFlow
             ? "1 OUSD = 1 OPEN USD"
             : isEwalletBuyFlow
             ? `${E_WALLET_PHP_PER_OUSD.toFixed(2)} PHP = 1 OPEN USD`
@@ -1809,6 +1831,7 @@ const Dashboard = () => {
     "USDC": 1,
     "MRWN": 1,
     "OUSD": 1,
+    "OUSD_SOL": 1,
     "Solana Pay": 1,
     "PayPal": 1,
     "Apple Pay": 1,
@@ -1827,6 +1850,7 @@ const Dashboard = () => {
     { key: "Pi Payment", subtitle: "Active", recommended: true },
     { key: "MRWN", subtitle: "Active" },
     { key: "OUSD", subtitle: "Active" },
+    { key: "OUSD_SOL", subtitle: "Solana · Active" },
     { key: "Ewallet QR PH", subtitle: "Active" },
     { key: "USDT", subtitle: "Active" },
     { key: "USDC", subtitle: "Active" },
@@ -1847,6 +1871,7 @@ const Dashboard = () => {
   const basePaymentMethodRows: Array<{ key: BuyPaymentMethod; recommended?: boolean; disabled?: boolean }> = [
     { key: "Pi Payment", recommended: true },
     { key: "OUSD" },
+    { key: "OUSD_SOL" },
     { key: "MRWN" },
     { key: "USDT" },
     { key: "USDC" },
@@ -1866,6 +1891,7 @@ const Dashboard = () => {
     "Pi Payment",
     "MRWN",
     "OUSD",
+    "OUSD_SOL",
     "USDT",
     "USDC",
     "Ewallet",
@@ -1884,6 +1910,7 @@ const Dashboard = () => {
       : (baseSupportedBuyPaymentMethods.filter((method) => method !== "Solana Pay") as BuyPaymentMethod[]);
   const getBuyPaymentMethodLabel = (method: BuyPaymentMethod) => {
     if (method === "Ewallet") return "Ewallet QR PH";
+    if (method === "OUSD_SOL") return OUSD_SOL_LABEL;
     return method;
   };
   const buyOpenUsdAmount =
@@ -1925,6 +1952,7 @@ const Dashboard = () => {
         "USDC": "/topup-usdc",
         "MRWN": "/topup-mrwn",
         "OUSD": "/topup-ousd",
+        "OUSD_SOL": "/topup-ousd-sol",
         "Solana Pay": "/topup-solana-pay",
         "PayPal": "/topup-paypal",
         "Debit Card": "/topup-debit",
@@ -2297,18 +2325,20 @@ const Dashboard = () => {
           </p>
         ) : null}
         <DashboardSectionQuickBar actions={sectionQuickActions[activeSection]} className="mt-3 justify-center sm:justify-start" />
-        <DigitalRateDisplay
-          rates={{
-            piToOusd: PI_TO_OUSD,
-            usdToOusd: 1,
-            currencyTag: currencyTag,
-            currencyCode: currency.code,
-            currencyRate: currency.rate,
-          }}
-          open={showLiveRates}
-          onOpenChange={setShowLiveRates}
-          className="mt-4 animate-fadeInUp"
-        />
+        {activeSection !== "swap" ? (
+          <DigitalRateDisplay
+            rates={{
+              piToOusd: PI_TO_OUSD,
+              usdToOusd: 1,
+              currencyTag: currencyTag,
+              currencyCode: currency.code,
+              currencyRate: currency.rate,
+            }}
+            open={showLiveRates}
+            onOpenChange={setShowLiveRates}
+            className="mt-4 animate-fadeInUp"
+          />
+        ) : null}
       </div>
 
       {activeSection === "savings" && (
@@ -3039,8 +3069,19 @@ const Dashboard = () => {
                     <img
                       src={OUSD_ICON_URL}
                       alt=""
-                      className="h-10 w-auto object-contain"
+                      className="h-10 w-10 shrink-0 object-contain"
                       referrerPolicy="no-referrer"
+                    />
+                  )}
+                  {buyPaymentMethod === "OUSD_SOL" && (
+                    <img
+                      src={OUSD_SOL_LOGO_URL}
+                      alt=""
+                      className="h-10 w-10 shrink-0 object-contain"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.src = OUSD_ICON_URL;
+                      }}
                     />
                   )}
                   {buyPaymentMethod === "Solana Pay" && <img src={SOLANA_PAY_ICON_URL} alt="" className="h-6 w-auto object-contain" />}
@@ -3060,192 +3101,50 @@ const Dashboard = () => {
       )}
 
       {activeSection === "swap" && (
-        <div className="mx-4 mt-4 space-y-4">
-          <div className="paypal-surface rounded-3xl p-6">
-            <div className="mb-6">
-              <p className="text-xl font-semibold text-foreground mb-2">Swap Withdrawal</p>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <span>Select withdrawal type</span>
-                  <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">Choose one</span>
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSwapWithdrawalType("PI")}
-                    className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
-                      swapWithdrawalType === "PI"
-                        ? "border-blue-400 bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl shadow-blue-500/25 scale-105"
-                        : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
-                    } cursor-pointer`}
-                  >
-                    {swapWithdrawalType === "PI" && (
-                      <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
-                        <div className="h-2 w-2 rounded-full bg-white"></div>
-                      </div>
-                    )}
-                    <div className="flex flex-col items-center justify-center gap-2 h-full">
-                      <div className={`relative transition-transform duration-300 ${
-                        swapWithdrawalType === "PI" ? "scale-110" : "group-hover:scale-105"
-                      }`}>
-                        <img src={PI_PAYMENT_ICON_URL} alt="PI" className="h-6 w-6 drop-shadow-md" />
-                      </div>
-                      <div className="text-center">
-                        <span className={`text-xs font-bold transition-colors duration-300 ${
-                          swapWithdrawalType === "PI" ? "text-blue-600" : "text-foreground group-hover:text-white"
-                        }`}>Pi Network</span>
-                        <div className={`text-[10px] transition-opacity duration-300 ${
-                          swapWithdrawalType === "PI" ? "opacity-100 text-blue-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                        }`}>Fast & Secure</div>
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSwapWithdrawalType("OUSD")}
-                    className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
-                      swapWithdrawalType === "OUSD"
-                        ? "border-green-400 bg-gradient-to-br from-green-50 to-green-100 shadow-xl shadow-green-500/25 scale-105"
-                        : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
-                    } cursor-pointer`}
-                  >
-                    {swapWithdrawalType === "OUSD" && (
-                      <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
-                        <div className="h-2 w-2 rounded-full bg-white"></div>
-                      </div>
-                    )}
-                    <div className="flex flex-col items-center justify-center gap-2 h-full">
-                      <div className={`relative transition-transform duration-300 ${
-                        swapWithdrawalType === "OUSD" ? "scale-110" : "group-hover:scale-105"
-                      }`}>
-                        <img src={OUSD_ICON_URL} alt="OUSD" className="h-6 w-6 drop-shadow-md" />
-                      </div>
-                      <div className="text-center">
-                        <span className={`text-xs font-bold transition-colors duration-300 ${
-                          swapWithdrawalType === "OUSD" ? "text-green-600" : "text-foreground group-hover:text-white"
-                        }`}>OUSD</span>
-                        <div className={`text-[10px] transition-opacity duration-300 ${
-                          swapWithdrawalType === "OUSD" ? "opacity-100 text-green-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                        }`}>1:1 Rate</div>
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSwapWithdrawalType("MRWN")}
-                    className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
-                      swapWithdrawalType === "MRWN"
-                        ? "border-purple-400 bg-gradient-to-br from-purple-50 to-purple-100 shadow-xl shadow-purple-500/25 scale-105"
-                        : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
-                    } cursor-pointer`}
-                  >
-                    {swapWithdrawalType === "MRWN" && (
-                      <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-purple-500 flex items-center justify-center">
-                        <div className="h-2 w-2 rounded-full bg-white"></div>
-                      </div>
-                    )}
-                    <div className="flex flex-col items-center justify-center gap-2 h-full">
-                      <div className={`relative transition-transform duration-300 ${
-                        swapWithdrawalType === "MRWN" ? "scale-110" : "group-hover:scale-105"
-                      }`}>
-                        <img src={MRWN_ICON_URL} alt="MRWN" className="h-6 w-6 drop-shadow-md" />
-                      </div>
-                      <div className="text-center">
-                        <span className={`text-xs font-bold transition-colors duration-300 ${
-                          swapWithdrawalType === "MRWN" ? "text-purple-600" : "text-foreground group-hover:text-white"
-                        }`}>MRWN</span>
-                        <div className={`text-[10px] transition-opacity duration-300 ${
-                          swapWithdrawalType === "MRWN" ? "opacity-100 text-purple-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                        }`}>Coming Soon</div>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <span className="rounded-full border border-border/70 px-3 py-1 text-xs font-semibold text-muted-foreground">
-                  OUSD → {swapWithdrawalType} payout
-                </span>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-secondary/30 p-4">
-              <p className="text-sm text-muted-foreground">Amount (min 10 OUSD)</p>
-              <input
-                value={swapAmount}
-                onChange={(e) => setSwapAmount(normalizeAmountInput(e.target.value))}
-                type="text"
-                inputMode="decimal"
-                placeholder="Enter amount in OUSD"
-                className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground"
-              />
-              <div className="mt-3 rounded-2xl border border-border/70 bg-secondary/30 p-3 text-sm text-foreground">
-                <div className="flex items-center justify-between">
-                  <span>Amount</span>
-                  <span className="font-semibold">{safeSwapAmount.toFixed(2)} OUSD</span>
-                </div>
-                <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Fee (2%)</span>
-                  <span>-{swapFeeAmount.toFixed(2)} OUSD</span>
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="font-semibold">You will receive</span>
-                  <span className="inline-flex items-center gap-2 font-semibold text-paypal-blue">
-                    <img src={swapWithdrawalType === "PI" ? PI_PAYMENT_ICON_URL : swapWithdrawalType === "OUSD" ? OUSD_ICON_URL : MRWN_ICON_URL} alt={swapWithdrawalType} className="h-4 w-4" />
-                    {(() => {
-                    if (showSwapPrice) {
-                      if ((swapWithdrawalType as WithdrawalType) === "PI") {
-                        return <>{swapPayoutPiAmount.toFixed(4)} PI</>;
-                      } else if ((swapWithdrawalType as WithdrawalType) === "OUSD") {
-                        return <>{swapPayoutOusdAmount.toFixed(2)} OUSD</>;
-                      } else if ((swapWithdrawalType as WithdrawalType) === "MRWN") {
-                        return <>Coming Soon MRWN</>;
-                      } else {
-                        return <>Coming Soon</>;
-                      }
-                    } else {
-                      if ((swapWithdrawalType as WithdrawalType) === "PI") {
-                        return <>{swapPayoutPiAmount.toFixed(4)} PI</>;
-                      } else if ((swapWithdrawalType as WithdrawalType) === "OUSD") {
-                        return <>{swapPayoutOusdAmount.toFixed(2)} OUSD</>;
-                      } else if ((swapWithdrawalType as WithdrawalType) === "MRWN") {
-                        return <>Coming Soon MRWN</>;
-                      } else {
-                        return <>Coming Soon</>;
-                      }
-                    }
-                  })()}
-                  </span>
-                </div>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {showSwapPrice ? (
-                  <>Rate: 1 {swapWithdrawalType} = {swapWithdrawalType === "PI" ? PI_TO_OUSD.toFixed(2) : (0.5 * PI_TO_OUSD).toFixed(2)} OUSD. Processing fee is 2%.</>
-                ) : (
-                  <>MRWN price coming soon. Processing fee is 2%.</>
-                )}
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/swap-withdrawal?amount=${safeSwapAmount.toFixed(2)}&type=${swapWithdrawalType}`)}
-                  className="h-11 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white hover:bg-[#004dc5]"
-                  disabled={!swapMeetsMinimum}
-                >
-                  Continue
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/swap-withdrawal")}
-                  className="h-11 w-full rounded-xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue"
-                >
-                  View Withdrawals
-                </button>
-              </div>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              You will confirm your OpenPay identity and PI mainnet wallet on the next screen.
-            </p>
-          </div>
+        <div className="mx-4 mt-4 animate-in-up">
+          <DashboardSwapPanel
+            withdrawalType={swapWithdrawalType}
+            onWithdrawalTypeChange={setSwapWithdrawalType}
+            amount={swapAmount}
+            onAmountChange={(v) => setSwapAmount(normalizeAmountInput(v))}
+            safeAmount={safeSwapAmount}
+            feeAmount={swapFeeAmount}
+            meetsMinimum={swapMeetsMinimum}
+            showPrice
+            piToOusd={PI_TO_OUSD}
+            payoutLabel={
+              swapWithdrawalType === "PI"
+                ? `${swapPayoutPiAmount.toFixed(4)} PI`
+                : swapWithdrawalType === "OUSD"
+                  ? `${swapPayoutOusdAmount.toFixed(2)} OUSD`
+                  : swapWithdrawalType === "OUSD_SOL"
+                    ? `${swapPayoutOusdSolAmount.toFixed(2)} ${OUSD_SOL_LABEL}`
+                    : `${swapPayoutMrwnAmount.toFixed(4)} MRWN`
+            }
+            rateLine={
+              <>
+                Rate: 1{" "}
+                {swapWithdrawalType === "OUSD_SOL" ? OUSD_SOL_LABEL : swapWithdrawalType} ={" "}
+                {swapWithdrawalType === "PI"
+                  ? PI_TO_OUSD.toFixed(2)
+                  : swapWithdrawalType === "OUSD" || swapWithdrawalType === "OUSD_SOL"
+                    ? "1.00"
+                    : mrwnToOusd.toFixed(2)}{" "}
+                OUSD · Processing fee 2%
+              </>
+            }
+            onContinue={() =>
+              navigate(`/swap-withdrawal?amount=${safeSwapAmount.toFixed(2)}&type=${swapWithdrawalType}`)
+            }
+            onViewWithdrawals={() => navigate("/swap-withdrawal")}
+            footerNote={
+              swapWithdrawalType === "PI"
+                ? "You will confirm your OpenPay identity and PI mainnet wallet on the next screen."
+                : swapWithdrawalType === "OUSD_SOL"
+                  ? "You will confirm your OpenPay identity and Solana wallet for OUSD SOL on the next screen."
+                  : `You will confirm your OpenPay identity and ${swapWithdrawalType} mainnet wallet on the next screen.`
+            }
+          />
         </div>
       )}
 
@@ -4132,11 +4031,13 @@ const Dashboard = () => {
                         ? `${targetOpenUsdAmount.toFixed(2)} MRWN`
                       : row.key === "OUSD"
                         ? `${targetOpenUsdAmount.toFixed(2)} OUSD`
-                      : row.key === "Solana Pay"
-                        ? `${targetOpenUsdAmount.toFixed(2)} USDC`
-                  : usdOnrampProviders.includes(row.key)
-                    ? `${targetOpenUsdAmount.toFixed(2)} USD`
-                    : `${(targetOpenUsdAmount * OUSD_TO_PI).toFixed(5)} PI`;
+                        : row.key === "OUSD_SOL"
+                          ? `${targetOpenUsdAmount.toFixed(2)} OUSD`
+                          : row.key === "Solana Pay"
+                            ? `${targetOpenUsdAmount.toFixed(2)} USDC`
+                            : usdOnrampProviders.includes(row.key)
+                              ? `${targetOpenUsdAmount.toFixed(2)} USD`
+                              : `${(targetOpenUsdAmount * OUSD_TO_PI).toFixed(5)} PI`;
               const selected = buyOnrampProvider === row.key;
               return (
                 <button
@@ -4156,6 +4057,8 @@ const Dashboard = () => {
                       setBuyPaymentMethod("MRWN");
                     } else if (row.key === "OUSD") {
                       setBuyPaymentMethod("OUSD");
+                    } else if (row.key === "OUSD_SOL") {
+                      setBuyPaymentMethod("OUSD_SOL");
                     } else if (row.key === "Solana Pay") {
                       setBuyPaymentMethod("Solana Pay");
                     } else if (row.key === "Pi Payment") {
@@ -4231,8 +4134,19 @@ const Dashboard = () => {
                           <img
                             src={OUSD_ICON_URL}
                             alt="OUSD"
-                            className="h-10 w-auto object-contain"
+                            className="h-10 w-10 shrink-0 object-contain"
                             referrerPolicy="no-referrer"
+                          />
+                        )}
+                        {row.key === "OUSD_SOL" && (
+                          <img
+                            src={OUSD_SOL_LOGO_URL}
+                            alt={OUSD_SOL_LABEL}
+                            className="h-10 w-10 shrink-0 object-contain"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              e.currentTarget.src = OUSD_ICON_URL;
+                            }}
                           />
                         )}
                         {row.key === "Solana Pay" && (
@@ -4341,7 +4255,9 @@ const Dashboard = () => {
                         ? `${targetOpenUsdAmount.toFixed(2)} MRWN`
                         : row.key === "OUSD"
                           ? `${targetOpenUsdAmount.toFixed(2)} OUSD`
-                          : row.key === "Solana Pay"
+                          : row.key === "OUSD_SOL"
+                            ? `${targetOpenUsdAmount.toFixed(2)} OUSD`
+                            : row.key === "Solana Pay"
                             ? `${targetOpenUsdAmount.toFixed(2)} USDC`
                             : usdPaymentMethods.includes(row.key)
                               ? `${targetOpenUsdAmount.toFixed(2)} USD`
@@ -4362,6 +4278,10 @@ const Dashboard = () => {
                       setBuyOnrampProvider("USDC");
                     } else if (row.key === "MRWN") {
                       setBuyOnrampProvider("MRWN");
+                    } else if (row.key === "OUSD") {
+                      setBuyOnrampProvider("OUSD");
+                    } else if (row.key === "OUSD_SOL") {
+                      setBuyOnrampProvider("OUSD_SOL");
                     } else if (row.key === "Solana Pay") {
                       setBuyOnrampProvider("Solana Pay");
                     } else if (row.key === "Pi Payment") {
@@ -4437,8 +4357,19 @@ const Dashboard = () => {
                           <img
                             src={OUSD_ICON_URL}
                             alt="OUSD"
-                            className="h-10 w-auto object-contain"
+                            className="h-10 w-10 shrink-0 object-contain"
                             referrerPolicy="no-referrer"
+                          />
+                        )}
+                        {row.key === "OUSD_SOL" && (
+                          <img
+                            src={OUSD_SOL_LOGO_URL}
+                            alt={OUSD_SOL_LABEL}
+                            className="h-10 w-10 shrink-0 object-contain"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              e.currentTarget.src = OUSD_ICON_URL;
+                            }}
                           />
                         )}
                         {row.key === "Solana Pay" && (

@@ -29,6 +29,7 @@ import TopUpUSDT from "./pages/TopUpUSDT";
 import TopUpUSDC from "./pages/TopUpUSDC";
 import TopUpMRWN from "./pages/TopUpMRWN";
 import TopUpOUSD from "./pages/TopUpOUSD";
+import TopUpOUSDSol from "./pages/TopUpOUSDSol";
 import TopUpSolanaPay from "./pages/TopUpSolanaPay";
 import ReceivePage from "./pages/ReceivePage";
 import Contacts from "./pages/Contacts";
@@ -335,6 +336,11 @@ const AppRoutes = () => {
         <Route path="/topup-ousd" element={
           <ProtectedRoute>
             <TopUpOUSD />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup-ousd-sol" element={
+          <ProtectedRoute>
+            <TopUpOUSDSol />
           </ProtectedRoute>
         } />
         {isSolanaPayEnabled() ? <Route path="/topup-solana-pay" element={

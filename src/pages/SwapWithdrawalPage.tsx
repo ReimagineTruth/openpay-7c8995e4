@@ -10,8 +10,9 @@ import { loadAppSecuritySettings, isPinSetupCompleted } from "@/lib/appSecurity"
 import { playGoogleWalletSuccessSound } from "@/lib/soundEffects";
 import { PI_TO_USD } from "@/contexts/CurrencyContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
 
-type WithdrawalType = "PI" | "MRWN" | "OUSD";
+type WithdrawalType = "PI" | "MRWN" | "OUSD" | "OUSD_SOL";
 
 type SwapWithdrawalRow = {
   id: string;
@@ -22,7 +23,8 @@ type SwapWithdrawalRow = {
   pi_wallet_address: string;
   mrwn_wallet_address: string;
   ousd_wallet_address: string;
-  withdrawal_type: "PI" | "MRWN" | "OUSD";
+  ousd_sol_wallet_address: string;
+  withdrawal_type: WithdrawalType;
   status: string;
   admin_note: string;
   reviewed_at: string | null;
@@ -37,6 +39,15 @@ const OUSD_LOGO_URL = "/openpay-o.svg";
 const WITHDRAWAL_FEE_RATE = 0.02;
 const PIN_ACTION_KEY = "openpay_pin_action_swap_v1";
 const swapEnabled = String(import.meta.env.VITE_SWAP_ENABLED || "false").toLowerCase() === "true";
+
+const swapTypeLogo = (type: WithdrawalType) => {
+  if (type === "PI") return PI_LOGO_URL;
+  if (type === "OUSD") return OUSD_LOGO_URL;
+  if (type === "OUSD_SOL") return OUSD_SOL_LOGO_URL;
+  return MRWN_LOGO_URL;
+};
+
+const swapTypeLabel = (type: WithdrawalType) => (type === "OUSD_SOL" ? OUSD_SOL_LABEL : type);
 
 const normalizeUsername = (value: string) => value.trim().replace(/^@+/, "").toLowerCase();
 const isSchemaCacheMissingError = (message: string | undefined, target: string) =>
@@ -66,6 +77,7 @@ const SwapWithdrawalPage = () => {
             openpayAccountNumber,
             piWalletAddress,
             mrwnWalletAddress,
+            ousdSolWalletAddress,
             withdrawalType,
           },
         },
@@ -90,8 +102,9 @@ const SwapWithdrawalPage = () => {
   const [piWalletAddress, setPiWalletAddress] = useState("");
   const [mrwnWalletAddress, setMrwnWalletAddress] = useState("");
   const [ousdWalletAddress, setOusdWalletAddress] = useState("");
+  const [ousdSolWalletAddress, setOusdSolWalletAddress] = useState("");
   const [withdrawalType, setWithdrawalType] = useState<WithdrawalType>("PI");
-  const mrwnComingSoon = true; // MRWN price coming soon flag
+  const mrwnComingSoon = false;
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [showAgreementModal, setShowAgreementModal] = useState(false);
   const [agreementChecked, setAgreementChecked] = useState(false);
@@ -104,7 +117,15 @@ const SwapWithdrawalPage = () => {
   const piCurrency = currencies.find(c => c.code === "PI");
   const mrwnCurrency = currencies.find(c => c.code === "MRWN");
   const ousdCurrency = currencies.find(c => c.code === "OUSD");
-  const selectedCurrency = withdrawalType === "PI" ? piCurrency : withdrawalType === "OUSD" ? ousdCurrency : mrwnCurrency;
+  const ousdSolCurrency = currencies.find(c => c.code === "OUSD_SOL");
+  const selectedCurrency =
+    withdrawalType === "PI"
+      ? piCurrency
+      : withdrawalType === "OUSD"
+        ? ousdCurrency
+        : withdrawalType === "OUSD_SOL"
+          ? ousdSolCurrency ?? ousdCurrency
+          : mrwnCurrency;
   
   const parsedAmount = Number(amount);
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
@@ -113,8 +134,13 @@ const SwapWithdrawalPage = () => {
   const payoutAmount = safeAmount > 0 ? Number((safeAmount - feeAmount).toFixed(2)) : 0;
   const payoutPiAmount = payoutAmount > 0 ? payoutAmount / PI_TO_USD : 0;
   const payoutMrwnAmount = payoutAmount > 0 && selectedCurrency ? payoutAmount / selectedCurrency.rate : 0;
-  const payoutOusdAmount = payoutAmount > 0 ? payoutAmount : 0; // 1:1 ratio for OUSD
-  const showPrice = withdrawalType === "PI" || !mrwnComingSoon;
+  const payoutOusdAmount = payoutAmount > 0 ? payoutAmount : 0;
+  const payoutOusdSolAmount = payoutAmount > 0 ? payoutAmount : 0;
+  const showPrice =
+    withdrawalType === "PI" ||
+    withdrawalType === "OUSD" ||
+    withdrawalType === "OUSD_SOL" ||
+    !mrwnComingSoon;
 
   const normalizedUsername = useMemo(() => normalizeUsername(openpayUsername), [openpayUsername]);
   const formattedPiPrice = useMemo(
@@ -141,7 +167,7 @@ const SwapWithdrawalPage = () => {
       }
       const { data, error } = await supabase
         .from("user_swap_withdrawals" as any)
-        .select("id, amount, openpay_account_name, openpay_account_username, openpay_account_number, pi_wallet_address, mrwn_wallet_address, withdrawal_type, status, admin_note, reviewed_at, created_at")
+        .select("id, amount, openpay_account_name, openpay_account_username, openpay_account_number, pi_wallet_address, mrwn_wallet_address, ousd_wallet_address, ousd_sol_wallet_address, withdrawal_type, status, admin_note, reviewed_at, created_at")
         .order("created_at", { ascending: false })
         .limit(10);
       if (error) throw new Error(error.message || "Failed to load withdrawals");
@@ -157,7 +183,8 @@ const SwapWithdrawalPage = () => {
             pi_wallet_address: String(r.pi_wallet_address ?? ""),
             mrwn_wallet_address: String(r.mrwn_wallet_address ?? ""),
             ousd_wallet_address: String(r.ousd_wallet_address ?? ""),
-            withdrawal_type: (String(r.withdrawal_type ?? "PI") as "PI" | "MRWN" | "OUSD"),
+            ousd_sol_wallet_address: String(r.ousd_sol_wallet_address ?? ""),
+            withdrawal_type: (String(r.withdrawal_type ?? "PI") as WithdrawalType),
             status: String(r.status ?? "pending"),
             admin_note: String(r.admin_note ?? ""),
             reviewed_at: r.reviewed_at ? String(r.reviewed_at) : null,
@@ -208,7 +235,8 @@ const SwapWithdrawalPage = () => {
           piWalletAddress: String(data.piWalletAddress || ""),
           mrwnWalletAddress: String(data.mrwnWalletAddress || ""),
           ousdWalletAddress: String(data.ousdWalletAddress || ""),
-          withdrawalType: String(data.withdrawalType || "PI") as "PI" | "MRWN" | "OUSD",
+          ousdSolWalletAddress: String(data.ousdSolWalletAddress || ""),
+          withdrawalType: String(data.withdrawalType || "PI") as WithdrawalType,
         });
         try {
           if (typeof window !== "undefined") window.sessionStorage.removeItem(PIN_ACTION_KEY);
@@ -232,7 +260,7 @@ const SwapWithdrawalPage = () => {
       setAmount((prev) => prev || formatted);
     }
     
-    if (typeParam && (typeParam === "PI" || typeParam === "MRWN" || typeParam === "OUSD")) {
+    if (typeParam && (typeParam === "PI" || typeParam === "MRWN" || typeParam === "OUSD" || typeParam === "OUSD_SOL")) {
       setWithdrawalType(typeParam);
     }
   }, [searchParams]);
@@ -250,9 +278,18 @@ const SwapWithdrawalPage = () => {
       toast.error("Minimum withdrawal is 10 OPEN USD");
       return;
     }
-    if (!openpayName.trim() || !normalizedUsername || !openpayAccountNumber.trim() || 
-        (withdrawalType === "PI" ? !piWalletAddress.trim() : 
-         withdrawalType === "OUSD" ? !ousdWalletAddress.trim() : !mrwnWalletAddress.trim())) {
+    if (
+      !openpayName.trim() ||
+      !normalizedUsername ||
+      !openpayAccountNumber.trim() ||
+      (withdrawalType === "PI"
+        ? !piWalletAddress.trim()
+        : withdrawalType === "OUSD"
+          ? !ousdWalletAddress.trim()
+          : withdrawalType === "OUSD_SOL"
+            ? !ousdSolWalletAddress.trim()
+            : !mrwnWalletAddress.trim())
+    ) {
       toast.error("Complete all required fields");
       return;
     }
@@ -273,7 +310,8 @@ const SwapWithdrawalPage = () => {
     piWalletAddress: string;
     mrwnWalletAddress: string;
     ousdWalletAddress: string;
-    withdrawalType: "PI" | "MRWN" | "OUSD";
+    ousdSolWalletAddress: string;
+    withdrawalType: WithdrawalType;
   }) => {
     const activeAmount = overrideData ? Number(overrideData.amount) : safeAmount;
     const activeOpenpayName = overrideData ? overrideData.openpayName : openpayName;
@@ -282,6 +320,7 @@ const SwapWithdrawalPage = () => {
     const activePiWalletAddress = overrideData ? overrideData.piWalletAddress : piWalletAddress;
     const activeMrwnWalletAddress = overrideData ? overrideData.mrwnWalletAddress : mrwnWalletAddress;
     const activeOusdWalletAddress = overrideData ? overrideData.ousdWalletAddress : ousdWalletAddress;
+    const activeOusdSolWalletAddress = overrideData ? overrideData.ousdSolWalletAddress : ousdSolWalletAddress;
     const activeWithdrawalType = overrideData ? overrideData.withdrawalType : withdrawalType;
 
     playGoogleWalletSuccessSound();
@@ -293,10 +332,11 @@ const SwapWithdrawalPage = () => {
         p_openpay_account_name: activeOpenpayName.trim(),
         p_openpay_account_username: activeOpenpayUsername,
         p_openpay_account_number: activeOpenpayAccountNumber.trim().toUpperCase(),
-        p_pi_wallet_address: withdrawalType === "PI" ? activePiWalletAddress.trim() : null,
-        p_mrwn_wallet_address: withdrawalType === "MRWN" ? activeMrwnWalletAddress.trim() : null,
-        p_ousd_wallet_address: withdrawalType === "OUSD" ? activeOusdWalletAddress.trim() : null,
-        p_withdrawal_type: withdrawalType,
+        p_pi_wallet_address: activeWithdrawalType === "PI" ? activePiWalletAddress.trim() : null,
+        p_mrwn_wallet_address: activeWithdrawalType === "MRWN" ? activeMrwnWalletAddress.trim() : null,
+        p_ousd_wallet_address: activeWithdrawalType === "OUSD" ? activeOusdWalletAddress.trim() : null,
+        p_ousd_sol_wallet_address: activeWithdrawalType === "OUSD_SOL" ? activeOusdSolWalletAddress.trim() : null,
+        p_withdrawal_type: activeWithdrawalType,
       });
       if (error) throw new Error(error.message || "Withdrawal submission failed");
       if (data) {
@@ -349,7 +389,7 @@ const SwapWithdrawalPage = () => {
                   <p className="text-xs text-white/80">Swap Withdrawal</p>
                 </div>
               </div>
-              <p className="text-xs text-white/80">OpenUSD to {withdrawalType === "PI" ? "PI" : withdrawalType === "OUSD" ? "OUSD" : "MRWN"} mainnet payout</p>
+              <p className="text-xs text-white/80">OpenUSD to {swapTypeLabel(withdrawalType)} payout</p>
             </div>
           </div>
           <Button variant="outline" onClick={loadHistory} disabled={refreshing} className="border-white/30 bg-white/10 text-white hover:bg-white/20">
@@ -368,11 +408,11 @@ const SwapWithdrawalPage = () => {
           )}
           <div className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-foreground">
             <p className="font-semibold text-foreground">How this works</p>
-            <p className="mt-2">1. Fill in your OpenPay identity and mainnet {withdrawalType === "PI" ? "PI" : withdrawalType === "OUSD" ? "OUSD" : "MRWN"} wallet address.</p>
+            <p className="mt-2">1. Fill in your OpenPay identity and {withdrawalType === "OUSD_SOL" ? "Solana" : "mainnet"} {swapTypeLabel(withdrawalType)} wallet address.</p>
             <p>2. When you submit, your OpenUSD is moved to the settlement account {SETTLEMENT_USERNAME} ({SETTLEMENT_ACCOUNT_NUMBER}).</p>
             {showPrice ? (
               <>
-                <p>3. After admin approval, you receive {withdrawalType === "PI" ? "PI" : withdrawalType === "OUSD" ? "OUSD" : "MRWN"} to your mainnet wallet. Rate is always 1 {withdrawalType === "PI" ? "PI" : withdrawalType === "OUSD" ? "OUSD" : "MRWN"} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : withdrawalType === "OUSD" ? "1.00" : (selectedCurrency?.rate || 0.5).toFixed(2)} OPEN USD.</p>
+                <p>3. After admin approval, you receive {swapTypeLabel(withdrawalType)} to your wallet. Rate is always 1 {swapTypeLabel(withdrawalType)} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : withdrawalType === "OUSD" || withdrawalType === "OUSD_SOL" ? "1.00" : (selectedCurrency?.rate || 0.5).toFixed(2)} OPEN USD.</p>
                 <p>4. A 2% processing fee applies to withdrawals.</p>
               </>
             ) : (
@@ -435,7 +475,7 @@ const SwapWithdrawalPage = () => {
                 <span>Withdrawal type</span>
                 <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">Select one</span>
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <button
                   type="button"
                   onClick={() => setWithdrawalType("PI")}
@@ -500,6 +540,37 @@ const SwapWithdrawalPage = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setWithdrawalType("OUSD_SOL")}
+                  disabled={!swapEnabled}
+                  className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
+                    withdrawalType === "OUSD_SOL"
+                      ? "border-sky-400 bg-gradient-to-br from-sky-50 to-blue-100 shadow-xl shadow-sky-500/25 scale-105"
+                      : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
+                  } ${!swapEnabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  {withdrawalType === "OUSD_SOL" && (
+                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-sky-500 flex items-center justify-center">
+                      <div className="h-2 w-2 rounded-full bg-white"></div>
+                    </div>
+                  )}
+                  <div className="flex flex-col items-center justify-center gap-2 h-full">
+                    <div className={`relative transition-transform duration-300 ${
+                      withdrawalType === "OUSD_SOL" ? "scale-110" : "group-hover:scale-105"
+                    }`}>
+                      <img src={OUSD_SOL_LOGO_URL} alt={OUSD_SOL_LABEL} className="h-6 w-6 drop-shadow-md" />
+                    </div>
+                    <div className="text-center">
+                      <span className={`text-xs font-bold transition-colors duration-300 ${
+                        withdrawalType === "OUSD_SOL" ? "text-sky-600" : "text-foreground group-hover:text-white"
+                      }`}>{OUSD_SOL_LABEL}</span>
+                      <div className={`text-[10px] transition-opacity duration-300 ${
+                        withdrawalType === "OUSD_SOL" ? "opacity-100 text-sky-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
+                      }`}>Solana 1:1</div>
+                    </div>
+                  </div>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setWithdrawalType("MRWN")}
                   disabled={!swapEnabled}
                   className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
@@ -525,7 +596,7 @@ const SwapWithdrawalPage = () => {
                       }`}>MRWN</span>
                       <div className={`text-[10px] transition-opacity duration-300 ${
                         withdrawalType === "MRWN" ? "opacity-100 text-purple-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                      }`}>Coming Soon</div>
+                      }`}>OUSD → MRWN</div>
                     </div>
                   </div>
                 </button>
@@ -576,18 +647,32 @@ const SwapWithdrawalPage = () => {
             </label>
             <label className="space-y-1 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-2">
-                <img src={withdrawalType === "PI" ? PI_LOGO_URL : withdrawalType === "OUSD" ? OUSD_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-4 w-4" />
-                {withdrawalType === "PI" ? "Mainnet PI" : withdrawalType === "OUSD" ? "Mainnet OUSD" : "Mainnet MRWN"} wallet address
+                <img src={swapTypeLogo(withdrawalType)} alt={swapTypeLabel(withdrawalType)} className="h-4 w-4" />
+                {withdrawalType === "OUSD_SOL" ? "Solana" : "Mainnet"} {swapTypeLabel(withdrawalType)} wallet address
               </span>
               <input
-                value={withdrawalType === "PI" ? piWalletAddress : withdrawalType === "OUSD" ? ousdWalletAddress : mrwnWalletAddress}
-                onChange={(e) => withdrawalType === "PI" ? setPiWalletAddress(e.target.value) : withdrawalType === "OUSD" ? setOusdWalletAddress(e.target.value) : setMrwnWalletAddress(e.target.value)}
-                placeholder={`${withdrawalType === "PI" ? "Pi" : withdrawalType === "OUSD" ? "OUSD" : "MRWN"} wallet address`}
+                value={
+                  withdrawalType === "PI"
+                    ? piWalletAddress
+                    : withdrawalType === "OUSD"
+                      ? ousdWalletAddress
+                      : withdrawalType === "OUSD_SOL"
+                        ? ousdSolWalletAddress
+                        : mrwnWalletAddress
+                }
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (withdrawalType === "PI") setPiWalletAddress(v);
+                  else if (withdrawalType === "OUSD") setOusdWalletAddress(v);
+                  else if (withdrawalType === "OUSD_SOL") setOusdSolWalletAddress(v);
+                  else setMrwnWalletAddress(v);
+                }}
+                placeholder={`${swapTypeLabel(withdrawalType)} wallet address`}
                 readOnly={!swapEnabled}
                 aria-readonly={!swapEnabled ? "true" : undefined}
                 className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-foreground placeholder:text-muted-foreground"
               />
-              <span className="text-[11px] text-muted-foreground">Make sure this is your {withdrawalType === "PI" ? "PI" : withdrawalType === "OUSD" ? "OUSD" : "MRWN"} mainnet address.</span>
+              <span className="text-[11px] text-muted-foreground">Make sure this is your {swapTypeLabel(withdrawalType)} {withdrawalType === "OUSD_SOL" ? "Solana" : "mainnet"} address.</span>
             </label>
           </div>
 
@@ -603,29 +688,20 @@ const SwapWithdrawalPage = () => {
             <div className="mt-2 flex items-center justify-between">
               <span className="font-semibold">You will receive</span>
               <span className="inline-flex items-center gap-2 font-semibold text-paypal-blue">
-                <img src={withdrawalType === "PI" ? PI_LOGO_URL : withdrawalType === "OUSD" ? OUSD_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-5 w-5" />
+                <img src={swapTypeLogo(withdrawalType)} alt={swapTypeLabel(withdrawalType)} className="h-5 w-5" />
                 {(() => {
                   if (showPrice) {
-                    if ((withdrawalType as WithdrawalType) === "PI") {
-                      return `${payoutPiAmount.toFixed(4)} PI`;
-                    } else if ((withdrawalType as WithdrawalType) === "OUSD") {
-                      return `${payoutOusdAmount.toFixed(2)} OUSD`;
-                    } else if ((withdrawalType as WithdrawalType) === "MRWN") {
-                      return `${payoutMrwnAmount.toFixed(4)} MRWN`;
-                    } else {
-                      return "Coming Soon";
-                    }
-                  } else {
-                    if ((withdrawalType as WithdrawalType) === "PI") {
-                      return `${payoutPiAmount.toFixed(4)} PI`;
-                    } else if ((withdrawalType as WithdrawalType) === "OUSD") {
-                      return `${payoutOusdAmount.toFixed(2)} OUSD`;
-                    } else if ((withdrawalType as WithdrawalType) === "MRWN") {
-                      return `Coming Soon MRWN`;
-                    } else {
-                      return "Coming Soon";
-                    }
+                    if (withdrawalType === "PI") return `${payoutPiAmount.toFixed(4)} PI`;
+                    if (withdrawalType === "OUSD") return `${payoutOusdAmount.toFixed(2)} OUSD`;
+                    if (withdrawalType === "OUSD_SOL") return `${payoutOusdSolAmount.toFixed(2)} ${OUSD_SOL_LABEL}`;
+                    if (withdrawalType === "MRWN") return `${payoutMrwnAmount.toFixed(4)} MRWN`;
+                    return "Coming Soon";
                   }
+                  if (withdrawalType === "PI") return `${payoutPiAmount.toFixed(4)} PI`;
+                  if (withdrawalType === "OUSD") return `${payoutOusdAmount.toFixed(2)} OUSD`;
+                  if (withdrawalType === "OUSD_SOL") return `${payoutOusdSolAmount.toFixed(2)} ${OUSD_SOL_LABEL}`;
+                  if (withdrawalType === "MRWN") return "Coming Soon MRWN";
+                  return "Coming Soon";
                 })()}
               </span>
             </div>
@@ -667,11 +743,18 @@ const SwapWithdrawalPage = () => {
                     </span>
                   </div>
                   <div className="mt-1 inline-flex items-center justify-end gap-2 text-xs text-muted-foreground">
-                    <img src={row.withdrawal_type === "PI" ? PI_LOGO_URL : row.withdrawal_type === "OUSD" ? OUSD_LOGO_URL : MRWN_LOGO_URL} alt={row.withdrawal_type} className="h-5 w-auto object-contain" />
-                    <span>{row.withdrawal_type} payout</span>
+                    <img src={swapTypeLogo(row.withdrawal_type)} alt={swapTypeLabel(row.withdrawal_type)} className="h-5 w-auto object-contain" />
+                    <span>{swapTypeLabel(row.withdrawal_type)} payout</span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {row.withdrawal_type} wallet: {row.withdrawal_type === "PI" ? row.pi_wallet_address : row.withdrawal_type === "OUSD" ? row.ousd_wallet_address : row.mrwn_wallet_address}
+                    {swapTypeLabel(row.withdrawal_type)} wallet:{" "}
+                    {row.withdrawal_type === "PI"
+                      ? row.pi_wallet_address
+                      : row.withdrawal_type === "OUSD"
+                        ? row.ousd_wallet_address
+                        : row.withdrawal_type === "OUSD_SOL"
+                          ? row.ousd_sol_wallet_address
+                          : row.mrwn_wallet_address}
                   </p>
                   {row.admin_note && (
                     <p className="mt-1 text-xs text-muted-foreground">Admin note: {row.admin_note}</p>
@@ -759,13 +842,30 @@ const SwapWithdrawalPage = () => {
                 <div className="border-t border-border pt-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-foreground">You will receive</span>
-                    <span className="font-bold text-lg text-paypal-blue">{withdrawalType === "PI" ? payoutPiAmount.toFixed(4) : withdrawalType === "OUSD" ? payoutOusdAmount.toFixed(2) : payoutMrwnAmount.toFixed(4)} {withdrawalType}</span>
+                    <span className="font-bold text-lg text-paypal-blue">
+                      {withdrawalType === "PI"
+                        ? payoutPiAmount.toFixed(4)
+                        : withdrawalType === "OUSD"
+                          ? payoutOusdAmount.toFixed(2)
+                          : withdrawalType === "OUSD_SOL"
+                            ? payoutOusdSolAmount.toFixed(2)
+                            : payoutMrwnAmount.toFixed(4)}{" "}
+                      {swapTypeLabel(withdrawalType)}
+                    </span>
                   </div>
                 </div>
                 <div className="border-t border-border pt-3">
                   <div className="flex flex-col gap-1">
                     <span className="text-sm text-muted-foreground">{withdrawalType} wallet</span>
-                    <span className="font-mono text-xs text-foreground break-all">{withdrawalType === "PI" ? piWalletAddress || "N/A" : withdrawalType === "OUSD" ? ousdWalletAddress || "N/A" : mrwnWalletAddress || "N/A"}</span>
+                    <span className="font-mono text-xs text-foreground break-all">
+                      {withdrawalType === "PI"
+                        ? piWalletAddress || "N/A"
+                        : withdrawalType === "OUSD"
+                          ? ousdWalletAddress || "N/A"
+                          : withdrawalType === "OUSD_SOL"
+                            ? ousdSolWalletAddress || "N/A"
+                            : mrwnWalletAddress || "N/A"}
+                    </span>
                   </div>
                 </div>
               </div>
