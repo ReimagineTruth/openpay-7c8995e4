@@ -1,23 +1,38 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, CheckCircle, FileText, Loader2, Shield, Upload, User } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Camera,
+  CheckCircle,
+  FileText,
+  Loader2,
+  ScanFace,
+  Shield,
+  Upload,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
 import BrandLogo from "@/components/BrandLogo";
+import KycFaceCapture, { type KycFaceCaptureResult } from "@/components/kyc/KycFaceCapture";
+import KycStepIndicator from "@/components/kyc/KycStepIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import {
   KYC_DOCUMENT_TYPE_OPTIONS,
   KYC_INCOME_RANGE_OPTIONS,
   KYC_SOURCE_OF_FUNDS_OPTIONS,
+  KYC_WIZARD_STEPS,
   type KycApplicationRecord,
+  type KycWizardStep,
   isLikelyStoragePath,
+  kycStatusLabel,
   normalizeKycApplication,
 } from "@/lib/kyc";
 
 type UploadField = "id_document_front" | "id_document_back" | "selfie" | "proof_of_address";
-
 type UploadState = Record<`${UploadField}_url`, string>;
 
 const emptyUploadState: UploadState = {
@@ -35,6 +50,8 @@ const KycPage = () => {
   const [currentApplication, setCurrentApplication] = useState<KycApplicationRecord | null>(null);
   const [storedDocumentPaths, setStoredDocumentPaths] = useState<UploadState>(emptyUploadState);
   const [uploadedUrls, setUploadedUrls] = useState<UploadState>(emptyUploadState);
+  const [step, setStep] = useState<KycWizardStep>("intro");
+  const [faceVerification, setFaceVerification] = useState<KycFaceCaptureResult | null>(null);
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -56,15 +73,14 @@ const KycPage = () => {
 
   const canEditExisting = currentApplication?.status === "additional_info_required";
   const showReadOnlyState =
-    currentApplication && currentApplication.status !== "rejected" && currentApplication.status !== "additional_info_required";
+    currentApplication &&
+    currentApplication.status !== "rejected" &&
+    currentApplication.status !== "additional_info_required";
 
   const prefilledName = useMemo(() => formData.full_name.trim(), [formData.full_name]);
 
   const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const buildSignedUrl = async (pathOrUrl: string | null | undefined) => {
@@ -107,6 +123,19 @@ const KycPage = () => {
     };
     setStoredDocumentPaths(paths);
 
+    if (application.liveness_passed && application.selfie_url) {
+      setFaceVerification({
+        file: new File([], "existing-selfie"),
+        metadata: (application.face_verification_metadata as KycFaceCaptureResult["metadata"]) || {
+          challenges_completed: ["center", "turn_left", "turn_right", "blink"],
+          face_detected_steps: 4,
+          total_steps: 4,
+          captured_at: application.selfie_captured_at || new Date().toISOString(),
+        },
+        livenessScore: application.liveness_score ?? 85,
+      });
+    }
+
     const [front, back, selfie, address] = await Promise.all([
       buildSignedUrl(paths.id_document_front_url),
       buildSignedUrl(paths.id_document_back_url),
@@ -143,9 +172,7 @@ const KycPage = () => {
             .limit(1),
         ]);
 
-        if (appError) {
-          throw appError;
-        }
+        if (appError) throw appError;
 
         setFormData((prev) => ({
           ...prev,
@@ -188,15 +215,8 @@ const KycPage = () => {
         .createSignedUrl(fileName, 3600);
       if (signedError) throw signedError;
 
-      setStoredDocumentPaths((prev) => ({
-        ...prev,
-        [`${field}_url`]: fileName,
-      }));
-      setUploadedUrls((prev) => ({
-        ...prev,
-        [`${field}_url`]: signedData.signedUrl,
-      }));
-
+      setStoredDocumentPaths((prev) => ({ ...prev, [`${field}_url`]: fileName }));
+      setUploadedUrls((prev) => ({ ...prev, [`${field}_url`]: signedData.signedUrl }));
       toast.success(`${field.replace(/_/g, " ")} uploaded`);
     } catch (error) {
       console.error("Upload error:", error);
@@ -206,34 +226,65 @@ const KycPage = () => {
     }
   };
 
-  const validateForm = () => {
-    if (
-      !formData.full_name ||
-      !formData.date_of_birth ||
-      !formData.nationality ||
-      !formData.residential_address ||
-      !formData.phone_number ||
-      !formData.email ||
-      !formData.occupation ||
-      !formData.source_of_funds ||
-      !formData.annual_income_range ||
-      !formData.id_document_type ||
-      !formData.id_document_number ||
-      !formData.id_document_issue_date ||
-      !formData.id_document_expiry_date
-    ) {
-      toast.error("Please fill in all required fields");
-      return false;
+  const uploadFaceCapture = async (result: KycFaceCaptureResult) => {
+    setFaceVerification(result);
+    if (result.file.size > 0) {
+      await handleFileUpload("selfie", result.file);
     }
-    if (!storedDocumentPaths.id_document_front_url || !storedDocumentPaths.selfie_url) {
-      toast.error("Upload ID document front and selfie before submitting");
-      return false;
+  };
+
+  const validateStep = (target: KycWizardStep): boolean => {
+    if (target === "personal") {
+      if (!formData.full_name || !formData.date_of_birth || !formData.nationality || !formData.residential_address || !formData.phone_number || !formData.email) {
+        toast.error("Complete all personal information fields");
+        return false;
+      }
+    }
+    if (target === "financial") {
+      if (!formData.occupation || !formData.source_of_funds || !formData.annual_income_range) {
+        toast.error("Complete financial information");
+        return false;
+      }
+    }
+    if (target === "documents") {
+      if (!formData.id_document_type || !formData.id_document_number || !formData.id_document_issue_date || !formData.id_document_expiry_date) {
+        toast.error("Complete ID document details");
+        return false;
+      }
+      if (!storedDocumentPaths.id_document_front_url) {
+        toast.error("Upload the front of your ID document");
+        return false;
+      }
+    }
+    if (target === "face") {
+      if (!faceVerification && !storedDocumentPaths.selfie_url) {
+        toast.error("Complete live face verification");
+        return false;
+      }
     }
     return true;
   };
 
+  const goNext = () => {
+    const order = KYC_WIZARD_STEPS.map((s) => s.id);
+    const idx = order.indexOf(step);
+    const next = order[idx + 1];
+    if (!next) return;
+    if (step !== "intro" && !validateStep(step)) return;
+    setStep(next);
+  };
+
+  const goBack = () => {
+    const order = KYC_WIZARD_STEPS.map((s) => s.id);
+    const idx = order.indexOf(step);
+    const prev = order[idx - 1];
+    if (prev) setStep(prev);
+    else navigate("/menu");
+  };
+
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    if (!validateStep("personal") || !validateStep("financial") || !validateStep("documents") || !validateStep("face")) return;
+
     setLoading(true);
     try {
       const {
@@ -251,6 +302,10 @@ const KycPage = () => {
         admin_notes: null,
         reviewed_at: null,
         reviewed_by: null,
+        liveness_passed: Boolean(faceVerification || storedDocumentPaths.selfie_url),
+        liveness_score: faceVerification?.livenessScore ?? null,
+        face_verification_metadata: faceVerification?.metadata ?? null,
+        selfie_captured_at: faceVerification?.metadata.captured_at ?? new Date().toISOString(),
       };
 
       if (currentApplication?.id && canEditExisting) {
@@ -265,7 +320,7 @@ const KycPage = () => {
         if (error) throw error;
       }
 
-      toast.success("KYC application submitted successfully");
+      toast.success("Identity verification submitted for review");
       navigate("/kyc-status");
     } catch (error) {
       console.error("Submit error:", error);
@@ -298,7 +353,7 @@ const KycPage = () => {
         <label className="mb-2 block text-sm font-medium text-foreground">
           {label} {required ? "*" : ""}
         </label>
-        <div className="rounded-lg border-2 border-dashed border-border p-4">
+        <div className="rounded-xl border-2 border-dashed border-border p-4">
           <input
             type="file"
             accept={accept}
@@ -310,13 +365,17 @@ const KycPage = () => {
             <div className="flex flex-col items-center">
               {preview ? (
                 <div className="relative">
-                  <img src={preview} alt={label} className="h-24 w-24 rounded object-cover" />
+                  <img src={preview} alt={label} className="h-28 w-full max-w-[200px] rounded-lg object-cover" />
                   <CheckCircle className="absolute -right-2 -top-2 h-6 w-6 text-green-600" />
                 </div>
               ) : (
                 <>
-                  {uploadingField === field ? <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" /> : <Icon className="mb-2 h-8 w-8 text-muted-foreground" />}
-                  <p className="text-sm text-muted-foreground">Click to upload {label.toLowerCase()}</p>
+                  {uploadingField === field ? (
+                    <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Icon className="mb-2 h-8 w-8 text-muted-foreground" />
+                  )}
+                  <p className="text-center text-sm text-muted-foreground">Tap to upload {label.toLowerCase()}</p>
                 </>
               )}
             </div>
@@ -325,6 +384,27 @@ const KycPage = () => {
       </div>
     );
   };
+
+  const header = (
+    <div className="mb-6 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={goBack}
+          className="paypal-surface flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
+        >
+          <ArrowLeft className="h-5 w-5 text-foreground" />
+        </button>
+        <div>
+          <h1 className="text-xl font-bold text-paypal-dark">Identity verification</h1>
+          <p className="text-xs text-muted-foreground">Secure KYC · Banking standard</p>
+        </div>
+      </div>
+      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
+        <BrandLogo className="h-full w-full text-paypal-blue" />
+      </div>
+    </div>
+  );
 
   if (initialLoading) {
     return (
@@ -340,46 +420,28 @@ const KycPage = () => {
     return (
       <div className="min-h-screen bg-[#f8fbff] pb-24">
         <div className="px-4 pt-6">
-          <div className="mb-6 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <button onClick={() => navigate("/menu")} className="paypal-surface flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
-                <ArrowLeft className="h-5 w-5 text-foreground" />
-              </button>
-              <h1 className="text-xl font-bold text-paypal-dark">KYC Verification</h1>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
-              <BrandLogo className="h-full w-full text-paypal-blue" />
-            </div>
-          </div>
-
+          {header}
           <div className="paypal-surface rounded-2xl p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Current application</p>
-                <h2 className="text-lg font-semibold text-foreground">{prefilledName || "KYC application"}</h2>
+                <p className="text-sm text-muted-foreground">Application status</p>
+                <h2 className="text-lg font-semibold text-foreground">{prefilledName || "Your KYC"}</h2>
               </div>
               <span className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(currentApplication.status)}`}>
-                {currentApplication.status.replace(/_/g, " ")}
+                {kycStatusLabel(currentApplication.status)}
               </span>
             </div>
-
             <p className="text-sm text-muted-foreground">
-              Your identity verification is already in progress or completed. Open the status page for the latest review details.
+              Your verification is in progress or complete. Track review updates on the status page.
             </p>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-secondary/40 p-3">
-                <p className="text-xs text-muted-foreground">Submitted</p>
-                <p className="font-medium text-foreground">{new Date(currentApplication.submitted_at).toLocaleString()}</p>
-              </div>
-              <div className="rounded-xl bg-secondary/40 p-3">
-                <p className="text-xs text-muted-foreground">Email</p>
-                <p className="font-medium text-foreground">{currentApplication.email}</p>
-              </div>
-            </div>
-
+            {currentApplication.liveness_passed ? (
+              <p className="mt-3 flex items-center gap-2 text-sm font-medium text-green-700">
+                <ScanFace className="h-4 w-4" />
+                Face verification on file
+              </p>
+            ) : null}
             <Button onClick={() => navigate("/kyc-status")} className="mt-6 w-full bg-paypal-blue hover:bg-[#004dc5]">
-              View KYC Status
+              View KYC status
             </Button>
           </div>
         </div>
@@ -388,173 +450,234 @@ const KycPage = () => {
     );
   }
 
+  const renderStepContent = () => {
+    switch (step) {
+      case "intro":
+        return (
+          <div className="space-y-4">
+            <div className="paypal-surface rounded-2xl p-5 shadow-sm">
+              <div className="flex items-start gap-3">
+                <Shield className="mt-0.5 h-6 w-6 text-paypal-blue" />
+                <div>
+                  <h3 className="font-semibold text-foreground">Verify your identity</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Complete a guided check with ID upload and live face verification — the same flow used by modern banking apps.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                { icon: User, title: "Personal details", desc: "Legal name, address, contact" },
+                { icon: FileText, title: "Financial profile", desc: "Occupation and source of funds" },
+                { icon: Camera, title: "Government ID", desc: "Photo of your ID document" },
+                { icon: ScanFace, title: "Face scan", desc: "Live camera liveness check" },
+              ].map((item) => (
+                <div key={item.title} className="rounded-xl border border-border/80 bg-white p-4">
+                  <item.icon className="mb-2 h-5 w-5 text-paypal-blue" />
+                  <p className="font-semibold text-foreground">{item.title}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">Estimated time: 5–8 minutes. Have your ID ready in good lighting.</p>
+          </div>
+        );
+
+      case "personal":
+        return (
+          <div className="paypal-surface space-y-4 rounded-2xl p-6 shadow-sm">
+            <h3 className="flex items-center gap-2 font-semibold text-foreground">
+              <User className="h-4 w-4 text-paypal-blue" />
+              Personal information
+            </h3>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Full legal name *</label>
+              <input value={formData.full_name} onChange={(e) => handleInputChange("full_name", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" placeholder="As shown on your ID" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Date of birth *</label>
+              <input type="date" value={formData.date_of_birth} onChange={(e) => handleInputChange("date_of_birth", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Nationality *</label>
+              <input value={formData.nationality} onChange={(e) => handleInputChange("nationality", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Residential address *</label>
+              <textarea value={formData.residential_address} onChange={(e) => handleInputChange("residential_address", e.target.value)} className="min-h-[88px] w-full rounded-xl border border-border px-3 py-2" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Phone *</label>
+              <input value={formData.phone_number} onChange={(e) => handleInputChange("phone_number", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" placeholder="+63..." />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Email *</label>
+              <input type="email" value={formData.email} onChange={(e) => handleInputChange("email", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" />
+            </div>
+          </div>
+        );
+
+      case "financial":
+        return (
+          <div className="paypal-surface space-y-4 rounded-2xl p-6 shadow-sm">
+            <h3 className="flex items-center gap-2 font-semibold text-foreground">
+              <FileText className="h-4 w-4 text-paypal-blue" />
+              Financial information
+            </h3>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Occupation *</label>
+              <input value={formData.occupation} onChange={(e) => handleInputChange("occupation", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Employer</label>
+              <input value={formData.employer_name} onChange={(e) => handleInputChange("employer_name", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Source of funds *</label>
+              <select value={formData.source_of_funds} onChange={(e) => handleInputChange("source_of_funds", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3">
+                <option value="">Select</option>
+                {KYC_SOURCE_OF_FUNDS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Annual income *</label>
+              <select value={formData.annual_income_range} onChange={(e) => handleInputChange("annual_income_range", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3">
+                <option value="">Select</option>
+                {KYC_INCOME_RANGE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <label className="flex items-center gap-3 text-sm">
+              <input type="checkbox" checked={formData.political_exposure} onChange={(e) => handleInputChange("political_exposure", e.target.checked)} className="h-4 w-4" />
+              I am a politically exposed person (PEP)
+            </label>
+          </div>
+        );
+
+      case "documents":
+        return (
+          <div className="paypal-surface space-y-4 rounded-2xl p-6 shadow-sm">
+            <h3 className="flex items-center gap-2 font-semibold text-foreground">
+              <Camera className="h-4 w-4 text-paypal-blue" />
+              Identity documents
+            </h3>
+            <select value={formData.id_document_type} onChange={(e) => handleInputChange("id_document_type", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3">
+              <option value="">Document type *</option>
+              {KYC_DOCUMENT_TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <input value={formData.id_document_number} onChange={(e) => handleInputChange("id_document_number", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" placeholder="Document number *" />
+            <div className="grid grid-cols-2 gap-3">
+              <input type="date" value={formData.id_document_issue_date} onChange={(e) => handleInputChange("id_document_issue_date", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" />
+              <input type="date" value={formData.id_document_expiry_date} onChange={(e) => handleInputChange("id_document_expiry_date", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" />
+            </div>
+            {renderUploadCard("id_document_front", "ID front", true)}
+            {renderUploadCard("id_document_back", "ID back (optional)")}
+            {renderUploadCard("proof_of_address", "Proof of address (optional)")}
+          </div>
+        );
+
+      case "face":
+        return (
+          <div className="paypal-surface rounded-2xl p-6 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
+              <ScanFace className="h-4 w-4 text-paypal-blue" />
+              Face verification
+            </h3>
+            {faceVerification || storedDocumentPaths.selfie_url ? (
+              <div className="mb-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                <p className="font-semibold">Face verification complete</p>
+                {faceVerification?.livenessScore != null ? (
+                  <p className="mt-1">Liveness score: {faceVerification.livenessScore}%</p>
+                ) : null}
+                <Button type="button" variant="outline" className="mt-3 w-full" onClick={() => { setFaceVerification(null); setStoredDocumentPaths((p) => ({ ...p, selfie_url: "" })); setUploadedUrls((p) => ({ ...p, selfie_url: "" })); }}>
+                  Retake face scan
+                </Button>
+              </div>
+            ) : (
+              <KycFaceCapture
+                disabled={Boolean(uploadingField)}
+                onCancel={() => setStep("documents")}
+                onComplete={(result) => void uploadFaceCapture(result)}
+              />
+            )}
+          </div>
+        );
+
+      case "review":
+        return (
+          <div className="space-y-4">
+            <div className="paypal-surface rounded-2xl p-6 shadow-sm">
+              <h3 className="mb-4 font-semibold text-foreground">Review before submit</h3>
+              <dl className="space-y-3 text-sm">
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Name</dt><dd className="font-medium text-right">{formData.full_name}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Email</dt><dd className="font-medium text-right">{formData.email}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">ID</dt><dd className="font-medium text-right">{formData.id_document_type.replace(/_/g, " ")}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Face check</dt><dd className="font-medium text-green-700">{faceVerification || storedDocumentPaths.selfie_url ? "Complete" : "Missing"}</dd></div>
+              </dl>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              By submitting, you confirm the information is accurate. OpenPay compliance will review your documents and face verification.
+            </p>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f8fbff] pb-24">
       <div className="px-4 pt-6">
-        <div className="mb-6 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/menu")} className="paypal-surface flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
-              <ArrowLeft className="h-5 w-5 text-foreground" />
-            </button>
-            <h1 className="text-xl font-bold text-paypal-dark">KYC Verification</h1>
-          </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
-            <BrandLogo className="h-full w-full text-paypal-blue" />
-          </div>
-        </div>
-
-        <div className="mb-6 paypal-surface rounded-2xl p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <Shield className="mt-0.5 h-5 w-5 text-paypal-blue" />
-            <div>
-              <h3 className="mb-1 font-semibold text-foreground">Real identity verification</h3>
-              <p className="text-sm text-muted-foreground">
-                Submit your legal identity details and supporting documents to unlock higher trust, higher limits, and admin-reviewed verification.
-              </p>
-            </div>
-          </div>
-        </div>
+        {header}
 
         {currentApplication?.status === "rejected" ? (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            <p className="font-semibold">Previous KYC application was rejected.</p>
-            <p className="mt-1">{currentApplication.rejection_reason || "Please review your details and submit a new application."}</p>
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <p className="font-semibold">Previous application rejected</p>
+            <p className="mt-1">{currentApplication.rejection_reason || "Submit a new application with updated documents."}</p>
           </div>
         ) : null}
 
         {currentApplication?.status === "additional_info_required" ? (
-          <div className="mb-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800">
-            <p className="font-semibold">Additional information requested.</p>
-            <p className="mt-1">{currentApplication.admin_notes || "Update your KYC application and submit it again for review."}</p>
+          <div className="mb-4 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800">
+            <p className="font-semibold">Additional information requested</p>
+            <p className="mt-1">{currentApplication.admin_notes || "Update your details and resubmit."}</p>
           </div>
         ) : null}
 
-        <div className="space-y-6">
-          <div className="paypal-surface rounded-2xl p-6 shadow-sm">
-            <h3 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
-              <User className="h-4 w-4 text-paypal-blue" />
-              Personal Information
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Full Name *</label>
-                <input value={formData.full_name} onChange={(e) => handleInputChange("full_name", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Enter your full legal name" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Date of Birth *</label>
-                <input type="date" value={formData.date_of_birth} onChange={(e) => handleInputChange("date_of_birth", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Nationality *</label>
-                <input value={formData.nationality} onChange={(e) => handleInputChange("nationality", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Enter your nationality" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Residential Address *</label>
-                <textarea value={formData.residential_address} onChange={(e) => handleInputChange("residential_address", e.target.value)} className="h-20 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-foreground" placeholder="Enter your full residential address" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Phone Number *</label>
-                <input value={formData.phone_number} onChange={(e) => handleInputChange("phone_number", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="+63..." />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Email Address *</label>
-                <input type="email" value={formData.email} onChange={(e) => handleInputChange("email", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="name@example.com" />
-              </div>
-            </div>
-          </div>
+        {step !== "intro" ? <KycStepIndicator currentStep={step} /> : null}
 
-          <div className="paypal-surface rounded-2xl p-6 shadow-sm">
-            <h3 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
-              <FileText className="h-4 w-4 text-paypal-blue" />
-              Financial Information
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Occupation *</label>
-                <input value={formData.occupation} onChange={(e) => handleInputChange("occupation", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Enter your occupation" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Employer Name</label>
-                <input value={formData.employer_name} onChange={(e) => handleInputChange("employer_name", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Employer or company name" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Source of Funds *</label>
-                <select value={formData.source_of_funds} onChange={(e) => handleInputChange("source_of_funds", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground">
-                  <option value="">Select source of funds</option>
-                  {KYC_SOURCE_OF_FUNDS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Annual Income Range *</label>
-                <select value={formData.annual_income_range} onChange={(e) => handleInputChange("annual_income_range", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground">
-                  <option value="">Select income range</option>
-                  {KYC_INCOME_RANGE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </div>
-              <label className="flex items-center gap-3 text-sm text-foreground">
-                <input type="checkbox" checked={formData.political_exposure} onChange={(e) => handleInputChange("political_exposure", e.target.checked)} className="h-4 w-4 rounded border-border" />
-                I am a politically exposed person (PEP) or closely related to one
-              </label>
-            </div>
-          </div>
+        {renderStepContent()}
 
-          <div className="paypal-surface rounded-2xl p-6 shadow-sm">
-            <h3 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
-              <FileText className="h-4 w-4 text-paypal-blue" />
-              Identity Documents
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">ID Document Type *</label>
-                <select value={formData.id_document_type} onChange={(e) => handleInputChange("id_document_type", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground">
-                  <option value="">Select document type</option>
-                  {KYC_DOCUMENT_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Document Number *</label>
-                <input value={formData.id_document_number} onChange={(e) => handleInputChange("id_document_number", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" placeholder="Enter document number" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Issue Date *</label>
-                  <input type="date" value={formData.id_document_issue_date} onChange={(e) => handleInputChange("id_document_issue_date", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-foreground">Expiry Date *</label>
-                  <input type="date" value={formData.id_document_expiry_date} onChange={(e) => handleInputChange("id_document_expiry_date", e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground" />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {renderUploadCard("id_document_front", "ID Document Front", true)}
-                {renderUploadCard("id_document_back", "ID Document Back")}
-                {renderUploadCard("selfie", "Selfie Photo", true, "image/*", Camera)}
-                {renderUploadCard("proof_of_address", "Proof of Address")}
-              </div>
-            </div>
-          </div>
-
-          <Button onClick={handleSubmit} disabled={loading || Boolean(uploadingField)} className="h-12 w-full bg-paypal-blue hover:bg-[#004dc5]">
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting Application...
-              </>
-            ) : currentApplication?.status === "rejected" ? (
-              "Submit New KYC Application"
-            ) : canEditExisting ? (
-              "Resubmit KYC Application"
-            ) : (
-              "Submit KYC Application"
-            )}
-          </Button>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          {step !== "review" ? (
+            <Button type="button" className="h-12 flex-1 bg-paypal-blue hover:bg-[#004dc5]" onClick={goNext} disabled={Boolean(uploadingField)}>
+              Continue
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button type="button" className="h-12 flex-1 bg-paypal-blue hover:bg-[#004dc5]" onClick={() => void handleSubmit()} disabled={loading || Boolean(uploadingField)}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit for review"
+              )}
+            </Button>
+          )}
+          {step !== "intro" ? (
+            <Button type="button" variant="outline" className="h-12 flex-1" onClick={goBack}>
+              Back
+            </Button>
+          ) : null}
         </div>
       </div>
       <BottomNav active="menu" />

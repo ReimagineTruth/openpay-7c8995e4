@@ -1,11 +1,55 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export const ADMIN_PROFILE_USERNAMES = new Set(["openpay", "wainfoundation"]);
 
 export type KycStatus =
+  | "not_submitted"
   | "pending"
   | "under_review"
   | "approved"
   | "rejected"
   | "additional_info_required";
+
+export type KycWizardStep = "intro" | "personal" | "financial" | "documents" | "face" | "review";
+
+export const KYC_WIZARD_STEPS: { id: KycWizardStep; label: string; short: string }[] = [
+  { id: "intro", label: "Overview", short: "Start" },
+  { id: "personal", label: "Personal", short: "You" },
+  { id: "financial", label: "Financial", short: "Funds" },
+  { id: "documents", label: "ID documents", short: "ID" },
+  { id: "face", label: "Face verification", short: "Face" },
+  { id: "review", label: "Review", short: "Submit" },
+];
+
+export interface KycFaceVerificationMetadata {
+  challenges_completed: string[];
+  face_detected_steps: number;
+  total_steps: number;
+  user_agent?: string;
+  captured_at: string;
+}
+
+export const isKycVerified = (status: string | null | undefined) =>
+  status === "approved" || status === "verified";
+
+export const kycStatusLabel = (status: string | null | undefined) => {
+  switch (status) {
+    case "approved":
+    case "verified":
+      return "Verified";
+    case "pending":
+      return "Submitted";
+    case "under_review":
+      return "Under review";
+    case "rejected":
+      return "Rejected";
+    case "additional_info_required":
+      return "More info needed";
+    case "not_submitted":
+    default:
+      return "Not started";
+  }
+};
 
 export interface KycApplicationRecord {
   id: string;
@@ -35,6 +79,10 @@ export interface KycApplicationRecord {
   submitted_at: string;
   reviewed_at?: string | null;
   reviewed_by?: string | null;
+  liveness_passed?: boolean;
+  liveness_score?: number | null;
+  face_verification_metadata?: KycFaceVerificationMetadata | Record<string, unknown> | null;
+  selfie_captured_at?: string | null;
 }
 
 export interface AdminKycApplicationRecord extends KycApplicationRecord {
@@ -94,7 +142,32 @@ export const normalizeKycApplication = (row: any): KycApplicationRecord => ({
   submitted_at: String(row.submitted_at || ""),
   reviewed_at: row.reviewed_at ? String(row.reviewed_at) : null,
   reviewed_by: row.reviewed_by ? String(row.reviewed_by) : null,
+  liveness_passed: Boolean(row.liveness_passed),
+  liveness_score: row.liveness_score != null ? Number(row.liveness_score) : null,
+  face_verification_metadata: row.face_verification_metadata ?? null,
+  selfie_captured_at: row.selfie_captured_at ? String(row.selfie_captured_at) : null,
 });
+
+export const fetchProfileKycStatus = async (userId: string): Promise<KycStatus> => {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("kyc_status")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const raw = String((profile as { kyc_status?: string } | null)?.kyc_status || "not_submitted");
+  if (raw === "verified") return "approved";
+  if (
+    raw === "pending" ||
+    raw === "under_review" ||
+    raw === "approved" ||
+    raw === "rejected" ||
+    raw === "additional_info_required"
+  ) {
+    return raw as KycStatus;
+  }
+  return "not_submitted";
+};
 
 export const isLikelyStoragePath = (value: string | null | undefined) =>
   Boolean(value) && !String(value).startsWith("http://") && !String(value).startsWith("https://");

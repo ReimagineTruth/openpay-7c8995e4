@@ -641,19 +641,31 @@ const Dashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // For now, we'll use localStorage since the table doesn't exist yet
-      // This will be updated after we create the database schema
-      const storedApplication = localStorage.getItem('kyc_application');
-      
-      if (storedApplication) {
-        const parsedApplication = JSON.parse(storedApplication);
-        setKycStatus(parsedApplication.status);
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("kyc_status")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const raw = String((profile as { kyc_status?: string } | null)?.kyc_status || "not_submitted");
+      if (raw === "verified") {
+        setKycStatus("approved");
+      } else if (
+        raw === "pending" ||
+        raw === "under_review" ||
+        raw === "approved" ||
+        raw === "rejected" ||
+        raw === "additional_info_required"
+      ) {
+        setKycStatus(raw);
       } else {
-        setKycStatus('not_submitted');
+        setKycStatus("not_submitted");
       }
     } catch (error) {
-      console.error('Error loading KYC status:', error);
-      setKycStatus('not_submitted');
+      console.error("Error loading KYC status:", error);
+      setKycStatus("not_submitted");
     }
   };
 

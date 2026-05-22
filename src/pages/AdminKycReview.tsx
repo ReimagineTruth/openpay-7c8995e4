@@ -460,6 +460,29 @@ const AdminKycReview = () => {
                 </div>
               </div>
 
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
+                <h3 className="mb-2 font-semibold text-blue-900">Face verification (client)</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-blue-700/80">Liveness</p>
+                    <p className="font-medium text-blue-950">
+                      {selectedApplication.liveness_passed ? "Passed" : "Not completed"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700/80">Score</p>
+                    <p className="font-medium text-blue-950">
+                      {selectedApplication.liveness_score != null ? `${selectedApplication.liveness_score}%` : "—"}
+                    </p>
+                  </div>
+                </div>
+                {selectedApplication.selfie_captured_at ? (
+                  <p className="mt-2 text-xs text-blue-800">
+                    Captured {new Date(selectedApplication.selfie_captured_at).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
+
               <div>
                 <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
                   <Shield className="h-4 w-4" />

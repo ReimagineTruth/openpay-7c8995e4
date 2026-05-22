@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import BrandLogo from "@/components/BrandLogo";
 import AuthMark from "@/components/AuthMark";
+import { isKycVerified, kycStatusLabel } from "@/lib/kyc";
 
 // AI calls go through the openpay-ai-chat edge function (Lovable AI Gateway)
 
@@ -402,7 +403,7 @@ const OpenPayAIPage = () => {
     }
     
     // KYC recommendation
-    if (userProfile?.kyc_status !== "verified") {
+    if (!isKycVerified(userProfile?.kyc_status)) {
       recommendations.push({
         id: "kyc-verification",
         type: "security",
@@ -571,7 +572,7 @@ const OpenPayAIPage = () => {
     }
 
     // Goal progress (placeholder for future implementation)
-    if (userProfile?.kyc_status === "verified") {
+    if (isKycVerified(userProfile?.kyc_status)) {
       insights.push({
         type: "goal",
         title: "Account Status",
@@ -1100,7 +1101,7 @@ Please choose an option or let me know how you'd like to proceed!`;
         }
       }
       
-      if (userProfile?.kyc_status !== "verified") {
+      if (!isKycVerified(userProfile?.kyc_status)) {
         advice += `🔐 **Security:** Complete KYC verification to unlock higher limits.\n`;
       }
       
@@ -1158,7 +1159,7 @@ Please choose an option or let me know how you'd like to proceed!`;
       }
       
       // KYC factor
-      if (userProfile?.kyc_status === "verified") {
+      if (isKycVerified(userProfile?.kyc_status)) {
         score += 5;
         factors.push("✅ Account verified");
       }
@@ -1356,8 +1357,8 @@ Please choose an option or let me know how you'd like to proceed!`;
                     <p className="font-semibold text-sm">{userProfile?.full_name || "User"}</p>
                     <p className="text-xs text-muted-foreground">@{userProfile?.username || "username"}</p>
                   </div>
-                  <Badge variant={userProfile?.kyc_status === "verified" ? "default" : "secondary"} className="text-xs">
-                    {userProfile?.kyc_status || "Pending"}
+                  <Badge variant={isKycVerified(userProfile?.kyc_status) ? "default" : "secondary"} className="text-xs">
+                    {kycStatusLabel(userProfile?.kyc_status)}
                   </Badge>
                 </div>
                 <div className="space-y-1 text-xs">
