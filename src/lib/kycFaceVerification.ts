@@ -90,7 +90,7 @@ export const buildFaceVerificationMetadata = (
   face_detected_steps: faceDetectedSteps,
   total_steps: LIVENESS_CHALLENGES.length,
   user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-  captured_at: new Date().ISOString(),
+  captured_at: new Date().toISOString(),
 });
 
 export const computeLivenessScore = (faceDetectedSteps: number, totalSteps: number) => {
