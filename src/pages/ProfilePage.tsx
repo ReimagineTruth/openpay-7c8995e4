@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { upsertUserPreferences } from "@/lib/userPreferences";
 import { generateOpenPayAccountNumber } from "@/lib/openpayIdentity";
+import KycBadge from "@/components/KycBadge";
+import { type KycStatus, kycStatusLabel } from "@/lib/kyc";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
