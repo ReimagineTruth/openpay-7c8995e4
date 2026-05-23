@@ -486,6 +486,111 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_applications: {
+        Row: {
+          admin_notes: string | null
+          annual_income_range: string
+          date_of_birth: string
+          email: string
+          employer_name: string | null
+          face_verification_metadata: Json
+          full_name: string
+          id: string
+          id_document_back_url: string | null
+          id_document_expiry_date: string
+          id_document_front_url: string | null
+          id_document_issue_date: string
+          id_document_number: string
+          id_document_type: string
+          liveness_passed: boolean
+          liveness_score: number | null
+          nationality: string
+          occupation: string
+          phone_number: string
+          political_exposure: boolean
+          proof_of_address_url: string | null
+          rejection_reason: string | null
+          residential_address: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_captured_at: string | null
+          selfie_url: string | null
+          source_of_funds: string
+          status: string
+          submitted_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          annual_income_range: string
+          date_of_birth: string
+          email: string
+          employer_name?: string | null
+          face_verification_metadata?: Json
+          full_name: string
+          id?: string
+          id_document_back_url?: string | null
+          id_document_expiry_date: string
+          id_document_front_url?: string | null
+          id_document_issue_date: string
+          id_document_number: string
+          id_document_type: string
+          liveness_passed?: boolean
+          liveness_score?: number | null
+          nationality: string
+          occupation: string
+          phone_number: string
+          political_exposure?: boolean
+          proof_of_address_url?: string | null
+          rejection_reason?: string | null
+          residential_address: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_captured_at?: string | null
+          selfie_url?: string | null
+          source_of_funds: string
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          annual_income_range?: string
+          date_of_birth?: string
+          email?: string
+          employer_name?: string | null
+          face_verification_metadata?: Json
+          full_name?: string
+          id?: string
+          id_document_back_url?: string | null
+          id_document_expiry_date?: string
+          id_document_front_url?: string | null
+          id_document_issue_date?: string
+          id_document_number?: string
+          id_document_type?: string
+          liveness_passed?: boolean
+          liveness_score?: number | null
+          nationality?: string
+          occupation?: string
+          phone_number?: string
+          political_exposure?: boolean
+          proof_of_address_url?: string | null
+          rejection_reason?: string | null
+          residential_address?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_captured_at?: string | null
+          selfie_url?: string | null
+          source_of_funds?: string
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ledger_events: {
         Row: {
           actor_user_id: string | null
@@ -1476,6 +1581,8 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          kyc_status: string
+          kyc_verified_at: string | null
           referral_code: string
           referred_by_user_id: string | null
           username: string | null
@@ -1485,6 +1592,8 @@ export type Database = {
           created_at?: string
           full_name?: string
           id: string
+          kyc_status?: string
+          kyc_verified_at?: string | null
           referral_code: string
           referred_by_user_id?: string | null
           username?: string | null
@@ -1494,6 +1603,8 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          kyc_status?: string
+          kyc_verified_at?: string | null
           referral_code?: string
           referred_by_user_id?: string | null
           username?: string | null
@@ -2972,6 +3083,16 @@ export type Database = {
           total_amount: number
         }[]
       }
+      get_user_kyc_status: {
+        Args: { user_uuid: string }
+        Returns: {
+          id: string
+          rejection_reason: string
+          reviewed_at: string
+          status: string
+          submitted_at: string
+        }[]
+      }
       is_openpay_core_admin: { Args: never; Returns: boolean }
       is_support_agent: { Args: { p_user_id: string }; Returns: boolean }
       is_transaction_participant: {
@@ -3322,6 +3443,18 @@ export type Database = {
           savings_balance: number
           transfer_id: string
           wallet_balance: number
+        }[]
+      }
+      update_kyc_status: {
+        Args: {
+          admin_notes_text?: string
+          application_id: string
+          new_status: string
+          rejection_reason_text?: string
+        }
+        Returns: {
+          message: string
+          success: boolean
         }[]
       }
       update_my_virtual_card_controls: {
