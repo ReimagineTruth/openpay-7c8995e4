@@ -9,7 +9,7 @@ type KycStepIndicatorProps = {
 const stepOrder = KYC_WIZARD_STEPS.map((s) => s.id).filter((id) => id !== "intro");
 
 const KycStepIndicator = ({ currentStep }: KycStepIndicatorProps) => {
-  const currentIndex = stepOrder.indexOf(currentStep);
+  const currentIndex = stepOrder.indexOf(currentStep as typeof stepOrder[number]);
 
   return (
     <div className="mb-6">
