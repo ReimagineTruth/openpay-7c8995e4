@@ -418,7 +418,7 @@ const SwapWithdrawalPage = () => {
               </>
             ) : (
               <>
-                <p>3. After admin approval, you will receive {withdrawalType === "OUSD" ? "OUSD" : "MRWN"} to your mainnet wallet. Price coming soon.</p>
+                <p>3. After admin approval, you will receive {(withdrawalType as string) === "OUSD" ? "OUSD" : "MRWN"} to your mainnet wallet. Price coming soon.</p>
                 <p>4. A 2% processing fee applies to withdrawals.</p>
               </>
             )}
