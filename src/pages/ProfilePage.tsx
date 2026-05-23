@@ -21,6 +21,8 @@ const ProfilePage = () => {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [kycStatus, setKycStatus] = useState<KycStatus>("not_submitted");
+  const [kycVerifiedAt, setKycVerifiedAt] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
