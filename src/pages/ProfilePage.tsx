@@ -41,13 +41,17 @@ const ProfilePage = () => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, username, avatar_url")
+        .select("full_name, username, avatar_url, kyc_status, kyc_verified_at" as any)
         .eq("id", user.id)
         .single();
 
-      setFullName(profile?.full_name || "");
-      setUsername(profile?.username || "");
-      setAvatarUrl(profile?.avatar_url || "");
+      const p = profile as any;
+      setFullName(p?.full_name || "");
+      setUsername(p?.username || "");
+      setAvatarUrl(p?.avatar_url || "");
+      const raw = String(p?.kyc_status || "not_submitted");
+      setKycStatus((raw === "verified" ? "approved" : raw) as KycStatus);
+      setKycVerifiedAt(p?.kyc_verified_at || null);
     };
 
     load();
