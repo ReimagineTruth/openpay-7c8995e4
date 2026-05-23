@@ -418,7 +418,7 @@ const SwapWithdrawalPage = () => {
               </>
             ) : (
               <>
-                <p>3. After admin approval, you will receive {withdrawalType === "OUSD" ? "OUSD" : "MRWN"} to your mainnet wallet. Price coming soon.</p>
+                <p>3. After admin approval, you will receive {(withdrawalType as string) === "OUSD" ? "OUSD" : "MRWN"} to your mainnet wallet. Price coming soon.</p>
                 <p>4. A 2% processing fee applies to withdrawals.</p>
               </>
             )}
@@ -698,10 +698,11 @@ const SwapWithdrawalPage = () => {
                     if (withdrawalType === "MRWN") return `${payoutMrwnAmount.toFixed(4)} MRWN`;
                     return "Coming Soon";
                   }
-                  if (withdrawalType === "PI") return `${payoutPiAmount.toFixed(4)} PI`;
-                  if (withdrawalType === "OUSD") return `${payoutOusdAmount.toFixed(2)} OUSD`;
-                  if (withdrawalType === "OUSD_SOL") return `${payoutOusdSolAmount.toFixed(2)} ${OUSD_SOL_LABEL}`;
-                  if (withdrawalType === "MRWN") return "Coming Soon MRWN";
+                  const wt = withdrawalType as string;
+                  if (wt === "PI") return `${payoutPiAmount.toFixed(4)} PI`;
+                  if (wt === "OUSD") return `${payoutOusdAmount.toFixed(2)} OUSD`;
+                  if (wt === "OUSD_SOL") return `${payoutOusdSolAmount.toFixed(2)} ${OUSD_SOL_LABEL}`;
+                  if (wt === "MRWN") return "Coming Soon MRWN";
                   return "Coming Soon";
                 })()}
               </span>
