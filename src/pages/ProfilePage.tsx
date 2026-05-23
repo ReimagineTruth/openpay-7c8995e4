@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { upsertUserPreferences } from "@/lib/userPreferences";
 import { generateOpenPayAccountNumber } from "@/lib/openpayIdentity";
+import KycBadge from "@/components/KycBadge";
+import { type KycStatus, kycStatusLabel } from "@/lib/kyc";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -19,6 +21,8 @@ const ProfilePage = () => {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [kycStatus, setKycStatus] = useState<KycStatus>("not_submitted");
+  const [kycVerifiedAt, setKycVerifiedAt] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -37,13 +41,17 @@ const ProfilePage = () => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, username, avatar_url")
+        .select("full_name, username, avatar_url, kyc_status, kyc_verified_at" as any)
         .eq("id", user.id)
         .single();
 
-      setFullName(profile?.full_name || "");
-      setUsername(profile?.username || "");
-      setAvatarUrl(profile?.avatar_url || "");
+      const p = profile as any;
+      setFullName(p?.full_name || "");
+      setUsername(p?.username || "");
+      setAvatarUrl(p?.avatar_url || "");
+      const raw = String(p?.kyc_status || "not_submitted");
+      setKycStatus((raw === "verified" ? "approved" : raw) as KycStatus);
+      setKycVerifiedAt(p?.kyc_verified_at || null);
     };
 
     load();
@@ -172,11 +180,43 @@ const ProfilePage = () => {
               {initials}
             </div>
           )}
-          <div>
-            <p className="font-semibold text-foreground">{fullName || "OpenPay User"}</p>
-            <p className="text-sm text-muted-foreground">{email || "No email"}</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold text-foreground truncate">{fullName || "OpenPay User"}</p>
+              <KycBadge status={kycStatus} size="xs" />
+            </div>
+            <p className="text-sm text-muted-foreground truncate">{email || "No email"}</p>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => navigate(kycStatus === "approved" || kycStatus === "pending" || kycStatus === "under_review" ? "/kyc-status" : "/kyc")}
+          className={`mb-5 flex w-full items-center justify-between gap-3 rounded-2xl border p-3 text-left transition ${
+            kycStatus === "approved"
+              ? "border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
+              : kycStatus === "rejected"
+                ? "border-red-200 bg-red-50 hover:bg-red-100"
+                : kycStatus === "additional_info_required"
+                  ? "border-orange-200 bg-orange-50 hover:bg-orange-100"
+                  : "border-paypal-light-blue/50 bg-paypal-light-blue/10 hover:bg-paypal-light-blue/20"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <ShieldCheck className={`mt-0.5 h-5 w-5 ${kycStatus === "approved" ? "text-emerald-600" : "text-paypal-blue"}`} />
+            <div>
+              <p className="font-semibold text-foreground">Identity verification</p>
+              <p className="text-xs text-muted-foreground">
+                {kycStatus === "approved"
+                  ? `Verified${kycVerifiedAt ? ` · ${format(new Date(kycVerifiedAt), "MMM d, yyyy")}` : ""}`
+                  : kycStatus === "not_submitted"
+                    ? "Complete KYC to unlock full features"
+                    : `Status: ${kycStatusLabel(kycStatus)}`}
+              </p>
+            </div>
+          </div>
+          <KycBadge status={kycStatus} size="sm" />
+        </button>
 
         <div className="space-y-3">
           <div>
