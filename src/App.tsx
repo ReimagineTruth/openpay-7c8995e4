@@ -238,6 +238,7 @@ const AppRoutes = () => {
   return (
     <>
       <PageTransition key={location.pathname}>
+        <main>
         <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<PiAuthPage />} />
