@@ -1,0 +1,18 @@
+# OpenPay
+
+> OpenPay is a Web3 digital wallet powered by Pi cryptocurrency, designed to make Pi simple, stable, and spendable in everyday life.
+
+## Pages
+
+- [Home](/): OpenPay overview and entry point.
+- [About OpenPay](/about-openpay): What OpenPay is and what it supports.
+- [Whitepaper](/whitepaper): Technical and product whitepaper.
+- [User Guide](/openpay-guide): How to use OpenPay features.
+- [Regulatory Status](/regulatory-status): Regulatory positioning of OpenPay.
+
+## Optional
+
+- [Terms](/terms): Terms of service.
+- [Privacy Policy](/privacy): Privacy policy.
+- [Legal](/legal): Legal notices.
+- [GDPR](/gdpr): GDPR information.
