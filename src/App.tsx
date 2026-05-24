@@ -503,6 +503,7 @@ const AppRoutes = () => {
         <Route path="/app-payment/success" element={<AppPaymentSuccessPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </main>
       </PageTransition>
       <AppSecurityGate />
       {location.pathname !== "/support" ? <AppFooter /> : null}
