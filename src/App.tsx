@@ -238,6 +238,7 @@ const AppRoutes = () => {
   return (
     <>
       <PageTransition key={location.pathname}>
+        <main>
         <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<PiAuthPage />} />
@@ -502,6 +503,7 @@ const AppRoutes = () => {
         <Route path="/app-payment/success" element={<AppPaymentSuccessPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </main>
       </PageTransition>
       <AppSecurityGate />
       {location.pathname !== "/support" ? <AppFooter /> : null}
