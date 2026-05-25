@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
+import IntegrationPreview from "@/components/app-developer/IntegrationPreview";
 
 const db = supabase as any;
 
