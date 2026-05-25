@@ -522,25 +522,26 @@ const AppDeveloperDashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex h-14 items-center border-b border-border bg-card px-4">
-        <button onClick={() => navigate("/menu")} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-secondary" aria-label="Back">
+      <div className="flex h-14 items-center border-b border-border bg-card px-3 sm:px-4">
+        <button onClick={() => navigate("/menu")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-secondary" aria-label="Back">
           <Settings className="h-5 w-5 text-foreground" />
         </button>
-        <div className="mx-3 h-7 w-px bg-border" />
-        <p className="flex items-center gap-2 text-xl font-medium text-foreground">
-          <Smartphone className="h-5 w-5" />
-          App Developer Dashboard
+        <div className="mx-2 sm:mx-3 h-7 w-px bg-border" />
+        <p className="flex min-w-0 items-center gap-2 text-base sm:text-xl font-medium text-foreground">
+          <Smartphone className="h-5 w-5 shrink-0" />
+          <span className="truncate">App Developer</span>
         </p>
         <Button
           onClick={() => setShowCreateApp(true)}
-          className="ml-auto h-9 rounded-full bg-paypal-blue text-white hover:bg-[#004dc5]"
+          className="ml-auto h-9 shrink-0 rounded-full bg-paypal-blue px-3 text-white hover:bg-[#004dc5]"
         >
-          <Plus className="mr-2 h-4 w-4" />
-          New App
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">New App</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 p-3 sm:p-6 pb-24">
+
         {/* Apps Sidebar */}
         <div className="lg:col-span-1">
           <h3 className="mb-4 text-lg font-semibold text-foreground">My Apps</h3>
