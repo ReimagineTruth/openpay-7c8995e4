@@ -339,25 +339,38 @@ async function handleGetPaymentLink(req: Request, supabase: any) {
 }
 
 async function handleProcessPayment(req: Request, supabase: any) {
-  const { link_token, payer_user_id, payment_method, customer_name, customer_email, customer_phone } = await req.json()
+  const body = await req.json()
+  const {
+    link_token,
+    payer_account,
+    payer_pin,
+    payment_method,
+    customer_name,
+    customer_email,
+    customer_phone,
+  } = body
 
   if (!link_token) {
     return new Response(
       JSON.stringify({ error: "link_token is required" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  }
+  if (!payer_account) {
+    return new Response(
+      JSON.stringify({ error: "Account number or email is required" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
   }
 
-  const { data, error } = await supabase.rpc("process_app_payment", {
+  const { data, error } = await supabase.rpc("process_app_payment_public", {
     p_link_token: link_token,
-    p_payer_user_id: payer_user_id,
+    p_payer_account: payer_account,
+    p_payer_pin: payer_pin ?? null,
     p_payment_method: payment_method || "wallet",
-    p_customer_name: customer_name,
-    p_customer_email: customer_email,
-    p_customer_phone: customer_phone
+    p_customer_name: customer_name ?? null,
+    p_customer_email: customer_email ?? null,
+    p_customer_phone: customer_phone ?? null,
   })
 
   if (error) {

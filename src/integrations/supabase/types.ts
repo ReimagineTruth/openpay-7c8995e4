@@ -3593,6 +3593,22 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      process_app_payment_public: {
+        Args: {
+          p_customer_email?: string
+          p_customer_name?: string
+          p_customer_phone?: string
+          p_link_token: string
+          p_payer_account: string
+          p_payer_pin?: string
+          p_payment_method?: string
+        }
+        Returns: {
+          message: string
+          status: string
+          transaction_id: string
+        }[]
+      }
       random_token_hex: { Args: { p_bytes?: number }; Returns: string }
       refund_my_pos_transaction: {
         Args: { p_payment_id: string; p_reason?: string }

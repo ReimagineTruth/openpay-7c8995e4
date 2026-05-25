@@ -76,6 +76,9 @@ export default function IntegrationPreview({
   const previewUrl = previewToken
     ? `${baseUrl}/app-payment/checkout?token=${previewToken}&env=${env}`
     : "";
+  const embedUrl = previewToken
+    ? `${baseUrl}/app-payment/checkout?token=${previewToken}&env=${env}&embed=1`
+    : "";
 
   const samplePlan = plans[0];
   const apiBase = `${SUPABASE_URL}/functions/v1/app-payments`;
@@ -86,6 +89,7 @@ export default function IntegrationPreview({
     const planId = samplePlan?.id || "PLAN_ID";
     const amount = samplePlan?.amount ?? 9.99;
     const currency = samplePlan?.currency || "OUSD";
+    const tokenForEmbed = previewToken || "LINK_TOKEN";
 
     return {
       install: `# Install the OpenPay JS SDK
@@ -147,8 +151,64 @@ console.log("Checkout URL:", data.payment_url);`,
 }
 
 // Verify signature using your secret key (${sec.slice(0, 8)}...)`,
+      embedIframe: `<!-- Drop-in OpenPay checkout (iframe) -->
+<iframe
+  src="${baseUrl}/app-payment/checkout?token=${tokenForEmbed}&env=${env}&embed=1"
+  style="width:100%;max-width:900px;height:780px;border:0;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.08);"
+  allow="payment"
+  title="Pay with OpenPay">
+</iframe>`,
+      embedJs: `<!-- OpenPay embed + parent-window event listener -->
+<div id="openpay-checkout" style="width:100%;max-width:900px;margin:0 auto;"></div>
+
+<script>
+  (function () {
+    var token = "${tokenForEmbed}"; // generated server-side per order
+    var env = "${env}";              // "testnet" | "live"
+
+    var iframe = document.createElement("iframe");
+    iframe.src = "${baseUrl}/app-payment/checkout?token=" + token + "&env=" + env + "&embed=1";
+    iframe.style.cssText = "width:100%;height:780px;border:0;border-radius:16px;";
+    iframe.allow = "payment";
+    iframe.title = "Pay with OpenPay";
+    document.getElementById("openpay-checkout").appendChild(iframe);
+
+    window.addEventListener("message", function (e) {
+      if (!e.data || e.data.source !== "openpay-checkout") return;
+      if (e.data.type === "payment_success") {
+        console.log("Payment success:", e.data.transaction_id);
+        // TODO: confirm on your server using transaction_id + webhook
+      } else if (e.data.type === "payment_error") {
+        console.warn("Payment error:", e.data.error);
+      }
+    });
+  })();
+</script>`,
+      embedReact: `// React component — drop-in OpenPay checkout
+import { useEffect } from "react";
+
+export function OpenPayCheckout({ token, env = "${env}", onSuccess, onError }) {
+  useEffect(() => {
+    const handler = (e) => {
+      if (!e.data || e.data.source !== "openpay-checkout") return;
+      if (e.data.type === "payment_success") onSuccess?.(e.data.transaction_id);
+      if (e.data.type === "payment_error")   onError?.(e.data.error);
     };
-  }, [app, samplePlan, env, apiBase]);
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [onSuccess, onError]);
+
+  return (
+    <iframe
+      src={\`${baseUrl}/app-payment/checkout?token=\${token}&env=\${env}&embed=1\`}
+      title="Pay with OpenPay"
+      allow="payment"
+      style={{ width: "100%", maxWidth: 900, height: 780, border: 0, borderRadius: 16 }}
+    />
+  );
+}`,
+    };
+  }, [app, samplePlan, env, apiBase, baseUrl, previewToken]);
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 space-y-5">
@@ -224,6 +284,10 @@ console.log("Checkout URL:", data.payment_url);`,
           </TabsTrigger>
           <TabsTrigger value="server">Server SDK</TabsTrigger>
           <TabsTrigger value="webhook">Webhooks</TabsTrigger>
+          <TabsTrigger value="embed">
+            <Code2 className="h-3.5 w-3.5 mr-1.5" />
+            Embed
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="quickstart" className="space-y-4 pt-4">
@@ -257,6 +321,45 @@ console.log("Checkout URL:", data.payment_url);`,
 
         <TabsContent value="webhook" className="pt-4">
           <CodeBlock code={snippets.webhook} lang="json" />
+        </TabsContent>
+
+        <TabsContent value="embed" className="space-y-4 pt-4">
+          <div className="rounded-lg border border-paypal-blue/30 bg-paypal-blue/5 p-3 text-xs text-foreground">
+            <strong>Drop-in checkout.</strong> Embed OpenPay directly inside your site or app — no redirect, no SDK required. Listen for{" "}
+            <code className="bg-muted px-1 rounded">window.postMessage</code> events to know when a payment succeeds.
+          </div>
+
+          {embedUrl && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => copy(embedUrl, "Embed URL copied")}>
+                <Copy className="h-3 w-3 mr-1" /> Copy embed URL
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => window.open(embedUrl, "_blank")}>
+                <ExternalLink className="h-3 w-3 mr-1" /> Open in new tab
+              </Button>
+              <code className="text-[11px] text-muted-foreground font-mono truncate max-w-full">
+                {embedUrl}
+              </code>
+            </div>
+          )}
+
+          <Step n={1} title="Paste the iframe into your page">
+            <CodeBlock code={snippets.embedIframe} lang="html" />
+          </Step>
+          <Step n={2} title="Or use the JS snippet with success/error events">
+            <CodeBlock code={snippets.embedJs} lang="html" />
+          </Step>
+          <Step n={3} title="React component (drop-in)">
+            <CodeBlock code={snippets.embedReact} lang="tsx" />
+          </Step>
+
+          <p className="text-xs text-muted-foreground">
+            Events sent to the parent window:{" "}
+            <code className="bg-muted px-1 rounded">{"{ source: 'openpay-checkout', type: 'payment_success', transaction_id }"}</code>{" "}
+            and{" "}
+            <code className="bg-muted px-1 rounded">{"{ type: 'payment_error', error }"}</code>.
+            Always verify the transaction server-side via your webhook before fulfilling the order.
+          </p>
         </TabsContent>
       </Tabs>
 

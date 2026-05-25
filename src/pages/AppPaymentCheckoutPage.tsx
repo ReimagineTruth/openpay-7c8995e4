@@ -38,10 +38,18 @@ const AppPaymentCheckoutPage = () => {
   const [searchParams] = useSearchParams();
 
   const token = searchParams.get("token") || "";
+  const embed = searchParams.get("embed") === "1";
   const [loading, setLoading] = useState(false);
   const [paymentLink, setPaymentLink] = useState<AppPaymentLink | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"wallet" | "card">("wallet");
   const [processing, setProcessing] = useState(false);
+
+  // Notify parent window when embedded
+  const postParent = (msg: any) => {
+    if (embed && typeof window !== "undefined" && window.parent !== window) {
+      try { window.parent.postMessage({ source: "openpay-checkout", ...msg }, "*"); } catch {}
+    }
+  };
 
   // Wallet payment states
   const [accountNumber, setAccountNumber] = useState("");
@@ -129,6 +137,8 @@ const AppPaymentCheckoutPage = () => {
         },
         body: JSON.stringify({
           link_token: token,
+          payer_account: accountNumber.trim(),
+          payer_pin: pin.trim() || null,
           payment_method: paymentMethod,
           customer_name: customerName.trim() || null,
           customer_email: customerEmail.trim() || null,
@@ -137,15 +147,24 @@ const AppPaymentCheckoutPage = () => {
       });
 
       const result = await response.json();
-      
-      if (result.success) {
+
+      if (result.success && result.data?.status === "success") {
         toast.success("Payment completed successfully");
-        navigate(`/app-payment/success?tx=${result.data.transaction_id}&app=${paymentLink.app_registry.app_name}`);
+        postParent({ type: "payment_success", transaction_id: result.data.transaction_id });
+        if (embed) {
+          // In embed mode, stay on-page and show success state
+          navigate(`/app-payment/success?tx=${result.data.transaction_id}&app=${paymentLink.app_registry.app_name}&embed=1`);
+        } else {
+          navigate(`/app-payment/success?tx=${result.data.transaction_id}&app=${paymentLink.app_registry.app_name}`);
+        }
       } else {
-        toast.error(result.error || "Payment failed");
+        const msg = result.data?.message || result.error || "Payment failed";
+        toast.error(msg);
+        postParent({ type: "payment_error", error: msg });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Payment processing failed");
+      postParent({ type: "payment_error", error: error?.message || "Payment processing failed" });
     } finally {
       setProcessing(false);
     }
@@ -210,16 +229,18 @@ const AppPaymentCheckoutPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex h-14 items-center border-b border-border bg-card px-4">
-        <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-secondary" aria-label="Back">
-          <ArrowLeft className="h-5 w-5 text-foreground" />
-        </button>
-        <div className="mx-3 h-7 w-px bg-border" />
-        <p className="flex items-center gap-2 text-xl font-medium text-foreground">
-          <Smartphone className="h-5 w-5" />
-          App Payment
-        </p>
-      </div>
+      {!embed && (
+        <div className="flex h-14 items-center border-b border-border bg-card px-4">
+          <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-secondary" aria-label="Back">
+            <ArrowLeft className="h-5 w-5 text-foreground" />
+          </button>
+          <div className="mx-3 h-7 w-px bg-border" />
+          <p className="flex items-center gap-2 text-xl font-medium text-foreground">
+            <Smartphone className="h-5 w-5" />
+            App Payment
+          </p>
+        </div>
+      )}
 
       <div className="grid min-h-[calc(100vh-56px)] grid-cols-1 lg:grid-cols-[1fr_900px]">
         <div className="border-r border-border bg-muted/30 px-6 py-10">
