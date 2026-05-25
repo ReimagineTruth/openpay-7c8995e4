@@ -41,8 +41,13 @@ const AppPaymentCheckoutPage = () => {
   const embed = searchParams.get("embed") === "1";
   const [loading, setLoading] = useState(false);
   const [paymentLink, setPaymentLink] = useState<AppPaymentLink | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"wallet" | "card">("wallet");
+  const [paymentMethod, setPaymentMethod] = useState<"scan" | "wallet" | "card">("scan");
   const [processing, setProcessing] = useState(false);
+
+  // Scan-to-Pay state
+  const [scanId, setScanId] = useState<string | null>(null);
+  const [scanCreating, setScanCreating] = useState(false);
+  const [scanStatus, setScanStatus] = useState<"idle" | "pending" | "approved" | "rejected" | "failed" | "expired">("idle");
 
   // Notify parent window when embedded
   const postParent = (msg: any) => {
