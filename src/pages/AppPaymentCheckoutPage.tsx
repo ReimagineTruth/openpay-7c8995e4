@@ -443,12 +443,6 @@ const AppPaymentCheckoutPage = () => {
                     <Input
                       value={accountNumber}
                       onChange={(e) => setAccountNumber(e.target.value)}
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <p className="mb-1 text-xl text-foreground">Account Number</p>
-                    <Input
-                      value={accountNumber}
-                      onChange={(e) => setAccountNumber(e.target.value)}
                       placeholder="OP123456789"
                       className="h-12 rounded-md text-lg"
                     />
