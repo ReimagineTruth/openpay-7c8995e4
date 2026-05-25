@@ -209,6 +209,62 @@ export type Database = {
           },
         ]
       }
+      app_analytics: {
+        Row: {
+          active_subscriptions: number
+          app_id: string
+          canceled_subscriptions: number
+          created_at: string
+          date: string
+          id: string
+          new_subscriptions: number
+          refund_count: number
+          refunds: number
+          total_revenue: number
+          total_transactions: number
+          unique_payers: number
+          updated_at: string
+        }
+        Insert: {
+          active_subscriptions?: number
+          app_id: string
+          canceled_subscriptions?: number
+          created_at?: string
+          date: string
+          id?: string
+          new_subscriptions?: number
+          refund_count?: number
+          refunds?: number
+          total_revenue?: number
+          total_transactions?: number
+          unique_payers?: number
+          updated_at?: string
+        }
+        Update: {
+          active_subscriptions?: number
+          app_id?: string
+          canceled_subscriptions?: number
+          created_at?: string
+          date?: string
+          id?: string
+          new_subscriptions?: number
+          refund_count?: number
+          refunds?: number
+          total_revenue?: number
+          total_transactions?: number
+          unique_payers?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_analytics_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "app_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_notifications: {
         Row: {
           created_at: string
@@ -241,6 +297,306 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      app_payment_links: {
+        Row: {
+          app_id: string
+          created_at: string
+          custom_data: Json | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          link_description: string | null
+          link_name: string
+          link_token: string
+          max_usage: number | null
+          plan_id: string | null
+          redirect_url: string | null
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          custom_data?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          link_description?: string | null
+          link_name: string
+          link_token?: string
+          max_usage?: number | null
+          plan_id?: string | null
+          redirect_url?: string | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          custom_data?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          link_description?: string | null
+          link_name?: string
+          link_token?: string
+          max_usage?: number | null
+          plan_id?: string | null
+          redirect_url?: string | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_payment_links_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "app_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_payment_links_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "app_payment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_payment_plans: {
+        Row: {
+          amount: number
+          app_id: string
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean | null
+          plan_description: string | null
+          plan_name: string
+          plan_type: string
+          setup_fee: number | null
+          trial_days: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          app_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean | null
+          plan_description?: string | null
+          plan_name: string
+          plan_type: string
+          setup_fee?: number | null
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          app_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean | null
+          plan_description?: string | null
+          plan_name?: string
+          plan_type?: string
+          setup_fee?: number | null
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_payment_plans_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "app_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_payment_transactions: {
+        Row: {
+          amount: number
+          app_id: string
+          created_at: string
+          currency: string
+          external_transaction_id: string | null
+          fee_amount: number
+          id: string
+          metadata: Json | null
+          net_amount: number
+          payer_user_id: string
+          payment_method: string
+          plan_id: string | null
+          status: string
+          subscription_id: string | null
+          transaction_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          app_id: string
+          created_at?: string
+          currency?: string
+          external_transaction_id?: string | null
+          fee_amount?: number
+          id?: string
+          metadata?: Json | null
+          net_amount: number
+          payer_user_id: string
+          payment_method?: string
+          plan_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          transaction_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          app_id?: string
+          created_at?: string
+          currency?: string
+          external_transaction_id?: string | null
+          fee_amount?: number
+          id?: string
+          metadata?: Json | null
+          net_amount?: number
+          payer_user_id?: string
+          payment_method?: string
+          plan_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          transaction_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_payment_transactions_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "app_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_payment_transactions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "app_payment_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_payment_transactions_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "app_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_registry: {
+        Row: {
+          app_description: string | null
+          app_logo_url: string | null
+          app_name: string
+          app_public_key: string
+          app_secret_key: string
+          app_url: string | null
+          created_at: string
+          developer_user_id: string
+          id: string
+          status: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          app_description?: string | null
+          app_logo_url?: string | null
+          app_name: string
+          app_public_key?: string
+          app_secret_key?: string
+          app_url?: string | null
+          created_at?: string
+          developer_user_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          app_description?: string | null
+          app_logo_url?: string | null
+          app_name?: string
+          app_public_key?: string
+          app_secret_key?: string
+          app_url?: string | null
+          created_at?: string
+          developer_user_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      app_subscriptions: {
+        Row: {
+          app_id: string
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_id: string
+          status: string
+          subscriber_user_id: string
+          trial_end: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_id: string
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end: string
+          current_period_start: string
+          id?: string
+          plan_id: string
+          status?: string
+          subscriber_user_id: string
+          trial_end?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id?: string
+          status?: string
+          subscriber_user_id?: string
+          trial_end?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_subscriptions_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "app_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "app_payment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contacts: {
         Row: {
@@ -2685,6 +3041,20 @@ export type Database = {
             }
             Returns: string
           }
+      create_app: {
+        Args: {
+          p_app_description: string
+          p_app_logo_url: string
+          p_app_name: string
+          p_app_url: string
+          p_webhook_url: string
+        }
+        Returns: {
+          app_id: string
+          app_public_key: string
+          app_secret_key: string
+        }[]
+      }
       create_app_notification: {
         Args: {
           p_body: string
@@ -2692,6 +3062,19 @@ export type Database = {
           p_title: string
           p_type: string
           p_user_id: string
+        }
+        Returns: string
+      }
+      create_app_payment_plan: {
+        Args: {
+          p_amount: number
+          p_app_id: string
+          p_currency?: string
+          p_plan_description: string
+          p_plan_name: string
+          p_plan_type: string
+          p_setup_fee?: number
+          p_trial_days?: number
         }
         Returns: string
       }
@@ -3194,6 +3577,21 @@ export type Database = {
           p_receiver_id: string
         }
         Returns: string
+      }
+      process_app_payment: {
+        Args: {
+          p_customer_email?: string
+          p_customer_name?: string
+          p_customer_phone?: string
+          p_link_token: string
+          p_payer_user_id: string
+          p_payment_method?: string
+        }
+        Returns: {
+          message: string
+          status: string
+          transaction_id: string
+        }[]
       }
       random_token_hex: { Args: { p_bytes?: number }; Returns: string }
       refund_my_pos_transaction: {
