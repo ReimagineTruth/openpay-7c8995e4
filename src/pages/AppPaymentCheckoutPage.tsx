@@ -363,30 +363,86 @@ const AppPaymentCheckoutPage = () => {
             <h2 className="text-4xl font-semibold text-foreground">Complete Payment</h2>
 
             <div className="mt-5 rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("scan")}
+                  className={`flex h-16 flex-col items-center justify-center gap-0.5 rounded-md border px-2 text-center ${
+                    paymentMethod === "scan" ? "border-paypal-blue text-paypal-blue" : "border-border text-muted-foreground"
+                  }`}
+                >
+                  <QrCode className="h-5 w-5" />
+                  <span className="text-sm font-medium">Scan to Pay</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("wallet")}
-                  className={`flex h-16 items-center gap-2 rounded-md border px-3 text-left ${
+                  className={`flex h-16 flex-col items-center justify-center gap-0.5 rounded-md border px-2 text-center ${
                     paymentMethod === "wallet" ? "border-paypal-blue text-paypal-blue" : "border-border text-muted-foreground"
                   }`}
                 >
                   <Wallet className="h-5 w-5" />
-                  <span className="text-lg font-medium">OpenPay Wallet</span>
+                  <span className="text-sm font-medium">Wallet</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("card")}
-                  className={`flex h-16 items-center gap-2 rounded-md border px-3 text-left ${
+                  className={`flex h-16 flex-col items-center justify-center gap-0.5 rounded-md border px-2 text-center ${
                     paymentMethod === "card" ? "border-paypal-blue text-paypal-blue" : "border-border text-muted-foreground"
                   }`}
                 >
                   <CreditCard className="h-5 w-5" />
-                  <span className="text-lg font-medium">Virtual Card</span>
+                  <span className="text-sm font-medium">Card</span>
                 </button>
               </div>
 
-              {paymentMethod === "wallet" ? (
+              {paymentMethod === "scan" ? (
+                <div className="mt-4 space-y-3 text-center">
+                  {scanCreating || !scanId ? (
+                    <div className="mx-auto flex h-64 w-64 items-center justify-center rounded-xl border border-dashed border-border">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-paypal-blue/30 border-t-paypal-blue" />
+                    </div>
+                  ) : scanStatus === "approved" ? (
+                    <div className="mx-auto flex h-64 w-64 flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+                      <CheckCircle2 className="h-12 w-12" />
+                      <p className="mt-2 font-semibold">Approved on mobile</p>
+                    </div>
+                  ) : scanStatus === "rejected" || scanStatus === "failed" || scanStatus === "expired" ? (
+                    <div className="mx-auto flex h-64 w-64 flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 text-destructive p-4">
+                      <p className="font-semibold capitalize">{scanStatus}</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3"
+                        onClick={() => { setScanId(null); setScanStatus("idle"); }}
+                      >
+                        Generate new QR
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="mx-auto inline-flex flex-col items-center rounded-xl border border-border bg-white p-4">
+                      <QRCodeSVG
+                        value={`openpay://app-pay?scan=${scanId}`}
+                        size={224}
+                        includeMargin={false}
+                        level="M"
+                      />
+                    </div>
+                  )}
+                  <p className="text-sm font-medium text-foreground">
+                    Scan with the OpenPay mobile app
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Approve or reject the payment from your phone — no need to enter your account number or PIN here.
+                  </p>
+                </div>
+              ) : paymentMethod === "wallet" ? (
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <p className="mb-1 text-xl text-foreground">Account Number</p>
+                    <Input
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
                 <div className="mt-4 space-y-4">
                   <div>
                     <p className="mb-1 text-xl text-foreground">Account Number</p>
