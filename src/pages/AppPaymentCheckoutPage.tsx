@@ -99,6 +99,62 @@ const AppPaymentCheckoutPage = () => {
     loadPaymentLink();
   }, [token]);
 
+  // Create a scan request when entering scan tab
+  useEffect(() => {
+    const create = async () => {
+      if (paymentMethod !== "scan" || !token || scanId || scanCreating) return;
+      setScanCreating(true);
+      try {
+        const { data, error } = await db.rpc("create_app_payment_scan", {
+          p_link_token: token,
+          p_customer_name: customerName.trim() || null,
+          p_customer_email: customerEmail.trim() || null,
+          p_customer_phone: customerPhone.trim() || null,
+        });
+        if (error) throw error;
+        setScanId(data as string);
+        setScanStatus("pending");
+      } catch (e: any) {
+        toast.error(e?.message || "Failed to start scan request");
+      } finally {
+        setScanCreating(false);
+      }
+    };
+    create();
+  }, [paymentMethod, token, scanId, scanCreating, customerName, customerEmail, customerPhone]);
+
+  // Poll scan status
+  useEffect(() => {
+    if (!scanId || scanStatus !== "pending") return;
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await db.rpc("get_app_payment_scan", { p_scan_id: scanId });
+        if (error || !data || data.length === 0) return;
+        const row = data[0];
+        if (row.status === "approved") {
+          setScanStatus("approved");
+          toast.success("Payment approved on mobile");
+          postParent({ type: "payment_success", transaction_id: row.transaction_id });
+          setTimeout(() => {
+            navigate(`/app-payment/success?tx=${row.transaction_id}&app=${paymentLink?.app_registry.app_name || ""}${embed ? "&embed=1" : ""}`);
+          }, 800);
+        } else if (row.status === "rejected") {
+          setScanStatus("rejected");
+          toast.error("Payment rejected on mobile");
+          postParent({ type: "payment_error", error: "Rejected by user" });
+        } else if (row.status === "failed") {
+          setScanStatus("failed");
+          toast.error(row.error_message || "Payment failed");
+          postParent({ type: "payment_error", error: row.error_message || "Payment failed" });
+        } else if (row.status === "expired" || new Date(row.expires_at).getTime() < Date.now()) {
+          setScanStatus("expired");
+        }
+      } catch {}
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [scanId, scanStatus, paymentLink, embed, navigate]);
+
+
   const handlePayment = async () => {
     if (!paymentLink) {
       toast.error("Invalid payment link");
