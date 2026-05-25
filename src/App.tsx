@@ -192,7 +192,8 @@ const AppRoutes = () => {
           '/whitepaper', '/gdpr', '/legal', '/merchant-onboarding', '/merchant-products',
           '/virtual-card', '/kyc', '/kyc-status', '/remittance-merchant', '/openpay-official',
           '/openapp', '/openpay-desktop', '/live-customer-service', '/support', '/topup-history',
-          '/swap-withdrawal', '/confirm-pin', '/smart-contract-api', '/developer-dashboard'
+          '/swap-withdrawal', '/confirm-pin', '/smart-contract-api', '/developer-dashboard',
+          '/app-developer-dashboard'
         ];
         const isValidPath = validPaths.some(path => location.pathname === path) || 
                            location.pathname.startsWith('/topup') || 
@@ -205,6 +206,8 @@ const AppRoutes = () => {
                            location.pathname.startsWith('/forgot') ||
                            location.pathname.startsWith('/reset') ||
                            location.pathname.startsWith('/two-factor') ||
+                           location.pathname.startsWith('/app-developer-dashboard') ||
+                           location.pathname.startsWith('/app-payment') ||
                            location.pathname === '/';
         
         if (!isValidPath) {
