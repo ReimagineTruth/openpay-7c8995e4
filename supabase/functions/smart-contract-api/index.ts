@@ -196,10 +196,12 @@ serve(async (req: Request) => {
       }
 
       case "ledger": {
+        if (!userId) return json({ error: "User authorization required" }, 403);
         const limit = Math.min(Number(url.searchParams.get("limit") || "50"), 100);
         const { data: events } = await supabase
           .from("ledger_events")
           .select("id, event_type, amount, status, note, occurred_at, source_table")
+          .or(`actor_user_id.eq.${userId},related_user_id.eq.${userId}`)
           .order("occurred_at", { ascending: false })
           .limit(limit);
         return json({ events: events || [] });
