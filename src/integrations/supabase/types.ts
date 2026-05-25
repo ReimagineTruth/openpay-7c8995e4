@@ -417,6 +417,51 @@ export type Database = {
           },
         ]
       }
+      app_payment_scan_requests: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          error_message: string | null
+          expires_at: string
+          id: string
+          link_token: string
+          payer_user_id: string | null
+          status: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          error_message?: string | null
+          expires_at?: string
+          id?: string
+          link_token: string
+          payer_user_id?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          error_message?: string | null
+          expires_at?: string
+          id?: string
+          link_token?: string
+          payer_user_id?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_payment_transactions: {
         Row: {
           amount: number
@@ -2990,6 +3035,14 @@ export type Database = {
         Returns: string
       }
       apply_usd_exchange_rates: { Args: { p_rates: Json }; Returns: number }
+      approve_app_payment_scan: {
+        Args: { p_payment_method?: string; p_scan_id: string }
+        Returns: {
+          message: string
+          status: string
+          transaction_id: string
+        }[]
+      }
       calculate_user_activity_credit_score: {
         Args: { p_user_id: string }
         Returns: number
@@ -3075,6 +3128,15 @@ export type Database = {
           p_plan_type: string
           p_setup_fee?: number
           p_trial_days?: number
+        }
+        Returns: string
+      }
+      create_app_payment_scan: {
+        Args: {
+          p_customer_email?: string
+          p_customer_name?: string
+          p_customer_phone?: string
+          p_link_token: string
         }
         Returns: string
       }
@@ -3217,6 +3279,17 @@ export type Database = {
       generate_openpay_authorization_code: { Args: never; Returns: string }
       generate_openpay_card_number: { Args: never; Returns: string }
       generate_openpay_cvc: { Args: never; Returns: string }
+      get_app_payment_scan: {
+        Args: { p_scan_id: string }
+        Returns: {
+          error_message: string
+          expires_at: string
+          id: string
+          link_token: string
+          status: string
+          transaction_id: string
+        }[]
+      }
       get_my_credit_score: { Args: never; Returns: number }
       get_my_latest_loan: {
         Args: never
@@ -3616,6 +3689,13 @@ export type Database = {
           new_status: string
           refund_transaction_id: string
           refunded_at: string
+        }[]
+      }
+      reject_app_payment_scan: {
+        Args: { p_scan_id: string }
+        Returns: {
+          message: string
+          status: string
         }[]
       }
       request_my_openpay_loan: {

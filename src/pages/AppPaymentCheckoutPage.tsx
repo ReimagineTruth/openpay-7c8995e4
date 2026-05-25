@@ -41,8 +41,13 @@ const AppPaymentCheckoutPage = () => {
   const embed = searchParams.get("embed") === "1";
   const [loading, setLoading] = useState(false);
   const [paymentLink, setPaymentLink] = useState<AppPaymentLink | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"wallet" | "card">("wallet");
+  const [paymentMethod, setPaymentMethod] = useState<"scan" | "wallet" | "card">("scan");
   const [processing, setProcessing] = useState(false);
+
+  // Scan-to-Pay state
+  const [scanId, setScanId] = useState<string | null>(null);
+  const [scanCreating, setScanCreating] = useState(false);
+  const [scanStatus, setScanStatus] = useState<"idle" | "pending" | "approved" | "rejected" | "failed" | "expired">("idle");
 
   // Notify parent window when embedded
   const postParent = (msg: any) => {
@@ -93,6 +98,62 @@ const AppPaymentCheckoutPage = () => {
     };
     loadPaymentLink();
   }, [token]);
+
+  // Create a scan request when entering scan tab
+  useEffect(() => {
+    const create = async () => {
+      if (paymentMethod !== "scan" || !token || scanId || scanCreating) return;
+      setScanCreating(true);
+      try {
+        const { data, error } = await db.rpc("create_app_payment_scan", {
+          p_link_token: token,
+          p_customer_name: customerName.trim() || null,
+          p_customer_email: customerEmail.trim() || null,
+          p_customer_phone: customerPhone.trim() || null,
+        });
+        if (error) throw error;
+        setScanId(data as string);
+        setScanStatus("pending");
+      } catch (e: any) {
+        toast.error(e?.message || "Failed to start scan request");
+      } finally {
+        setScanCreating(false);
+      }
+    };
+    create();
+  }, [paymentMethod, token, scanId, scanCreating, customerName, customerEmail, customerPhone]);
+
+  // Poll scan status
+  useEffect(() => {
+    if (!scanId || scanStatus !== "pending") return;
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await db.rpc("get_app_payment_scan", { p_scan_id: scanId });
+        if (error || !data || data.length === 0) return;
+        const row = data[0];
+        if (row.status === "approved") {
+          setScanStatus("approved");
+          toast.success("Payment approved on mobile");
+          postParent({ type: "payment_success", transaction_id: row.transaction_id });
+          setTimeout(() => {
+            navigate(`/app-payment/success?tx=${row.transaction_id}&app=${paymentLink?.app_registry.app_name || ""}${embed ? "&embed=1" : ""}`);
+          }, 800);
+        } else if (row.status === "rejected") {
+          setScanStatus("rejected");
+          toast.error("Payment rejected on mobile");
+          postParent({ type: "payment_error", error: "Rejected by user" });
+        } else if (row.status === "failed") {
+          setScanStatus("failed");
+          toast.error(row.error_message || "Payment failed");
+          postParent({ type: "payment_error", error: row.error_message || "Payment failed" });
+        } else if (row.status === "expired" || new Date(row.expires_at).getTime() < Date.now()) {
+          setScanStatus("expired");
+        }
+      } catch {}
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [scanId, scanStatus, paymentLink, embed, navigate]);
+
 
   const handlePayment = async () => {
     if (!paymentLink) {
@@ -302,30 +363,80 @@ const AppPaymentCheckoutPage = () => {
             <h2 className="text-4xl font-semibold text-foreground">Complete Payment</h2>
 
             <div className="mt-5 rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("scan")}
+                  className={`flex h-16 flex-col items-center justify-center gap-0.5 rounded-md border px-2 text-center ${
+                    paymentMethod === "scan" ? "border-paypal-blue text-paypal-blue" : "border-border text-muted-foreground"
+                  }`}
+                >
+                  <QrCode className="h-5 w-5" />
+                  <span className="text-sm font-medium">Scan to Pay</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("wallet")}
-                  className={`flex h-16 items-center gap-2 rounded-md border px-3 text-left ${
+                  className={`flex h-16 flex-col items-center justify-center gap-0.5 rounded-md border px-2 text-center ${
                     paymentMethod === "wallet" ? "border-paypal-blue text-paypal-blue" : "border-border text-muted-foreground"
                   }`}
                 >
                   <Wallet className="h-5 w-5" />
-                  <span className="text-lg font-medium">OpenPay Wallet</span>
+                  <span className="text-sm font-medium">Wallet</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("card")}
-                  className={`flex h-16 items-center gap-2 rounded-md border px-3 text-left ${
+                  className={`flex h-16 flex-col items-center justify-center gap-0.5 rounded-md border px-2 text-center ${
                     paymentMethod === "card" ? "border-paypal-blue text-paypal-blue" : "border-border text-muted-foreground"
                   }`}
                 >
                   <CreditCard className="h-5 w-5" />
-                  <span className="text-lg font-medium">Virtual Card</span>
+                  <span className="text-sm font-medium">Card</span>
                 </button>
               </div>
 
-              {paymentMethod === "wallet" ? (
+              {paymentMethod === "scan" ? (
+                <div className="mt-4 space-y-3 text-center">
+                  {scanCreating || !scanId ? (
+                    <div className="mx-auto flex h-64 w-64 items-center justify-center rounded-xl border border-dashed border-border">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-paypal-blue/30 border-t-paypal-blue" />
+                    </div>
+                  ) : scanStatus === "approved" ? (
+                    <div className="mx-auto flex h-64 w-64 flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+                      <CheckCircle2 className="h-12 w-12" />
+                      <p className="mt-2 font-semibold">Approved on mobile</p>
+                    </div>
+                  ) : scanStatus === "rejected" || scanStatus === "failed" || scanStatus === "expired" ? (
+                    <div className="mx-auto flex h-64 w-64 flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 text-destructive p-4">
+                      <p className="font-semibold capitalize">{scanStatus}</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3"
+                        onClick={() => { setScanId(null); setScanStatus("idle"); }}
+                      >
+                        Generate new QR
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="mx-auto inline-flex flex-col items-center rounded-xl border border-border bg-white p-4">
+                      <QRCodeSVG
+                        value={`openpay://app-pay?scan=${scanId}`}
+                        size={224}
+                        includeMargin={false}
+                        level="M"
+                      />
+                    </div>
+                  )}
+                  <p className="text-sm font-medium text-foreground">
+                    Scan with the OpenPay mobile app
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Approve or reject the payment from your phone — no need to enter your account number or PIN here.
+                  </p>
+                </div>
+              ) : paymentMethod === "wallet" ? (
                 <div className="mt-4 space-y-4">
                   <div>
                     <p className="mb-1 text-xl text-foreground">Account Number</p>
@@ -434,23 +545,25 @@ const AppPaymentCheckoutPage = () => {
                 </div>
               </div>
 
-              <Button
-                onClick={handlePayment}
-                disabled={processing}
-                className="mt-4 h-12 w-full rounded-full text-base bg-paypal-blue text-white hover:bg-[#004dc5]"
-              >
-                {processing ? (
-                  <span className="inline-flex items-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                    Processing...
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center">
-                    <BrandLogo className="mr-2 h-4 w-4" />
-                    Pay with OpenPay
-                  </span>
-                )}
-              </Button>
+              {paymentMethod !== "scan" && (
+                <Button
+                  onClick={handlePayment}
+                  disabled={processing}
+                  className="mt-4 h-12 w-full rounded-full text-base bg-paypal-blue text-white hover:bg-[#004dc5]"
+                >
+                  {processing ? (
+                    <span className="inline-flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      Processing...
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center">
+                      <BrandLogo className="mr-2 h-4 w-4" />
+                      Pay with OpenPay
+                    </span>
+                  )}
+                </Button>
+              )}
 
               <div className="mt-4 text-center text-sm text-muted-foreground">
                 <p className="inline-flex items-center gap-1 font-medium">

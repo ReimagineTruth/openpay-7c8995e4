@@ -107,6 +107,7 @@ import SmartContractApiPage from "./pages/SmartContractApiPage";
 import DeveloperDashboardPage from "./pages/DeveloperDashboardPage";
 import AppDeveloperDashboardPage from "./pages/AppDeveloperDashboardPage";
 import AppPaymentCheckoutPage from "./pages/AppPaymentCheckoutPage";
+import AppPayApprovePage from "./pages/AppPayApprovePage";
 import AppPaymentSuccessPage from "./pages/AppPaymentSuccessPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
@@ -479,6 +480,7 @@ const AppRoutes = () => {
         } />
         <Route path="/app-payment/checkout" element={<AppPaymentCheckoutPage />} />
         <Route path="/app-payment/success" element={<AppPaymentSuccessPage />} />
+        <Route path="/app-pay-approve/:id" element={<AppPayApprovePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       </main>
