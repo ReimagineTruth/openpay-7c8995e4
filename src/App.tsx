@@ -480,6 +480,7 @@ const AppRoutes = () => {
         } />
         <Route path="/app-payment/checkout" element={<AppPaymentCheckoutPage />} />
         <Route path="/app-payment/success" element={<AppPaymentSuccessPage />} />
+        <Route path="/app-pay-approve/:id" element={<AppPayApprovePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       </main>
