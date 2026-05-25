@@ -229,16 +229,18 @@ const AppPaymentCheckoutPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex h-14 items-center border-b border-border bg-card px-4">
-        <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-secondary" aria-label="Back">
-          <ArrowLeft className="h-5 w-5 text-foreground" />
-        </button>
-        <div className="mx-3 h-7 w-px bg-border" />
-        <p className="flex items-center gap-2 text-xl font-medium text-foreground">
-          <Smartphone className="h-5 w-5" />
-          App Payment
-        </p>
-      </div>
+      {!embed && (
+        <div className="flex h-14 items-center border-b border-border bg-card px-4">
+          <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-secondary" aria-label="Back">
+            <ArrowLeft className="h-5 w-5 text-foreground" />
+          </button>
+          <div className="mx-3 h-7 w-px bg-border" />
+          <p className="flex items-center gap-2 text-xl font-medium text-foreground">
+            <Smartphone className="h-5 w-5" />
+            App Payment
+          </p>
+        </div>
+      )}
 
       <div className="grid min-h-[calc(100vh-56px)] grid-cols-1 lg:grid-cols-[1fr_900px]">
         <div className="border-r border-border bg-muted/30 px-6 py-10">
