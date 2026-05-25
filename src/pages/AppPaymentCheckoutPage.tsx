@@ -38,10 +38,18 @@ const AppPaymentCheckoutPage = () => {
   const [searchParams] = useSearchParams();
 
   const token = searchParams.get("token") || "";
+  const embed = searchParams.get("embed") === "1";
   const [loading, setLoading] = useState(false);
   const [paymentLink, setPaymentLink] = useState<AppPaymentLink | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"wallet" | "card">("wallet");
   const [processing, setProcessing] = useState(false);
+
+  // Notify parent window when embedded
+  const postParent = (msg: any) => {
+    if (embed && typeof window !== "undefined" && window.parent !== window) {
+      try { window.parent.postMessage({ source: "openpay-checkout", ...msg }, "*"); } catch {}
+    }
+  };
 
   // Wallet payment states
   const [accountNumber, setAccountNumber] = useState("");
