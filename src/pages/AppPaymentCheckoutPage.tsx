@@ -545,23 +545,25 @@ const AppPaymentCheckoutPage = () => {
                 </div>
               </div>
 
-              <Button
-                onClick={handlePayment}
-                disabled={processing}
-                className="mt-4 h-12 w-full rounded-full text-base bg-paypal-blue text-white hover:bg-[#004dc5]"
-              >
-                {processing ? (
-                  <span className="inline-flex items-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                    Processing...
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center">
-                    <BrandLogo className="mr-2 h-4 w-4" />
-                    Pay with OpenPay
-                  </span>
-                )}
-              </Button>
+              {paymentMethod !== "scan" && (
+                <Button
+                  onClick={handlePayment}
+                  disabled={processing}
+                  className="mt-4 h-12 w-full rounded-full text-base bg-paypal-blue text-white hover:bg-[#004dc5]"
+                >
+                  {processing ? (
+                    <span className="inline-flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      Processing...
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center">
+                      <BrandLogo className="mr-2 h-4 w-4" />
+                      Pay with OpenPay
+                    </span>
+                  )}
+                </Button>
+              )}
 
               <div className="mt-4 text-center text-sm text-muted-foreground">
                 <p className="inline-flex items-center gap-1 font-medium">
