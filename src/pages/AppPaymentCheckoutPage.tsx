@@ -137,6 +137,8 @@ const AppPaymentCheckoutPage = () => {
         },
         body: JSON.stringify({
           link_token: token,
+          payer_account: accountNumber.trim(),
+          payer_pin: pin.trim() || null,
           payment_method: paymentMethod,
           customer_name: customerName.trim() || null,
           customer_email: customerEmail.trim() || null,
@@ -145,15 +147,24 @@ const AppPaymentCheckoutPage = () => {
       });
 
       const result = await response.json();
-      
-      if (result.success) {
+
+      if (result.success && result.data?.status === "success") {
         toast.success("Payment completed successfully");
-        navigate(`/app-payment/success?tx=${result.data.transaction_id}&app=${paymentLink.app_registry.app_name}`);
+        postParent({ type: "payment_success", transaction_id: result.data.transaction_id });
+        if (embed) {
+          // In embed mode, stay on-page and show success state
+          navigate(`/app-payment/success?tx=${result.data.transaction_id}&app=${paymentLink.app_registry.app_name}&embed=1`);
+        } else {
+          navigate(`/app-payment/success?tx=${result.data.transaction_id}&app=${paymentLink.app_registry.app_name}`);
+        }
       } else {
-        toast.error(result.error || "Payment failed");
+        const msg = result.data?.message || result.error || "Payment failed";
+        toast.error(msg);
+        postParent({ type: "payment_error", error: msg });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Payment processing failed");
+      postParent({ type: "payment_error", error: error?.message || "Payment processing failed" });
     } finally {
       setProcessing(false);
     }
