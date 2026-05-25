@@ -428,9 +428,27 @@ const QrScannerPage = () => {
       }
 
       setScanHint("OpenPay QR detected. Validating...");
+
+      // Handle app-pay scan-to-pay deep links early
+      try {
+        const parsedEarly = new URL(decodedText.trim());
+        if (parsedEarly.protocol.toLowerCase() === "openpay:" && parsedEarly.hostname.toLowerCase() === "app-pay") {
+          const appScanId = parsedEarly.searchParams.get("scan");
+          if (appScanId) {
+            setScanHint("App payment request detected. Opening approval...");
+            playScanBeep();
+            await stopScanner();
+            navigate(`/app-pay-approve/${appScanId}`, { replace: true });
+            handlingDecodeRef.current = false;
+            return;
+          }
+        }
+      } catch {}
+
       const payload = extractQrPayload(decodedText);
       
       console.log("Extracted QR Payload:", payload);
+      
       
 	      // Handle POS payment QR codes - original behavior
 	      if (payload.posPayment) {
