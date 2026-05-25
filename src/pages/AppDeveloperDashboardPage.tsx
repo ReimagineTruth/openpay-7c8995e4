@@ -635,7 +635,7 @@ const AppDeveloperDashboardPage = () => {
 
               {/* Analytics Overview */}
               {analytics && (
-                <div className="rounded-xl border border-border bg-card p-6">
+                <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
                   <h3 className="mb-4 text-lg font-semibold text-foreground flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
                     Analytics Overview
@@ -662,7 +662,7 @@ const AppDeveloperDashboardPage = () => {
               )}
 
               {/* Payment Plans */}
-              <div className="rounded-xl border border-border bg-card p-6">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
@@ -729,7 +729,7 @@ const AppDeveloperDashboardPage = () => {
               </div>
 
               {/* Payment Links */}
-              <div className="rounded-xl border border-border bg-card p-6">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <Link className="h-5 w-5" />
