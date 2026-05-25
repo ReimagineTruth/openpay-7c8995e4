@@ -62,6 +62,14 @@ const AppSecurityGate = () => {
 
   const shouldSkipPath = useMemo(() => {
     if (location.pathname.startsWith("/admin")) return true;
+    // Public customer-facing payment & checkout flows must never be MPIN-gated
+    if (location.pathname.startsWith("/pay/")) return true;
+    if (location.pathname.startsWith("/public-payment")) return true;
+    if (location.pathname.startsWith("/app-payment")) return true;
+    if (location.pathname.startsWith("/buttons/")) return true;
+    if (location.pathname.startsWith("/payment-link")) return true;
+    // Always skip when running in an embedded iframe (drop-in checkout)
+    if (typeof window !== "undefined" && window.parent !== window) return true;
     return PUBLIC_PATHS.has(location.pathname);
   }, [location.pathname]);
   const timeGreeting = useMemo(() => {
