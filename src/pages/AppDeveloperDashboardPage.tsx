@@ -522,25 +522,26 @@ const AppDeveloperDashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex h-14 items-center border-b border-border bg-card px-4">
-        <button onClick={() => navigate("/menu")} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-secondary" aria-label="Back">
+      <div className="flex h-14 items-center border-b border-border bg-card px-3 sm:px-4">
+        <button onClick={() => navigate("/menu")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-secondary" aria-label="Back">
           <Settings className="h-5 w-5 text-foreground" />
         </button>
-        <div className="mx-3 h-7 w-px bg-border" />
-        <p className="flex items-center gap-2 text-xl font-medium text-foreground">
-          <Smartphone className="h-5 w-5" />
-          App Developer Dashboard
+        <div className="mx-2 sm:mx-3 h-7 w-px bg-border" />
+        <p className="flex min-w-0 items-center gap-2 text-base sm:text-xl font-medium text-foreground">
+          <Smartphone className="h-5 w-5 shrink-0" />
+          <span className="truncate">App Developer</span>
         </p>
         <Button
           onClick={() => setShowCreateApp(true)}
-          className="ml-auto h-9 rounded-full bg-paypal-blue text-white hover:bg-[#004dc5]"
+          className="ml-auto h-9 shrink-0 rounded-full bg-paypal-blue px-3 text-white hover:bg-[#004dc5]"
         >
-          <Plus className="mr-2 h-4 w-4" />
-          New App
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">New App</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 p-3 sm:p-6 pb-24">
+
         {/* Apps Sidebar */}
         <div className="lg:col-span-1">
           <h3 className="mb-4 text-lg font-semibold text-foreground">My Apps</h3>
@@ -591,27 +592,27 @@ const AppDeveloperDashboardPage = () => {
           {selectedApp ? (
             <div className="space-y-6">
               {/* App Header */}
-              <div className="rounded-xl border border-border bg-card p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                     {selectedApp.app_logo_url ? (
-                      <img src={selectedApp.app_logo_url} alt={selectedApp.app_name} className="h-16 w-16 rounded-xl object-cover" />
+                      <img src={selectedApp.app_logo_url} alt={selectedApp.app_name} className="h-12 w-12 sm:h-16 sm:w-16 rounded-xl object-cover shrink-0" />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-paypal-blue/20 text-paypal-blue">
-                        <Smartphone className="h-8 w-8" />
+                      <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-xl bg-paypal-blue/20 text-paypal-blue">
+                        <Smartphone className="h-6 w-6 sm:h-8 sm:w-8" />
                       </div>
                     )}
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground">{selectedApp.app_name}</h2>
-                      <p className="text-sm text-muted-foreground">{selectedApp.app_description}</p>
+                    <div className="min-w-0">
+                      <h2 className="truncate text-lg sm:text-2xl font-bold text-foreground">{selectedApp.app_name}</h2>
+                      <p className="line-clamp-2 text-xs sm:text-sm text-muted-foreground">{selectedApp.app_description}</p>
                       {selectedApp.app_url && (
-                        <a href={selectedApp.app_url} target="_blank" rel="noopener noreferrer" className="text-sm text-paypal-blue hover:underline">
+                        <a href={selectedApp.app_url} target="_blank" rel="noopener noreferrer" className="block truncate text-xs sm:text-sm text-paypal-blue hover:underline">
                           {selectedApp.app_url}
                         </a>
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 sm:shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
@@ -631,9 +632,10 @@ const AppDeveloperDashboardPage = () => {
                 </div>
               </div>
 
+
               {/* Analytics Overview */}
               {analytics && (
-                <div className="rounded-xl border border-border bg-card p-6">
+                <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
                   <h3 className="mb-4 text-lg font-semibold text-foreground flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
                     Analytics Overview
@@ -660,7 +662,7 @@ const AppDeveloperDashboardPage = () => {
               )}
 
               {/* Payment Plans */}
-              <div className="rounded-xl border border-border bg-card p-6">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
@@ -727,7 +729,7 @@ const AppDeveloperDashboardPage = () => {
               </div>
 
               {/* Payment Links */}
-              <div className="rounded-xl border border-border bg-card p-6">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <Link className="h-5 w-5" />
