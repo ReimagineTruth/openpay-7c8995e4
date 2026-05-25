@@ -17,7 +17,13 @@ import {
   Trash2,
   Edit,
   Upload,
-  X
+  X,
+  Code2,
+  BookOpen,
+  Globe,
+  FlaskConical,
+  ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
+import IntegrationPreview from "@/components/app-developer/IntegrationPreview";
 
 const db = supabase as any;
 
@@ -776,8 +783,15 @@ const AppDeveloperDashboardPage = () => {
                       </Button>
                     </div>
                   )}
-                </div>
               </div>
+
+              {/* Integration & Preview */}
+              <IntegrationPreview
+                app={selectedApp}
+                plans={plans}
+                paymentLinks={paymentLinks}
+              />
+            </div>
             </div>
           ) : (
             <div className="text-center py-16">
