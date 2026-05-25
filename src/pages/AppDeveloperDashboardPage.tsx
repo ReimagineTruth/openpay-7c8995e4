@@ -17,7 +17,13 @@ import {
   Trash2,
   Edit,
   Upload,
-  X
+  X,
+  Code2,
+  BookOpen,
+  Globe,
+  FlaskConical,
+  ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
