@@ -284,6 +284,10 @@ export function OpenPayCheckout({ token, env = "${env}", onSuccess, onError }) {
           </TabsTrigger>
           <TabsTrigger value="server">Server SDK</TabsTrigger>
           <TabsTrigger value="webhook">Webhooks</TabsTrigger>
+          <TabsTrigger value="embed">
+            <Code2 className="h-3.5 w-3.5 mr-1.5" />
+            Embed
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="quickstart" className="space-y-4 pt-4">
@@ -317,6 +321,45 @@ export function OpenPayCheckout({ token, env = "${env}", onSuccess, onError }) {
 
         <TabsContent value="webhook" className="pt-4">
           <CodeBlock code={snippets.webhook} lang="json" />
+        </TabsContent>
+
+        <TabsContent value="embed" className="space-y-4 pt-4">
+          <div className="rounded-lg border border-paypal-blue/30 bg-paypal-blue/5 p-3 text-xs text-foreground">
+            <strong>Drop-in checkout.</strong> Embed OpenPay directly inside your site or app — no redirect, no SDK required. Listen for{" "}
+            <code className="bg-muted px-1 rounded">window.postMessage</code> events to know when a payment succeeds.
+          </div>
+
+          {embedUrl && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => copy(embedUrl, "Embed URL copied")}>
+                <Copy className="h-3 w-3 mr-1" /> Copy embed URL
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => window.open(embedUrl, "_blank")}>
+                <ExternalLink className="h-3 w-3 mr-1" /> Open in new tab
+              </Button>
+              <code className="text-[11px] text-muted-foreground font-mono truncate max-w-full">
+                {embedUrl}
+              </code>
+            </div>
+          )}
+
+          <Step n={1} title="Paste the iframe into your page">
+            <CodeBlock code={snippets.embedIframe} lang="html" />
+          </Step>
+          <Step n={2} title="Or use the JS snippet with success/error events">
+            <CodeBlock code={snippets.embedJs} lang="html" />
+          </Step>
+          <Step n={3} title="React component (drop-in)">
+            <CodeBlock code={snippets.embedReact} lang="tsx" />
+          </Step>
+
+          <p className="text-xs text-muted-foreground">
+            Events sent to the parent window:{" "}
+            <code className="bg-muted px-1 rounded">{"{ source: 'openpay-checkout', type: 'payment_success', transaction_id }"}</code>{" "}
+            and{" "}
+            <code className="bg-muted px-1 rounded">{"{ type: 'payment_error', error }"}</code>.
+            Always verify the transaction server-side via your webhook before fulfilling the order.
+          </p>
         </TabsContent>
       </Tabs>
 
