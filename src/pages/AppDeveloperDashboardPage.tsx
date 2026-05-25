@@ -782,8 +782,15 @@ const AppDeveloperDashboardPage = () => {
                       </Button>
                     </div>
                   )}
-                </div>
               </div>
+
+              {/* Integration & Preview */}
+              <IntegrationPreview
+                app={selectedApp}
+                plans={plans}
+                paymentLinks={paymentLinks}
+              />
+            </div>
             </div>
           ) : (
             <div className="text-center py-16">
