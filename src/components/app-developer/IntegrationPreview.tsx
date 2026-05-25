@@ -76,6 +76,9 @@ export default function IntegrationPreview({
   const previewUrl = previewToken
     ? `${baseUrl}/app-payment/checkout?token=${previewToken}&env=${env}`
     : "";
+  const embedUrl = previewToken
+    ? `${baseUrl}/app-payment/checkout?token=${previewToken}&env=${env}&embed=1`
+    : "";
 
   const samplePlan = plans[0];
   const apiBase = `${SUPABASE_URL}/functions/v1/app-payments`;
@@ -86,6 +89,7 @@ export default function IntegrationPreview({
     const planId = samplePlan?.id || "PLAN_ID";
     const amount = samplePlan?.amount ?? 9.99;
     const currency = samplePlan?.currency || "OUSD";
+    const tokenForEmbed = previewToken || "LINK_TOKEN";
 
     return {
       install: `# Install the OpenPay JS SDK
@@ -147,8 +151,64 @@ console.log("Checkout URL:", data.payment_url);`,
 }
 
 // Verify signature using your secret key (${sec.slice(0, 8)}...)`,
+      embedIframe: `<!-- Drop-in OpenPay checkout (iframe) -->
+<iframe
+  src="${baseUrl}/app-payment/checkout?token=${tokenForEmbed}&env=${env}&embed=1"
+  style="width:100%;max-width:900px;height:780px;border:0;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.08);"
+  allow="payment"
+  title="Pay with OpenPay">
+</iframe>`,
+      embedJs: `<!-- OpenPay embed + parent-window event listener -->
+<div id="openpay-checkout" style="width:100%;max-width:900px;margin:0 auto;"></div>
+
+<script>
+  (function () {
+    var token = "${tokenForEmbed}"; // generated server-side per order
+    var env = "${env}";              // "testnet" | "live"
+
+    var iframe = document.createElement("iframe");
+    iframe.src = "${baseUrl}/app-payment/checkout?token=" + token + "&env=" + env + "&embed=1";
+    iframe.style.cssText = "width:100%;height:780px;border:0;border-radius:16px;";
+    iframe.allow = "payment";
+    iframe.title = "Pay with OpenPay";
+    document.getElementById("openpay-checkout").appendChild(iframe);
+
+    window.addEventListener("message", function (e) {
+      if (!e.data || e.data.source !== "openpay-checkout") return;
+      if (e.data.type === "payment_success") {
+        console.log("Payment success:", e.data.transaction_id);
+        // TODO: confirm on your server using transaction_id + webhook
+      } else if (e.data.type === "payment_error") {
+        console.warn("Payment error:", e.data.error);
+      }
+    });
+  })();
+</script>`,
+      embedReact: `// React component — drop-in OpenPay checkout
+import { useEffect } from "react";
+
+export function OpenPayCheckout({ token, env = "${env}", onSuccess, onError }) {
+  useEffect(() => {
+    const handler = (e) => {
+      if (!e.data || e.data.source !== "openpay-checkout") return;
+      if (e.data.type === "payment_success") onSuccess?.(e.data.transaction_id);
+      if (e.data.type === "payment_error")   onError?.(e.data.error);
     };
-  }, [app, samplePlan, env, apiBase]);
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [onSuccess, onError]);
+
+  return (
+    <iframe
+      src={\`${baseUrl}/app-payment/checkout?token=\${token}&env=\${env}&embed=1\`}
+      title="Pay with OpenPay"
+      allow="payment"
+      style={{ width: "100%", maxWidth: 900, height: 780, border: 0, borderRadius: 16 }}
+    />
+  );
+}`,
+    };
+  }, [app, samplePlan, env, apiBase, baseUrl, previewToken]);
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 space-y-5">
