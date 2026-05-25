@@ -174,44 +174,19 @@ const AppRoutes = () => {
       console.log('Auth state change:', event, session?.user?.email, 'current path:', location.pathname);
       
       if (event === 'SIGNED_IN' && session) {
-        // Handle successful OAuth sign-in
-        // Clear any URL hash fragments from OAuth flow
+        // Clear OAuth hash fragments
         if (window.location.hash) {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
-        
-        // Only redirect if not already on a valid page and not coming from background
-        const validPaths = [
-          '/dashboard', '/auth/callback', '/mining', '/menu', '/activity', '/send', '/receive', 
-          '/contacts', '/settings', '/profile', '/auth', '/setup-profile', '/onboarding', '/pi-ads',
-          '/scan-qr', '/currency-converter', '/remittance-center', '/request-payment', '/send-invoice',
-          '/disputes', '/help-center', '/notifications', '/affiliate', '/staking', '/ledger',
-          '/announcements', '/openpay-guide', '/terms', '/privacy', '/regulatory-status',
-          '/about-openpay', '/openpay-documentation', '/openpay-api-docs', '/openpay-pos-docs',
-          '/openpay-merchant-portal-docs', '/open-partner', '/pi-whitepaper', '/pi-mica-whitepaper',
-          '/whitepaper', '/gdpr', '/legal', '/merchant-onboarding', '/merchant-products',
-          '/virtual-card', '/kyc', '/kyc-status', '/remittance-merchant', '/openpay-official',
-          '/openapp', '/openpay-desktop', '/live-customer-service', '/support', '/topup-history',
-          '/swap-withdrawal', '/confirm-pin', '/smart-contract-api', '/developer-dashboard',
-          '/app-developer-dashboard'
-        ];
-        const isValidPath = validPaths.some(path => location.pathname === path) || 
-                           location.pathname.startsWith('/topup') || 
-                           location.pathname.startsWith('/buttons') ||
-                           location.pathname.startsWith('/merchant') ||
-                           location.pathname.startsWith('/payment-link') ||
-                           location.pathname.startsWith('/pay/') ||
-                           location.pathname.startsWith('/public-payment') ||
-                           location.pathname.startsWith('/admin') ||
-                           location.pathname.startsWith('/forgot') ||
-                           location.pathname.startsWith('/reset') ||
-                           location.pathname.startsWith('/two-factor') ||
-                           location.pathname.startsWith('/app-developer-dashboard') ||
-                           location.pathname.startsWith('/app-payment') ||
-                           location.pathname === '/';
-        
-        if (!isValidPath) {
-          console.log('Redirecting to dashboard from:', location.pathname);
+
+        // Only redirect to dashboard if user is on an auth/landing page.
+        // Token refreshes and re-emitted SIGNED_IN events should NEVER
+        // bounce a user away from the page they're currently using.
+        const authPaths = ['/', '/auth', '/sign-in', '/signin', '/signup', '/auth/callback'];
+        const isOnAuthPage = authPaths.includes(location.pathname);
+
+        if (isOnAuthPage) {
+          console.log('Redirecting to dashboard from auth page:', location.pathname);
           navigateRef.current('/dashboard', { replace: true });
         }
       } else if (event === 'SIGNED_OUT') {
