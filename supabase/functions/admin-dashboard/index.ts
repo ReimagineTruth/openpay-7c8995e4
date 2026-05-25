@@ -48,7 +48,11 @@ serve(async (req) => {
     }
 
     const adminAllowlist = parseAllowlist(Deno.env.get("ADMIN_DASHBOARD_EMAILS"));
-    if (adminAllowlist.length > 0 && !adminAllowlist.includes(user.email.toLowerCase())) {
+    if (adminAllowlist.length === 0) {
+      console.error("ADMIN_DASHBOARD_EMAILS not configured — denying access by default");
+      return jsonResponse({ error: "Admin dashboard not configured" }, 503);
+    }
+    if (!adminAllowlist.includes(user.email.toLowerCase())) {
       return jsonResponse({ error: "Access denied for this account" }, 403);
     }
 

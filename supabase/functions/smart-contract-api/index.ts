@@ -34,30 +34,44 @@ serve(async (req: Request) => {
     let appId: string | null = null;
     let userId: string | null = null;
 
+    const sha256Hex = async (input: string) => {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    };
+
     if (clientId && apiKey) {
-      // Third-party app authentication
+      // Third-party app authentication — validate API key against stored hash
       const { data: app } = await supabase
         .from("developer_apps")
-        .select("id, user_id, is_active, rate_limit_per_minute, scopes")
+        .select("id, user_id, is_active, rate_limit_per_minute, scopes, client_secret_hash")
         .eq("client_id", clientId)
         .eq("is_active", true)
         .single();
 
       if (!app) return json({ error: "Invalid client credentials" }, 401);
+
+      const providedHash = await sha256Hex(apiKey);
+      if (!app.client_secret_hash || providedHash !== app.client_secret_hash) {
+        return json({ error: "Invalid client credentials" }, 401);
+      }
       appId = app.id;
 
-      // Check if there's a user-authorized OAuth token
+      // Validate user-authorized OAuth bearer token (if provided) by hashing and matching
       if (authHeader.startsWith("Bearer ")) {
         const token = authHeader.replace("Bearer ", "");
+        const tokenHash = await sha256Hex(token);
         const { data: authZ } = await supabase
           .from("oauth_authorizations")
           .select("user_id, scopes, expires_at, revoked_at")
           .eq("app_id", appId)
+          .eq("access_token_hash", tokenHash)
           .is("revoked_at", null)
           .single();
 
         if (authZ && new Date(authZ.expires_at) > new Date()) {
           userId = authZ.user_id;
+        } else {
+          return json({ error: "Invalid or expired access token" }, 401);
         }
       }
     } else if (authHeader.startsWith("Bearer ")) {
@@ -182,10 +196,12 @@ serve(async (req: Request) => {
       }
 
       case "ledger": {
+        if (!userId) return json({ error: "User authorization required" }, 403);
         const limit = Math.min(Number(url.searchParams.get("limit") || "50"), 100);
         const { data: events } = await supabase
           .from("ledger_events")
           .select("id, event_type, amount, status, note, occurred_at, source_table")
+          .or(`actor_user_id.eq.${userId},related_user_id.eq.${userId}`)
           .order("occurred_at", { ascending: false })
           .limit(limit);
         return json({ events: events || [] });
