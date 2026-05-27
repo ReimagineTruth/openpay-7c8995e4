@@ -1,1 +1,7 @@
 project_id = "araojncyittkahvvpdrn"
+
+[functions.create-topup-checkout]
+verify_jwt = false
+
+[functions.payments-webhook]
+verify_jwt = false
