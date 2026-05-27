@@ -2251,6 +2251,42 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_topups: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          credited_at: string | null
+          environment: string
+          id: string
+          status: string
+          stripe_session_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          credited_at?: string | null
+          environment?: string
+          id?: string
+          status?: string
+          stripe_session_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          credited_at?: string | null
+          environment?: string
+          id?: string
+          status?: string
+          stripe_session_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       support_agents: {
         Row: {
           created_at: string
@@ -3247,6 +3283,15 @@ export type Database = {
       create_stake: {
         Args: { p_amount: number; p_lock_days: number }
         Returns: Json
+      }
+      credit_stripe_topup: {
+        Args: {
+          p_amount: number
+          p_environment: string
+          p_session_id: string
+          p_user_id: string
+        }
+        Returns: undefined
       }
       delete_my_merchant_api_key: {
         Args: { p_key_id: string }
