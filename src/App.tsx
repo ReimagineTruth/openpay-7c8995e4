@@ -24,6 +24,7 @@ import TopUpCredit from "./pages/TopUpCredit";
 import TopUpApplePay from "./pages/TopUpApplePay";
 import TopUpGooglePay from "./pages/TopUpGooglePay";
 import TopUpStripe from "./pages/TopUpStripe";
+import TopUpStripeReturnPage from "./pages/TopUpStripeReturnPage";
 import TopUpVenmo from "./pages/TopUpVenmo";
 import TopUpUSDT from "./pages/TopUpUSDT";
 import TopUpUSDC from "./pages/TopUpUSDC";
@@ -291,6 +292,11 @@ const AppRoutes = () => {
         <Route path="/topup-stripe" element={
           <ProtectedRoute>
             <TopUpStripe />
+          </ProtectedRoute>
+        } />
+        <Route path="/topup/stripe/return" element={
+          <ProtectedRoute>
+            <TopUpStripeReturnPage />
           </ProtectedRoute>
         } />
         <Route path="/topup-venmo" element={
