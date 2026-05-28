@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,19 @@ import AuthMark from "@/components/AuthMark";
 import AuthFooter from "@/components/AuthFooter";
 import { ExternalLink } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import { isPiBrowser } from "@/lib/piAds";
 
 const AdminMrwainAuth = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const mode = params.get("mode") === "signup" ? "signup" : "signin";
   const referralParam = (params.get("ref") || "").trim().toLowerCase();
+
+  // In Pi Browser, only Pi authentication is allowed — hide email sign in/up
+  if (isPiBrowser()) {
+    const search = referralParam ? `?ref=${referralParam}` : "";
+    return <Navigate to={`/auth${search}`} replace />;
+  }
   const [loading, setLoading] = useState(false);
   const [showEmailConfirmationModal, setShowEmailConfirmationModal] = useState(false);
   const [signedUpEmail, setSignedUpEmail] = useState("");
