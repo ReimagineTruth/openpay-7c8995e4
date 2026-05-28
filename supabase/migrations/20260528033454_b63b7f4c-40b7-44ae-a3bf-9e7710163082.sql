@@ -1,0 +1,13 @@
+ALTER FUNCTION public.digest(text, text) SET search_path = public, pg_temp;
+ALTER FUNCTION public.gen_random_bytes(integer) SET search_path = public, pg_temp;
+ALTER FUNCTION public.enforce_user_preferences_security_password_lifecycle() SET search_path = public, pg_temp;
+ALTER FUNCTION public.generate_merchant_api_key(text) SET search_path = public, pg_temp;
+ALTER FUNCTION public.generate_openpay_account_number(uuid) SET search_path = public, pg_temp;
+ALTER FUNCTION public.generate_openpay_authorization_code() SET search_path = public, pg_temp;
+ALTER FUNCTION public.generate_openpay_card_number() SET search_path = public, pg_temp;
+ALTER FUNCTION public.generate_openpay_cvc() SET search_path = public, pg_temp;
+ALTER FUNCTION public.normalize_openpay_authorization_code(text) SET search_path = public, pg_temp;
+ALTER FUNCTION public.normalize_openpay_code(text) SET search_path = public, pg_temp;
+ALTER FUNCTION public.random_token_hex(integer) SET search_path = public, pg_temp;
+ALTER FUNCTION public.set_common_updated_at() SET search_path = public, pg_temp;
+ALTER FUNCTION public.set_supported_currencies_updated_at() SET search_path = public, pg_temp;
