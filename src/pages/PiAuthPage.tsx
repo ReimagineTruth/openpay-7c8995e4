@@ -299,19 +299,33 @@ const PiAuthPage = () => {
                 </div>
               </Button>
               <div className="grid grid-cols-1 gap-2">
-                {!inPiBrowser && (
-                  <Button
-                    asChild
-                    type="button"
-                    variant="outline"
-                    className="h-11 w-full rounded-2xl"
-                  >
-                    <Link
-                      to={`/sign-in?mode=signin${searchParams.get("ref") ? `&ref=${encodeURIComponent((searchParams.get("ref") || '').trim().toLowerCase())}` : ""}`}
+                {!isPiBrowserUserAgent() && (
+                  <>
+                    <Button
+                      asChild
+                      type="button"
+                      variant="outline"
+                      className="h-11 w-full rounded-2xl"
                     >
-                      Sign In with Email
-                    </Link>
-                  </Button>
+                      <Link
+                        to={`/sign-in?mode=signin${searchParams.get("ref") ? `&ref=${encodeURIComponent((searchParams.get("ref") || '').trim().toLowerCase())}` : ""}`}
+                      >
+                        Sign In with Email
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      type="button"
+                      variant="outline"
+                      className="h-11 w-full rounded-2xl"
+                    >
+                      <Link
+                        to={`/sign-up?mode=signup${searchParams.get("ref") ? `&ref=${encodeURIComponent((searchParams.get("ref") || '').trim().toLowerCase())}` : ""}`}
+                      >
+                        Sign Up with Email
+                      </Link>
+                    </Button>
+                  </>
                 )}
                 <Button
                   asChild
