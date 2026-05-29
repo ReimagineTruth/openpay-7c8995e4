@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import { Shield, ArrowLeft } from "lucide-react";
+import { isPiBrowserUserAgent } from "@/lib/appSecurity";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +17,11 @@ const SignIn = () => {
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [userSession, setUserSession] = useState<any>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isPiBrowserUserAgent()) navigate("/auth", { replace: true });
+  }, [navigate]);
+
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

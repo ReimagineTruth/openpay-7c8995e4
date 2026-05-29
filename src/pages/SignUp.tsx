@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
+import { isPiBrowserUserAgent } from "@/lib/appSecurity";
 
 const SignUp = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +17,11 @@ const SignUp = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (isPiBrowserUserAgent()) navigate("/auth", { replace: true });
+  }, [navigate]);
+
   const referralParam = searchParams.get("ref")?.trim().toLowerCase() || "";
 
   const handleSignUp = async (e: React.FormEvent) => {
