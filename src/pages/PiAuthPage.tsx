@@ -300,32 +300,18 @@ const PiAuthPage = () => {
               </Button>
               <div className="grid grid-cols-1 gap-2">
                 {!isPiBrowserUAOnly() && (
-                  <>
-                    <Button
-                      asChild
-                      type="button"
-                      variant="outline"
-                      className="h-11 w-full rounded-2xl"
+                  <Button
+                    asChild
+                    type="button"
+                    variant="outline"
+                    className="h-11 w-full rounded-2xl"
+                  >
+                    <Link
+                      to={`/sign-in?mode=signin${searchParams.get("ref") ? `&ref=${encodeURIComponent((searchParams.get("ref") || '').trim().toLowerCase())}` : ""}`}
                     >
-                      <Link
-                        to={`/sign-in?mode=signin${searchParams.get("ref") ? `&ref=${encodeURIComponent((searchParams.get("ref") || '').trim().toLowerCase())}` : ""}`}
-                      >
-                        Sign In with Email
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      type="button"
-                      variant="outline"
-                      className="h-11 w-full rounded-2xl"
-                    >
-                      <Link
-                        to={`/sign-up?mode=signup${searchParams.get("ref") ? `&ref=${encodeURIComponent((searchParams.get("ref") || '').trim().toLowerCase())}` : ""}`}
-                      >
-                        Sign Up with Email
-                      </Link>
-                    </Button>
-                  </>
+                      Sign In with Email
+                    </Link>
+                  </Button>
                 )}
                 <Button
                   asChild
@@ -344,7 +330,7 @@ const PiAuthPage = () => {
                   className="h-11 w-full rounded-2xl"
                 >
                   <a 
-                    href="https://droplink.space/@openpay" 
+                    href="https://droplinkio.space/@openpay" 
                     target="_blank" 
                     rel="noreferrer"
                   >
