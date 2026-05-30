@@ -127,6 +127,24 @@ export const isPiBrowserUserAgent = () => {
   return piPatterns.some(pattern => pattern.test(ua)) || hasPiSDK || hasPiFeatures;
 };
 
+// Strict UA-only check (does NOT consider injected Pi SDK).
+// Use this to gate UI that should only hide inside the actual Pi Browser app.
+export const isPiBrowserUAOnly = () => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const piPatterns = [
+    /pibrowser/i,
+    /pi\s*browser/i,
+    /minepi/i,
+    /pi\s*network/i,
+    /pinetwork/i,
+    /pi\s*app/i,
+    /piwallet/i,
+    /pi\s*mobile/i,
+  ];
+  return piPatterns.some((p) => p.test(ua));
+};
+
 export const getBiometricSupportStatus = async (): Promise<BiometricSupportStatus> => {
   const isPiBrowser = isPiBrowserUserAgent();
 

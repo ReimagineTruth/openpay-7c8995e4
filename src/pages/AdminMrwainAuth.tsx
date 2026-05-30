@@ -10,7 +10,7 @@ import AuthMark from "@/components/AuthMark";
 import AuthFooter from "@/components/AuthFooter";
 import { ExternalLink } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { isPiBrowser } from "@/lib/piAds";
+import { isPiBrowserUAOnly } from "@/lib/appSecurity";
 
 const AdminMrwainAuth = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ const AdminMrwainAuth = () => {
   const referralParam = (params.get("ref") || "").trim().toLowerCase();
 
   // In Pi Browser, only Pi authentication is allowed — hide email sign in/up
-  if (isPiBrowser()) {
+  if (isPiBrowserUAOnly()) {
     const search = referralParam ? `?ref=${referralParam}` : "";
     return <Navigate to={`/auth${search}`} replace />;
   }

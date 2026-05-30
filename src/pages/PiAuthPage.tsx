@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { setAppCookie } from "@/lib/userPreferences";
 import AuthFooter from "@/components/AuthFooter";
 import { Loader2, ExternalLink } from "lucide-react";
-import { isPiBrowserUserAgent } from "@/lib/appSecurity";
+import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 
 const PiAuthPage = () => {
   const [piUser, setPiUser] = useState<{ uid: string; username: string } | null>(null);
@@ -299,7 +299,7 @@ const PiAuthPage = () => {
                 </div>
               </Button>
               <div className="grid grid-cols-1 gap-2">
-                {!isPiBrowserUserAgent() && (
+                {!isPiBrowserUAOnly() && (
                   <>
                     <Button
                       asChild
