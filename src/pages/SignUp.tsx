@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
-import { isPiBrowserUserAgent } from "@/lib/appSecurity";
+import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 
 const SignUp = () => {
   const [email, setEmail] = useState("");
@@ -19,7 +19,7 @@ const SignUp = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    if (isPiBrowserUserAgent()) navigate("/auth", { replace: true });
+    if (isPiBrowserUAOnly()) navigate("/auth", { replace: true });
   }, [navigate]);
 
   const referralParam = searchParams.get("ref")?.trim().toLowerCase() || "";

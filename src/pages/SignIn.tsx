@@ -7,7 +7,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import { Shield, ArrowLeft } from "lucide-react";
-import { isPiBrowserUserAgent } from "@/lib/appSecurity";
+import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -19,7 +19,7 @@ const SignIn = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isPiBrowserUserAgent()) navigate("/auth", { replace: true });
+    if (isPiBrowserUAOnly()) navigate("/auth", { replace: true });
   }, [navigate]);
 
 
