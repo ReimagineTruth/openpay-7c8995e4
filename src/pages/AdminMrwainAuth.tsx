@@ -19,7 +19,7 @@ const AdminMrwainAuth = () => {
   const referralParam = (params.get("ref") || "").trim().toLowerCase();
 
   // In Pi Browser, only Pi authentication is allowed — hide email sign in/up
-  if (isPiBrowser()) {
+  if (isPiBrowserUAOnly()) {
     const search = referralParam ? `?ref=${referralParam}` : "";
     return <Navigate to={`/auth${search}`} replace />;
   }
