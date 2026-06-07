@@ -23,8 +23,7 @@ export function buildQrPayReceiptHtml(d: QrPayReceiptData): string {
   const date =
     typeof d.paidAt === "string" ? new Date(d.paidAt) : d.paidAt;
   const dateStr = (() => {
-    try { return formatInTimeZone(date, Intl.DateTimeFormat().resolvedOptions().timeZone, "PPpp"); }
-    catch { return date.toLocaleString(); }
+    try { return date.toLocaleString(); } catch { return String(date); }
   })();
 
   const itemRows = d.items.map(it => `
