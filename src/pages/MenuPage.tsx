@@ -454,6 +454,8 @@ const MenuPage = () => {
 
           { icon: FileText, label: "Payment Link Creator", action: () => navigate("/payment-links/create") },
 
+          { icon: QrCode, label: "QR Pay", subtitle: "Create QR payments", action: () => navigate("/qr-pay") },
+
           { icon: Pointer, label: "Buttons", subtitle: "OpenPay", action: () => navigate("/buttons") },
 
           { icon: Smartphone, label: "App Payments", subtitle: "Developer", action: () => navigate("/app-developer-dashboard") },
