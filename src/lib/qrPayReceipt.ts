@@ -1,5 +1,4 @@
 // Lightweight HTML receipt renderer + printable window for QR Pay
-import { formatInTimeZone } from "date-fns-tz";
 
 export interface QrPayReceiptData {
   transactionRef: string;
