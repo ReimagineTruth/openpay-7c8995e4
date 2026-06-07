@@ -111,6 +111,10 @@ import AppPaymentCheckoutPage from "./pages/AppPaymentCheckoutPage";
 import AppPayApprovePage from "./pages/AppPayApprovePage";
 import AppPaymentSuccessPage from "./pages/AppPaymentSuccessPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import QrPayDashboardPage from "./pages/QrPayDashboardPage";
+import QrPayCreatePage from "./pages/QrPayCreatePage";
+import QrPayCheckoutPage from "./pages/QrPayCheckoutPage";
+import QrPaySuccessPage from "./pages/QrPaySuccessPage";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { useRealtimePushNotifications } from "./hooks/useRealtimePushNotifications";
 import AppSecurityGate from "./components/AppSecurityGate";
@@ -456,6 +460,10 @@ const AppRoutes = () => {
         <Route path="/merchant-products" element={<MerchantProductCatalogPage />} />
         <Route path="/merchant-products/create" element={<MerchantProductCreatePage />} />
         <Route path="/merchant-pos" element={<MerchantPosPage />} />
+        <Route path="/qr-pay" element={<ProtectedRoute><QrPayDashboardPage /></ProtectedRoute>} />
+        <Route path="/qr-pay/new" element={<ProtectedRoute><QrPayCreatePage /></ProtectedRoute>} />
+        <Route path="/qr-pay/:token" element={<QrPayCheckoutPage />} />
+        <Route path="/qr-pay/:token/success" element={<QrPaySuccessPage />} />
         <Route path="/payment-links/create" element={<PaymentLinksCreatePage />} />
         <Route path="/payment-link/:token" element={<MerchantCheckoutPage />} />
         <Route path="/merchant-checkout" element={<MerchantCheckoutPage />} />
