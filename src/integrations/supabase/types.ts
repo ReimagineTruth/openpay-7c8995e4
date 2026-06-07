@@ -2191,6 +2191,184 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_payment_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          line_total: number
+          name: string
+          position: number
+          qr_payment_id: string
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          line_total: number
+          name: string
+          position?: number
+          qr_payment_id: string
+          quantity?: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          line_total?: number
+          name?: string
+          position?: number
+          qr_payment_id?: string
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_payment_items_qr_payment_id_fkey"
+            columns: ["qr_payment_id"]
+            isOneToOne: false
+            referencedRelation: "qr_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_payment_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          merchant_user_id: string
+          method: string
+          paid_at: string | null
+          payer_email: string | null
+          payer_name: string | null
+          payer_user_id: string | null
+          payer_username: string | null
+          pi_payment_id: string | null
+          pi_txid: string | null
+          provider_payload: Json
+          qr_payment_id: string
+          status: string
+          transaction_ref: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          merchant_user_id: string
+          method: string
+          paid_at?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payer_user_id?: string | null
+          payer_username?: string | null
+          pi_payment_id?: string | null
+          pi_txid?: string | null
+          provider_payload?: Json
+          qr_payment_id: string
+          status?: string
+          transaction_ref: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          merchant_user_id?: string
+          method?: string
+          paid_at?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payer_user_id?: string | null
+          payer_username?: string | null
+          pi_payment_id?: string | null
+          pi_txid?: string | null
+          provider_payload?: Json
+          qr_payment_id?: string
+          status?: string
+          transaction_ref?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_payment_transactions_qr_payment_id_fkey"
+            columns: ["qr_payment_id"]
+            isOneToOne: false
+            referencedRelation: "qr_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_payments: {
+        Row: {
+          allow_guest: boolean
+          allow_pi: boolean
+          allow_virtual_card: boolean
+          allow_wallet: boolean
+          created_at: string
+          currency: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          merchant_user_id: string
+          metadata: Json
+          reusable: boolean
+          status: string
+          subtotal: number
+          title: string
+          token: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          allow_guest?: boolean
+          allow_pi?: boolean
+          allow_virtual_card?: boolean
+          allow_wallet?: boolean
+          created_at?: string
+          currency?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          merchant_user_id: string
+          metadata?: Json
+          reusable?: boolean
+          status?: string
+          subtotal?: number
+          title?: string
+          token: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          allow_guest?: boolean
+          allow_pi?: boolean
+          allow_virtual_card?: boolean
+          allow_wallet?: boolean
+          created_at?: string
+          currency?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          merchant_user_id?: string
+          metadata?: Json
+          reusable?: boolean
+          status?: string
+          subtotal?: number
+          title?: string
+          token?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referral_rewards: {
         Row: {
           claimed_at: string | null
@@ -3094,6 +3272,7 @@ export type Database = {
       }
     }
     Functions: {
+      _qr_pay_finish: { Args: { p_payment_id: string }; Returns: undefined }
       admin_dashboard_history:
         | { Args: never; Returns: Json }
         | { Args: { p_limit: number; p_offset: number }; Returns: Json }
@@ -3855,6 +4034,49 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      qr_pay_complete_pi: {
+        Args: {
+          p_payer_email?: string
+          p_payer_name?: string
+          p_payer_username?: string
+          p_pi_payment_id: string
+          p_pi_txid: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      qr_pay_complete_virtual_card: {
+        Args: {
+          p_card_number: string
+          p_cvc: string
+          p_payer_email?: string
+          p_payer_name?: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      qr_pay_complete_wallet: {
+        Args: { p_payer_email?: string; p_payer_name?: string; p_token: string }
+        Returns: Json
+      }
+      qr_pay_create: {
+        Args: {
+          p_allow_guest?: boolean
+          p_allow_pi?: boolean
+          p_allow_virtual_card?: boolean
+          p_allow_wallet?: boolean
+          p_currency: string
+          p_description: string
+          p_expires_minutes?: number
+          p_items: Json
+          p_reusable?: boolean
+          p_title: string
+        }
+        Returns: Json
+      }
+      qr_pay_gen_token: { Args: never; Returns: string }
+      qr_pay_get_by_token: { Args: { p_token: string }; Returns: Json }
+      qr_pay_merchant_stats: { Args: never; Returns: Json }
       random_token_hex: { Args: { p_bytes?: number }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
