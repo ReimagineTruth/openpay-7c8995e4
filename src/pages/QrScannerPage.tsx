@@ -233,7 +233,7 @@ const isOpenPayQrCode = (rawValue: string) => {
     if (lowerValue.startsWith('openpay-pos://')) return true;
     
     // Check for session tokens (POS, checkout)
-    if (lowerValue.includes('opsess_') || lowerValue.includes('session=')) return true;
+    if (lowerValue.includes('opsess_') || lowerValue.includes('session=') || lowerValue.includes('qrp_') || lowerValue.includes('/qr-pay/')) return true;
     
     // Check for payment link tokens
     if (lowerValue.includes('oplink_') || lowerValue.includes('link_token=')) return true;
