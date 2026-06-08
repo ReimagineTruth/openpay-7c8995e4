@@ -204,7 +204,7 @@ const isOpenPayQrCode = (rawValue: string) => {
       const isOpenPayDomain = host.includes("openpay") || host.includes("localhost");
       const isPayPath = path.startsWith("/send") || path.startsWith("/pay") || path.startsWith("/public-payment");
       const isReceivePath = path.startsWith("/receive") || path.startsWith("/request");
-      const isCheckoutPath = path.startsWith("/checkout") || path.startsWith("/payment-link") || path.startsWith("/merchant-checkout");
+      const isCheckoutPath = path.startsWith("/checkout") || path.startsWith("/payment-link") || path.startsWith("/merchant-checkout") || path.startsWith("/qr-pay");
       const isReceiptPath = path.startsWith("/receipt") || path.startsWith("/transaction") || path.startsWith("/thank-you");
       const isPosPath = path.startsWith("/pos") || path.startsWith("/merchant-pos");
       const hasCheckoutSession = Boolean(parsed.searchParams.get("checkout_session") || parsed.searchParams.get("session"));
