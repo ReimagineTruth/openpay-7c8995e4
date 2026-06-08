@@ -445,6 +445,32 @@ const QrScannerPage = () => {
         }
       } catch {}
 
+      // Handle QR Pay tokens: openpay://qr-pay/<token> or any URL with /qr-pay/<token>
+      try {
+        const v = decodedText.trim();
+        let qrToken: string | null = null;
+        try {
+          const u = new URL(v);
+          if (u.protocol.toLowerCase() === "openpay:" && u.hostname.toLowerCase() === "qr-pay") {
+            qrToken = u.pathname.replace(/^\/+/, "") || u.searchParams.get("token");
+          } else {
+            const m = u.pathname.match(/\/qr-pay\/([^/?#]+)/i);
+            if (m) qrToken = m[1];
+          }
+        } catch {
+          const m = v.match(/\/qr-pay\/([^/?#\s]+)/i);
+          if (m) qrToken = m[1];
+        }
+        if (qrToken && /^qrp_/i.test(qrToken)) {
+          setScanHint("OpenPay QR Payment detected. Opening checkout...");
+          playScanBeep();
+          await stopScanner();
+          navigate(`/qr-pay/${qrToken}`, { replace: true });
+          handlingDecodeRef.current = false;
+          return;
+        }
+      } catch {}
+
       const payload = extractQrPayload(decodedText);
       
       console.log("Extracted QR Payload:", payload);
