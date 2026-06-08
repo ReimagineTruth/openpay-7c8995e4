@@ -204,7 +204,7 @@ const isOpenPayQrCode = (rawValue: string) => {
       const isOpenPayDomain = host.includes("openpay") || host.includes("localhost");
       const isPayPath = path.startsWith("/send") || path.startsWith("/pay") || path.startsWith("/public-payment");
       const isReceivePath = path.startsWith("/receive") || path.startsWith("/request");
-      const isCheckoutPath = path.startsWith("/checkout") || path.startsWith("/payment-link") || path.startsWith("/merchant-checkout");
+      const isCheckoutPath = path.startsWith("/checkout") || path.startsWith("/payment-link") || path.startsWith("/merchant-checkout") || path.startsWith("/qr-pay");
       const isReceiptPath = path.startsWith("/receipt") || path.startsWith("/transaction") || path.startsWith("/thank-you");
       const isPosPath = path.startsWith("/pos") || path.startsWith("/merchant-pos");
       const hasCheckoutSession = Boolean(parsed.searchParams.get("checkout_session") || parsed.searchParams.get("session"));
@@ -233,7 +233,7 @@ const isOpenPayQrCode = (rawValue: string) => {
     if (lowerValue.startsWith('openpay-pos://')) return true;
     
     // Check for session tokens (POS, checkout)
-    if (lowerValue.includes('opsess_') || lowerValue.includes('session=')) return true;
+    if (lowerValue.includes('opsess_') || lowerValue.includes('session=') || lowerValue.includes('qrp_') || lowerValue.includes('/qr-pay/')) return true;
     
     // Check for payment link tokens
     if (lowerValue.includes('oplink_') || lowerValue.includes('link_token=')) return true;
@@ -442,6 +442,32 @@ const QrScannerPage = () => {
             handlingDecodeRef.current = false;
             return;
           }
+        }
+      } catch {}
+
+      // Handle QR Pay tokens: openpay://qr-pay/<token> or any URL with /qr-pay/<token>
+      try {
+        const v = decodedText.trim();
+        let qrToken: string | null = null;
+        try {
+          const u = new URL(v);
+          if (u.protocol.toLowerCase() === "openpay:" && u.hostname.toLowerCase() === "qr-pay") {
+            qrToken = u.pathname.replace(/^\/+/, "") || u.searchParams.get("token");
+          } else {
+            const m = u.pathname.match(/\/qr-pay\/([^/?#]+)/i);
+            if (m) qrToken = m[1];
+          }
+        } catch {
+          const m = v.match(/\/qr-pay\/([^/?#\s]+)/i);
+          if (m) qrToken = m[1];
+        }
+        if (qrToken && /^qrp_/i.test(qrToken)) {
+          setScanHint("OpenPay QR Payment detected. Opening checkout...");
+          playScanBeep();
+          await stopScanner();
+          navigate(`/qr-pay/${qrToken}`, { replace: true });
+          handlingDecodeRef.current = false;
+          return;
         }
       } catch {}
 
