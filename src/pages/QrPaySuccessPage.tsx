@@ -1,20 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { CheckCircle2, Download, Printer, Mail, Home } from "lucide-react";
+import { CheckCircle2, Download, Printer, Mail, Home, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { buildQrPayReceiptHtml, downloadQrPayReceipt, printQrPayReceipt, type QrPayReceiptData } from "@/lib/qrPayReceipt";
+
+interface ReceiptExtras {
+  after_payment_action?: "receipt" | "download" | "redirect";
+  download_url?: string | null;
+  redirect_url?: string | null;
+}
 
 export default function QrPaySuccessPage() {
   const { token } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const ref = params.get("ref") || "";
-  const [data, setData] = useState<QrPayReceiptData | null>(null);
-  const [emailing, setEmailing] = useState(false);
+  const [data, setData] = useState<(QrPayReceiptData & ReceiptExtras) | null>(null);
   const [emailTo, setEmailTo] = useState("");
 
   useEffect(() => {
@@ -28,33 +32,27 @@ export default function QrPaySuccessPage() {
     }
   }, [ref]);
 
-  const sendEmail = async () => {
-    if (!data || !emailTo) { toast.error("Enter an email"); return; }
-    setEmailing(true);
-    try {
-      const html = buildQrPayReceiptHtml(data);
-      const { error } = await supabase.functions.invoke("send-transactional-email", {
-        body: {
-          templateName: "qr-payment-receipt",
-          recipientEmail: emailTo,
-          idempotencyKey: `qrp-receipt-${data.transactionRef}`,
-          templateData: {
-            transactionRef: data.transactionRef,
-            amount: data.amount,
-            currency: data.currency,
-            merchantName: data.merchant.full_name || "Merchant",
-            method: data.method,
-            html,
-          },
-        },
-      });
-      if (error) throw error;
-      toast.success("Receipt emailed");
-    } catch (e: any) {
-      toast.error(e?.message || "Could not send email (template may not be set up).");
-    } finally {
-      setEmailing(false);
-    }
+  // Send email via the user's default mail client. This avoids requiring an
+  // app-emails backend function and works on every device.
+  const emailReceipt = () => {
+    if (!data) return;
+    if (!emailTo) { toast.error("Enter an email"); return; }
+    const subject = `OpenPay receipt ${data.transactionRef}`;
+    const body = [
+      `OpenPay Receipt`,
+      ``,
+      `Transaction ID: ${data.transactionRef}`,
+      `Date: ${new Date(data.paidAt).toLocaleString()}`,
+      `Method: ${data.method}`,
+      `Merchant: ${data.merchant.full_name || ""}${data.merchant.username ? ` (@${data.merchant.username})` : ""}`,
+      `Amount: ${data.currency} ${Number(data.amount).toFixed(2)}`,
+      ``,
+      `Keep this Transaction ID for any disputes or claims.`,
+    ].join("\n");
+    // Open the user's email client pre-filled. Also offer the HTML receipt as a download.
+    window.location.href = `mailto:${encodeURIComponent(emailTo)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    try { downloadQrPayReceipt(data); } catch {}
+    toast.success("Receipt opened in your email app");
   };
 
   return (
@@ -75,6 +73,24 @@ export default function QrPaySuccessPage() {
           </>}
         </CardContent></Card>
 
+        {data?.after_payment_action === "download" && data.download_url && (
+          <Card><CardContent className="p-4">
+            <div className="text-sm font-semibold mb-2">Your download is ready</div>
+            <Button className="w-full" onClick={() => window.open(data.download_url!, "_blank")}>
+              <Download className="h-4 w-4 mr-1"/>Download your file
+            </Button>
+          </CardContent></Card>
+        )}
+
+        {data?.after_payment_action === "redirect" && data.redirect_url && (
+          <Card><CardContent className="p-4">
+            <div className="text-sm font-semibold mb-2">Continue to merchant</div>
+            <Button className="w-full" onClick={() => window.location.href = data.redirect_url!}>
+              <ExternalLink className="h-4 w-4 mr-1"/>Continue
+            </Button>
+          </CardContent></Card>
+        )}
+
         {data && (
           <Card><CardContent className="p-4 space-y-2">
             <div className="text-sm font-semibold">Receipt</div>
@@ -84,7 +100,8 @@ export default function QrPaySuccessPage() {
             </div>
             <div className="pt-2">
               <Input type="email" placeholder="Email receipt to…" value={emailTo} onChange={e => setEmailTo(e.target.value)}/>
-              <Button className="w-full mt-2" disabled={emailing} onClick={sendEmail}><Mail className="h-4 w-4 mr-1"/>{emailing ? "Sending…" : "Email receipt"}</Button>
+              <Button className="w-full mt-2" onClick={emailReceipt}><Mail className="h-4 w-4 mr-1"/>Email receipt</Button>
+              <p className="text-[11px] text-muted-foreground mt-1 text-center">Opens your email app with the receipt details.</p>
             </div>
           </CardContent></Card>
         )}
