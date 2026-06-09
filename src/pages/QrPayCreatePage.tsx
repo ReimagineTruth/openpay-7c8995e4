@@ -20,11 +20,32 @@ type AfterAction = "receipt" | "download" | "redirect";
 
 async function uploadQrPayImage(file: File): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) { toast.error("Sign in to upload"); return null; }
+  const toDataUrl = () => new Promise<string | null>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+
+  if (!user) {
+    const inline = await toDataUrl();
+    if (!inline) toast.error("Image upload failed");
+    return inline;
+  }
+
   const ext = file.name.split(".").pop() || "jpg";
   const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from("qr-pay-images").upload(path, file, { upsert: false, contentType: file.type });
-  if (error) { toast.error(error.message); return null; }
+  if (error) {
+    const inline = await toDataUrl();
+    if (!inline) {
+      toast.error(error.message);
+      return null;
+    }
+    toast.success("Image added inline");
+    return inline;
+  }
+
   const { data } = supabase.storage.from("qr-pay-images").getPublicUrl(path);
   return data.publicUrl;
 }
