@@ -31,6 +31,8 @@ interface QrPayData {
   min_amount?: number | null;
   allow_custom_amount?: boolean;
   cover_image_url?: string | null;
+  collect_delivery?: boolean;
+  delivery_fields?: string[];
   merchant: { id: string; full_name?: string; username?: string; avatar_url?: string };
   items: Array<{ id: string; name: string; description?: string; image_url?: string; quantity: number; unit_price: number; line_total: number }>;
 }
@@ -47,6 +49,9 @@ export default function QrPayCheckoutPage() {
   const [cardNum, setCardNum] = useState("");
   const [cardCvc, setCardCvc] = useState("");
   const [customAmount, setCustomAmount] = useState<string>("");
+  const [payerPhone, setPayerPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryNotes, setDeliveryNotes] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -75,6 +80,23 @@ export default function QrPayCheckoutPage() {
     return true;
   };
 
+  const validateDelivery = () => {
+    if (!data?.collect_delivery) return true;
+    const f = data.delivery_fields || [];
+    if (f.includes("name") && !payerName.trim()) { toast.error("Your name is required"); return false; }
+    if (f.includes("email") && !payerEmail.trim()) { toast.error("Email is required"); return false; }
+    if (f.includes("phone") && !payerPhone.trim()) { toast.error("Phone is required"); return false; }
+    if (f.includes("address") && !deliveryAddress.trim()) { toast.error("Delivery address is required"); return false; }
+    return true;
+  };
+
+  const deliveryPayload = () => ({
+    p_payer_phone: payerPhone || null,
+    p_delivery_address: deliveryAddress || null,
+    p_delivery_notes: deliveryNotes || null,
+  });
+
+
   const requireSignIn = () => {
     toast.error("Please sign in first");
     navigate(`/auth?return=/qr-pay/${token}`);
@@ -98,12 +120,13 @@ export default function QrPayCheckoutPage() {
   };
 
   const payWallet = async () => {
-    if (!validateAmount()) return;
+    if (!validateAmount() || !validateDelivery()) return;
     if (!session) { requireSignIn(); return; }
     setPaying(true);
     const { data: res, error } = await (supabase as any).rpc("qr_pay_complete_wallet", {
       p_token: token, p_payer_name: payerName || null, p_payer_email: payerEmail || null,
       p_amount: isFlexible ? chargeAmount : null,
+      ...deliveryPayload(),
     });
     setPaying(false);
     if (error) { toast.error(error.message); return; }
@@ -111,7 +134,7 @@ export default function QrPayCheckoutPage() {
   };
 
   const payCard = async () => {
-    if (!validateAmount()) return;
+    if (!validateAmount() || !validateDelivery()) return;
     if (!session) { requireSignIn(); return; }
     if (!cardNum || !cardCvc) { toast.error("Enter card details"); return; }
     setPaying(true);
@@ -119,6 +142,7 @@ export default function QrPayCheckoutPage() {
       p_token: token, p_card_number: cardNum, p_cvc: cardCvc,
       p_payer_name: payerName || null, p_payer_email: payerEmail || null,
       p_amount: isFlexible ? chargeAmount : null,
+      ...deliveryPayload(),
     });
     setPaying(false);
     if (error) { toast.error(error.message); return; }
@@ -126,7 +150,7 @@ export default function QrPayCheckoutPage() {
   };
 
   const payPi = async () => {
-    if (!validateAmount()) return;
+    if (!validateAmount() || !validateDelivery()) return;
     if (typeof window === "undefined" || !(window as any).Pi) {
       toast.error("Pi SDK not available. Please open in Pi Browser.");
       return;
@@ -167,6 +191,7 @@ export default function QrPayCheckoutPage() {
                 p_payer_name: payerName || null, p_payer_email: payerEmail || null,
                 p_payer_username: null,
                 p_amount: isFlexible ? chargeAmount : null,
+                ...deliveryPayload(),
               });
               if (error) { reject(new Error(error.message)); return; }
               goAfterPayment(res.transaction_ref, "pi");
@@ -265,11 +290,42 @@ export default function QrPayCheckoutPage() {
 
         {/* Payer info */}
         <Card><CardContent className="p-4 space-y-2">
-          <Label className="text-xs">Your name (for receipt)</Label>
+          <Label className="text-xs">
+            Your name{data.collect_delivery && (data.delivery_fields || []).includes("name") ? " *" : " (for receipt)"}
+          </Label>
           <Input value={payerName} onChange={e => setPayerName(e.target.value)} placeholder="Your name"/>
-          <Label className="text-xs">Email (optional, for emailed receipt)</Label>
+          <Label className="text-xs">
+            Email{data.collect_delivery && (data.delivery_fields || []).includes("email") ? " *" : " (optional, for emailed receipt)"}
+          </Label>
           <Input type="email" value={payerEmail} onChange={e => setPayerEmail(e.target.value)} placeholder="you@example.com"/>
         </CardContent></Card>
+
+        {/* Delivery details (optional, set by merchant) */}
+        {data.collect_delivery && (
+          <Card><CardContent className="p-4 space-y-2">
+            <div className="text-sm font-semibold">Delivery details</div>
+            <p className="text-xs text-muted-foreground -mt-1">The merchant needs these to deliver your order.</p>
+            {(data.delivery_fields || []).includes("phone") && (
+              <>
+                <Label className="text-xs">Phone *</Label>
+                <Input value={payerPhone} onChange={e => setPayerPhone(e.target.value)} placeholder="+1 555 0100"/>
+              </>
+            )}
+            {(data.delivery_fields || []).includes("address") && (
+              <>
+                <Label className="text-xs">Shipping address *</Label>
+                <textarea className="w-full rounded-md border bg-background p-2 text-sm" rows={3}
+                          value={deliveryAddress} onChange={e => setDeliveryAddress(e.target.value)}
+                          placeholder="Street, city, postal code, country"/>
+              </>
+            )}
+            <Label className="text-xs">Notes (optional)</Label>
+            <textarea className="w-full rounded-md border bg-background p-2 text-sm" rows={2}
+                      value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)}
+                      placeholder="Anything the merchant should know"/>
+          </CardContent></Card>
+        )}
+
 
         {/* Methods */}
         <Card><CardContent className="p-4">

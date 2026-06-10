@@ -2243,12 +2243,15 @@ export type Database = {
           amount: number
           created_at: string
           currency: string
+          delivery_address: string | null
+          delivery_notes: string | null
           id: string
           merchant_user_id: string
           method: string
           paid_at: string | null
           payer_email: string | null
           payer_name: string | null
+          payer_phone: string | null
           payer_user_id: string | null
           payer_username: string | null
           pi_payment_id: string | null
@@ -2262,12 +2265,15 @@ export type Database = {
           amount: number
           created_at?: string
           currency?: string
+          delivery_address?: string | null
+          delivery_notes?: string | null
           id?: string
           merchant_user_id: string
           method: string
           paid_at?: string | null
           payer_email?: string | null
           payer_name?: string | null
+          payer_phone?: string | null
           payer_user_id?: string | null
           payer_username?: string | null
           pi_payment_id?: string | null
@@ -2281,12 +2287,15 @@ export type Database = {
           amount?: number
           created_at?: string
           currency?: string
+          delivery_address?: string | null
+          delivery_notes?: string | null
           id?: string
           merchant_user_id?: string
           method?: string
           paid_at?: string | null
           payer_email?: string | null
           payer_name?: string | null
+          payer_phone?: string | null
           payer_user_id?: string | null
           payer_username?: string | null
           pi_payment_id?: string | null
@@ -2314,9 +2323,11 @@ export type Database = {
           allow_pi: boolean
           allow_virtual_card: boolean
           allow_wallet: boolean
+          collect_delivery: boolean
           cover_image_url: string | null
           created_at: string
           currency: string
+          delivery_fields: Json
           description: string | null
           download_url: string | null
           expires_at: string | null
@@ -2342,9 +2353,11 @@ export type Database = {
           allow_pi?: boolean
           allow_virtual_card?: boolean
           allow_wallet?: boolean
+          collect_delivery?: boolean
           cover_image_url?: string | null
           created_at?: string
           currency?: string
+          delivery_fields?: Json
           description?: string | null
           download_url?: string | null
           expires_at?: string | null
@@ -2370,9 +2383,11 @@ export type Database = {
           allow_pi?: boolean
           allow_virtual_card?: boolean
           allow_wallet?: boolean
+          collect_delivery?: boolean
           cover_image_url?: string | null
           created_at?: string
           currency?: string
+          delivery_fields?: Json
           description?: string | null
           download_url?: string | null
           expires_at?: string | null
@@ -4058,6 +4073,21 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      qr_pay__notify_and_email: {
+        Args: {
+          p_amount: number
+          p_delivery_address: string
+          p_delivery_notes: string
+          p_method: string
+          p_pay: Database["public"]["Tables"]["qr_payments"]["Row"]
+          p_payer_email: string
+          p_payer_name: string
+          p_payer_phone: string
+          p_ref: string
+          p_tx_id: string
+        }
+        Returns: undefined
+      }
       qr_pay_calc_charge_amount: {
         Args: {
           p_amount: number
@@ -4065,109 +4095,72 @@ export type Database = {
         }
         Returns: number
       }
-      qr_pay_complete_pi:
-        | {
-            Args: {
-              p_payer_email?: string
-              p_payer_name?: string
-              p_payer_username?: string
-              p_pi_payment_id: string
-              p_pi_txid: string
-              p_token: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_amount?: number
-              p_payer_email?: string
-              p_payer_name?: string
-              p_payer_username?: string
-              p_pi_payment_id: string
-              p_pi_txid: string
-              p_token: string
-            }
-            Returns: Json
-          }
-      qr_pay_complete_virtual_card:
-        | {
-            Args: {
-              p_card_number: string
-              p_cvc: string
-              p_payer_email?: string
-              p_payer_name?: string
-              p_token: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_amount?: number
-              p_card_number: string
-              p_cvc: string
-              p_payer_email?: string
-              p_payer_name?: string
-              p_token: string
-            }
-            Returns: Json
-          }
-      qr_pay_complete_wallet:
-        | {
-            Args: {
-              p_payer_email?: string
-              p_payer_name?: string
-              p_token: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_amount?: number
-              p_payer_email?: string
-              p_payer_name?: string
-              p_token: string
-            }
-            Returns: Json
-          }
-      qr_pay_create:
-        | {
-            Args: {
-              p_allow_guest?: boolean
-              p_allow_pi?: boolean
-              p_allow_virtual_card?: boolean
-              p_allow_wallet?: boolean
-              p_currency: string
-              p_description: string
-              p_expires_minutes?: number
-              p_items: Json
-              p_reusable?: boolean
-              p_title: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_after_payment_action?: string
-              p_allow_custom_amount?: boolean
-              p_allow_guest?: boolean
-              p_allow_pi?: boolean
-              p_allow_virtual_card?: boolean
-              p_allow_wallet?: boolean
-              p_cover_image_url?: string
-              p_currency: string
-              p_description: string
-              p_download_url?: string
-              p_expires_minutes?: number
-              p_items: Json
-              p_min_amount?: number
-              p_payment_type?: string
-              p_redirect_url?: string
-              p_reusable?: boolean
-              p_suggested_amount?: number
-              p_title: string
-            }
-            Returns: Json
-          }
+      qr_pay_complete_pi: {
+        Args: {
+          p_amount?: number
+          p_delivery_address?: string
+          p_delivery_notes?: string
+          p_payer_email?: string
+          p_payer_name?: string
+          p_payer_phone?: string
+          p_payer_username?: string
+          p_pi_payment_id: string
+          p_pi_txid: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      qr_pay_complete_virtual_card: {
+        Args: {
+          p_amount?: number
+          p_card_number: string
+          p_cvc: string
+          p_delivery_address?: string
+          p_delivery_notes?: string
+          p_payer_email?: string
+          p_payer_name?: string
+          p_payer_phone?: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      qr_pay_complete_wallet: {
+        Args: {
+          p_amount?: number
+          p_delivery_address?: string
+          p_delivery_notes?: string
+          p_payer_email?: string
+          p_payer_name?: string
+          p_payer_phone?: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      qr_pay_create: {
+        Args: {
+          p_after_payment_action?: string
+          p_allow_custom_amount?: boolean
+          p_allow_guest: boolean
+          p_allow_pi: boolean
+          p_allow_virtual_card: boolean
+          p_allow_wallet: boolean
+          p_collect_delivery?: boolean
+          p_cover_image_url?: string
+          p_currency: string
+          p_delivery_fields?: Json
+          p_description: string
+          p_download_url?: string
+          p_expires_minutes: number
+          p_items: Json
+          p_min_amount?: number
+          p_payment_type?: string
+          p_redirect_url?: string
+          p_reusable: boolean
+          p_suggested_amount?: number
+          p_title: string
+        }
+        Returns: Json
+      }
       qr_pay_gen_token: { Args: never; Returns: string }
       qr_pay_get_by_token: { Args: { p_token: string }; Returns: Json }
       qr_pay_merchant_stats: { Args: never; Returns: Json }
