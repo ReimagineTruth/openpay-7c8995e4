@@ -80,6 +80,23 @@ export default function QrPayCheckoutPage() {
     return true;
   };
 
+  const validateDelivery = () => {
+    if (!data?.collect_delivery) return true;
+    const f = data.delivery_fields || [];
+    if (f.includes("name") && !payerName.trim()) { toast.error("Your name is required"); return false; }
+    if (f.includes("email") && !payerEmail.trim()) { toast.error("Email is required"); return false; }
+    if (f.includes("phone") && !payerPhone.trim()) { toast.error("Phone is required"); return false; }
+    if (f.includes("address") && !deliveryAddress.trim()) { toast.error("Delivery address is required"); return false; }
+    return true;
+  };
+
+  const deliveryPayload = () => ({
+    p_payer_phone: payerPhone || null,
+    p_delivery_address: deliveryAddress || null,
+    p_delivery_notes: deliveryNotes || null,
+  });
+
+
   const requireSignIn = () => {
     toast.error("Please sign in first");
     navigate(`/auth?return=/qr-pay/${token}`);
