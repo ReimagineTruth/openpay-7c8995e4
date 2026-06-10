@@ -120,12 +120,13 @@ export default function QrPayCheckoutPage() {
   };
 
   const payWallet = async () => {
-    if (!validateAmount()) return;
+    if (!validateAmount() || !validateDelivery()) return;
     if (!session) { requireSignIn(); return; }
     setPaying(true);
     const { data: res, error } = await (supabase as any).rpc("qr_pay_complete_wallet", {
       p_token: token, p_payer_name: payerName || null, p_payer_email: payerEmail || null,
       p_amount: isFlexible ? chargeAmount : null,
+      ...deliveryPayload(),
     });
     setPaying(false);
     if (error) { toast.error(error.message); return; }
