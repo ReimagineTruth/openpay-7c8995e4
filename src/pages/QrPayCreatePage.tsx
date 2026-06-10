@@ -132,6 +132,8 @@ export default function QrPayCreatePage() {
       p_min_amount: minAmount ? Number(minAmount) : null,
       p_allow_custom_amount: isFlexible,
       p_cover_image_url: coverImage || null,
+      p_collect_delivery: collectDelivery,
+      p_delivery_fields: collectDelivery ? deliveryFields : ["name","email","address"],
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
