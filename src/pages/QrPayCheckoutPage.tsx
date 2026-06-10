@@ -191,6 +191,7 @@ export default function QrPayCheckoutPage() {
                 p_payer_name: payerName || null, p_payer_email: payerEmail || null,
                 p_payer_username: null,
                 p_amount: isFlexible ? chargeAmount : null,
+                ...deliveryPayload(),
               });
               if (error) { reject(new Error(error.message)); return; }
               goAfterPayment(res.transaction_ref, "pi");
