@@ -49,6 +49,9 @@ export default function QrPayCheckoutPage() {
   const [cardNum, setCardNum] = useState("");
   const [cardCvc, setCardCvc] = useState("");
   const [customAmount, setCustomAmount] = useState<string>("");
+  const [payerPhone, setPayerPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryNotes, setDeliveryNotes] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
