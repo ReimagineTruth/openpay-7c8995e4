@@ -59,6 +59,8 @@ export default function QrPayCreatePage() {
   const [items, setItems] = useState<Item[]>([{ name: "", quantity: 1, unit_price: 0 }]);
   const [allow, setAllow] = useState({ pi: true, wallet: true, card: true, guest: true });
   const [reusable, setReusable] = useState(false);
+  const [collectDelivery, setCollectDelivery] = useState(false);
+  const [deliveryFields, setDeliveryFields] = useState<string[]>(["name","email","address"]);
   const [expiresMin, setExpiresMin] = useState<string>("");
   const [paymentType, setPaymentType] = useState<PType>("product");
   const [afterAction, setAfterAction] = useState<AfterAction>("receipt");
