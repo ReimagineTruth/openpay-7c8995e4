@@ -290,11 +290,42 @@ export default function QrPayCheckoutPage() {
 
         {/* Payer info */}
         <Card><CardContent className="p-4 space-y-2">
-          <Label className="text-xs">Your name (for receipt)</Label>
+          <Label className="text-xs">
+            Your name{data.collect_delivery && (data.delivery_fields || []).includes("name") ? " *" : " (for receipt)"}
+          </Label>
           <Input value={payerName} onChange={e => setPayerName(e.target.value)} placeholder="Your name"/>
-          <Label className="text-xs">Email (optional, for emailed receipt)</Label>
+          <Label className="text-xs">
+            Email{data.collect_delivery && (data.delivery_fields || []).includes("email") ? " *" : " (optional, for emailed receipt)"}
+          </Label>
           <Input type="email" value={payerEmail} onChange={e => setPayerEmail(e.target.value)} placeholder="you@example.com"/>
         </CardContent></Card>
+
+        {/* Delivery details (optional, set by merchant) */}
+        {data.collect_delivery && (
+          <Card><CardContent className="p-4 space-y-2">
+            <div className="text-sm font-semibold">Delivery details</div>
+            <p className="text-xs text-muted-foreground -mt-1">The merchant needs these to deliver your order.</p>
+            {(data.delivery_fields || []).includes("phone") && (
+              <>
+                <Label className="text-xs">Phone *</Label>
+                <Input value={payerPhone} onChange={e => setPayerPhone(e.target.value)} placeholder="+1 555 0100"/>
+              </>
+            )}
+            {(data.delivery_fields || []).includes("address") && (
+              <>
+                <Label className="text-xs">Shipping address *</Label>
+                <textarea className="w-full rounded-md border bg-background p-2 text-sm" rows={3}
+                          value={deliveryAddress} onChange={e => setDeliveryAddress(e.target.value)}
+                          placeholder="Street, city, postal code, country"/>
+              </>
+            )}
+            <Label className="text-xs">Notes (optional)</Label>
+            <textarea className="w-full rounded-md border bg-background p-2 text-sm" rows={2}
+                      value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)}
+                      placeholder="Anything the merchant should know"/>
+          </CardContent></Card>
+        )}
+
 
         {/* Methods */}
         <Card><CardContent className="p-4">
