@@ -150,7 +150,7 @@ export default function QrPayCheckoutPage() {
   };
 
   const payPi = async () => {
-    if (!validateAmount()) return;
+    if (!validateAmount() || !validateDelivery()) return;
     if (typeof window === "undefined" || !(window as any).Pi) {
       toast.error("Pi SDK not available. Please open in Pi Browser.");
       return;
