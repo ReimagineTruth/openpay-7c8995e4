@@ -44,15 +44,33 @@ export default function QrPayDashboardPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
       const [{ data: s }, { data: list }, { data: txs }] = await Promise.all([
         (supabase as any).rpc("qr_pay_merchant_stats"),
-        (supabase as any).from("qr_payments").select("id,token,title,currency,total,status,created_at").order("created_at", { ascending: false }).limit(50),
-        (supabase as any).from("qr_payment_transactions").select("id,amount,currency,method,status,transaction_ref,paid_at,payer_name").order("created_at", { ascending: false }).limit(10),
+        (supabase as any).from("qr_payments")
+          .select("id,token,title,currency,total,status,created_at")
+          .eq("merchant_user_id", user.id)
+          .order("created_at", { ascending: false }).limit(50),
+        (supabase as any).from("qr_payment_transactions")
+          .select("id,amount,currency,method,status,transaction_ref,paid_at,payer_name,payer_email,payer_phone,delivery_address,delivery_notes")
+          .eq("merchant_user_id", user.id)
+          .order("created_at", { ascending: false }).limit(25),
       ]);
       setStats(s as any);
       setPayments((list as any) || []);
       setRecentTx((txs as any) || []);
       setLoading(false);
+
+      // Realtime new payments
+      const channel = supabase.channel("qr-pay-tx")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "qr_payment_transactions", filter: `merchant_user_id=eq.${user.id}` },
+          (payload: any) => {
+            setRecentTx(prev => [payload.new as Tx, ...prev].slice(0, 25));
+            toast.success(`New payment: ${payload.new.currency} ${Number(payload.new.amount).toFixed(2)}`);
+          })
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
     })();
   }, []);
 
