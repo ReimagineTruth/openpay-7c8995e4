@@ -134,7 +134,7 @@ export default function QrPayCheckoutPage() {
   };
 
   const payCard = async () => {
-    if (!validateAmount()) return;
+    if (!validateAmount() || !validateDelivery()) return;
     if (!session) { requireSignIn(); return; }
     if (!cardNum || !cardCvc) { toast.error("Enter card details"); return; }
     setPaying(true);
@@ -142,6 +142,7 @@ export default function QrPayCheckoutPage() {
       p_token: token, p_card_number: cardNum, p_cvc: cardCvc,
       p_payer_name: payerName || null, p_payer_email: payerEmail || null,
       p_amount: isFlexible ? chargeAmount : null,
+      ...deliveryPayload(),
     });
     setPaying(false);
     if (error) { toast.error(error.message); return; }
