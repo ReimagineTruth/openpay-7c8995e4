@@ -27,6 +27,10 @@ interface Tx {
   transaction_ref: string;
   paid_at: string | null;
   payer_name: string | null;
+  payer_email: string | null;
+  payer_phone: string | null;
+  delivery_address: string | null;
+  delivery_notes: string | null;
 }
 
 export default function QrPayDashboardPage() {
