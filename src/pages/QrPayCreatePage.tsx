@@ -313,6 +313,36 @@ export default function QrPayCreatePage() {
           </div>
         </CardContent></Card>
 
+        <Card><CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Collect customer details</Label>
+              <p className="text-xs text-muted-foreground">For delivery, contact, or fulfilment.</p>
+            </div>
+            <Switch checked={collectDelivery} onCheckedChange={setCollectDelivery}/>
+          </div>
+          {collectDelivery && (
+            <div className="space-y-2 pt-1">
+              <p className="text-xs text-muted-foreground">Required fields at checkout:</p>
+              {[
+                { k: "name", l: "Full name" },
+                { k: "email", l: "Email" },
+                { k: "phone", l: "Phone" },
+                { k: "address", l: "Shipping address" },
+              ].map(f => (
+                <label key={f.k} className="flex items-center justify-between text-sm">
+                  <span>{f.l}</span>
+                  <Switch checked={deliveryFields.includes(f.k)}
+                          onCheckedChange={(v) =>
+                            setDeliveryFields(prev => v ? Array.from(new Set([...prev, f.k])) : prev.filter(x => x !== f.k))
+                          }/>
+                </label>
+              ))}
+            </div>
+          )}
+        </CardContent></Card>
+
+
         <Button className="w-full bg-paypal-blue hover:bg-paypal-blue/90 text-primary-foreground" disabled={loading || (!isFlexible && total <= 0)} onClick={submit}>
           {loading ? "Creating…" : isFlexible ? `Create ${paymentType === "tip" ? "tip" : "donation"} link` : `Create QR Payment · ${cur} ${total.toFixed(2)}`}
         </Button>
