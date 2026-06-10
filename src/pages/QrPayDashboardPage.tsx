@@ -160,14 +160,20 @@ export default function QrPayDashboardPage() {
           {recentTx.length === 0 ? <p className="text-xs text-muted-foreground">No payments received yet.</p> : (
             <div className="space-y-2">
               {recentTx.map(t => (
-                <Card key={t.id}><CardContent className="p-3 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium">{t.payer_name || "Customer"}</div>
-                    <div className="text-xs text-muted-foreground">{t.method.replace("_"," ")} · {t.transaction_ref}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold">{t.currency} {Number(t.amount).toFixed(2)}</div>
-                    <div className="text-xs text-muted-foreground">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
+                <Card key={t.id}><CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{t.payer_name || "Customer"}</div>
+                      <div className="text-xs text-muted-foreground capitalize">{t.method.replace("_"," ")} · {t.transaction_ref}</div>
+                      {t.payer_email && <div className="text-xs text-muted-foreground truncate">✉ {t.payer_email}</div>}
+                      {t.payer_phone && <div className="text-xs text-muted-foreground">☎ {t.payer_phone}</div>}
+                      {t.delivery_address && <div className="text-xs text-muted-foreground whitespace-pre-line mt-1">📦 {t.delivery_address}</div>}
+                      {t.delivery_notes && <div className="text-xs text-muted-foreground italic">“{t.delivery_notes}”</div>}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-semibold">{t.currency} {Number(t.amount).toFixed(2)}</div>
+                      <div className="text-xs text-muted-foreground">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
+                    </div>
                   </div>
                 </CardContent></Card>
               ))}
