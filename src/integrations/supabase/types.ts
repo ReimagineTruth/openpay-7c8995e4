@@ -4073,21 +4073,38 @@ export type Database = {
           transaction_id: string
         }[]
       }
-      qr_pay__notify_and_email: {
-        Args: {
-          p_amount: number
-          p_delivery_address: string
-          p_delivery_notes: string
-          p_method: string
-          p_pay: Database["public"]["Tables"]["qr_payments"]["Row"]
-          p_payer_email: string
-          p_payer_name: string
-          p_payer_phone: string
-          p_ref: string
-          p_tx_id: string
-        }
-        Returns: undefined
-      }
+      qr_pay__notify_and_email:
+        | {
+            Args: {
+              p_amount: number
+              p_delivery_address: string
+              p_delivery_notes: string
+              p_method: string
+              p_pay: Database["public"]["Tables"]["qr_payments"]["Row"]
+              p_payer_email: string
+              p_payer_name: string
+              p_payer_phone: string
+              p_ref: string
+              p_tx_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_delivery_address: string
+              p_delivery_notes: string
+              p_method: string
+              p_pay: Database["public"]["Tables"]["qr_payments"]["Row"]
+              p_payer_email: string
+              p_payer_name: string
+              p_payer_phone: string
+              p_payer_user_id?: string
+              p_ref: string
+              p_tx_id: string
+            }
+            Returns: undefined
+          }
       qr_pay_calc_charge_amount: {
         Args: {
           p_amount: number
