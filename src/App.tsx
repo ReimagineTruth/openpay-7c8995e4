@@ -389,6 +389,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         <Route path="/help-center" element={<HelpCenter />} />
+        <Route path="/help" element={<HelpWikiPage />} />
         <Route path="/notifications" element={
           <ProtectedRoute>
             <NotificationsPage />
