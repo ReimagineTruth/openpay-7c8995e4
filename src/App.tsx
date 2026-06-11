@@ -41,6 +41,7 @@ import RequestMoney from "./pages/RequestMoney";
 import DisputesPage from "./pages/DisputesPage";
 import SendInvoice from "./pages/SendInvoice";
 import HelpCenter from "./pages/HelpCenter";
+import HelpWikiPage from "./pages/HelpWikiPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
