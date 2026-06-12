@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
+import QrPayIntegrations from "@/components/qr-pay/QrPayIntegrations";
 
 interface Item { name: string; description?: string; quantity: number; unit_price: number; image_url?: string }
 
