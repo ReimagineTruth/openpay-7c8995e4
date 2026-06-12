@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
+import QrPayIntegrations from "@/components/qr-pay/QrPayIntegrations";
 
 interface Item { name: string; description?: string; quantity: number; unit_price: number; image_url?: string }
 
@@ -165,6 +166,7 @@ export default function QrPayCreatePage() {
             </div>
             <Button variant="ghost" className="mt-2 w-full" onClick={() => window.open(url, "_blank")}>Open checkout preview</Button>
           </CardContent></Card>
+          <QrPayIntegrations url={url} amount={created.total} currency={cur} title={title || "OpenPay Checkout"} />
           <Button variant="outline" className="w-full" onClick={() => navigate("/qr-pay")}>Back to dashboard</Button>
           <Button variant="ghost" className="w-full" onClick={() => { setCreated(null); setItems([{ name: "", quantity: 1, unit_price: 0 }]); setTitle(""); setDescription(""); setCoverImage(""); }}>Create another</Button>
         </div>
