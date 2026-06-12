@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Copy, ExternalLink, QrCode, TrendingUp, Wallet, CreditCard } from "lucide-react";
+import { ArrowLeft, Plus, Copy, ExternalLink, QrCode, TrendingUp, Wallet, CreditCard, Eye, Trash2, BarChart3, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import BottomNav from "@/components/BottomNav";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 interface QrPay {
   id: string;
@@ -33,45 +41,64 @@ interface Tx {
   delivery_notes: string | null;
 }
 
+interface Analytics {
+  daily: { date: string; label: string; revenue: number; payments: number }[];
+  top: { id: string; token: string; title: string; currency: string; revenue: number; payments: number }[];
+  by_method: Record<string, number>;
+  totals: { total_revenue: number; total_payments: number; avg_payment: number; unique_customers: number };
+}
+
 export default function QrPayDashboardPage() {
   const navigate = useNavigate();
   const { format } = useCurrency();
   const [stats, setStats] = useState<{ total: number; today: number; week: number; month: number; count: number; by_method: Record<string, number> } | null>(null);
   const [payments, setPayments] = useState<QrPay[]>([]);
   const [recentTx, setRecentTx] = useState<Tx[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [previewToken, setPreviewToken] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<QrPay | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+    const [{ data: s }, { data: list }, { data: txs }, { data: an }] = await Promise.all([
+      (supabase as any).rpc("qr_pay_merchant_stats"),
+      (supabase as any).from("qr_payments")
+        .select("id,token,title,currency,total,status,created_at")
+        .eq("merchant_user_id", user.id)
+        .order("created_at", { ascending: false }).limit(50),
+      (supabase as any).from("qr_payment_transactions")
+        .select("id,amount,currency,method,status,transaction_ref,paid_at,payer_name,payer_email,payer_phone,delivery_address,delivery_notes")
+        .eq("merchant_user_id", user.id)
+        .order("created_at", { ascending: false }).limit(25),
+      (supabase as any).rpc("qr_pay_analytics"),
+    ]);
+    setStats(s as any);
+    setPayments((list as any) || []);
+    setRecentTx((txs as any) || []);
+    setAnalytics(an as any);
+    setLoading(false);
+  };
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
+      await load();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-      const [{ data: s }, { data: list }, { data: txs }] = await Promise.all([
-        (supabase as any).rpc("qr_pay_merchant_stats"),
-        (supabase as any).from("qr_payments")
-          .select("id,token,title,currency,total,status,created_at")
-          .eq("merchant_user_id", user.id)
-          .order("created_at", { ascending: false }).limit(50),
-        (supabase as any).from("qr_payment_transactions")
-          .select("id,amount,currency,method,status,transaction_ref,paid_at,payer_name,payer_email,payer_phone,delivery_address,delivery_notes")
-          .eq("merchant_user_id", user.id)
-          .order("created_at", { ascending: false }).limit(25),
-      ]);
-      setStats(s as any);
-      setPayments((list as any) || []);
-      setRecentTx((txs as any) || []);
-      setLoading(false);
-
-      // Realtime new payments
+      if (!user) return;
       const channel = supabase.channel("qr-pay-tx")
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "qr_payment_transactions", filter: `merchant_user_id=eq.${user.id}` },
           (payload: any) => {
             setRecentTx(prev => [payload.new as Tx, ...prev].slice(0, 25));
             toast.success(`New payment: ${payload.new.currency} ${Number(payload.new.amount).toFixed(2)}`);
+            load();
           })
         .subscribe();
       return () => { supabase.removeChannel(channel); };
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const copy = (token: string) => {
@@ -79,6 +106,23 @@ export default function QrPayDashboardPage() {
     navigator.clipboard.writeText(url);
     toast.success("Link copied");
   };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    const { data, error } = await (supabase as any).rpc("qr_pay_delete", { p_id: confirmDelete.id });
+    setDeleting(false);
+    if (error || !data?.success) {
+      toast.error(error?.message || data?.error || "Failed to delete");
+      return;
+    }
+    toast.success("QR payment deleted");
+    setPayments(prev => prev.filter(p => p.id !== confirmDelete.id));
+    setConfirmDelete(null);
+    load();
+  };
+
+  const previewUrl = previewToken ? `${window.location.origin}/qr-pay/${previewToken}` : "";
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -120,6 +164,80 @@ export default function QrPayDashboardPage() {
           </div>
         </CardContent></Card>
 
+        {/* Analytics */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-paypal-blue" />
+                <h2 className="text-sm font-semibold">Analytics — last 30 days</h2>
+              </div>
+            </div>
+
+            {analytics?.totals && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                <div className="rounded-lg bg-muted/40 p-2">
+                  <div className="text-[10px] text-muted-foreground">Revenue</div>
+                  <div className="font-semibold text-sm">{format(Number(analytics.totals.total_revenue) || 0)}</div>
+                </div>
+                <div className="rounded-lg bg-muted/40 p-2">
+                  <div className="text-[10px] text-muted-foreground">Payments</div>
+                  <div className="font-semibold text-sm">{analytics.totals.total_payments}</div>
+                </div>
+                <div className="rounded-lg bg-muted/40 p-2">
+                  <div className="text-[10px] text-muted-foreground">Avg payment</div>
+                  <div className="font-semibold text-sm">{format(Number(analytics.totals.avg_payment) || 0)}</div>
+                </div>
+                <div className="rounded-lg bg-muted/40 p-2">
+                  <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3"/>Customers</div>
+                  <div className="font-semibold text-sm">{analytics.totals.unique_customers}</div>
+                </div>
+              </div>
+            )}
+
+            <div className="h-40 -mx-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={analytics?.daily || []} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="qrRev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0070ba" stopOpacity={0.5}/>
+                      <stop offset="95%" stopColor="#0070ba" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2}/>
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={4} />
+                  <YAxis tick={{ fontSize: 10 }} width={36} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                    formatter={(v: any, name: string) => [name === "revenue" ? format(Number(v) || 0) : v, name === "revenue" ? "Revenue" : "Payments"]}
+                  />
+                  <Area type="monotone" dataKey="revenue" stroke="#0070ba" fill="url(#qrRev)" strokeWidth={2}/>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {analytics?.top && analytics.top.length > 0 && (
+              <div className="mt-4">
+                <div className="text-xs font-semibold mb-2 text-muted-foreground">Top performing</div>
+                <div className="space-y-1">
+                  {analytics.top.map((t, i) => (
+                    <div key={t.id} className="flex items-center justify-between text-xs bg-muted/30 rounded-md p-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-mono text-muted-foreground">#{i+1}</span>
+                        <span className="truncate font-medium">{t.title || "Untitled"}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-muted-foreground">{t.payments}×</span>
+                        <span className="font-semibold">{t.currency} {Number(t.revenue).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Your QR payments */}
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -136,8 +254,8 @@ export default function QrPayDashboardPage() {
             ) : (
               <div className="space-y-2">
                 {payments.map(p => (
-                  <Card key={p.id}><CardContent className="p-3 flex items-center gap-3">
-                    <div className="bg-muted rounded-lg p-2"><QrCode className="h-5 w-5"/></div>
+                  <Card key={p.id}><CardContent className="p-3 flex items-center gap-2">
+                    <div className="bg-muted rounded-lg p-2 shrink-0"><QrCode className="h-5 w-5"/></div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <div className="font-medium truncate">{p.title || "Untitled"}</div>
@@ -145,8 +263,10 @@ export default function QrPayDashboardPage() {
                       </div>
                       <div className="text-xs text-muted-foreground">{p.currency} {Number(p.total).toFixed(2)}</div>
                     </div>
+                    <Button variant="ghost" size="icon" onClick={() => setPreviewToken(p.token)} title="Preview"><Eye className="h-4 w-4"/></Button>
                     <Button variant="ghost" size="icon" onClick={() => copy(p.token)} title="Copy link"><Copy className="h-4 w-4"/></Button>
                     <Button variant="ghost" size="icon" onClick={() => window.open(`/qr-pay/${p.token}`, "_blank")} title="Open"><ExternalLink className="h-4 w-4"/></Button>
+                    <Button variant="ghost" size="icon" onClick={() => setConfirmDelete(p)} title="Delete" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
                   </CardContent></Card>
                 ))}
               </div>
@@ -181,6 +301,41 @@ export default function QrPayDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Preview dialog */}
+      <Dialog open={!!previewToken} onOpenChange={(o) => !o && setPreviewToken(null)}>
+        <DialogContent className="max-w-md p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="text-base">Checkout preview</DialogTitle>
+          </DialogHeader>
+          <div className="px-4 pb-2 flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => previewToken && copy(previewToken)}><Copy className="h-3 w-3 mr-1"/>Copy link</Button>
+            <Button size="sm" onClick={() => previewToken && window.open(`/qr-pay/${previewToken}`, "_blank")}><ExternalLink className="h-3 w-3 mr-1"/>Open</Button>
+          </div>
+          {previewToken && (
+            <iframe src={previewUrl} title="QR Pay preview" className="w-full h-[560px] border-t bg-white" />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{confirmDelete?.title || "Untitled"}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the QR payment and its associated transaction records. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <BottomNav active="menu" />
     </div>
   );

@@ -4105,6 +4105,7 @@ export type Database = {
             }
             Returns: undefined
           }
+      qr_pay_analytics: { Args: never; Returns: Json }
       qr_pay_calc_charge_amount: {
         Args: {
           p_amount: number
@@ -4178,6 +4179,7 @@ export type Database = {
         }
         Returns: Json
       }
+      qr_pay_delete: { Args: { p_id: string }; Returns: Json }
       qr_pay_gen_token: { Args: never; Returns: string }
       qr_pay_get_by_token: { Args: { p_token: string }; Returns: Json }
       qr_pay_merchant_stats: { Args: never; Returns: Json }
