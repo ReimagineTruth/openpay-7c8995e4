@@ -61,7 +61,7 @@ interface Analytics {
 export default function QrPayDashboardPage() {
   const navigate = useNavigate();
   const { format } = useCurrency();
-  const [stats, setStats] = useState<{ total: number; today: number; week: number; month: number; count: number; by_method: Record<string, number> } | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [payments, setPayments] = useState<QrPay[]>([]);
   const [recentTx, setRecentTx] = useState<Tx[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -69,9 +69,16 @@ export default function QrPayDashboardPage() {
   const [previewToken, setPreviewToken] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<QrPay | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [range, setRange] = useState<Range>("month");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [itemsCache, setItemsCache] = useState<Record<string, QrItem[]>>({});
+  const [refreshing, setRefreshing] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const rangeLabel = useMemo(() => ({
+    today: "today", week: "this week", month: "last 30 days", year: "this year", all: "all time"
+  } as Record<Range, string>)[range], [range]);
+
+  const load = async (r: Range = range) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
     const [{ data: s }, { data: list }, { data: txs }, { data: an }] = await Promise.all([
@@ -81,10 +88,10 @@ export default function QrPayDashboardPage() {
         .eq("merchant_user_id", user.id)
         .order("created_at", { ascending: false }).limit(50),
       (supabase as any).from("qr_payment_transactions")
-        .select("id,amount,currency,method,status,transaction_ref,paid_at,payer_name,payer_email,payer_phone,delivery_address,delivery_notes")
+        .select("id,qr_payment_id,amount,currency,method,status,transaction_ref,paid_at,payer_name,payer_email,payer_phone,delivery_address,delivery_notes")
         .eq("merchant_user_id", user.id)
-        .order("created_at", { ascending: false }).limit(25),
-      (supabase as any).rpc("qr_pay_analytics"),
+        .order("created_at", { ascending: false }).limit(50),
+      (supabase as any).rpc("qr_pay_analytics", { p_range: r }),
     ]);
     setStats(s as any);
     setPayments((list as any) || []);
@@ -93,23 +100,47 @@ export default function QrPayDashboardPage() {
     setLoading(false);
   };
 
+  const refresh = async () => {
+    setRefreshing(true);
+    await load(range);
+    setRefreshing(false);
+  };
+
+  useEffect(() => { load(range); /* eslint-disable-next-line */ }, [range]);
+
   useEffect(() => {
+    let channel: any;
     (async () => {
-      await load();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const channel = supabase.channel("qr-pay-tx")
+      channel = supabase.channel("qr-pay-tx")
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "qr_payment_transactions", filter: `merchant_user_id=eq.${user.id}` },
           (payload: any) => {
-            setRecentTx(prev => [payload.new as Tx, ...prev].slice(0, 25));
+            setRecentTx(prev => [payload.new as Tx, ...prev].slice(0, 50));
             toast.success(`New payment: ${payload.new.currency} ${Number(payload.new.amount).toFixed(2)}`);
-            load();
+            load(range);
           })
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` },
+          () => { load(range); })
         .subscribe();
-      return () => { supabase.removeChannel(channel); };
     })();
+    return () => { if (channel) supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const toggleExpand = async (tx: Tx) => {
+    const key = tx.id;
+    if (expanded === key) { setExpanded(null); return; }
+    setExpanded(key);
+    if (!itemsCache[tx.qr_payment_id]) {
+      const { data } = await (supabase as any)
+        .from("qr_payment_items")
+        .select("id,name,quantity,unit_price,line_total,image_url")
+        .eq("qr_payment_id", tx.qr_payment_id);
+      setItemsCache(prev => ({ ...prev, [tx.qr_payment_id]: (data as any) || [] }));
+    }
+  };
+
 
   const copy = (token: string) => {
     const url = `${window.location.origin}/qr-pay/${token}`;
