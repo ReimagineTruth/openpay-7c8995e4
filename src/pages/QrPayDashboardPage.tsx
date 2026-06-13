@@ -174,6 +174,9 @@ export default function QrPayDashboardPage() {
             <h1 className="text-xl font-bold">QR Pay</h1>
             <p className="text-sm opacity-90">Accept payments with sharable QR codes</p>
           </div>
+          <Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/20" onClick={refresh} title="Refresh">
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </Button>
           <Button size="sm" className="bg-white text-paypal-blue hover:bg-white/90" onClick={() => navigate("/qr-pay/new")}>
             <Plus className="h-4 w-4 mr-1" /> New
           </Button>
@@ -181,38 +184,57 @@ export default function QrPayDashboardPage() {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Revenue cards */}
+        {/* Top KPI cards */}
         <div className="grid grid-cols-2 gap-3">
+          <Card className="bg-gradient-to-br from-paypal-blue to-[#0073e6] text-white border-0">
+            <CardContent className="p-4">
+              <div className="text-xs opacity-90 flex items-center gap-1"><Wallet className="h-3 w-3"/>Available balance</div>
+              <div className="text-2xl font-bold mt-1">{format(stats?.available_balance || 0)}</div>
+              <div className="text-[11px] opacity-80 mt-1">Updates in realtime</div>
+            </CardContent>
+          </Card>
           <Card><CardContent className="p-4">
             <div className="text-xs text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3"/>Total revenue</div>
-            <div className="text-2xl font-bold mt-1">{format(stats?.total || 0)}</div>
+            <div className="text-2xl font-bold mt-1 text-foreground">{format(stats?.total || 0)}</div>
             <div className="text-xs text-muted-foreground mt-1">{stats?.count || 0} payments</div>
           </CardContent></Card>
-          <Card><CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Today</div>
-            <div className="text-2xl font-bold mt-1">{format(stats?.today || 0)}</div>
-            <div className="text-xs text-muted-foreground mt-1">This month: {format(stats?.month || 0)}</div>
-          </CardContent></Card>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {([["today","Today",stats?.today],["week","Week",stats?.week],["month","Month",stats?.month],["year","Year",stats?.year]] as const).map(([k,label,val]) => (
+            <Card key={k}><CardContent className="p-2 text-center">
+              <div className="text-[10px] text-muted-foreground">{label}</div>
+              <div className="text-sm font-semibold text-foreground">{format(Number(val) || 0)}</div>
+            </CardContent></Card>
+          ))}
         </div>
 
         {/* Method breakdown */}
         <Card><CardContent className="p-4">
-          <div className="text-sm font-semibold mb-3">By method</div>
+          <div className="text-sm font-semibold mb-3 text-foreground">By method</div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div><div className="text-xs text-muted-foreground">Pi</div><div className="font-semibold">{format(stats?.by_method?.pi || 0)}</div></div>
-            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Wallet className="h-3 w-3"/>Wallet</div><div className="font-semibold">{format(stats?.by_method?.wallet || 0)}</div></div>
-            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><CreditCard className="h-3 w-3"/>Card</div><div className="font-semibold">{format(stats?.by_method?.virtual_card || 0)}</div></div>
+            <div><div className="text-xs text-muted-foreground">Pi</div><div className="font-semibold text-foreground">{format(stats?.by_method?.pi || 0)}</div></div>
+            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Wallet className="h-3 w-3"/>Wallet</div><div className="font-semibold text-foreground">{format(stats?.by_method?.wallet || 0)}</div></div>
+            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><CreditCard className="h-3 w-3"/>Card</div><div className="font-semibold text-foreground">{format(stats?.by_method?.virtual_card || 0)}</div></div>
           </div>
         </CardContent></Card>
 
         {/* Analytics */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-paypal-blue" />
-                <h2 className="text-sm font-semibold">Analytics — last 30 days</h2>
+                <h2 className="text-sm font-semibold text-foreground">Analytics — {rangeLabel}</h2>
               </div>
+              <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="today" className="text-[11px] px-2 h-6">Today</TabsTrigger>
+                  <TabsTrigger value="week" className="text-[11px] px-2 h-6">Week</TabsTrigger>
+                  <TabsTrigger value="month" className="text-[11px] px-2 h-6">Month</TabsTrigger>
+                  <TabsTrigger value="year" className="text-[11px] px-2 h-6">Year</TabsTrigger>
+                  <TabsTrigger value="all" className="text-[11px] px-2 h-6">All</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
             {analytics?.totals && (
