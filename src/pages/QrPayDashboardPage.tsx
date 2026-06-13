@@ -27,8 +27,10 @@ interface QrPay {
   status: string;
   created_at: string;
 }
+interface QrItem { id: string; name: string; quantity: number; unit_price: number; line_total: number; image_url: string | null; }
 interface Tx {
   id: string;
+  qr_payment_id: string;
   amount: number;
   currency: string;
   method: string;
@@ -40,6 +42,13 @@ interface Tx {
   payer_phone: string | null;
   delivery_address: string | null;
   delivery_notes: string | null;
+}
+
+type Range = "today" | "week" | "month" | "year" | "all";
+
+interface Stats {
+  total: number; today: number; week: number; month: number; year: number;
+  count: number; by_method: Record<string, number>; available_balance: number;
 }
 
 interface Analytics {
