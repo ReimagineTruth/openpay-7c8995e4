@@ -337,29 +337,103 @@ export default function QrPayDashboardPage() {
           }
         </div>
 
-        {/* Recent transactions */}
+        {/* Recent transactions — Shopify-style expandable orders */}
         <div>
-          <h2 className="text-sm font-semibold mb-2">Recent payments received</h2>
-          {recentTx.length === 0 ? <p className="text-xs text-muted-foreground">No payments received yet.</p> : (
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-foreground">Orders & customer details</h2>
+            <span className="text-[11px] text-muted-foreground">{recentTx.length} recent</span>
+          </div>
+          {recentTx.length === 0 ? <p className="text-xs text-muted-foreground">No orders received yet.</p> : (
             <div className="space-y-2">
-              {recentTx.map(t => (
-                <Card key={t.id}><CardContent className="p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium truncate">{t.payer_name || "Customer"}</div>
-                      <div className="text-xs text-muted-foreground capitalize">{t.method.replace("_"," ")} · {t.transaction_ref}</div>
-                      {t.payer_email && <div className="text-xs text-muted-foreground truncate">✉ {t.payer_email}</div>}
-                      {t.payer_phone && <div className="text-xs text-muted-foreground">☎ {t.payer_phone}</div>}
-                      {t.delivery_address && <div className="text-xs text-muted-foreground whitespace-pre-line mt-1">📦 {t.delivery_address}</div>}
-                      {t.delivery_notes && <div className="text-xs text-muted-foreground italic">“{t.delivery_notes}”</div>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-semibold">{t.currency} {Number(t.amount).toFixed(2)}</div>
-                      <div className="text-xs text-muted-foreground">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
-                    </div>
-                  </div>
-                </CardContent></Card>
-              ))}
+              {recentTx.map(t => {
+                const open = expanded === t.id;
+                const items = itemsCache[t.qr_payment_id] || [];
+                const linked = payments.find(p => p.id === t.qr_payment_id);
+                return (
+                  <Card key={t.id} className="overflow-hidden">
+                    <button type="button" onClick={() => toggleExpand(t)} className="w-full text-left">
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Package className="h-4 w-4 text-paypal-blue shrink-0" />
+                              <div className="text-sm font-semibold truncate text-foreground">{t.payer_name || "Customer"}</div>
+                              <Badge variant={t.status === "succeeded" ? "default" : "secondary"} className="text-[10px]">{t.status}</Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground capitalize mt-0.5">
+                              {linked?.title || "QR payment"} · {t.method.replace("_"," ")} · #{t.transaction_ref}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="font-semibold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</div>
+                            <div className="text-[11px] text-muted-foreground">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
+                            <div className="text-[11px] text-paypal-blue flex items-center justify-end gap-0.5 mt-0.5">
+                              {open ? <>Hide<ChevronUp className="h-3 w-3"/></> : <>Details<ChevronDown className="h-3 w-3"/></>}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </button>
+                    {open && (
+                      <div className="border-t bg-muted/30 px-3 py-3 space-y-3">
+                        {/* Customer */}
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Customer</div>
+                          <div className="space-y-1 text-xs text-foreground">
+                            {t.payer_email && <div className="flex items-center gap-2"><Mail className="h-3 w-3 text-muted-foreground"/>{t.payer_email}</div>}
+                            {t.payer_phone && <div className="flex items-center gap-2"><Phone className="h-3 w-3 text-muted-foreground"/>{t.payer_phone}</div>}
+                            {t.delivery_address && <div className="flex items-start gap-2"><MapPin className="h-3 w-3 text-muted-foreground mt-0.5"/><span className="whitespace-pre-line">{t.delivery_address}</span></div>}
+                            {t.delivery_notes && <div className="flex items-start gap-2"><StickyNote className="h-3 w-3 text-muted-foreground mt-0.5"/><span className="italic">{t.delivery_notes}</span></div>}
+                            {!t.payer_email && !t.payer_phone && !t.delivery_address && !t.delivery_notes && (
+                              <div className="text-muted-foreground">No customer details captured.</div>
+                            )}
+                          </div>
+                        </div>
+                        {/* Items */}
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Items</div>
+                          {items.length === 0 ? (
+                            <div className="text-xs text-muted-foreground">No itemized line items.</div>
+                          ) : (
+                            <div className="space-y-1">
+                              {items.map(it => (
+                                <div key={it.id} className="flex items-center gap-2 text-xs">
+                                  {it.image_url ? (
+                                    <img src={it.image_url} alt={it.name} className="h-8 w-8 rounded object-cover border" />
+                                  ) : (
+                                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center"><Package className="h-3 w-3 text-muted-foreground"/></div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium truncate text-foreground">{it.name}</div>
+                                    <div className="text-muted-foreground">{it.quantity} × {t.currency} {Number(it.unit_price).toFixed(2)}</div>
+                                  </div>
+                                  <div className="font-semibold text-foreground">{t.currency} {Number(it.line_total).toFixed(2)}</div>
+                                </div>
+                              ))}
+                              <div className="flex justify-between border-t pt-1 mt-1 text-xs">
+                                <span className="text-muted-foreground">Total</span>
+                                <span className="font-bold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          {linked && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/qr-pay/${linked.token}`, "_blank"); }}>
+                              <ExternalLink className="h-3 w-3 mr-1"/>View checkout
+                            </Button>
+                          )}
+                          {t.payer_email && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${t.payer_email}?subject=Your order ${t.transaction_ref}`; }}>
+                              <Mail className="h-3 w-3 mr-1"/>Email customer
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
