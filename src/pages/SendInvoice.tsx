@@ -627,7 +627,7 @@ const SendInvoice = () => {
             onChange={(e) => setDescription(e.target.value)}
             className="bg-white text-gray-800 placeholder:text-gray-400"
           />
-          <Button onClick={handleCreate} disabled={loading || !recipientId} className="w-full">
+          <Button onClick={handleCreate} disabled={loading || !recipientId} className="w-full h-12 bg-paypal-blue text-white font-semibold hover:bg-[#005ea6] disabled:opacity-60 disabled:bg-paypal-blue disabled:text-white">
             {loading ? "Sending..." : "Send Invoice"}
           </Button>
         </div>
