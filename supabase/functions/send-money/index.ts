@@ -60,39 +60,49 @@ serve(async (req: Request) => {
     if (!receiverId) throw new Error("No recipient specified");
     if (receiverId === user.id) throw new Error("Cannot send to yourself");
 
-    const transferPayload = {
+    // Build an enriched note that preserves FX context, since the installed
+    // transfer_funds(p_sender_id, p_receiver_id, p_amount, p_note) signature
+    // does not accept currency columns.
+    const fxParts: string[] = [];
+    if (typeof sender_amount === "number" && typeof sender_currency_code === "string") {
+      fxParts.push(`Paid ${Number(sender_amount).toFixed(2)} ${sender_currency_code}`);
+    }
+    if (typeof receiver_amount === "number" && typeof receiver_currency_code === "string") {
+      fxParts.push(`→ ${Number(receiver_amount).toFixed(2)} ${receiver_currency_code}`);
+    }
+    const baseNote = (note || "").toString();
+    const enrichedNote = fxParts.length
+      ? `${baseNote}${baseNote ? " · " : ""}${fxParts.join(" ")}`
+      : baseNote;
+
+    let transactionId: unknown = null;
+    let transferError: unknown = null;
+
+    // Try the rich 9-arg overload first (if present), then fall back to the
+    // canonical 4-arg signature that always exists.
+    const primary = await supabase.rpc("transfer_funds", {
       p_sender_id: user.id,
       p_receiver_id: receiverId,
       p_amount: parsedAmount,
-      p_note: note || "",
+      p_note: enrichedNote,
       p_currency_code: typeof currency_code === "string" ? currency_code : "OUSD",
       p_sender_amount: typeof sender_amount === "number" ? sender_amount : null,
       p_sender_currency_code: typeof sender_currency_code === "string" ? sender_currency_code : null,
       p_receiver_amount: typeof receiver_amount === "number" ? receiver_amount : null,
       p_receiver_currency_code: typeof receiver_currency_code === "string" ? receiver_currency_code : null,
-    };
-
-    let transactionId: unknown = null;
-    let transferError: unknown = null;
-
-    const primary = await supabase.rpc("transfer_funds", transferPayload);
+    });
     transactionId = primary.data;
     transferError = primary.error;
 
     if (transferError) {
       const msg = (transferError as any)?.message || "";
-      const shouldFallback = /function transfer_funds|does not exist|schema cache/i.test(msg);
+      const shouldFallback = /function .*transfer_funds|does not exist|schema cache|PGRST|no function matches/i.test(msg);
       if (shouldFallback) {
         const legacy = await supabase.rpc("transfer_funds", {
           p_sender_id: user.id,
           p_receiver_id: receiverId,
           p_amount: parsedAmount,
-          p_note: note || "",
-          p_currency_code: typeof currency_code === "string" ? currency_code : "OUSD",
-          p_sender_amount: typeof sender_amount === "number" ? sender_amount : null,
-          p_sender_currency_code: typeof sender_currency_code === "string" ? sender_currency_code : null,
-          p_receiver_amount: typeof receiver_amount === "number" ? receiver_amount : null,
-          p_receiver_currency_code: typeof receiver_currency_code === "string" ? receiver_currency_code : null,
+          p_note: enrichedNote,
         });
         transactionId = legacy.data;
         transferError = legacy.error;

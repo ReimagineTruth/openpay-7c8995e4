@@ -4105,7 +4105,7 @@ export type Database = {
             }
             Returns: undefined
           }
-      qr_pay_analytics: { Args: never; Returns: Json }
+      qr_pay_analytics: { Args: { p_range?: string }; Returns: Json }
       qr_pay_calc_charge_amount: {
         Args: {
           p_amount: number

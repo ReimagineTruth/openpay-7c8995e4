@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Copy, ExternalLink, QrCode, TrendingUp, Wallet, CreditCard, Eye, Trash2, BarChart3, Users } from "lucide-react";
+import { ArrowLeft, Plus, Copy, ExternalLink, QrCode, TrendingUp, Wallet, CreditCard, Eye, Trash2, BarChart3, Users, ChevronDown, ChevronUp, Package, Mail, Phone, MapPin, StickyNote, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -26,8 +27,10 @@ interface QrPay {
   status: string;
   created_at: string;
 }
+interface QrItem { id: string; name: string; quantity: number; unit_price: number; line_total: number; image_url: string | null; }
 interface Tx {
   id: string;
+  qr_payment_id: string;
   amount: number;
   currency: string;
   method: string;
@@ -41,6 +44,13 @@ interface Tx {
   delivery_notes: string | null;
 }
 
+type Range = "today" | "week" | "month" | "year" | "all";
+
+interface Stats {
+  total: number; today: number; week: number; month: number; year: number;
+  count: number; by_method: Record<string, number>; available_balance: number;
+}
+
 interface Analytics {
   daily: { date: string; label: string; revenue: number; payments: number }[];
   top: { id: string; token: string; title: string; currency: string; revenue: number; payments: number }[];
@@ -51,7 +61,7 @@ interface Analytics {
 export default function QrPayDashboardPage() {
   const navigate = useNavigate();
   const { format } = useCurrency();
-  const [stats, setStats] = useState<{ total: number; today: number; week: number; month: number; count: number; by_method: Record<string, number> } | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [payments, setPayments] = useState<QrPay[]>([]);
   const [recentTx, setRecentTx] = useState<Tx[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -59,9 +69,16 @@ export default function QrPayDashboardPage() {
   const [previewToken, setPreviewToken] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<QrPay | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [range, setRange] = useState<Range>("month");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [itemsCache, setItemsCache] = useState<Record<string, QrItem[]>>({});
+  const [refreshing, setRefreshing] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const rangeLabel = useMemo(() => ({
+    today: "today", week: "this week", month: "last 30 days", year: "this year", all: "all time"
+  } as Record<Range, string>)[range], [range]);
+
+  const load = async (r: Range = range) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
     const [{ data: s }, { data: list }, { data: txs }, { data: an }] = await Promise.all([
@@ -71,10 +88,10 @@ export default function QrPayDashboardPage() {
         .eq("merchant_user_id", user.id)
         .order("created_at", { ascending: false }).limit(50),
       (supabase as any).from("qr_payment_transactions")
-        .select("id,amount,currency,method,status,transaction_ref,paid_at,payer_name,payer_email,payer_phone,delivery_address,delivery_notes")
+        .select("id,qr_payment_id,amount,currency,method,status,transaction_ref,paid_at,payer_name,payer_email,payer_phone,delivery_address,delivery_notes")
         .eq("merchant_user_id", user.id)
-        .order("created_at", { ascending: false }).limit(25),
-      (supabase as any).rpc("qr_pay_analytics"),
+        .order("created_at", { ascending: false }).limit(50),
+      (supabase as any).rpc("qr_pay_analytics", { p_range: r }),
     ]);
     setStats(s as any);
     setPayments((list as any) || []);
@@ -83,23 +100,47 @@ export default function QrPayDashboardPage() {
     setLoading(false);
   };
 
+  const refresh = async () => {
+    setRefreshing(true);
+    await load(range);
+    setRefreshing(false);
+  };
+
+  useEffect(() => { load(range); /* eslint-disable-next-line */ }, [range]);
+
   useEffect(() => {
+    let channel: any;
     (async () => {
-      await load();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const channel = supabase.channel("qr-pay-tx")
+      channel = supabase.channel("qr-pay-tx")
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "qr_payment_transactions", filter: `merchant_user_id=eq.${user.id}` },
           (payload: any) => {
-            setRecentTx(prev => [payload.new as Tx, ...prev].slice(0, 25));
+            setRecentTx(prev => [payload.new as Tx, ...prev].slice(0, 50));
             toast.success(`New payment: ${payload.new.currency} ${Number(payload.new.amount).toFixed(2)}`);
-            load();
+            load(range);
           })
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` },
+          () => { load(range); })
         .subscribe();
-      return () => { supabase.removeChannel(channel); };
     })();
+    return () => { if (channel) supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const toggleExpand = async (tx: Tx) => {
+    const key = tx.id;
+    if (expanded === key) { setExpanded(null); return; }
+    setExpanded(key);
+    if (!itemsCache[tx.qr_payment_id]) {
+      const { data } = await (supabase as any)
+        .from("qr_payment_items")
+        .select("id,name,quantity,unit_price,line_total,image_url")
+        .eq("qr_payment_id", tx.qr_payment_id);
+      setItemsCache(prev => ({ ...prev, [tx.qr_payment_id]: (data as any) || [] }));
+    }
+  };
+
 
   const copy = (token: string) => {
     const url = `${window.location.origin}/qr-pay/${token}`;
@@ -133,6 +174,9 @@ export default function QrPayDashboardPage() {
             <h1 className="text-xl font-bold">QR Pay</h1>
             <p className="text-sm opacity-90">Accept payments with sharable QR codes</p>
           </div>
+          <Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/20" onClick={refresh} title="Refresh">
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </Button>
           <Button size="sm" className="bg-white text-paypal-blue hover:bg-white/90" onClick={() => navigate("/qr-pay/new")}>
             <Plus className="h-4 w-4 mr-1" /> New
           </Button>
@@ -140,38 +184,57 @@ export default function QrPayDashboardPage() {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Revenue cards */}
+        {/* Top KPI cards */}
         <div className="grid grid-cols-2 gap-3">
+          <Card className="bg-gradient-to-br from-paypal-blue to-[#0073e6] text-white border-0">
+            <CardContent className="p-4">
+              <div className="text-xs opacity-90 flex items-center gap-1"><Wallet className="h-3 w-3"/>Available balance</div>
+              <div className="text-2xl font-bold mt-1">{format(stats?.available_balance || 0)}</div>
+              <div className="text-[11px] opacity-80 mt-1">Updates in realtime</div>
+            </CardContent>
+          </Card>
           <Card><CardContent className="p-4">
             <div className="text-xs text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3"/>Total revenue</div>
-            <div className="text-2xl font-bold mt-1">{format(stats?.total || 0)}</div>
+            <div className="text-2xl font-bold mt-1 text-foreground">{format(stats?.total || 0)}</div>
             <div className="text-xs text-muted-foreground mt-1">{stats?.count || 0} payments</div>
           </CardContent></Card>
-          <Card><CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Today</div>
-            <div className="text-2xl font-bold mt-1">{format(stats?.today || 0)}</div>
-            <div className="text-xs text-muted-foreground mt-1">This month: {format(stats?.month || 0)}</div>
-          </CardContent></Card>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {([["today","Today",stats?.today],["week","Week",stats?.week],["month","Month",stats?.month],["year","Year",stats?.year]] as const).map(([k,label,val]) => (
+            <Card key={k}><CardContent className="p-2 text-center">
+              <div className="text-[10px] text-muted-foreground">{label}</div>
+              <div className="text-sm font-semibold text-foreground">{format(Number(val) || 0)}</div>
+            </CardContent></Card>
+          ))}
         </div>
 
         {/* Method breakdown */}
         <Card><CardContent className="p-4">
-          <div className="text-sm font-semibold mb-3">By method</div>
+          <div className="text-sm font-semibold mb-3 text-foreground">By method</div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div><div className="text-xs text-muted-foreground">Pi</div><div className="font-semibold">{format(stats?.by_method?.pi || 0)}</div></div>
-            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Wallet className="h-3 w-3"/>Wallet</div><div className="font-semibold">{format(stats?.by_method?.wallet || 0)}</div></div>
-            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><CreditCard className="h-3 w-3"/>Card</div><div className="font-semibold">{format(stats?.by_method?.virtual_card || 0)}</div></div>
+            <div><div className="text-xs text-muted-foreground">Pi</div><div className="font-semibold text-foreground">{format(stats?.by_method?.pi || 0)}</div></div>
+            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Wallet className="h-3 w-3"/>Wallet</div><div className="font-semibold text-foreground">{format(stats?.by_method?.wallet || 0)}</div></div>
+            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><CreditCard className="h-3 w-3"/>Card</div><div className="font-semibold text-foreground">{format(stats?.by_method?.virtual_card || 0)}</div></div>
           </div>
         </CardContent></Card>
 
         {/* Analytics */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-paypal-blue" />
-                <h2 className="text-sm font-semibold">Analytics — last 30 days</h2>
+                <h2 className="text-sm font-semibold text-foreground">Analytics — {rangeLabel}</h2>
               </div>
+              <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="today" className="text-[11px] px-2 h-6">Today</TabsTrigger>
+                  <TabsTrigger value="week" className="text-[11px] px-2 h-6">Week</TabsTrigger>
+                  <TabsTrigger value="month" className="text-[11px] px-2 h-6">Month</TabsTrigger>
+                  <TabsTrigger value="year" className="text-[11px] px-2 h-6">Year</TabsTrigger>
+                  <TabsTrigger value="all" className="text-[11px] px-2 h-6">All</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
             {analytics?.totals && (
@@ -274,29 +337,103 @@ export default function QrPayDashboardPage() {
           }
         </div>
 
-        {/* Recent transactions */}
+        {/* Recent transactions — Shopify-style expandable orders */}
         <div>
-          <h2 className="text-sm font-semibold mb-2">Recent payments received</h2>
-          {recentTx.length === 0 ? <p className="text-xs text-muted-foreground">No payments received yet.</p> : (
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-foreground">Orders & customer details</h2>
+            <span className="text-[11px] text-muted-foreground">{recentTx.length} recent</span>
+          </div>
+          {recentTx.length === 0 ? <p className="text-xs text-muted-foreground">No orders received yet.</p> : (
             <div className="space-y-2">
-              {recentTx.map(t => (
-                <Card key={t.id}><CardContent className="p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium truncate">{t.payer_name || "Customer"}</div>
-                      <div className="text-xs text-muted-foreground capitalize">{t.method.replace("_"," ")} · {t.transaction_ref}</div>
-                      {t.payer_email && <div className="text-xs text-muted-foreground truncate">✉ {t.payer_email}</div>}
-                      {t.payer_phone && <div className="text-xs text-muted-foreground">☎ {t.payer_phone}</div>}
-                      {t.delivery_address && <div className="text-xs text-muted-foreground whitespace-pre-line mt-1">📦 {t.delivery_address}</div>}
-                      {t.delivery_notes && <div className="text-xs text-muted-foreground italic">“{t.delivery_notes}”</div>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-semibold">{t.currency} {Number(t.amount).toFixed(2)}</div>
-                      <div className="text-xs text-muted-foreground">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
-                    </div>
-                  </div>
-                </CardContent></Card>
-              ))}
+              {recentTx.map(t => {
+                const open = expanded === t.id;
+                const items = itemsCache[t.qr_payment_id] || [];
+                const linked = payments.find(p => p.id === t.qr_payment_id);
+                return (
+                  <Card key={t.id} className="overflow-hidden">
+                    <button type="button" onClick={() => toggleExpand(t)} className="w-full text-left">
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Package className="h-4 w-4 text-paypal-blue shrink-0" />
+                              <div className="text-sm font-semibold truncate text-foreground">{t.payer_name || "Customer"}</div>
+                              <Badge variant={t.status === "succeeded" ? "default" : "secondary"} className="text-[10px]">{t.status}</Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground capitalize mt-0.5">
+                              {linked?.title || "QR payment"} · {t.method.replace("_"," ")} · #{t.transaction_ref}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="font-semibold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</div>
+                            <div className="text-[11px] text-muted-foreground">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
+                            <div className="text-[11px] text-paypal-blue flex items-center justify-end gap-0.5 mt-0.5">
+                              {open ? <>Hide<ChevronUp className="h-3 w-3"/></> : <>Details<ChevronDown className="h-3 w-3"/></>}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </button>
+                    {open && (
+                      <div className="border-t bg-muted/30 px-3 py-3 space-y-3">
+                        {/* Customer */}
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Customer</div>
+                          <div className="space-y-1 text-xs text-foreground">
+                            {t.payer_email && <div className="flex items-center gap-2"><Mail className="h-3 w-3 text-muted-foreground"/>{t.payer_email}</div>}
+                            {t.payer_phone && <div className="flex items-center gap-2"><Phone className="h-3 w-3 text-muted-foreground"/>{t.payer_phone}</div>}
+                            {t.delivery_address && <div className="flex items-start gap-2"><MapPin className="h-3 w-3 text-muted-foreground mt-0.5"/><span className="whitespace-pre-line">{t.delivery_address}</span></div>}
+                            {t.delivery_notes && <div className="flex items-start gap-2"><StickyNote className="h-3 w-3 text-muted-foreground mt-0.5"/><span className="italic">{t.delivery_notes}</span></div>}
+                            {!t.payer_email && !t.payer_phone && !t.delivery_address && !t.delivery_notes && (
+                              <div className="text-muted-foreground">No customer details captured.</div>
+                            )}
+                          </div>
+                        </div>
+                        {/* Items */}
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Items</div>
+                          {items.length === 0 ? (
+                            <div className="text-xs text-muted-foreground">No itemized line items.</div>
+                          ) : (
+                            <div className="space-y-1">
+                              {items.map(it => (
+                                <div key={it.id} className="flex items-center gap-2 text-xs">
+                                  {it.image_url ? (
+                                    <img src={it.image_url} alt={it.name} className="h-8 w-8 rounded object-cover border" />
+                                  ) : (
+                                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center"><Package className="h-3 w-3 text-muted-foreground"/></div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium truncate text-foreground">{it.name}</div>
+                                    <div className="text-muted-foreground">{it.quantity} × {t.currency} {Number(it.unit_price).toFixed(2)}</div>
+                                  </div>
+                                  <div className="font-semibold text-foreground">{t.currency} {Number(it.line_total).toFixed(2)}</div>
+                                </div>
+                              ))}
+                              <div className="flex justify-between border-t pt-1 mt-1 text-xs">
+                                <span className="text-muted-foreground">Total</span>
+                                <span className="font-bold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          {linked && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/qr-pay/${linked.token}`, "_blank"); }}>
+                              <ExternalLink className="h-3 w-3 mr-1"/>View checkout
+                            </Button>
+                          )}
+                          {t.payer_email && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${t.payer_email}?subject=Your order ${t.transaction_ref}`; }}>
+                              <Mail className="h-3 w-3 mr-1"/>Email customer
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
