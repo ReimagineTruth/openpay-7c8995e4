@@ -465,6 +465,7 @@ const AppRoutes = () => {
         <Route path="/merchant-pos" element={<MerchantPosPage />} />
         <Route path="/qr-pay" element={<ProtectedRoute><QrPayDashboardPage /></ProtectedRoute>} />
         <Route path="/qr-pay/new" element={<ProtectedRoute><QrPayCreatePage /></ProtectedRoute>} />
+        <Route path="/qr-pay/api" element={<ProtectedRoute><QrPayApiDashboardPage /></ProtectedRoute>} />
         <Route path="/qr-pay/:token" element={<QrPayCheckoutPage />} />
         <Route path="/qr-pay/:token/success" element={<QrPaySuccessPage />} />
         <Route path="/payment-links/create" element={<PaymentLinksCreatePage />} />
