@@ -2191,6 +2191,101 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_pay_api_keys: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          last4: string
+          name: string
+          revoked_at: string | null
+          scopes: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          last4: string
+          name: string
+          revoked_at?: string | null
+          scopes?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          last4?: string
+          name?: string
+          revoked_at?: string | null
+          scopes?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qr_pay_api_logs: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          ip_address: string | null
+          latency_ms: number | null
+          meta: Json | null
+          method: string
+          qr_pay_token: string | null
+          status_code: number
+          user_id: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip_address?: string | null
+          latency_ms?: number | null
+          meta?: Json | null
+          method: string
+          qr_pay_token?: string | null
+          status_code?: number
+          user_id?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip_address?: string | null
+          latency_ms?: number | null
+          meta?: Json | null
+          method?: string
+          qr_pay_token?: string | null
+          status_code?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_pay_api_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "qr_pay_api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qr_payment_items: {
         Row: {
           created_at: string
@@ -4106,6 +4201,19 @@ export type Database = {
             Returns: undefined
           }
       qr_pay_analytics: { Args: { p_range?: string }; Returns: Json }
+      qr_pay_api_create_key: {
+        Args: { p_name: string; p_scopes?: string[] }
+        Returns: {
+          api_key: string
+          id: string
+          key_prefix: string
+          last4: string
+          name: string
+          scopes: string[]
+        }[]
+      }
+      qr_pay_api_revoke_key: { Args: { p_id: string }; Returns: boolean }
+      qr_pay_api_stats: { Args: never; Returns: Json }
       qr_pay_calc_charge_amount: {
         Args: {
           p_amount: number
