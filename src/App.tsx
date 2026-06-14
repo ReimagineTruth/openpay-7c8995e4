@@ -114,6 +114,7 @@ import AppPaymentSuccessPage from "./pages/AppPaymentSuccessPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import QrPayDashboardPage from "./pages/QrPayDashboardPage";
 import QrPayCreatePage from "./pages/QrPayCreatePage";
+import QrPayApiDashboardPage from "./pages/QrPayApiDashboardPage";
 import QrPayCheckoutPage from "./pages/QrPayCheckoutPage";
 import QrPaySuccessPage from "./pages/QrPaySuccessPage";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
