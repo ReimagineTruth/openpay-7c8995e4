@@ -177,6 +177,9 @@ export default function QrPayDashboardPage() {
           <Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/20" onClick={refresh} title="Refresh">
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
+          <Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/20" onClick={() => navigate("/qr-pay/api")} title="QR Pay API">
+            API
+          </Button>
           <Button size="sm" className="bg-white text-paypal-blue hover:bg-white/90" onClick={() => navigate("/qr-pay/new")}>
             <Plus className="h-4 w-4 mr-1" /> New
           </Button>
