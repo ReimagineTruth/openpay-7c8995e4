@@ -3734,6 +3734,7 @@ export type Database = {
         Returns: boolean
       }
       digest: { Args: { algorithm: string; data: string }; Returns: string }
+      dispatch_outbox_to_pgmq: { Args: { p_limit?: number }; Returns: number }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
