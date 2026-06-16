@@ -643,6 +643,69 @@ export type Database = {
           },
         ]
       }
+      blog_posts: {
+        Row: {
+          author_name: string
+          category: string
+          content: string
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          excerpt: string
+          id: string
+          likes: number
+          published: boolean
+          published_at: string
+          slug: string
+          tags: string[]
+          title: string
+          updated_at: string
+          video_url: string | null
+          views: number
+          youtube_id: string | null
+        }
+        Insert: {
+          author_name?: string
+          category?: string
+          content?: string
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string
+          id?: string
+          likes?: number
+          published?: boolean
+          published_at?: string
+          slug: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          video_url?: string | null
+          views?: number
+          youtube_id?: string | null
+        }
+        Update: {
+          author_name?: string
+          category?: string
+          content?: string
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string
+          id?: string
+          likes?: number
+          published?: boolean
+          published_at?: string
+          slug?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+          views?: number
+          youtube_id?: string | null
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           contact_id: string

@@ -171,7 +171,7 @@ const HelpWikiPage = () => {
     if (editor.id) {
       ({ error } = await (supabase as any).from("help_articles").update(payload).eq("id", editor.id));
     } else {
-      ({ error } = await (supabase as any).from("help_articles").insert(payload));
+      ({ error } = await (supabase as any).from("help_articles").upsert(payload, { onConflict: "slug" }));
     }
     setSaving(false);
     if (error) { toast.error(error.message); return; }
