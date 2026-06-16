@@ -3766,12 +3766,14 @@ const Dashboard = () => {
         <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 mt-2">
             {[
+              { id: "qr-pay", label: "QR Pay", sub: "Accept payments", icon: QrCode, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/qr-pay") },
               { id: "analytics", label: "Analytics", sub: "Wallet activity", icon: TrendingUp, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => setActiveSection("analytics") },
               { id: "swap", label: "Swap", sub: "OUSD to PI", icon: ArrowLeftRight, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => setActiveSection("swap") },
               { id: "mining", label: "Mining", sub: "Earn rewards", icon: Pickaxe, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/mining") },
               { id: "staking", label: "Staking", sub: "Earn yield", icon: Coins, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/staking") },
               { id: "affiliate", label: "Affiliate", sub: "Refer & Earn", icon: HandCoins, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/affiliate") },
               { id: "contacts", label: "Contacts", sub: "Manage network", icon: Users, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/contacts") },
+              { id: "help", label: "Help & Wiki", sub: "Guides & videos", icon: HelpCircle, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/help") },
             ].map((item, idx) => (
               <button
                 key={item.id}

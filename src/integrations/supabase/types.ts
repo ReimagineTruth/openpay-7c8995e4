@@ -938,6 +938,66 @@ export type Database = {
         }
         Relationships: []
       }
+      help_articles: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          demo_label: string | null
+          demo_path: string | null
+          faqs: Json
+          icon_name: string
+          id: string
+          overview: string
+          published: boolean
+          short: string
+          slug: string
+          sort_order: number
+          steps: string[]
+          title: string
+          updated_at: string
+          youtube_id: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          demo_label?: string | null
+          demo_path?: string | null
+          faqs?: Json
+          icon_name?: string
+          id?: string
+          overview?: string
+          published?: boolean
+          short?: string
+          slug: string
+          sort_order?: number
+          steps?: string[]
+          title: string
+          updated_at?: string
+          youtube_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          demo_label?: string | null
+          demo_path?: string | null
+          faqs?: Json
+          icon_name?: string
+          id?: string
+          overview?: string
+          published?: boolean
+          short?: string
+          slug?: string
+          sort_order?: number
+          steps?: string[]
+          title?: string
+          updated_at?: string
+          youtube_id?: string | null
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount: number
