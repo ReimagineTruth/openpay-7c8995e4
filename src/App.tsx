@@ -42,6 +42,8 @@ import DisputesPage from "./pages/DisputesPage";
 import SendInvoice from "./pages/SendInvoice";
 import HelpCenter from "./pages/HelpCenter";
 import HelpWikiPage from "./pages/HelpWikiPage";
+import BlogPage from "./pages/BlogPage";
+import BlogPostPage from "./pages/BlogPostPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
