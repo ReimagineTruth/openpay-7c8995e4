@@ -36,6 +36,9 @@ import {
   getDashboardSectionSubtitle,
   type DashboardSection,
 } from "@/lib/dashboardSectionMeta";
+import Web3Dashboard from "@/components/web3/Web3Dashboard";
+import { getUiMode, setUiMode, subscribeUiMode, type UiMode } from "@/lib/uiMode";
+import { Sparkles } from "lucide-react";
 
 interface Transaction {
   id: string;
