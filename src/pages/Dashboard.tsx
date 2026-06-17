@@ -2311,7 +2311,16 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          <button
+            onClick={() => setUiMode("web3")}
+            aria-label="Switch to Web3 mode"
+            title="Switch to Web3 mode"
+            className="paypal-surface flex h-10 items-center gap-1.5 rounded-full px-3 transition-all duration-300 hover:scale-105"
+          >
+            <Sparkles className="h-4 w-4 text-foreground" />
+            <span className="text-[11px] font-bold text-foreground">Web3</span>
+          </button>
           <button
             onClick={loadDashboard}
             aria-label="Refresh dashboard"
