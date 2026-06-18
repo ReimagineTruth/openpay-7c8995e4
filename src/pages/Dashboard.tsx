@@ -356,9 +356,6 @@ const formatAmountInput = (value: string | number) => {
 };
 
 const Dashboard = () => {
-  const [uiModeState, setUiModeState] = useState<UiMode>(() => getUiMode());
-  useEffect(() => subscribeUiMode(setUiModeState), []);
-  if (uiModeState === "web3") return <Web3Dashboard />;
   const remittanceUiEnabled = isRemittanceUiEnabled();
   const [balance, setBalance] = useState<number>(0);
   const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);

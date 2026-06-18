@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -8,7 +8,6 @@ import {
   Clock,
   Search,
   Plus,
-  Wallet,
   ArrowDown,
   ArrowUp,
   Repeat,
@@ -18,18 +17,32 @@ import {
   LineChart,
   Shield,
   X,
-  HelpCircle,
   ChevronRight,
   Building2,
-  CreditCard,
   Send,
   QrCode,
   Sparkles,
+  Download,
+  FileText,
+  Pickaxe,
+  Store,
+  HelpCircle,
 } from "lucide-react";
 
 type Tab = "home" | "activity" | "search";
 
-const ACCENT = "#D4FF3F";
+// OpenPay brand blue
+const ACCENT = "hsl(217 91% 60%)";
+const ACCENT_HOVER = "hsl(217 91% 55%)";
+
+interface TxRow {
+  id: string;
+  type: string | null;
+  amount: number | null;
+  created_at: string;
+  description?: string | null;
+  status?: string | null;
+}
 
 const Web3Dashboard = () => {
   const navigate = useNavigate();
@@ -43,49 +56,94 @@ const Web3Dashboard = () => {
     avatar_url: null,
   });
   const [balance, setBalance] = useState(0);
+  const [txs, setTxs] = useState<TxRow[]>([]);
+  const [loadingTx, setLoadingTx] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activityFilter, setActivityFilter] = useState<string>("All");
 
   useEffect(() => {
+    let mounted = true;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("username, full_name, avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
+      if (!user || !mounted) return;
+      const [{ data: prof }, { data: w }] = await Promise.all([
+        supabase.from("profiles").select("username, full_name, avatar_url").eq("id", user.id).maybeSingle(),
+        supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle(),
+      ]);
+      if (!mounted) return;
       if (prof) setProfile(prof as any);
-      const { data: w } = await supabase
-        .from("wallets")
-        .select("balance")
-        .eq("user_id", user.id)
-        .maybeSingle();
       if (w?.balance != null) setBalance(Number(w.balance));
     })();
+    return () => { mounted = false; };
   }, []);
+
+  // Fetch activity when needed
+  useEffect(() => {
+    if (tab !== "activity" && tab !== "search") return;
+    let mounted = true;
+    (async () => {
+      setLoadingTx(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoadingTx(false); return; }
+      const { data } = await supabase
+        .from("transactions")
+        .select("id, type, amount, created_at, description, status")
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (!mounted) return;
+      setTxs((data as any) || []);
+      setLoadingTx(false);
+    })();
+    return () => { mounted = false; };
+  }, [tab]);
 
   const displayName = profile.username ? `@${profile.username}` : profile.full_name || "OpenPay";
   const avatar = profile.avatar_url;
 
+  const filteredTxs = useMemo(() => {
+    const f = activityFilter.toLowerCase();
+    return txs.filter((t) => {
+      if (f === "all") return true;
+      const type = (t.type || "").toLowerCase();
+      if (f === "deposits") return ["topup", "top_up", "deposit", "receive"].some((k) => type.includes(k));
+      if (f === "withdrawals") return type.includes("withdraw");
+      if (f === "sent") return type.includes("send") || type.includes("transfer");
+      if (f === "converts") return type.includes("convert") || type.includes("swap");
+      return true;
+    });
+  }, [txs, activityFilter]);
+
+  const searchResults = useMemo(() => {
+    if (!search.trim()) return [] as TxRow[];
+    const q = search.toLowerCase();
+    return txs.filter((t) =>
+      (t.description || "").toLowerCase().includes(q) ||
+      (t.type || "").toLowerCase().includes(q) ||
+      String(t.amount || "").includes(q),
+    );
+  }, [txs, search]);
+
   return (
-    <div className="min-h-screen bg-black text-white pb-32 relative overflow-x-hidden" style={{ fontFamily: "'SF Pro Display', system-ui, -apple-system, sans-serif" }}>
+    <div
+      className="min-h-screen bg-black text-white pb-32 relative overflow-x-hidden animate-in fade-in duration-300"
+      style={{ fontFamily: "'SF Pro Display', system-ui, -apple-system, sans-serif" }}
+    >
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-5">
-        <button
-          onClick={() => navigate("/menu")}
-          className="flex items-center gap-2"
-        >
+        <button onClick={() => navigate("/menu")} className="flex items-center gap-2">
           {avatar ? (
             <img src={avatar} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-white/10" />
           ) : (
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-sm">
-              🦊
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-bold">
+              {(displayName[0] || "O").toUpperCase()}
             </div>
           )}
           <span className="font-semibold text-[15px]">{displayName}</span>
         </button>
         <button
           onClick={() => setUiMode("original")}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-white/80 hover:bg-white/5"
+          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-white/80 hover:bg-white/5 transition"
           title="Switch to classic UI"
         >
           <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} />
@@ -94,7 +152,7 @@ const Web3Dashboard = () => {
       </div>
 
       {tab === "home" && (
-        <>
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
           {/* Balance */}
           <div className="flex flex-col items-center pt-12">
             <div className="flex items-baseline">
@@ -103,129 +161,158 @@ const Web3Dashboard = () => {
                 .{(balance.toFixed(2).split(".")[1]) || "00"}
               </span>
             </div>
-            <p className="mt-3 text-center text-[15px] text-white/60">
+            <p className="mt-3 text-center text-[15px] text-white/60 whitespace-pre-line">
               {balance > 0 ? "Your OpenPay balance" : "Add cash or crypto to start\nusing OpenPay"}
             </p>
             <button
-              onClick={() => navigate("/top-up")}
-              className="mt-6 flex items-center gap-2 rounded-full px-7 py-3 font-bold text-black shadow-lg active:scale-95 transition"
+              onClick={() => navigate("/topup")}
+              className="mt-6 flex items-center gap-2 rounded-full px-7 py-3 font-bold text-white shadow-lg active:scale-95 transition"
               style={{ backgroundColor: ACCENT }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = ACCENT_HOVER)}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = ACCENT)}
             >
               <ArrowDown className="h-5 w-5" />
               Deposit
             </button>
           </div>
 
+          {/* Quick actions row */}
+          <div className="mt-8 mx-4 grid grid-cols-4 gap-2">
+            <QuickAction icon={<Send className="h-5 w-5" />} label="Send" onClick={() => navigate("/send")} />
+            <QuickAction icon={<Download className="h-5 w-5" />} label="Receive" onClick={() => navigate("/receive")} />
+            <QuickAction icon={<QrCode className="h-5 w-5" />} label="Scan" onClick={() => navigate("/scan-qr")} />
+            <QuickAction icon={<FileText className="h-5 w-5" />} label="Request" onClick={() => navigate("/request-payment")} />
+          </div>
+
           {/* Convert banner */}
           {showConvert && (
-            <div className="mt-10 mx-4 rounded-2xl bg-[#1a1a1a] p-4 flex items-center gap-3 relative">
-              <div className="h-12 w-12 rounded-2xl bg-yellow-400 flex items-center justify-center">
-                <Bitcoin className="h-6 w-6 text-black" />
+            <div className="mt-8 mx-4 rounded-2xl bg-[#1a1a1a] p-4 flex items-center gap-3 relative">
+              <div className="h-12 w-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: ACCENT }}>
+                <Repeat className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-[15px]">Convert to OUSD</p>
-                <p className="text-xs text-white/60">Turn your cash into stablecoin at the best rates</p>
+                <p className="font-bold text-[15px]">Convert currencies</p>
+                <p className="text-xs text-white/60">Best rates across 30+ currencies</p>
               </div>
-              <button onClick={() => setShowConvert(false)} className="text-white/40 p-1">
-                <X className="h-4 w-4" />
+              <button onClick={() => navigate("/currency-converter")} className="text-white/80 px-3 py-1 text-xs rounded-full border border-white/10">
+                Open
+              </button>
+              <button onClick={() => setShowConvert(false)} className="text-white/40 p-1 absolute top-2 right-2">
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
 
           {/* Cash & Savings tiles */}
           <div className="mt-4 mx-4 grid grid-cols-2 gap-3">
-            <Tile icon={<Building2 className="h-5 w-5 text-white/70" />} title="Cash" subtitle="Manage cash" onClick={() => navigate("/wallet")} />
-            <Tile icon={<LineChart className="h-5 w-5 text-white/70" />} title="Savings" subtitle="Earn 11.0% APY" onClick={() => navigate("/savings")} />
+            <Tile icon={<Building2 className="h-5 w-5 text-white/70" />} title="Cash" subtitle="Manage funds" onClick={() => navigate("/activity")} />
+            <Tile icon={<LineChart className="h-5 w-5 text-white/70" />} title="Earn" subtitle="Stake & rewards" onClick={() => navigate("/staking")} />
           </div>
 
-          {/* Markets */}
-          <h3 className="mt-8 mx-5 text-white/60 text-[15px] font-semibold">Markets</h3>
+          {/* Markets / Tools */}
+          <h3 className="mt-8 mx-5 text-white/60 text-[15px] font-semibold">Tools</h3>
           <div className="mt-3 mx-4 space-y-3">
-            <RowTile title="Crypto" subtitle="Explore crypto" onClick={() => navigate("/wallet")} />
-            <RowTile title="Stocks" subtitle="Explore stocks" onClick={() => navigate("/savings")} />
+            <RowTile icon={<Pickaxe className="h-5 w-5 text-white/70" />} title="Mining" subtitle="Earn daily rewards" onClick={() => navigate("/mining")} />
+            <RowTile icon={<Store className="h-5 w-5 text-white/70" />} title="Merchant POS" subtitle="Accept payments" onClick={() => navigate("/merchant-pos")} />
+            <RowTile icon={<TrendingUp className="h-5 w-5 text-white/70" />} title="Affiliate" subtitle="Invite & earn" onClick={() => navigate("/affiliate")} />
           </div>
 
           {/* Learn more */}
           <h3 className="mt-8 mx-5 text-white/60 text-[15px] font-semibold">Learn more</h3>
           <div className="mt-3 ml-4 flex gap-3 overflow-x-auto pb-2 pr-4 [&::-webkit-scrollbar]:hidden">
-            <LearnCard
-              color="from-violet-600 to-violet-500"
-              icon={<ArrowDown className="h-6 w-6 text-white" />}
-              title="Moving your funds"
-              desc="Learn how to add or move funds seamlessly into OpenPay"
-              onClick={() => navigate("/help")}
-            />
-            <LearnCard
-              color="from-teal-500 to-emerald-500"
-              icon={<Shield className="h-6 w-6 text-white" />}
-              title="Security"
-              desc="Learn how we keep your money safe and secure"
-              onClick={() => navigate("/help")}
-            />
-            <LearnCard
-              color="from-orange-500 to-pink-500"
-              icon={<QrCode className="h-6 w-6 text-white" />}
-              title="QR Pay"
-              desc="Pay or get paid by scanning a code"
-              onClick={() => navigate("/qr-pay")}
-            />
+            <LearnCard color="from-blue-600 to-blue-500" icon={<ArrowDown className="h-6 w-6 text-white" />} title="Moving your funds" desc="Learn how to add or move funds seamlessly into OpenPay" onClick={() => navigate("/help")} />
+            <LearnCard color="from-sky-600 to-blue-500" icon={<Shield className="h-6 w-6 text-white" />} title="Security" desc="Learn how we keep your money safe and secure" onClick={() => navigate("/help")} />
+            <LearnCard color="from-indigo-600 to-blue-500" icon={<QrCode className="h-6 w-6 text-white" />} title="QR Pay" desc="Pay or get paid by scanning a code" onClick={() => navigate("/qr-pay")} />
+            <LearnCard color="from-slate-700 to-slate-600" icon={<HelpCircle className="h-6 w-6 text-white" />} title="Help Center" desc="Guides, tutorials and FAQs" onClick={() => navigate("/help")} />
           </div>
-        </>
+        </div>
       )}
 
       {tab === "activity" && (
-        <div className="px-5 pt-6">
+        <div className="px-5 pt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <h1 className="text-4xl font-extrabold">Activity</h1>
           <div className="mt-5 flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            {["All", "Converts", "Deposits", "Withdrawals", "Sent"].map((c, i) => (
+            {["All", "Converts", "Deposits", "Withdrawals", "Sent"].map((c) => (
               <button
                 key={c}
-                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${
-                  i === 0 ? "bg-white text-black" : "border border-white/20 text-white/80"
+                onClick={() => setActivityFilter(c)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition ${
+                  activityFilter === c ? "text-white" : "border border-white/20 text-white/80"
                 }`}
+                style={activityFilter === c ? { backgroundColor: ACCENT } : undefined}
               >
                 {c}
               </button>
             ))}
           </div>
-          <div className="flex flex-col items-center justify-center mt-32 text-center">
-            <div className="text-white/30 text-5xl mb-4">↻</div>
-            <p className="text-xl font-bold">Your activity starts now</p>
-            <p className="mt-2 text-white/60 text-sm max-w-xs">
-              We couldn't find any activity yet. New activity will show up here
-            </p>
-            <button
-              onClick={() => navigate("/top-up")}
-              className="mt-6 flex items-center gap-2 rounded-full px-7 py-3 font-bold text-black"
-              style={{ backgroundColor: ACCENT }}
-            >
-              <ArrowDown className="h-5 w-5" />
-              Add funds
-            </button>
-          </div>
+          {loadingTx ? (
+            <div className="mt-10 text-center text-white/50">Loading…</div>
+          ) : filteredTxs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center mt-24 text-center">
+              <div className="text-white/30 text-5xl mb-4">↻</div>
+              <p className="text-xl font-bold">Your activity starts now</p>
+              <p className="mt-2 text-white/60 text-sm max-w-xs">New activity will show up here</p>
+              <button
+                onClick={() => navigate("/topup")}
+                className="mt-6 flex items-center gap-2 rounded-full px-7 py-3 font-bold text-white"
+                style={{ backgroundColor: ACCENT }}
+              >
+                <ArrowDown className="h-5 w-5" />
+                Add funds
+              </button>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-2">
+              {filteredTxs.map((t) => (
+                <TxRowItem key={t.id} tx={t} format={format} onClick={() => navigate("/activity")} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {tab === "search" && (
-        <div className="px-5 pt-6">
+        <div className="px-5 pt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <h1 className="text-4xl font-extrabold">Search</h1>
           <input
-            placeholder="Search assets, contacts..."
-            className="mt-5 w-full rounded-2xl bg-[#1a1a1a] px-4 py-3 text-white placeholder:text-white/40 outline-none"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search transactions…"
+            className="mt-5 w-full rounded-2xl bg-[#1a1a1a] px-4 py-3 text-white placeholder:text-white/40 outline-none focus:ring-2"
+            style={{ ['--tw-ring-color' as any]: ACCENT }}
           />
-          <p className="mt-10 text-center text-white/50">Search across crypto, contacts and transactions.</p>
+          {search.trim() === "" ? (
+            <div className="mt-10">
+              <p className="text-white/60 text-sm mb-3">Quick links</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Tile icon={<Send className="h-5 w-5 text-white/70" />} title="Send money" subtitle="Pay anyone" onClick={() => navigate("/send")} />
+                <Tile icon={<Download className="h-5 w-5 text-white/70" />} title="Receive" subtitle="Get paid" onClick={() => navigate("/receive")} />
+                <Tile icon={<QrCode className="h-5 w-5 text-white/70" />} title="Scan QR" subtitle="Pay by code" onClick={() => navigate("/scan-qr")} />
+                <Tile icon={<Repeat className="h-5 w-5 text-white/70" />} title="Convert" subtitle="FX rates" onClick={() => navigate("/currency-converter")} />
+              </div>
+            </div>
+          ) : searchResults.length === 0 ? (
+            <p className="mt-10 text-center text-white/50">No matches.</p>
+          ) : (
+            <div className="mt-5 space-y-2">
+              {searchResults.map((t) => (
+                <TxRowItem key={t.id} tx={t} format={format} onClick={() => navigate("/activity")} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* Bottom action sheet */}
       {actionsOpen && (
         <>
-          <div className="fixed inset-0 bg-black/70 z-40" onClick={() => setActionsOpen(false)} />
-          <div className="fixed bottom-28 left-4 right-4 z-50 rounded-3xl bg-[#1a1a1a] p-3 space-y-1 animate-in slide-in-from-bottom-4">
-            <ActionRow color="bg-emerald-500" icon={<Send className="h-5 w-5 text-white" />} title="Send money" desc="Pay anyone instantly" onClick={() => { setActionsOpen(false); navigate("/send"); }} />
-            <ActionRow color="bg-blue-500" icon={<ArrowUp className="h-5 w-5 text-white" />} title="Send crypto" desc="To any wallet address" onClick={() => { setActionsOpen(false); navigate("/send"); }} />
-            <ActionRow color="bg-violet-500" icon={<Bitcoin className="h-5 w-5 text-white" />} title="Invest" desc="Grow your money in crypto or stocks" onClick={() => { setActionsOpen(false); navigate("/wallet"); }} />
-            <ActionRow color="bg-orange-500" icon={<PiggyBank className="h-5 w-5 text-white" />} title="Save" desc="Move money into savings" onClick={() => { setActionsOpen(false); navigate("/savings"); }} />
+          <div className="fixed inset-0 bg-black/70 z-40 animate-in fade-in duration-200" onClick={() => setActionsOpen(false)} />
+          <div className="fixed bottom-28 left-4 right-4 z-50 rounded-3xl bg-[#1a1a1a] p-3 space-y-1 animate-in slide-in-from-bottom-4 duration-300">
+            <ActionRow color={ACCENT} icon={<Send className="h-5 w-5 text-white" />} title="Send money" desc="Pay anyone instantly" onClick={() => { setActionsOpen(false); navigate("/send"); }} />
+            <ActionRow color={ACCENT} icon={<Download className="h-5 w-5 text-white" />} title="Receive" desc="Share your payment info" onClick={() => { setActionsOpen(false); navigate("/receive"); }} />
+            <ActionRow color={ACCENT} icon={<QrCode className="h-5 w-5 text-white" />} title="Scan QR" desc="Scan to pay" onClick={() => { setActionsOpen(false); navigate("/scan-qr"); }} />
+            <ActionRow color={ACCENT} icon={<ArrowDown className="h-5 w-5 text-white" />} title="Top up" desc="Add funds to wallet" onClick={() => { setActionsOpen(false); navigate("/topup"); }} />
+            <ActionRow color={ACCENT} icon={<PiggyBank className="h-5 w-5 text-white" />} title="Stake" desc="Earn rewards" onClick={() => { setActionsOpen(false); navigate("/staking"); }} />
           </div>
         </>
       )}
@@ -243,7 +330,7 @@ const Web3Dashboard = () => {
           style={{ backgroundColor: ACCENT }}
           aria-label="Quick actions"
         >
-          <Plus className="h-7 w-7 text-black" />
+          <Plus className="h-7 w-7 text-white" />
         </button>
       </div>
     </div>
@@ -253,31 +340,33 @@ const Web3Dashboard = () => {
 const NavBtn = ({ active, onClick, icon }: { active: boolean; onClick: () => void; icon: React.ReactNode }) => (
   <button
     onClick={onClick}
-    className={`flex-1 flex items-center justify-center h-10 rounded-full transition ${
-      active ? "text-black" : "text-white/70"
-    }`}
+    className={`flex-1 flex items-center justify-center h-10 rounded-full transition ${active ? "text-white" : "text-white/70"}`}
     style={active ? { backgroundColor: ACCENT } : undefined}
   >
     {icon}
   </button>
 );
 
+const QuickAction = ({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) => (
+  <button onClick={onClick} className="flex flex-col items-center gap-1.5 py-2 rounded-2xl hover:bg-white/5 transition">
+    <div className="h-12 w-12 rounded-full flex items-center justify-center bg-[#1a1a1a] border border-white/5" style={{ color: ACCENT }}>
+      {icon}
+    </div>
+    <span className="text-[11px] font-semibold text-white/80">{label}</span>
+  </button>
+);
+
 const Tile = ({ icon, title, subtitle, onClick }: { icon: React.ReactNode; title: string; subtitle: string; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className="text-left rounded-2xl border border-dashed border-white/15 bg-[#0f0f0f] p-4 hover:bg-[#161616] transition"
-  >
+  <button onClick={onClick} className="text-left rounded-2xl border border-dashed border-white/15 bg-[#0f0f0f] p-4 hover:bg-[#161616] transition">
     <div className="mb-6">{icon}</div>
     <p className="font-bold text-[17px]">{title}</p>
     <p className="text-sm text-white/55">{subtitle}</p>
   </button>
 );
 
-const RowTile = ({ title, subtitle, onClick }: { title: string; subtitle: string; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className="w-full text-left rounded-2xl border border-dashed border-white/15 bg-[#0f0f0f] p-4 flex items-center hover:bg-[#161616] transition"
-  >
+const RowTile = ({ icon, title, subtitle, onClick }: { icon: React.ReactNode; title: string; subtitle: string; onClick: () => void }) => (
+  <button onClick={onClick} className="w-full text-left rounded-2xl border border-dashed border-white/15 bg-[#0f0f0f] p-4 flex items-center gap-3 hover:bg-[#161616] transition">
+    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center">{icon}</div>
     <div className="flex-1">
       <p className="font-bold text-[17px]">{title}</p>
       <p className="text-sm text-white/55">{subtitle}</p>
@@ -286,23 +375,8 @@ const RowTile = ({ title, subtitle, onClick }: { title: string; subtitle: string
   </button>
 );
 
-const LearnCard = ({
-  color,
-  icon,
-  title,
-  desc,
-  onClick,
-}: {
-  color: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className={`shrink-0 w-[260px] text-left rounded-3xl bg-gradient-to-br ${color} p-5 relative`}
-  >
+const LearnCard = ({ color, icon, title, desc, onClick }: { color: string; icon: React.ReactNode; title: string; desc: string; onClick: () => void }) => (
+  <button onClick={onClick} className={`shrink-0 w-[260px] text-left rounded-3xl bg-gradient-to-br ${color} p-5 relative`}>
     <div className="flex items-start justify-between mb-12">
       {icon}
       <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -314,29 +388,35 @@ const LearnCard = ({
   </button>
 );
 
-const ActionRow = ({
-  color,
-  icon,
-  title,
-  desc,
-  onClick,
-}: {
-  color: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition"
-  >
-    <div className={`h-12 w-12 rounded-2xl ${color} flex items-center justify-center`}>{icon}</div>
+const ActionRow = ({ color, icon, title, desc, onClick }: { color: string; icon: React.ReactNode; title: string; desc: string; onClick: () => void }) => (
+  <button onClick={onClick} className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition">
+    <div className="h-12 w-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: color }}>
+      {icon}
+    </div>
     <div className="text-left">
       <p className="font-bold text-[16px]">{title}</p>
       <p className="text-sm text-white/55">{desc}</p>
     </div>
   </button>
 );
+
+const TxRowItem = ({ tx, format, onClick }: { tx: TxRow; format: (n: number) => string; onClick: () => void }) => {
+  const t = (tx.type || "").toLowerCase();
+  const isIn = ["receive", "topup", "top_up", "deposit"].some((k) => t.includes(k));
+  return (
+    <button onClick={onClick} className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#0f0f0f] hover:bg-[#161616] transition">
+      <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
+        {isIn ? <ArrowDown className="h-5 w-5 text-green-400" /> : <ArrowUp className="h-5 w-5 text-white/70" />}
+      </div>
+      <div className="flex-1 text-left min-w-0">
+        <p className="font-semibold text-[14px] truncate">{tx.description || tx.type || "Transaction"}</p>
+        <p className="text-xs text-white/50">{new Date(tx.created_at).toLocaleString()}</p>
+      </div>
+      <p className={`font-bold text-[15px] ${isIn ? "text-green-400" : "text-white"}`}>
+        {isIn ? "+" : "-"}{format(Math.abs(Number(tx.amount || 0)))}
+      </p>
+    </button>
+  );
+};
 
 export default Web3Dashboard;
