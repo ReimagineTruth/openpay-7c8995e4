@@ -141,14 +141,6 @@ const Web3Dashboard = () => {
           )}
           <span className="font-semibold text-[15px]">{displayName}</span>
         </button>
-        <button
-          onClick={() => setUiMode("original")}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-white/80 hover:bg-white/5 transition"
-          title="Switch to classic UI"
-        >
-          <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} />
-          Web3
-        </button>
       </div>
 
       {tab === "home" && (
