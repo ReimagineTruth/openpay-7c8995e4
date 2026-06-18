@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, useRef } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock, Sparkles } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
