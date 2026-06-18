@@ -250,7 +250,7 @@ const AppRoutes = () => {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardSwitcher />
           </ProtectedRoute>
         } />
         <Route path="/send" element={
