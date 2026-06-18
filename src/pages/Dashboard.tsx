@@ -3776,6 +3776,7 @@ const Dashboard = () => {
               { id: "affiliate", label: "Affiliate", sub: "Refer & Earn", icon: HandCoins, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/affiliate") },
               { id: "contacts", label: "Contacts", sub: "Manage network", icon: Users, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/contacts") },
               { id: "help", label: "Help & Wiki", sub: "Guides & videos", icon: HelpCircle, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/help") },
+              { id: "web3", label: "Web3 Mode", sub: "Switch UI", icon: Sparkles, color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600 dark:text-purple-400", action: () => setUiMode("web3") },
             ].map((item, idx) => (
               <button
                 key={item.id}
