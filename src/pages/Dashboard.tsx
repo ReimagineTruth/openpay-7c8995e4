@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, useRef } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock, Sparkles } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
@@ -37,8 +37,7 @@ import {
   type DashboardSection,
 } from "@/lib/dashboardSectionMeta";
 import Web3Dashboard from "@/components/web3/Web3Dashboard";
-import { getUiMode, setUiMode, subscribeUiMode, type UiMode } from "@/lib/uiMode";
-import { Sparkles } from "lucide-react";
+import { setUiMode } from "@/lib/uiMode";
 
 interface Transaction {
   id: string;
@@ -2310,15 +2309,6 @@ const Dashboard = () => {
 
         <div className="flex gap-3 items-center">
           <button
-            onClick={() => setUiMode("web3")}
-            aria-label="Switch to Web3 mode"
-            title="Switch to Web3 mode"
-            className="paypal-surface flex h-10 items-center gap-1.5 rounded-full px-3 transition-all duration-300 hover:scale-105"
-          >
-            <Sparkles className="h-4 w-4 text-foreground" />
-            <span className="text-[11px] font-bold text-foreground">Web3</span>
-          </button>
-          <button
             onClick={loadDashboard}
             aria-label="Refresh dashboard"
             className={`paypal-surface flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 hover:scale-110 hover-lift ${refreshing ? "animate-spin" : "hover-glow"}`}
@@ -3786,6 +3776,7 @@ const Dashboard = () => {
               { id: "affiliate", label: "Affiliate", sub: "Refer & Earn", icon: HandCoins, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/affiliate") },
               { id: "contacts", label: "Contacts", sub: "Manage network", icon: Users, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/contacts") },
               { id: "help", label: "Help & Wiki", sub: "Guides & videos", icon: HelpCircle, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/help") },
+              { id: "web3", label: "Web3 Mode", sub: "Switch UI", icon: Sparkles, color: "bg-purple-50 dark:bg-purple-900/20", iconColor: "text-purple-600 dark:text-purple-400", action: () => setUiMode("web3") },
             ].map((item, idx) => (
               <button
                 key={item.id}

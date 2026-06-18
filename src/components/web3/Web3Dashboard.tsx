@@ -141,14 +141,6 @@ const Web3Dashboard = () => {
           )}
           <span className="font-semibold text-[15px]">{displayName}</span>
         </button>
-        <button
-          onClick={() => setUiMode("original")}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-white/80 hover:bg-white/5 transition"
-          title="Switch to classic UI"
-        >
-          <Sparkles className="h-3.5 w-3.5" style={{ color: ACCENT }} />
-          Web3
-        </button>
       </div>
 
       {tab === "home" && (
@@ -215,6 +207,7 @@ const Web3Dashboard = () => {
             <RowTile icon={<Pickaxe className="h-5 w-5 text-white/70" />} title="Mining" subtitle="Earn daily rewards" onClick={() => navigate("/mining")} />
             <RowTile icon={<Store className="h-5 w-5 text-white/70" />} title="Merchant POS" subtitle="Accept payments" onClick={() => navigate("/merchant-pos")} />
             <RowTile icon={<TrendingUp className="h-5 w-5 text-white/70" />} title="Affiliate" subtitle="Invite & earn" onClick={() => navigate("/affiliate")} />
+            <RowTile icon={<Sparkles className="h-5 w-5 text-white/70" />} title="Classic UI" subtitle="Switch to original mode" onClick={() => setUiMode("original")} />
           </div>
 
           {/* Learn more */}
