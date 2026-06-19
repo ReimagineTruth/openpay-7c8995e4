@@ -67,6 +67,7 @@ const Web3Dashboard = () => {
   const [search, setSearch] = useState("");
   const [activityFilter, setActivityFilter] = useState<string>("All");
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
 
 
   useEffect(() => {
