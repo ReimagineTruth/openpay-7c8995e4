@@ -82,6 +82,13 @@ const Web3Dashboard = () => {
       if (!mounted) return;
       if (prof) setProfile(prof as any);
       if (w?.balance != null) setBalance(Number(w.balance));
+      // Unread notifications count
+      const { count } = await supabase
+        .from("app_notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false);
+      if (mounted && typeof count === "number") setUnread(count);
     })();
     return () => { mounted = false; };
   }, []);
