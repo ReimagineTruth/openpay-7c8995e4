@@ -218,8 +218,11 @@ const Web3Dashboard = () => {
             <RowTile icon={<Pickaxe className="h-5 w-5 text-white/70" />} title="Mining" subtitle="Earn daily rewards" onClick={() => navigate("/mining")} />
             <RowTile icon={<Store className="h-5 w-5 text-white/70" />} title="Merchant POS" subtitle="Accept payments" onClick={() => navigate("/merchant-pos")} />
             <RowTile icon={<TrendingUp className="h-5 w-5 text-white/70" />} title="Affiliate" subtitle="Invite & earn" onClick={() => navigate("/affiliate")} />
+            <RowTile icon={<GraduationCap className="h-5 w-5 text-white/70" />} title="Tutorial" subtitle="Learn how OpenPay works" onClick={() => setTutorialOpen(true)} />
+            <RowTile icon={<User className="h-5 w-5 text-white/70" />} title="Profile & Settings" subtitle="Account, security, preferences" onClick={() => navigate("/menu")} />
             <RowTile icon={<Sparkles className="h-5 w-5 text-white/70" />} title="Classic UI" subtitle="Switch to original mode" onClick={() => setUiMode("original")} />
           </div>
+
 
           {/* Learn more */}
           <h3 className="mt-8 mx-5 text-white/60 text-[15px] font-semibold">Learn more</h3>
