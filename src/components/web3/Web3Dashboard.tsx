@@ -137,8 +137,8 @@ const Web3Dashboard = () => {
       style={{ fontFamily: "'SF Pro Display', system-ui, -apple-system, sans-serif" }}
     >
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-5">
-        <button onClick={() => navigate("/menu")} className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-5 pt-5 gap-3">
+        <button onClick={() => navigate("/menu")} className="flex items-center gap-2 min-w-0">
           {avatar ? (
             <img src={avatar} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-white/10" />
           ) : (
@@ -146,9 +146,13 @@ const Web3Dashboard = () => {
               {(displayName[0] || "O").toUpperCase()}
             </div>
           )}
-          <span className="font-semibold text-[15px]">{displayName}</span>
+          <span className="font-semibold text-[15px] truncate">{displayName}</span>
         </button>
+        <div className="shrink-0">
+          <CurrencySelector />
+        </div>
       </div>
+
 
       {tab === "home" && (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
