@@ -280,7 +280,12 @@ const Web3Dashboard = () => {
             </div>
             <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-white/70">Balance {format(balance)}</span>
           </button>
-          <h1 className="text-4xl font-extrabold">Activity</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-4xl font-extrabold">Activity</h1>
+            <button onClick={() => navigate("/activity")} className="text-xs font-semibold text-white/70 hover:text-white px-3 py-1.5 rounded-full border border-white/15">
+              View all
+            </button>
+          </div>
 
           <div className="mt-5 flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
             {["All", "Converts", "Deposits", "Withdrawals", "Sent"].map((c) => (
