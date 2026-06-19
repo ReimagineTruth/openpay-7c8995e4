@@ -322,6 +322,12 @@ const Web3Dashboard = () => {
               {filteredTxs.map((t) => (
                 <TxRowItem key={t.id} tx={t} format={format} onClick={() => navigate("/activity")} />
               ))}
+              <button
+                onClick={() => navigate("/activity")}
+                className="w-full mt-4 rounded-2xl border border-white/15 py-3 text-sm font-semibold text-white/80 hover:bg-white/5 transition"
+              >
+                View full transaction history
+              </button>
             </div>
           )}
         </div>
