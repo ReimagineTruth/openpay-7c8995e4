@@ -31,6 +31,7 @@ import {
   HelpCircle,
   GraduationCap,
   User,
+  Bell,
 } from "lucide-react";
 
 
@@ -66,6 +67,7 @@ const Web3Dashboard = () => {
   const [search, setSearch] = useState("");
   const [activityFilter, setActivityFilter] = useState<string>("All");
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
 
 
   useEffect(() => {
@@ -80,6 +82,13 @@ const Web3Dashboard = () => {
       if (!mounted) return;
       if (prof) setProfile(prof as any);
       if (w?.balance != null) setBalance(Number(w.balance));
+      // Unread notifications count
+      const { count } = await (supabase as any)
+        .from("app_notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false);
+      if (mounted && typeof count === "number") setUnread(count);
     })();
     return () => { mounted = false; };
   }, []);
@@ -148,7 +157,19 @@ const Web3Dashboard = () => {
           )}
           <span className="font-semibold text-[15px] truncate">{displayName}</span>
         </button>
-        <div className="shrink-0">
+        <div className="shrink-0 flex items-center gap-2">
+          <button
+            onClick={() => navigate("/notifications")}
+            aria-label="Notifications"
+            className="relative h-9 w-9 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center hover:bg-[#222] transition"
+          >
+            <Bell className="h-4 w-4 text-white" />
+            {unread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-[10px] font-bold leading-4 text-center text-white">
+                {Math.min(unread, 99)}
+              </span>
+            )}
+          </button>
           <CurrencySelector />
         </div>
       </div>
@@ -220,6 +241,8 @@ const Web3Dashboard = () => {
             <RowTile icon={<TrendingUp className="h-5 w-5 text-white/70" />} title="Affiliate" subtitle="Invite & earn" onClick={() => navigate("/affiliate")} />
             <RowTile icon={<GraduationCap className="h-5 w-5 text-white/70" />} title="Tutorial" subtitle="Learn how OpenPay works" onClick={() => setTutorialOpen(true)} />
             <RowTile icon={<User className="h-5 w-5 text-white/70" />} title="Profile & Settings" subtitle="Account, security, preferences" onClick={() => navigate("/menu")} />
+            <RowTile icon={<Bell className="h-5 w-5 text-white/70" />} title={`Notifications${unread > 0 ? ` (${unread})` : ""}`} subtitle="Alerts & updates" onClick={() => navigate("/notifications")} />
+            <RowTile icon={<Clock className="h-5 w-5 text-white/70" />} title="Transaction History" subtitle="View every transaction" onClick={() => navigate("/activity")} />
             <RowTile icon={<Sparkles className="h-5 w-5 text-white/70" />} title="Classic UI" subtitle="Switch to original mode" onClick={() => setUiMode("original")} />
           </div>
 
@@ -257,7 +280,12 @@ const Web3Dashboard = () => {
             </div>
             <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-white/70">Balance {format(balance)}</span>
           </button>
-          <h1 className="text-4xl font-extrabold">Activity</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-4xl font-extrabold">Activity</h1>
+            <button onClick={() => navigate("/activity")} className="text-xs font-semibold text-white/70 hover:text-white px-3 py-1.5 rounded-full border border-white/15">
+              View all
+            </button>
+          </div>
 
           <div className="mt-5 flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
             {["All", "Converts", "Deposits", "Withdrawals", "Sent"].map((c) => (
@@ -294,6 +322,12 @@ const Web3Dashboard = () => {
               {filteredTxs.map((t) => (
                 <TxRowItem key={t.id} tx={t} format={format} onClick={() => navigate("/activity")} />
               ))}
+              <button
+                onClick={() => navigate("/activity")}
+                className="w-full mt-4 rounded-2xl border border-white/15 py-3 text-sm font-semibold text-white/80 hover:bg-white/5 transition"
+              >
+                View full transaction history
+              </button>
             </div>
           )}
         </div>

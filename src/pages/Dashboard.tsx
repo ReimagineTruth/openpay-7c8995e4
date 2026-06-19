@@ -2305,6 +2305,16 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+
+          {/* Web3 Mode toggle (outside the header action buttons) */}
+          <button
+            onClick={() => setUiMode("web3")}
+            aria-label="Switch to Web3 mode"
+            className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 transition-all duration-300 hover:bg-white/15 hover:scale-105 hover-lift"
+          >
+            <Sparkles className="h-4 w-4 text-white" />
+            <span className="text-[11px] font-black text-white uppercase tracking-wide">Web3</span>
+          </button>
         </div>
 
         <div className="flex gap-3 items-center">
