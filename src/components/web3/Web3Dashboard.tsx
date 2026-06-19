@@ -237,7 +237,28 @@ const Web3Dashboard = () => {
 
       {tab === "activity" && (
         <div className="px-5 pt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Connected account profile card */}
+          <button
+            onClick={() => navigate("/menu")}
+            className="w-full flex items-center gap-3 rounded-2xl bg-[#0f0f0f] border border-white/5 p-3 mb-4 hover:bg-[#161616] transition text-left"
+          >
+            {avatar ? (
+              <img src={avatar} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-white/10" />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-base font-bold">
+                {(displayName[0] || "O").toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-[15px] truncate">{profile.full_name || displayName}</p>
+              <p className="text-xs text-white/55 truncate">
+                {profile.username ? `@${profile.username}` : "Tap to complete your profile"}
+              </p>
+            </div>
+            <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-white/70">Balance {format(balance)}</span>
+          </button>
           <h1 className="text-4xl font-extrabold">Activity</h1>
+
           <div className="mt-5 flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
             {["All", "Converts", "Deposits", "Withdrawals", "Sent"].map((c) => (
               <button
