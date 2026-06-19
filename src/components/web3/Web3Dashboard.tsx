@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { setUiMode } from "@/lib/uiMode";
+import CurrencySelector from "@/components/CurrencySelector";
+import OpenPayTutorial from "@/components/OpenPayTutorial";
 import {
   Home,
   Clock,
@@ -27,7 +29,10 @@ import {
   Pickaxe,
   Store,
   HelpCircle,
+  GraduationCap,
+  User,
 } from "lucide-react";
+
 
 type Tab = "home" | "activity" | "search";
 
