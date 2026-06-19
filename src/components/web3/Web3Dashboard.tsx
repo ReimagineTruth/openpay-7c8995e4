@@ -65,6 +65,8 @@ const Web3Dashboard = () => {
   const [loadingTx, setLoadingTx] = useState(false);
   const [search, setSearch] = useState("");
   const [activityFilter, setActivityFilter] = useState<string>("All");
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+
 
   useEffect(() => {
     let mounted = true;
