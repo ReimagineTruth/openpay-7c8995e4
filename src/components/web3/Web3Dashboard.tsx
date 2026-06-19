@@ -241,6 +241,8 @@ const Web3Dashboard = () => {
             <RowTile icon={<TrendingUp className="h-5 w-5 text-white/70" />} title="Affiliate" subtitle="Invite & earn" onClick={() => navigate("/affiliate")} />
             <RowTile icon={<GraduationCap className="h-5 w-5 text-white/70" />} title="Tutorial" subtitle="Learn how OpenPay works" onClick={() => setTutorialOpen(true)} />
             <RowTile icon={<User className="h-5 w-5 text-white/70" />} title="Profile & Settings" subtitle="Account, security, preferences" onClick={() => navigate("/menu")} />
+            <RowTile icon={<Bell className="h-5 w-5 text-white/70" />} title={`Notifications${unread > 0 ? ` (${unread})` : ""}`} subtitle="Alerts & updates" onClick={() => navigate("/notifications")} />
+            <RowTile icon={<Clock className="h-5 w-5 text-white/70" />} title="Transaction History" subtitle="View every transaction" onClick={() => navigate("/activity")} />
             <RowTile icon={<Sparkles className="h-5 w-5 text-white/70" />} title="Classic UI" subtitle="Switch to original mode" onClick={() => setUiMode("original")} />
           </div>
 
