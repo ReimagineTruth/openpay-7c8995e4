@@ -157,7 +157,19 @@ const Web3Dashboard = () => {
           )}
           <span className="font-semibold text-[15px] truncate">{displayName}</span>
         </button>
-        <div className="shrink-0">
+        <div className="shrink-0 flex items-center gap-2">
+          <button
+            onClick={() => navigate("/notifications")}
+            aria-label="Notifications"
+            className="relative h-9 w-9 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center hover:bg-[#222] transition"
+          >
+            <Bell className="h-4 w-4 text-white" />
+            {unread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-[10px] font-bold leading-4 text-center text-white">
+                {Math.min(unread, 99)}
+              </span>
+            )}
+          </button>
           <CurrencySelector />
         </div>
       </div>
