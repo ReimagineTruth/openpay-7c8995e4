@@ -83,7 +83,7 @@ const Web3Dashboard = () => {
       if (prof) setProfile(prof as any);
       if (w?.balance != null) setBalance(Number(w.balance));
       // Unread notifications count
-      const { count } = await supabase
+      const { count } = await (supabase as any)
         .from("app_notifications")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
