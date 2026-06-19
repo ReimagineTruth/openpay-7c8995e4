@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { setUiMode } from "@/lib/uiMode";
+import CurrencySelector from "@/components/CurrencySelector";
+import OpenPayTutorial from "@/components/OpenPayTutorial";
 import {
   Home,
   Clock,
@@ -27,7 +29,10 @@ import {
   Pickaxe,
   Store,
   HelpCircle,
+  GraduationCap,
+  User,
 } from "lucide-react";
+
 
 type Tab = "home" | "activity" | "search";
 
@@ -60,6 +65,8 @@ const Web3Dashboard = () => {
   const [loadingTx, setLoadingTx] = useState(false);
   const [search, setSearch] = useState("");
   const [activityFilter, setActivityFilter] = useState<string>("All");
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+
 
   useEffect(() => {
     let mounted = true;
@@ -130,8 +137,8 @@ const Web3Dashboard = () => {
       style={{ fontFamily: "'SF Pro Display', system-ui, -apple-system, sans-serif" }}
     >
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-5">
-        <button onClick={() => navigate("/menu")} className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-5 pt-5 gap-3">
+        <button onClick={() => navigate("/menu")} className="flex items-center gap-2 min-w-0">
           {avatar ? (
             <img src={avatar} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-white/10" />
           ) : (
@@ -139,9 +146,13 @@ const Web3Dashboard = () => {
               {(displayName[0] || "O").toUpperCase()}
             </div>
           )}
-          <span className="font-semibold text-[15px]">{displayName}</span>
+          <span className="font-semibold text-[15px] truncate">{displayName}</span>
         </button>
+        <div className="shrink-0">
+          <CurrencySelector />
+        </div>
       </div>
+
 
       {tab === "home" && (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -207,8 +218,11 @@ const Web3Dashboard = () => {
             <RowTile icon={<Pickaxe className="h-5 w-5 text-white/70" />} title="Mining" subtitle="Earn daily rewards" onClick={() => navigate("/mining")} />
             <RowTile icon={<Store className="h-5 w-5 text-white/70" />} title="Merchant POS" subtitle="Accept payments" onClick={() => navigate("/merchant-pos")} />
             <RowTile icon={<TrendingUp className="h-5 w-5 text-white/70" />} title="Affiliate" subtitle="Invite & earn" onClick={() => navigate("/affiliate")} />
+            <RowTile icon={<GraduationCap className="h-5 w-5 text-white/70" />} title="Tutorial" subtitle="Learn how OpenPay works" onClick={() => setTutorialOpen(true)} />
+            <RowTile icon={<User className="h-5 w-5 text-white/70" />} title="Profile & Settings" subtitle="Account, security, preferences" onClick={() => navigate("/menu")} />
             <RowTile icon={<Sparkles className="h-5 w-5 text-white/70" />} title="Classic UI" subtitle="Switch to original mode" onClick={() => setUiMode("original")} />
           </div>
+
 
           {/* Learn more */}
           <h3 className="mt-8 mx-5 text-white/60 text-[15px] font-semibold">Learn more</h3>
@@ -223,7 +237,28 @@ const Web3Dashboard = () => {
 
       {tab === "activity" && (
         <div className="px-5 pt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Connected account profile card */}
+          <button
+            onClick={() => navigate("/menu")}
+            className="w-full flex items-center gap-3 rounded-2xl bg-[#0f0f0f] border border-white/5 p-3 mb-4 hover:bg-[#161616] transition text-left"
+          >
+            {avatar ? (
+              <img src={avatar} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-white/10" />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-base font-bold">
+                {(displayName[0] || "O").toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-[15px] truncate">{profile.full_name || displayName}</p>
+              <p className="text-xs text-white/55 truncate">
+                {profile.username ? `@${profile.username}` : "Tap to complete your profile"}
+              </p>
+            </div>
+            <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-white/70">Balance {format(balance)}</span>
+          </button>
           <h1 className="text-4xl font-extrabold">Activity</h1>
+
           <div className="mt-5 flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
             {["All", "Converts", "Deposits", "Withdrawals", "Sent"].map((c) => (
               <button
@@ -326,7 +361,11 @@ const Web3Dashboard = () => {
           <Plus className="h-7 w-7 text-white" />
         </button>
       </div>
+
+      {/* Tutorial modal */}
+      <OpenPayTutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </div>
+
   );
 };
 
