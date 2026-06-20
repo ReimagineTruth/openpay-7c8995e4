@@ -39,7 +39,7 @@ const MRWN_LOGO_URL = "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722
 const OUSD_LOGO_URL = "/openpay-o.svg";
 const WITHDRAWAL_FEE_RATE = 0.02;
 const PIN_ACTION_KEY = "openpay_pin_action_swap_v1";
-const swapEnabled = String(import.meta.env.VITE_SWAP_ENABLED || "false").toLowerCase() === "true";
+const swapEnabled = String(import.meta.env.VITE_SWAP_ENABLED ?? "true").toLowerCase() !== "false";
 
 const swapTypeLogo = (type: WithdrawalType) => {
   if (type === "PI") return PI_LOGO_URL;
