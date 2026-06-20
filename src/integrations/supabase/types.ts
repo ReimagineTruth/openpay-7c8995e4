@@ -3372,9 +3372,12 @@ export type Database = {
           fee_amount: number
           fee_rate: number
           id: string
+          mrwn_wallet_address: string
           openpay_account_name: string
           openpay_account_number: string
           openpay_account_username: string
+          ousd_sol_wallet_address: string
+          ousd_wallet_address: string
           payout_amount: number
           pi_wallet_address: string
           refund_transaction_id: string | null
@@ -3384,6 +3387,7 @@ export type Database = {
           transfer_transaction_id: string | null
           updated_at: string
           user_id: string
+          withdrawal_type: string
         }
         Insert: {
           admin_note?: string
@@ -3392,9 +3396,12 @@ export type Database = {
           fee_amount?: number
           fee_rate?: number
           id?: string
+          mrwn_wallet_address?: string
           openpay_account_name?: string
           openpay_account_number?: string
           openpay_account_username?: string
+          ousd_sol_wallet_address?: string
+          ousd_wallet_address?: string
           payout_amount?: number
           pi_wallet_address?: string
           refund_transaction_id?: string | null
@@ -3404,6 +3411,7 @@ export type Database = {
           transfer_transaction_id?: string | null
           updated_at?: string
           user_id: string
+          withdrawal_type?: string
         }
         Update: {
           admin_note?: string
@@ -3412,9 +3420,12 @@ export type Database = {
           fee_amount?: number
           fee_rate?: number
           id?: string
+          mrwn_wallet_address?: string
           openpay_account_name?: string
           openpay_account_number?: string
           openpay_account_username?: string
+          ousd_sol_wallet_address?: string
+          ousd_wallet_address?: string
           payout_amount?: number
           pi_wallet_address?: string
           refund_transaction_id?: string | null
@@ -3424,6 +3435,7 @@ export type Database = {
           transfer_transaction_id?: string | null
           updated_at?: string
           user_id?: string
+          withdrawal_type?: string
         }
         Relationships: [
           {
@@ -4690,10 +4702,14 @@ export type Database = {
       submit_swap_withdrawal: {
         Args: {
           p_amount: number
+          p_mrwn_wallet_address?: string
           p_openpay_account_name: string
           p_openpay_account_number: string
           p_openpay_account_username: string
-          p_pi_wallet_address: string
+          p_ousd_sol_wallet_address?: string
+          p_ousd_wallet_address?: string
+          p_pi_wallet_address?: string
+          p_withdrawal_type?: string
         }
         Returns: {
           admin_note: string
@@ -4702,9 +4718,12 @@ export type Database = {
           fee_amount: number
           fee_rate: number
           id: string
+          mrwn_wallet_address: string
           openpay_account_name: string
           openpay_account_number: string
           openpay_account_username: string
+          ousd_sol_wallet_address: string
+          ousd_wallet_address: string
           payout_amount: number
           pi_wallet_address: string
           refund_transaction_id: string | null
@@ -4714,6 +4733,7 @@ export type Database = {
           transfer_transaction_id: string | null
           updated_at: string
           user_id: string
+          withdrawal_type: string
         }
         SetofOptions: {
           from: "*"
