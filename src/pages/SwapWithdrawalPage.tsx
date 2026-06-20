@@ -539,68 +539,8 @@ const SwapWithdrawalPage = () => {
                     </div>
                   </div>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setWithdrawalType("OUSD_SOL")}
-                  disabled={!swapEnabled}
-                  className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
-                    withdrawalType === "OUSD_SOL"
-                      ? "border-sky-400 bg-gradient-to-br from-sky-50 to-blue-100 shadow-xl shadow-sky-500/25 scale-105"
-                      : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
-                  } ${!swapEnabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  {withdrawalType === "OUSD_SOL" && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-sky-500 flex items-center justify-center">
-                      <div className="h-2 w-2 rounded-full bg-white"></div>
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center justify-center gap-2 h-full">
-                    <div className={`relative transition-transform duration-300 ${
-                      withdrawalType === "OUSD_SOL" ? "scale-110" : "group-hover:scale-105"
-                    }`}>
-                      <img src={OUSD_SOL_LOGO_URL} alt={OUSD_SOL_LABEL} className="h-6 w-6 drop-shadow-md" />
-                    </div>
-                    <div className="text-center">
-                      <span className={`text-xs font-bold transition-colors duration-300 ${
-                        withdrawalType === "OUSD_SOL" ? "text-sky-600" : "text-foreground group-hover:text-white"
-                      }`}>{OUSD_SOL_LABEL}</span>
-                      <div className={`text-[10px] transition-opacity duration-300 ${
-                        withdrawalType === "OUSD_SOL" ? "opacity-100 text-sky-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                      }`}>Solana 1:1</div>
-                    </div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWithdrawalType("MRWN")}
-                  disabled={!swapEnabled}
-                  className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
-                    withdrawalType === "MRWN"
-                      ? "border-purple-400 bg-gradient-to-br from-purple-50 to-purple-100 shadow-xl shadow-purple-500/25 scale-105"
-                      : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
-                  } ${!swapEnabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  {withdrawalType === "MRWN" && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-purple-500 flex items-center justify-center">
-                      <div className="h-2 w-2 rounded-full bg-white"></div>
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center justify-center gap-2 h-full">
-                    <div className={`relative transition-transform duration-300 ${
-                      withdrawalType === "MRWN" ? "scale-110" : "group-hover:scale-105"
-                    }`}>
-                      <img src={MRWN_LOGO_URL} alt="MRWN" className="h-6 w-6 drop-shadow-md" />
-                    </div>
-                    <div className="text-center">
-                      <span className={`text-xs font-bold transition-colors duration-300 ${
-                        withdrawalType === "MRWN" ? "text-purple-600" : "text-foreground group-hover:text-white"
-                      }`}>MRWN</span>
-                      <div className={`text-[10px] transition-opacity duration-300 ${
-                        withdrawalType === "MRWN" ? "opacity-100 text-purple-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                      }`}>10 OUSD = 1 MRWN</div>
-                    </div>
-                  </div>
-                </button>
+                {/* OUSD_SOL and MRWN withdrawal options are temporarily hidden */}
+
               </div>
             </div>
             <label className="space-y-1 text-xs text-muted-foreground">
