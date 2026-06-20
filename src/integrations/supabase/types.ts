@@ -3364,6 +3364,84 @@ export type Database = {
         }
         Relationships: []
       }
+      user_swap_withdrawals: {
+        Row: {
+          admin_note: string
+          amount: number
+          created_at: string
+          fee_amount: number
+          fee_rate: number
+          id: string
+          openpay_account_name: string
+          openpay_account_number: string
+          openpay_account_username: string
+          payout_amount: number
+          pi_wallet_address: string
+          refund_transaction_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          transfer_transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string
+          amount: number
+          created_at?: string
+          fee_amount?: number
+          fee_rate?: number
+          id?: string
+          openpay_account_name?: string
+          openpay_account_number?: string
+          openpay_account_username?: string
+          payout_amount?: number
+          pi_wallet_address?: string
+          refund_transaction_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transfer_transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string
+          amount?: number
+          created_at?: string
+          fee_amount?: number
+          fee_rate?: number
+          id?: string
+          openpay_account_name?: string
+          openpay_account_number?: string
+          openpay_account_username?: string
+          payout_amount?: number
+          pi_wallet_address?: string
+          refund_transaction_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transfer_transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_swap_withdrawals_refund_transaction_id_fkey"
+            columns: ["refund_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_swap_withdrawals_transfer_transaction_id_fkey"
+            columns: ["transfer_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_topup_requests: {
         Row: {
           admin_note: string
@@ -3606,6 +3684,14 @@ export type Database = {
           p_admin_note?: string
           p_application_id: string
           p_decision: string
+        }
+        Returns: string
+      }
+      admin_review_swap_withdrawal: {
+        Args: {
+          p_admin_note?: string
+          p_decision: string
+          p_withdrawal_id: string
         }
         Returns: string
       }
@@ -4597,6 +4683,41 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "open_partner_leads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_swap_withdrawal: {
+        Args: {
+          p_amount: number
+          p_openpay_account_name: string
+          p_openpay_account_number: string
+          p_openpay_account_username: string
+          p_pi_wallet_address: string
+        }
+        Returns: {
+          admin_note: string
+          amount: number
+          created_at: string
+          fee_amount: number
+          fee_rate: number
+          id: string
+          openpay_account_name: string
+          openpay_account_number: string
+          openpay_account_username: string
+          payout_amount: number
+          pi_wallet_address: string
+          refund_transaction_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          transfer_transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_swap_withdrawals"
           isOneToOne: true
           isSetofReturn: false
         }
