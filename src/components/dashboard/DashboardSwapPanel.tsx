@@ -30,24 +30,9 @@ const WITHDRAWAL_OPTIONS: {
     accent: "from-emerald-500/15 to-teal-500/10",
     ring: "ring-paypal-blue/70",
   },
-  {
-    id: "OUSD_SOL",
-    label: OUSD_SOL_LABEL,
-    sublabel: "OUSD → Solana",
-    iconUrl: OUSD_SOL_LOGO_URL,
-    accent: "from-sky-500/15 to-blue-500/10",
-    ring: "ring-paypal-blue/70",
-  },
-  {
-    id: "MRWN",
-    label: "MRWN",
-    sublabel: `${MRWN_SWAP_OUSD_PER_TOKEN} OUSD = 1 MRWN`,
-    iconUrl:
-      "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722deab5-1-removebg-preview.png",
-    accent: "from-amber-500/15 to-orange-500/10",
-    ring: "ring-paypal-blue/70",
-  },
+  // OUSD_SOL and MRWN withdrawals are temporarily hidden
 ];
+
 
 export type DashboardSwapPanelProps = {
   withdrawalType: SwapWithdrawalType;
