@@ -1881,9 +1881,7 @@ const Dashboard = () => {
   const solanaPayEnabled = isSolanaPayEnabled();
   const baseOnrampRows: Array<{ key: BuyOnrampProvider; disabled?: boolean; subtitle: string; delta?: string; recommended?: boolean }> = [
     { key: "Pi Payment", subtitle: "Active", recommended: true },
-    { key: "MRWN", subtitle: "Active" },
     { key: "OUSD", subtitle: "Active" },
-    { key: "OUSD_SOL", subtitle: "Solana · Active" },
     { key: "Ewallet QR PH", subtitle: "Active" },
     { key: "USDT", subtitle: "Active" },
     { key: "USDC", subtitle: "Active" },
@@ -1904,8 +1902,6 @@ const Dashboard = () => {
   const basePaymentMethodRows: Array<{ key: BuyPaymentMethod; recommended?: boolean; disabled?: boolean }> = [
     { key: "Pi Payment", recommended: true },
     { key: "OUSD" },
-    { key: "OUSD_SOL" },
-    { key: "MRWN" },
     { key: "USDT" },
     { key: "USDC" },
     { key: "Ewallet" },
@@ -1922,9 +1918,7 @@ const Dashboard = () => {
     solanaPayEnabled ? basePaymentMethodRows : basePaymentMethodRows.filter((row) => row.key !== "Solana Pay");
   const baseSupportedBuyPaymentMethods: BuyPaymentMethod[] = [
     "Pi Payment",
-    "MRWN",
     "OUSD",
-    "OUSD_SOL",
     "USDT",
     "USDC",
     "Ewallet",
@@ -1941,6 +1935,7 @@ const Dashboard = () => {
     solanaPayEnabled
       ? baseSupportedBuyPaymentMethods
       : (baseSupportedBuyPaymentMethods.filter((method) => method !== "Solana Pay") as BuyPaymentMethod[]);
+
   const getBuyPaymentMethodLabel = (method: BuyPaymentMethod) => {
     if (method === "Ewallet") return "Ewallet QR PH";
     if (method === "OUSD_SOL") return OUSD_SOL_LABEL;
