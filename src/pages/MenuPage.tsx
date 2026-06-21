@@ -676,6 +676,8 @@ const MenuPage = () => {
 
             { icon: ShieldCheck, label: "Top Ups", action: () => navigate("/admin-topup-requests") },
 
+            { icon: ShieldCheck, label: "Affiliate", action: () => navigate("/admin/affiliate") },
+
             ...(canOpenMasterTopUp
 
               ? [{ icon: ShieldCheck, label: "Master Top Up", action: () => navigate("/master-topup") }]
