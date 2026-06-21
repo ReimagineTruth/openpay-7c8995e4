@@ -745,7 +745,7 @@ const MenuPage = () => {
         />
 
         {/* Unified Banner Drawer */}
-        {(showOpenAppBanner || showApkBanner) && (
+        {(showOpenAppBanner || showApkBanner) && !isPiBrowserUserAgent() && (
           <div className="mb-8 animate-in-up">
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-[2rem] border-2 border-blue-400 shadow-xl relative transition-all duration-300 overflow-hidden">
               {/* Drawer Header */}
