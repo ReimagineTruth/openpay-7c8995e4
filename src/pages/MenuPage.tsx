@@ -10,7 +10,7 @@ import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, Hel
 
 import { toast } from "sonner";
 
-import { clearAllAppSecurityUnlocks } from "@/lib/appSecurity";
+import { clearAllAppSecurityUnlocks, isPiBrowserUserAgent } from "@/lib/appSecurity";
 
 import { canAccessRemittanceMerchant, isRemittanceUiEnabled } from "@/lib/remittanceAccess";
 
