@@ -3456,8 +3456,17 @@ const Dashboard = () => {
             </div>
             <button
               type="button"
+              onClick={() => setUiMode("web3")}
+              aria-label="Switch to Web3 mode"
+              className="ml-auto ios-active flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-md hover:opacity-90 transition-all"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Web3
+            </button>
+            <button
+              type="button"
               onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-              className="ml-auto ios-active rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue hover:bg-paypal-blue/20 transition-colors backdrop-blur-sm"
+              className="ios-active rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue hover:bg-paypal-blue/20 transition-colors backdrop-blur-sm"
             >
               {amountFormat === "compact" ? "Compact" : "Comma"}
             </button>
