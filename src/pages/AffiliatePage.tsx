@@ -191,10 +191,10 @@ const AffiliatePage = () => {
       </div>
 
       <Tabs defaultValue="invite" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-white/15">
-          <TabsTrigger value="invite">Invite</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="socials">Socials</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 bg-white/20 p-1 rounded-2xl h-auto gap-1">
+          <TabsTrigger value="invite" className="rounded-xl text-white/90 font-semibold data-[state=active]:bg-white data-[state=active]:text-paypal-blue data-[state=active]:shadow-md">Invite</TabsTrigger>
+          <TabsTrigger value="tasks" className="rounded-xl text-white/90 font-semibold data-[state=active]:bg-white data-[state=active]:text-paypal-blue data-[state=active]:shadow-md">Tasks</TabsTrigger>
+          <TabsTrigger value="socials" className="rounded-xl text-white/90 font-semibold data-[state=active]:bg-white data-[state=active]:text-paypal-blue data-[state=active]:shadow-md">Socials</TabsTrigger>
         </TabsList>
 
         <TabsContent value="invite" className="grid gap-3 mt-3">
