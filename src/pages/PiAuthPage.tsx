@@ -299,7 +299,7 @@ const PiAuthPage = () => {
                 </div>
               </Button>
               <div className="grid grid-cols-1 gap-2">
-                {!isPiBrowserUAOnly() && (
+                {!inPiBrowser && (
                   <Button
                     asChild
                     type="button"
