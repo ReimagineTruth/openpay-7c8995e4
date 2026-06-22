@@ -3682,6 +3682,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_openpay_metrics: { Args: never; Returns: Json }
       admin_refund_self_send: {
         Args: {
           p_admin_email?: string
@@ -4249,6 +4250,7 @@ export type Database = {
         }[]
       }
       is_openpay_core_admin: { Args: never; Returns: boolean }
+      is_openpay_metrics_admin: { Args: never; Returns: boolean }
       is_support_agent: { Args: { p_user_id: string }; Returns: boolean }
       is_transaction_participant: {
         Args: { _transaction_id: string }
