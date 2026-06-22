@@ -106,6 +106,7 @@ import KycPage from "./pages/KycPage";
 import KycStatusPage from "./pages/KycStatusPage";
 import AdminKycReview from "./pages/AdminKycReview";
 import AdminKycMetricsPage from "./pages/AdminKycMetricsPage";
+import AdminOpenPayMetricsPage from "./pages/AdminOpenPayMetricsPage";
 import LiveCustomerServicePage from "./pages/LiveCustomerServicePage";
 import SwapWithdrawalPage from "./pages/SwapWithdrawalPage";
 import ConfirmPinPage from "./pages/ConfirmPinPage";
