@@ -363,7 +363,7 @@ const SocialTemplate = forwardRef<HTMLDivElement, { data: TemplateData; totalUse
     </div>
   );
 });
-SocialTemplateInner.displayName = "SocialTemplateInner";
+SocialTemplate.displayName = "SocialTemplate";
 
 const BigStat = ({ iconBg, icon, label, value, change, wide }: { iconBg: string; icon: "users" | "check" | "globe"; label: string; value: number; change?: number; wide?: boolean }) => (
   <div
