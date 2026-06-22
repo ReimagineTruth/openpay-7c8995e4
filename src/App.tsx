@@ -106,6 +106,7 @@ import KycPage from "./pages/KycPage";
 import KycStatusPage from "./pages/KycStatusPage";
 import AdminKycReview from "./pages/AdminKycReview";
 import AdminKycMetricsPage from "./pages/AdminKycMetricsPage";
+import AdminOpenPayMetricsPage from "./pages/AdminOpenPayMetricsPage";
 import LiveCustomerServicePage from "./pages/LiveCustomerServicePage";
 import SwapWithdrawalPage from "./pages/SwapWithdrawalPage";
 import ConfirmPinPage from "./pages/ConfirmPinPage";
@@ -486,6 +487,7 @@ const AppRoutes = () => {
         <Route path="/kyc-status" element={<KycStatusPage />} />
         <Route path="/admin-kyc-review" element={<AdminKycReview />} />
         <Route path="/admin-kyc-metrics" element={<AdminKycMetricsPage />} />
+        <Route path="/admin-openpay-metrics" element={<AdminOpenPayMetricsPage />} />
 
         <Route path="/remittance-merchant" element={<RemittanceMerchantPage />} />
         <Route path="/openpay-official" element={<OpenPayOfficialPage />} />
