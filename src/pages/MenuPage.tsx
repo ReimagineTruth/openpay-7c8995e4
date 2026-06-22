@@ -670,6 +670,8 @@ const MenuPage = () => {
 
             { icon: ShieldCheck, label: "KYC Review", action: () => navigate("/admin-kyc-review") },
 
+            { icon: ShieldCheck, label: "KYC Metrics", action: () => navigate("/admin-kyc-metrics") },
+
             { icon: ShieldCheck, label: "Withdrawals", action: () => navigate("/admin-swap-withrawals") },
 
             { icon: ShieldCheck, label: "Loans", action: () => navigate("/admin-loan-applications") },
