@@ -295,13 +295,7 @@ type TemplateData = {
   secondaryValue: number;
 };
 
-const SocialTemplate = ({ data, totalUsers, ref: _unused, ...rest }: any) => {
-  // forwardRef-lite
-  return <SocialTemplateInner {...rest} data={data} totalUsers={totalUsers} />;
-};
-
-import { forwardRef } from "react";
-const SocialTemplateInner = forwardRef<HTMLDivElement, { data: TemplateData; totalUsers: number }>(({ data, totalUsers }, ref) => {
+const SocialTemplate = forwardRef<HTMLDivElement, { data: TemplateData; totalUsers: number }>(({ data, totalUsers }, ref) => {
   const now = new Date();
   return (
     <div
