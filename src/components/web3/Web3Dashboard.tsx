@@ -5,6 +5,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { setUiMode } from "@/lib/uiMode";
 import CurrencySelector from "@/components/CurrencySelector";
 import OpenPayTutorial from "@/components/OpenPayTutorial";
+import NftShowcase from "@/components/web3/NftShowcase";
 import {
   Home,
   Clock,
