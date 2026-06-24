@@ -15,7 +15,7 @@ const NftStoreSettingsPage = () => {
   const [form, setForm] = useState({
     handle: "", display_name: "", bio: "",
     avatar_url: "", banner_url: "",
-    website_url: "", twitter_url: "", instagram_url: "", discord_url: "", telegram_url: "",
+    website_url: "", twitter_url: "", instagram_url: "", discord_url: "", telegram_url: "", facebook_url: "", youtube_url: "",
     email_public: "", feature_nfts: true,
     category: "general",
   });
