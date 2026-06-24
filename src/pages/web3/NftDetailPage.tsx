@@ -507,7 +507,26 @@ const NftDetailPage = () => {
                   auction={a}
                   format={(n: number) => formatNftPrice(n, item.currency)}
                   me={me}
-                  onBid={() => { setBidOpen(a); setBidAmt(String((Number(a.current_bid ?? a.start_price)) + Number(a.min_increment))); }}
+                  onBid={async () => {
+                    setBidOpen(a);
+                    setBidAmt(String((Number(a.current_bid ?? a.start_price)) + Number(a.min_increment)));
+                    setBidMethod("openpay_balance");
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                      const { data: cards } = await (supabase as any)
+                        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year")
+                        .eq("user_id", user.id).eq("is_active", true).limit(1);
+                      setSavedCards(cards || []);
+                      if (cards && cards[0]) {
+                        setCard({
+                          number: cards[0].card_number,
+                          cvc: cards[0].cvc,
+                          exp_month: String(cards[0].expiry_month),
+                          exp_year: String(cards[0].expiry_year),
+                        });
+                      }
+                    }
+                  }}
                   onFinalize={() => handleFinalize(a)}
                   onCancel={() => handleCancelAuction(a)}
                   onRefresh={load}
