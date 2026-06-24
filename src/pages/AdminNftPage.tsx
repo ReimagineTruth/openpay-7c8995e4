@@ -23,34 +23,28 @@ const AdminNftPage = () => {
   const [activity, setActivity] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [fee, setFee] = useState({ enabled: false, rate: 0, collector_user_id: "" });
-  const [mintFee, setMintFee] = useState({ enabled: false, rate: 0, collector_user_id: "" });
-  const [bidFee, setBidFee] = useState({ enabled: false, rate: 0, collector_user_id: "" });
   const [loading, setLoading] = useState(true);
   const [savingFee, setSavingFee] = useState(false);
-  const [savingMintFee, setSavingMintFee] = useState(false);
-  const [savingBidFee, setSavingBidFee] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [m, items, act, feeCfg, mintCfg, bidCfg] = await Promise.all([
+      const [m, items, act, feeCfg] = await Promise.all([
         (supabase as any).rpc("nft_admin_metrics"),
         (supabase as any).rpc("nft_admin_list_items", { p_limit: 200, p_search: search || null }),
         (supabase as any).rpc("nft_admin_recent_activity", { p_limit: 100 }),
         (supabase as any).rpc("nft_get_platform_fee"),
-        (supabase as any).rpc("nft_get_mint_fee"),
-        (supabase as any).rpc("nft_get_bid_fee"),
       ]);
       if (m.error) throw m.error;
       setMetrics(m.data || {});
       setItems(items.data || []);
       setActivity(act.data || []);
       const f = feeCfg.data || {};
-      setFee({ enabled: !!f.enabled, rate: Number(f.rate || 0), collector_user_id: f.collector_user_id || "" });
-      const mf = mintCfg.data || {};
-      setMintFee({ enabled: !!mf.enabled, rate: Number(mf.rate || 0), collector_user_id: mf.collector_user_id || "" });
-      const bf = bidCfg.data || {};
-      setBidFee({ enabled: !!bf.enabled, rate: Number(bf.rate || 0), collector_user_id: bf.collector_user_id || "" });
+      setFee({
+        enabled: !!f.enabled,
+        rate: Number(f.rate || 0),
+        collector_user_id: f.collector_user_id || "",
+      });
     } catch (e: any) {
       toast({ title: "Access denied", description: e.message, variant: "destructive" });
     } finally {
@@ -74,40 +68,6 @@ const AdminNftPage = () => {
       toast({ title: "Save failed", description: e.message, variant: "destructive" });
     } finally {
       setSavingFee(false);
-    }
-  };
-
-  const saveMintFee = async () => {
-    setSavingMintFee(true);
-    try {
-      const { error } = await (supabase as any).rpc("nft_admin_set_mint_fee", {
-        p_enabled: mintFee.enabled,
-        p_rate: Number(mintFee.rate) || 0,
-        p_collector: mintFee.collector_user_id || null,
-      });
-      if (error) throw error;
-      toast({ title: "Mint fee saved" });
-    } catch (e: any) {
-      toast({ title: "Save failed", description: e.message, variant: "destructive" });
-    } finally {
-      setSavingMintFee(false);
-    }
-  };
-
-  const saveBidFee = async () => {
-    setSavingBidFee(true);
-    try {
-      const { error } = await (supabase as any).rpc("nft_admin_set_bid_fee", {
-        p_enabled: bidFee.enabled,
-        p_rate: Number(bidFee.rate) || 0,
-        p_collector: bidFee.collector_user_id || null,
-      });
-      if (error) throw error;
-      toast({ title: "Bid fee saved" });
-    } catch (e: any) {
-      toast({ title: "Save failed", description: e.message, variant: "destructive" });
-    } finally {
-      setSavingBidFee(false);
     }
   };
 
@@ -186,85 +146,6 @@ const AdminNftPage = () => {
             <Save className="h-4 w-4" /> {savingFee ? "Saving…" : "Save Fee Settings"}
           </button>
         </div>
-
-        {/* Mint Fee */}
-        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Percent className="h-4 w-4" style={{ color: ACCENT }} />
-            <h2 className="font-bold">Mint Fee</h2>
-            <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${mintFee.enabled ? "bg-green-500/20 text-green-400" : "bg-white/10 text-white/50"}`}>
-              {mintFee.enabled ? "ON" : "OFF"}
-            </span>
-          </div>
-          <p className="text-xs text-white/50 mb-3">Charged from the creator's OpenPay wallet at mint time. Calculated as a % of (price × quantity).</p>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <label className="block">
-              <span className="text-xs text-white/60 font-semibold">Rate (%)</span>
-              <input type="number" step="0.1" min={0} max={50} value={mintFee.rate}
-                onChange={(e) => setMintFee((f) => ({ ...f, rate: Number(e.target.value) }))}
-                className="mt-1 w-full rounded-xl bg-[#161616] border border-white/10 p-3 text-sm outline-none" />
-            </label>
-            <label className="flex items-end gap-2">
-              <input id="mint-fee-enabled" type="checkbox" checked={mintFee.enabled}
-                onChange={(e) => setMintFee((f) => ({ ...f, enabled: e.target.checked }))}
-                className="h-5 w-5" />
-              <span className="text-sm pb-2">Enable mint fee</span>
-            </label>
-          </div>
-          <label className="block mb-3">
-            <span className="text-xs text-white/60 font-semibold">Collector User ID (UUID)</span>
-            <input value={mintFee.collector_user_id}
-              onChange={(e) => setMintFee((f) => ({ ...f, collector_user_id: e.target.value }))}
-              placeholder="UUID of OpenPay treasury wallet user"
-              className="mt-1 w-full rounded-xl bg-[#161616] border border-white/10 p-3 text-sm outline-none font-mono" />
-          </label>
-          <button onClick={saveMintFee} disabled={savingMintFee}
-            className="w-full rounded-full py-2.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-            style={{ backgroundColor: ACCENT }}>
-            <Save className="h-4 w-4" /> {savingMintFee ? "Saving…" : "Save Mint Fee"}
-          </button>
-        </div>
-
-        {/* Bid Fee */}
-        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Percent className="h-4 w-4" style={{ color: ACCENT }} />
-            <h2 className="font-bold">Bid Fee</h2>
-            <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${bidFee.enabled ? "bg-green-500/20 text-green-400" : "bg-white/10 text-white/50"}`}>
-              {bidFee.enabled ? "ON" : "OFF"}
-            </span>
-          </div>
-          <p className="text-xs text-white/50 mb-3">Charged from the bidder's wallet on every auction bid (non-refundable, separate from the escrowed bid amount).</p>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <label className="block">
-              <span className="text-xs text-white/60 font-semibold">Rate (%)</span>
-              <input type="number" step="0.1" min={0} max={50} value={bidFee.rate}
-                onChange={(e) => setBidFee((f) => ({ ...f, rate: Number(e.target.value) }))}
-                className="mt-1 w-full rounded-xl bg-[#161616] border border-white/10 p-3 text-sm outline-none" />
-            </label>
-            <label className="flex items-end gap-2">
-              <input id="bid-fee-enabled" type="checkbox" checked={bidFee.enabled}
-                onChange={(e) => setBidFee((f) => ({ ...f, enabled: e.target.checked }))}
-                className="h-5 w-5" />
-              <span className="text-sm pb-2">Enable bid fee</span>
-            </label>
-          </div>
-          <label className="block mb-3">
-            <span className="text-xs text-white/60 font-semibold">Collector User ID (UUID)</span>
-            <input value={bidFee.collector_user_id}
-              onChange={(e) => setBidFee((f) => ({ ...f, collector_user_id: e.target.value }))}
-              placeholder="UUID of OpenPay treasury wallet user"
-              className="mt-1 w-full rounded-xl bg-[#161616] border border-white/10 p-3 text-sm outline-none font-mono" />
-          </label>
-          <button onClick={saveBidFee} disabled={savingBidFee}
-            className="w-full rounded-full py-2.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-            style={{ backgroundColor: ACCENT }}>
-            <Save className="h-4 w-4" /> {savingBidFee ? "Saving…" : "Save Bid Fee"}
-          </button>
-        </div>
-
-
-
 
         {/* Items */}
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
