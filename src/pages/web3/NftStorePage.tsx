@@ -25,7 +25,11 @@ const NftStorePage = () => {
   const [created, setCreated] = useState<any[]>([]);
   const [activity, setActivity] = useState<any[]>([]);
   const [followers, setFollowers] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [following, setFollowing] = useState(false);
+  const [followModal, setFollowModal] = useState<null | "followers" | "following">(null);
+  const [followList, setFollowList] = useState<any[]>([]);
+  const [followListLoading, setFollowListLoading] = useState(false);
   const [sales, setSales] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const { format } = useCurrency();
