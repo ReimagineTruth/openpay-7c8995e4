@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { NftStatusBadge } from "@/lib/nftStatus";
-import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X, RefreshCw, MessageCircle } from "lucide-react";
+import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X, RefreshCw, MessageCircle, Menu, Gift, Image as ImageIcon, Settings, Trophy, Heart } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
 import { NFT_CATEGORIES, getCategoryMeta } from "@/lib/nftCategories";
 
@@ -50,6 +50,20 @@ const NftMarketplacePage = () => {
   const [pullProgress, setPullProgress] = useState(0); // 0..1
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const menuItems = [
+    { icon: MessageCircle, label: "Live Chat", desc: "Global NFT community", to: "/web3/nft/chat", live: true },
+    { icon: Gavel, label: "Live Auctions", desc: "Active bidding now", to: "/web3/nft/auctions" },
+    { icon: Store, label: "My Store", desc: "Manage your storefront", to: "/web3/nft/store" },
+    { icon: LayoutDashboard, label: "Creator Dashboard", desc: "Stats, sales, earnings", to: "/web3/nft/dashboard" },
+    { icon: ImageIcon, label: "My Collection", desc: "NFTs you own", to: "/web3/nft/my-nfts" },
+    { icon: Gift, label: "Gifts", desc: "Send & receive NFT gifts", to: "/web3/nft/gifts" },
+    { icon: Trophy, label: "Top Creators", desc: "Trending stores", to: "/web3/nft/leaderboard" },
+    { icon: Heart, label: "Following", desc: "Stores you follow", to: "/web3/nft/following" },
+    { icon: Settings, label: "Store Settings", desc: "Profile & socials", to: "/web3/nft/store/settings" },
+    { icon: HelpCircle, label: "How it works", desc: "Mint, buy, resell guide", to: "/web3/nft/how-to" },
+  ];
 
   const load = useCallback(async (mode: "initial" | "refresh" = "initial") => {
     if (mode === "refresh") setRefreshing(true);
@@ -170,20 +184,11 @@ const NftMarketplacePage = () => {
 
   return (
     <div className="min-h-screen bg-black text-white pb-24 animate-in fade-in duration-500">
-      <header className="sticky top-0 z-10 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-2 border-b border-white/5">
+      <header className="sticky top-0 z-20 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-2 border-b border-white/5">
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="text-lg font-extrabold flex-1 truncate">NFT Marketplace</h1>
-        <button onClick={() => nav("/web3/nft/how-to")} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="How it works">
-          <HelpCircle className="h-5 w-5" />
-        </button>
-        <button onClick={() => nav("/web3/nft/dashboard")} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Creator dashboard">
-          <LayoutDashboard className="h-5 w-5" />
-        </button>
-        <button onClick={() => nav("/web3/nft/store")} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="My store">
-          <Store className="h-5 w-5" />
-        </button>
         <button onClick={() => nav("/web3/nft/chat")} className="relative h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Live chat">
           <MessageCircle className="h-5 w-5" />
           <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -191,10 +196,66 @@ const NftMarketplacePage = () => {
         <button onClick={() => load("refresh")} disabled={refreshing} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center disabled:opacity-60" aria-label="Refresh">
           <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
         </button>
+        <button onClick={() => setMenuOpen(true)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Open menu">
+          <Menu className="h-5 w-5" />
+        </button>
         <button onClick={() => nav("/web3/nft/create")} className="h-9 px-3 rounded-full flex items-center gap-1 font-semibold text-sm" style={{ backgroundColor: ACCENT }}>
           <Plus className="h-4 w-4" /> Mint
         </button>
       </header>
+
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm animate-in fade-in" onClick={() => setMenuOpen(false)} />
+          <div className="fixed top-0 right-0 bottom-0 z-50 w-[88%] max-w-sm bg-[#0a0a0a] border-l border-white/10 flex flex-col animate-in slide-in-from-right duration-200">
+            <div className="px-4 py-4 flex items-center justify-between border-b border-white/10">
+              <div>
+                <h2 className="font-extrabold text-lg flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" style={{ color: ACCENT }} /> NFT Hub
+                </h2>
+                <p className="text-[11px] text-white/50">All features in one place</p>
+              </div>
+              <button onClick={() => setMenuOpen(false)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+              <button
+                onClick={() => { setMenuOpen(false); nav("/web3/nft/create"); }}
+                className="w-full rounded-2xl p-3.5 flex items-center gap-3 text-left font-bold"
+                style={{ background: `linear-gradient(135deg, ${ACCENT}, hsl(217 91% 45%))` }}
+              >
+                <div className="h-10 w-10 rounded-xl bg-black/30 flex items-center justify-center">
+                  <Plus className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-extrabold">Mint New NFT</p>
+                  <p className="text-[11px] font-normal opacity-90">Fixed price or live auction</p>
+                </div>
+              </button>
+              {menuItems.map((m) => (
+                <button
+                  key={m.label}
+                  onClick={() => { setMenuOpen(false); nav(m.to); }}
+                  className="w-full rounded-2xl p-3 flex items-center gap-3 text-left bg-white/5 hover:bg-white/10 border border-white/5 transition"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center relative">
+                    <m.icon className="h-5 w-5" style={{ color: ACCENT }} />
+                    {m.live && <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate flex items-center gap-1.5">
+                      {m.label}
+                      {m.live && <span className="text-[9px] font-extrabold text-emerald-400">LIVE</span>}
+                    </p>
+                    <p className="text-[11px] text-white/50 truncate">{m.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Search bar */}
       <div className="px-4 pt-3">

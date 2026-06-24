@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Image as ImageIcon, X, Trash2, MessageCircle } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, X, Trash2, MessageCircle, BadgeCheck, Store as StoreIcon, ExternalLink } from "lucide-react";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -19,12 +19,14 @@ const NftChatPage = () => {
   const [me, setMe] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
+  const [storesByUser, setStoresByUser] = useState<Record<string, any>>({});
   const [items, setItems] = useState<Record<string, any>>({});
   const [text, setText] = useState("");
   const [attaching, setAttaching] = useState(false);
   const [myNfts, setMyNfts] = useState<any[]>([]);
   const [attached, setAttached] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [profilePeek, setProfilePeek] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadProfilesAndItems = async (rows: Msg[]) => {
@@ -35,11 +37,16 @@ const NftChatPage = () => {
       new Set(rows.map((m) => m.item_id).filter(Boolean) as string[]),
     ).filter((id) => !items[id]);
     if (userIds.length) {
-      const { data } = await (supabase as any)
-        .from("profiles").select("id, username, full_name, avatar_url").in("id", userIds);
-      const map: Record<string, any> = { ...profiles };
-      (data || []).forEach((p: any) => (map[p.id] = p));
-      setProfiles(map);
+      const [{ data: pData }, { data: sData }] = await Promise.all([
+        (supabase as any).from("profiles").select("id, username, full_name, avatar_url").in("id", userIds),
+        (supabase as any).from("nft_store_profiles").select("user_id, handle, display_name, avatar_url, banner_url, bio, is_verified, category").in("user_id", userIds),
+      ]);
+      const pMap: Record<string, any> = { ...profiles };
+      (pData || []).forEach((p: any) => (pMap[p.id] = p));
+      setProfiles(pMap);
+      const sMap: Record<string, any> = { ...storesByUser };
+      (sData || []).forEach((s: any) => (sMap[s.user_id] = s));
+      setStoresByUser(sMap);
     }
     if (itemIds.length) {
       const { data } = await (supabase as any)
@@ -48,6 +55,11 @@ const NftChatPage = () => {
       (data || []).forEach((it: any) => (map[it.id] = it));
       setItems(map);
     }
+  };
+
+  const openProfile = (userId: string) => {
+    if (userId === me) { nav("/web3/nft/store"); return; }
+    setProfilePeek(userId);
   };
 
   useEffect(() => {
@@ -155,20 +167,35 @@ const NftChatPage = () => {
         )}
         {msgs.map((m) => {
           const p = profiles[m.user_id];
+          const s = storesByUser[m.user_id];
           const it = m.item_id ? items[m.item_id] : null;
           const mine = m.user_id === me;
+          const displayName = s?.display_name || p?.full_name || p?.username || "User";
+          const handle = s?.handle || p?.username || m.user_id.slice(0, 6);
+          const avatar = s?.avatar_url || p?.avatar_url;
           return (
             <div key={m.id} className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
-              {p?.avatar_url
-                ? <img src={p.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
-                : <div className="h-8 w-8 rounded-full bg-white/10 flex-shrink-0" />}
+              <button
+                onClick={() => openProfile(m.user_id)}
+                className="flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-white/30 transition active:scale-95"
+                aria-label={`View @${handle}`}
+              >
+                {avatar
+                  ? <img src={avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                  : <div className="h-8 w-8 rounded-full bg-gradient-to-br from-pink-500 to-blue-500" />}
+              </button>
               <div className={`max-w-[78%] ${mine ? "items-end" : "items-start"} flex flex-col gap-1`}>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-white/50 font-semibold">
-                    {mine ? "You" : `@${p?.username || (m.user_id.slice(0, 6))}`}
+                <button
+                  onClick={() => openProfile(m.user_id)}
+                  className={`flex items-center gap-1.5 hover:opacity-80 transition ${mine ? "flex-row-reverse" : ""}`}
+                >
+                  <span className="text-[11px] text-white/70 font-bold">
+                    {mine ? "You" : displayName}
                   </span>
-                  <span className="text-[10px] text-white/30">{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                </div>
+                  {s?.is_verified && <BadgeCheck className="h-3 w-3" style={{ color: ACCENT }} />}
+                  <span className="text-[10px] text-white/40">@{handle}</span>
+                  <span className="text-[10px] text-white/30">· {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                </button>
                 <div className={`rounded-2xl px-3 py-2 ${mine ? "rounded-tr-sm" : "rounded-tl-sm bg-white/10"}`} style={mine ? { background: ACCENT } : {}}>
                   {m.message && <p className="text-sm break-words whitespace-pre-wrap">{m.message}</p>}
                   {it && (
@@ -265,6 +292,72 @@ const NftChatPage = () => {
           </div>
         </>
       )}
+
+      {profilePeek && (() => {
+        const p = profiles[profilePeek];
+        const s = storesByUser[profilePeek];
+        const name = s?.display_name || p?.full_name || p?.username || "User";
+        const handle = s?.handle || p?.username;
+        const avatar = s?.avatar_url || p?.avatar_url;
+        const msgCount = msgs.filter((m) => m.user_id === profilePeek).length;
+        return (
+          <>
+            <div className="fixed inset-0 bg-black/70 z-40 animate-in fade-in" onClick={() => setProfilePeek(null)} />
+            <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#0f0f0f] border-t border-white/10 overflow-hidden animate-in slide-in-from-bottom duration-200">
+              {s?.banner_url ? (
+                <div className="h-24 w-full" style={{ backgroundImage: `url(${s.banner_url})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+              ) : (
+                <div className="h-24 w-full" style={{ background: `linear-gradient(135deg, hsl(280 80% 30%), ${ACCENT})` }} />
+              )}
+              <div className="p-4 -mt-10">
+                <div className="flex items-end justify-between">
+                  {avatar ? (
+                    <img src={avatar} alt="" className="h-20 w-20 rounded-full object-cover border-4 border-[#0f0f0f]" />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full border-4 border-[#0f0f0f] bg-gradient-to-br from-pink-500 to-blue-500" />
+                  )}
+                  <button onClick={() => setProfilePeek(null)} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-extrabold">{name}</h3>
+                    {s?.is_verified && <BadgeCheck className="h-5 w-5" style={{ color: ACCENT }} />}
+                  </div>
+                  {handle && <p className="text-sm text-white/60">@{handle}</p>}
+                  {s?.bio && <p className="text-sm text-white/70 mt-2 leading-snug">{s.bio}</p>}
+                  <div className="mt-3 flex items-center gap-2 text-[11px] text-white/60">
+                    {s?.category && <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10">{s.category}</span>}
+                    <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10">{msgCount} msgs</span>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {handle ? (
+                    <button
+                      onClick={() => { setProfilePeek(null); nav(`/web3/nft/store/${handle}`); }}
+                      className="rounded-xl py-3 font-bold text-sm flex items-center justify-center gap-2"
+                      style={{ background: ACCENT }}
+                    >
+                      <StoreIcon className="h-4 w-4" /> View Store
+                    </button>
+                  ) : (
+                    <button disabled className="rounded-xl py-3 font-bold text-sm bg-white/5 text-white/40 flex items-center justify-center gap-2">
+                      <StoreIcon className="h-4 w-4" /> No store yet
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setProfilePeek(null); setText((t) => `@${handle || name} ${t}`); }}
+                    className="rounded-xl py-3 font-bold text-sm bg-white/10 flex items-center justify-center gap-2 hover:bg-white/15"
+                  >
+                    <ExternalLink className="h-4 w-4" /> Mention
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };
