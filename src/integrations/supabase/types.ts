@@ -4898,10 +4898,6 @@ export type Database = {
         Returns: boolean
       }
       nft_admin_restore_item: { Args: { p_item_id: string }; Returns: boolean }
-      nft_admin_set_bid_fee: {
-        Args: { p_collector?: string; p_enabled: boolean; p_rate: number }
-        Returns: Json
-      }
       nft_admin_set_mint_fee: {
         Args: { p_collector?: string; p_enabled: boolean; p_rate: number }
         Returns: Json
@@ -4942,7 +4938,6 @@ export type Database = {
         Returns: string
       }
       nft_finalize_auction: { Args: { p_auction_id: string }; Returns: string }
-      nft_get_bid_fee: { Args: never; Returns: Json }
       nft_get_mint_fee: { Args: never; Returns: Json }
       nft_get_platform_fee: { Args: never; Returns: Json }
       nft_gift_item: {
