@@ -80,6 +80,23 @@ const AdminNftPage = () => {
     }
   };
 
+  const saveMintFee = async () => {
+    setSavingMintFee(true);
+    try {
+      const { error } = await (supabase as any).rpc("nft_admin_set_mint_fee", {
+        p_enabled: mintFee.enabled,
+        p_rate: Number(mintFee.rate) || 0,
+        p_collector: mintFee.collector_user_id || null,
+      });
+      if (error) throw error;
+      toast({ title: "Mint fee saved" });
+    } catch (e: any) {
+      toast({ title: "Save failed", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingMintFee(false);
+    }
+  };
+
   const remove = async (id: string, name: string) => {
     const reason = prompt(`Remove "${name}"? Enter reason (policy violation):`);
     if (!reason) return;
