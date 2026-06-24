@@ -332,6 +332,9 @@ const NftMarketplacePage = () => {
                     {au ? format(Number(au.current_bid || au.start_price || 0)) : format(Number(it.price || 0))}
                     {au && <span className="text-[10px] text-white/50 font-normal ml-1">bid</span>}
                   </p>
+                  <div className="mt-1.5 flex items-center justify-between">
+                    <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} hasAuction={!!au} />
+                  </div>
                   <div className="mt-2 flex items-center gap-3 text-[11px] text-white/55">
                     <span className="flex items-center gap-1"><Users className="h-3 w-3" />{owners[it.id] || 0}</span>
                     <span className="flex items-center gap-1"><Tag className="h-3 w-3" />{sales[it.id] || 0} sold</span>
