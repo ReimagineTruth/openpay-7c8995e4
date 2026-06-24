@@ -448,15 +448,63 @@ const NftDetailPage = () => {
             <PayOpt active={method==="pi"} onClick={() => setMethod("pi")} icon={<img src="/openpay-o.svg" className="h-4 w-4" alt="" />} label="Pi Network" />
             <PayOpt active={method==="virtual_card"} onClick={() => setMethod("virtual_card")} icon={<CreditCard className="h-4 w-4" />} label="Virtual Card" />
           </div>
+
+          {method === "virtual_card" && (
+            <div className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10">
+              {savedCards.length > 0 && (
+                <p className="text-[11px] text-white/50">Using your saved OpenPay card · ending {String(card.number).slice(-4)}</p>
+              )}
+              <Field label="Card number" value={card.number} onChange={(v: any) => setCard((c) => ({ ...c, number: v }))} />
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="MM" value={card.exp_month} onChange={(v: any) => setCard((c) => ({ ...c, exp_month: v }))} type="number" />
+                <Field label="YYYY" value={card.exp_year} onChange={(v: any) => setCard((c) => ({ ...c, exp_year: v }))} type="number" />
+                <Field label="CVC" value={card.cvc} onChange={(v: any) => setCard((c) => ({ ...c, cvc: v }))} />
+              </div>
+              {savedCards.length === 0 && (
+                <p className="text-[11px] text-amber-400">No saved card. Create one in OpenPay Card first.</p>
+              )}
+            </div>
+          )}
+          {method === "pi" && (
+            <p className="text-[11px] text-white/60 p-2 rounded-lg bg-white/5 border border-white/10">
+              You'll be charged {(Number(item.price)*qty).toFixed(2)} Pi via the Pi Browser payment flow.
+            </p>
+          )}
+
           <div className="flex justify-between text-sm pt-2 border-t border-white/10">
             <span className="text-white/60">Total</span>
-            <span className="font-bold">{format(Number(item.price)*qty)}</span>
+            <span className="font-bold">{method === "pi" ? `${(Number(item.price)*qty).toFixed(2)} Pi` : format(Number(item.price)*qty)}</span>
           </div>
           <button onClick={handleBuy} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Processing…" : "Confirm Purchase"}
           </button>
         </Modal>
       )}
+
+      {receipt && (
+        <Modal onClose={() => setReceipt(null)} title="Payment Receipt">
+          <div className="text-center py-2">
+            <div className="h-12 w-12 mx-auto rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: ACCENT }}>
+              <ShoppingCart className="h-6 w-6" />
+            </div>
+            <p className="font-extrabold text-lg">{receipt.item_name}</p>
+            <p className="text-xs text-white/50">x{receipt.qty}</p>
+          </div>
+          <div className="space-y-1.5 text-sm bg-white/5 rounded-xl p-3 border border-white/10">
+            <Row k="Amount" v={receipt.method === "pi" ? `${receipt.total.toFixed(2)} Pi` : format(receipt.total)} />
+            <Row k="Method" v={receipt.method.replace("_"," ")} />
+            {receipt.pi_txid && <Row k="Pi TxID" v={`${String(receipt.pi_txid).slice(0,10)}…`} />}
+            {receipt.card_last4 && <Row k="Card" v={`•••• ${receipt.card_last4}`} />}
+            <Row k="Reference" v={String(receipt.ref).slice(0,8)} />
+            <Row k="Date" v={new Date(receipt.ts).toLocaleString()} />
+            <Row k="Status" v="Completed" />
+          </div>
+          <button onClick={() => setReceipt(null)} className="w-full rounded-full py-3 font-bold" style={{ backgroundColor: ACCENT }}>
+            Done
+          </button>
+        </Modal>
+      )}
+
 
       {giftOpen && (
         <Modal onClose={() => setGiftOpen(false)} title="Send as Gift">
