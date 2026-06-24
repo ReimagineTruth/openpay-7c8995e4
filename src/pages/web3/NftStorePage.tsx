@@ -114,6 +114,11 @@ const NftStorePage = () => {
         .eq("followed_id", targetUserId);
       setFollowers(count || 0);
 
+      const { count: followingC } = await (supabase as any)
+        .from("nft_store_follows").select("*", { count: "exact", head: true })
+        .eq("follower_id", targetUserId);
+      setFollowingCount(followingC || 0);
+
       if (user && user.id !== targetUserId) {
         const { data: f } = await (supabase as any)
           .from("nft_store_follows").select("id")
