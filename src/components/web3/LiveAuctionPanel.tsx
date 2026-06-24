@@ -118,7 +118,11 @@ export const LiveAuctionPanel = ({
             {format(Number(a.current_bid ?? a.start_price))}
           </p>
           {leader && !settled && (
-            <p className="text-[11px] text-white/70 mt-0.5">Leader: <span className="font-bold text-white">@{leader.username || leader.full_name?.slice(0,10) || "bidder"}</span></p>
+            <p className="text-[11px] text-white/70 mt-0.5 flex items-center gap-1">
+              <Crown className="h-3 w-3 text-amber-400 fill-amber-400" />
+              Leader: <span className="font-bold text-white">@{leader.username || leader.full_name?.slice(0,10) || "bidder"}</span>
+              {a.current_bidder === me && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">YOU</span>}
+            </p>
           )}
         </div>
         <div className="text-right">
