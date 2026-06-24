@@ -26,9 +26,11 @@ const NftStorePage = () => {
   const [activity, setActivity] = useState<any[]>([]);
   const [followers, setFollowers] = useState(0);
   const [following, setFollowing] = useState(false);
+  const [sales, setSales] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const { format } = useCurrency();
   const [view, setView] = useState<"grid" | "list">("grid");
+
 
   const isOwner = me?.id && owner?.id && me.id === owner.id;
 
