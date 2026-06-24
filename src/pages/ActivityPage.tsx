@@ -107,7 +107,7 @@ const ActivityPage = () => {
         return;
       }
 
-      const [{ data: txs }, { data: wallet }, { data: merchantRows }, { data: withdrawalRows }] = await Promise.all([
+      const [{ data: txs }, { data: wallet }, { data: merchantRows }, { data: withdrawalRows }, { data: nftRows }] = await Promise.all([
         supabase
           .from("transactions")
           .select("id, sender_id, receiver_id, amount, note, status, created_at")
@@ -126,7 +126,29 @@ const ActivityPage = () => {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(20),
+        (supabase as any)
+          .from("nft_transactions")
+          .select("id, total, created_at, status, tx_kind, payment_method, quantity, buyer_id, seller_id, item_id, nft_items(name, code)")
+          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+          .order("created_at", { ascending: false })
+          .limit(60),
       ]);
+
+      setNftActivity(
+        ((nftRows as any[]) || []).map((n) => ({
+          id: String(n.id),
+          total: Number(n.total || 0),
+          created_at: String(n.created_at),
+          status: String(n.status || "completed"),
+          tx_kind: String(n.tx_kind || "sale"),
+          payment_method: String(n.payment_method || "openpay_balance"),
+          quantity: Number(n.quantity || 1),
+          is_buyer: n.buyer_id === user.id,
+          item_name: n.nft_items?.name || "NFT",
+          item_code: n.nft_items?.code || "",
+          item_id: String(n.item_id || ""),
+        })),
+      );
 
       if (txs) {
         const otherIds = Array.from(
