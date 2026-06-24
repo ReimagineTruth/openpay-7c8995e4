@@ -7,6 +7,7 @@ import { NftStatusBadge } from "@/lib/nftStatus";
 import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Tag, Gavel, HelpCircle, Edit3, Trash2, Clock, Eye, EyeOff } from "lucide-react";
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
+import { LiveAuctionPanel } from "@/components/web3/LiveAuctionPanel";
 
 
 const ACCENT = "hsl(217 91% 60%)";
