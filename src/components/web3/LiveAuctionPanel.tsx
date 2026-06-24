@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Clock, Trophy } from "lucide-react";
+import { Clock, Trophy, Crown, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const ACCENT = "hsl(217 91% 60%)";
@@ -61,6 +61,7 @@ export const LiveAuctionPanel = ({
   const [bids, setBids] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [flash, setFlash] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const loadProfiles = async (ids: string[]) => {
     const unique = Array.from(new Set(ids)).filter(Boolean);
@@ -75,7 +76,7 @@ export const LiveAuctionPanel = ({
 
   const loadBids = async () => {
     const { data } = await (supabase as any).from("nft_auction_bids")
-      .select("*").eq("auction_id", a.id).order("created_at", { ascending: false }).limit(10);
+      .select("*").eq("auction_id", a.id).order("created_at", { ascending: false }).limit(100);
     setBids(data || []);
     await loadProfiles([...(data || []).map((b: any) => b.bidder_id), a.current_bidder || "", a.winner_id || "", a.seller_id]);
   };
@@ -118,7 +119,11 @@ export const LiveAuctionPanel = ({
             {format(Number(a.current_bid ?? a.start_price))}
           </p>
           {leader && !settled && (
-            <p className="text-[11px] text-white/70 mt-0.5">Leader: <span className="font-bold text-white">@{leader.username || leader.full_name?.slice(0,10) || "bidder"}</span></p>
+            <p className="text-[11px] text-white/70 mt-0.5 flex items-center gap-1">
+              <Crown className="h-3 w-3 text-amber-400 fill-amber-400" />
+              Leader: <span className="font-bold text-white">@{leader.username || leader.full_name?.slice(0,10) || "bidder"}</span>
+              {a.current_bidder === me && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">YOU</span>}
+            </p>
           )}
         </div>
         <div className="text-right">
@@ -146,18 +151,41 @@ export const LiveAuctionPanel = ({
         </div>
       )}
 
-      {bids.length > 0 && !settled && (
-        <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
-          <p className="text-[10px] uppercase tracking-wide text-white/40 font-bold">Recent bids</p>
-          {bids.slice(0, 5).map((b) => {
-            const p = profiles[b.bidder_id];
-            return (
-              <div key={b.id} className="flex items-center justify-between text-xs py-1">
-                <span className="text-white/70 truncate">@{p?.username || b.bidder_id.slice(0,6)}</span>
-                <span className="font-bold" style={{ color: ACCENT }}>{format(Number(b.amount))}</span>
-              </div>
-            );
-          })}
+      {bids.length > 0 && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[10px] uppercase tracking-wide text-white/40 font-bold flex items-center gap-1">
+              <History className="h-3 w-3" /> Bid history ({bids.length})
+            </p>
+            {bids.length > 5 && (
+              <button onClick={() => setShowAll((v) => !v)} className="text-[10px] text-white/60 hover:text-white underline">
+                {showAll ? "Show less" : "Show all"}
+              </button>
+            )}
+          </div>
+          <div className={`space-y-1 overflow-y-auto ${showAll ? "max-h-64" : "max-h-32"}`}>
+            {(showAll ? bids : bids.slice(0, 5)).map((b, idx) => {
+              const p = profiles[b.bidder_id];
+              const isTop = idx === 0;
+              const isMe = b.bidder_id === me;
+              const ts = b.created_at ? new Date(b.created_at) : null;
+              return (
+                <div key={b.id} className={`flex items-center justify-between text-xs py-1 px-2 rounded ${isTop ? "bg-amber-500/10 border border-amber-400/20" : ""}`}>
+                  <span className="flex items-center gap-1.5 truncate">
+                    {isTop && <Crown className="h-3.5 w-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />}
+                    <span className={`truncate ${isTop ? "text-white font-semibold" : "text-white/70"}`}>
+                      @{p?.username || p?.full_name?.slice(0,10) || b.bidder_id.slice(0,6)}
+                    </span>
+                    {isMe && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">YOU</span>}
+                  </span>
+                  <span className="flex items-center gap-2 flex-shrink-0">
+                    {ts && <span className="text-[10px] text-white/40">{ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>}
+                    <span className="font-bold" style={{ color: isTop ? "#fbbf24" : ACCENT }}>{format(Number(b.amount))}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
