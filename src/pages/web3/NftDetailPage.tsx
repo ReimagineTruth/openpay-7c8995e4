@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { NftStatusBadge } from "@/lib/nftStatus";
+import { formatNftPrice } from "@/lib/nftPrice";
 import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Tag, Gavel, HelpCircle, Edit3, Trash2, Clock, Eye, EyeOff } from "lucide-react";
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
@@ -347,7 +348,7 @@ const NftDetailPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-white/50">Price</p>
-              <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>{format(Number(item.price || 0))}</p>
+              <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(item.price, item.currency)}</p>
             </div>
             <div className="text-right">
               <NftStatusBadge sold={totalSold} total={item.quantity_total} hasAuction={hasActiveAuction} className="mb-1" />
@@ -401,7 +402,7 @@ const NftDetailPage = () => {
                 return (
                   <div key={l.id} className="flex items-center gap-2 border-b border-white/5 pb-2 last:border-0">
                     <div className="flex-1">
-                      <p className="font-bold" style={{ color: ACCENT }}>{format(Number(l.price))}</p>
+                      <p className="font-bold" style={{ color: ACCENT }}>{formatNftPrice(l.price, item.currency)}</p>
                       <p className="text-xs text-white/40">×{l.quantity} available {mine && "· You"}</p>
                     </div>
                     {mine ? (
@@ -433,7 +434,7 @@ const NftDetailPage = () => {
                 <LiveAuctionPanel
                   key={a.id}
                   auction={a}
-                  format={format}
+                  format={(n: number) => formatNftPrice(n, item.currency)}
                   me={me}
                   onBid={() => { setBidOpen(a); setBidAmt(String((Number(a.current_bid ?? a.start_price)) + Number(a.min_increment))); }}
                   onFinalize={() => handleFinalize(a)}
@@ -455,7 +456,7 @@ const NftDetailPage = () => {
                     <p className="font-semibold capitalize">{t.tx_kind}</p>
                     <p className="text-xs text-white/40">{new Date(t.created_at).toLocaleString()}</p>
                   </div>
-                  <p className="text-white/80">×{t.quantity} {t.total > 0 ? `· ${format(Number(t.total))}` : ""}</p>
+                  <p className="text-white/80">×{t.quantity} {t.total > 0 ? `· ${formatNftPrice(t.total, item.currency)}` : ""}</p>
                 </div>
               ))}
             </div>
@@ -544,7 +545,7 @@ const NftDetailPage = () => {
 
           <div className="flex justify-between text-sm pt-2 border-t border-white/10">
             <span className="text-white/60">Total</span>
-            <span className="font-bold">{method === "pi" ? `${(Number(item.price)*qty).toFixed(2)} Pi` : format(Number(item.price)*qty)}</span>
+            <span className="font-bold">{method === "pi" ? `${(Number(item.price)*qty).toFixed(2)} Pi` : formatNftPrice(Number(item.price)*qty, item.currency)}</span>
           </div>
           <button onClick={handleBuy} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Processing…" : "Confirm Purchase"}
@@ -562,7 +563,7 @@ const NftDetailPage = () => {
             <p className="text-xs text-white/50">x{receipt.qty}</p>
           </div>
           <div className="space-y-1.5 text-sm bg-white/5 rounded-xl p-3 border border-white/10">
-            <Row k="Amount" v={receipt.method === "pi" ? `${receipt.total.toFixed(2)} Pi` : format(receipt.total)} />
+            <Row k="Amount" v={receipt.method === "pi" ? `${receipt.total.toFixed(2)} Pi` : formatNftPrice(receipt.total, item.currency)} />
             <Row k="Method" v={receipt.method.replace("_"," ")} />
             {receipt.pi_txid && <Row k="Pi TxID" v={`${String(receipt.pi_txid).slice(0,10)}…`} />}
             {receipt.card_last4 && <Row k="Card" v={`•••• ${receipt.card_last4}`} />}
@@ -624,8 +625,8 @@ const NftDetailPage = () => {
 
       {bidOpen && (
         <Modal onClose={() => setBidOpen(null)} title="Place a bid">
-          <p className="text-sm text-white/70">Current bid: <span className="font-bold text-white">{format(Number(bidOpen.current_bid ?? bidOpen.start_price))}</span></p>
-          <p className="text-xs text-white/50">Minimum next bid: {format(Number(bidOpen.current_bid ?? bidOpen.start_price) + (bidOpen.current_bid ? Number(bidOpen.min_increment) : 0))}</p>
+          <p className="text-sm text-white/70">Current bid: <span className="font-bold text-white">{formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price), item.currency)}</span></p>
+          <p className="text-xs text-white/50">Minimum next bid: {formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price) + (bidOpen.current_bid ? Number(bidOpen.min_increment) : 0), item.currency)}</p>
           <Field label="Your bid" value={bidAmt} onChange={setBidAmt} type="number" />
           <p className="text-xs text-white/50">Funds are escrowed. If outbid, you'll be refunded automatically.</p>
           <button onClick={handlePlaceBid} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { NftStatusBadge } from "@/lib/nftStatus";
+import { formatNftPrice } from "@/lib/nftPrice";
 import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X, RefreshCw, MessageCircle, Menu, Gift, Image as ImageIcon, Settings, Trophy, Heart } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
 import { NFT_CATEGORIES, getCategoryMeta } from "@/lib/nftCategories";
@@ -394,7 +395,7 @@ const NftMarketplacePage = () => {
                   <p className="font-bold text-sm truncate">{it.name}</p>
                   <p className="text-xs text-white/40 truncate">#{it.code}</p>
                   <p className="mt-2 font-bold text-[15px]" style={{ color: ACCENT }}>
-                    {au ? format(Number(au.current_bid || au.start_price || 0)) : format(Number(it.price || 0))}
+                    {au ? formatNftPrice(Number(au.current_bid || au.start_price || 0), it.currency) : formatNftPrice(it.price, it.currency)}
                     {au && <span className="text-[10px] text-white/50 font-normal ml-1">bid</span>}
                   </p>
                   <div className="mt-1.5 flex items-center justify-between">
