@@ -25,6 +25,9 @@ const NftDetailPage = () => {
   const [editListing, setEditListing] = useState<any>(null);
   const [qty, setQty] = useState(1);
   const [method, setMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
+  const [card, setCard] = useState({ number: "", cvc: "", exp_month: "", exp_year: "" });
+  const [savedCards, setSavedCards] = useState<any[]>([]);
+  const [receipt, setReceipt] = useState<any>(null);
   const [giftUsername, setGiftUsername] = useState("");
   const [giftMsg, setGiftMsg] = useState("");
   const [listings, setListings] = useState<any[]>([]);
@@ -33,6 +36,7 @@ const NftDetailPage = () => {
   const [aStart, setAStart] = useState("");
   const [aInc, setAInc] = useState("1");
   const [aHours, setAHours] = useState("24");
+
   const [bidAmt, setBidAmt] = useState("");
 
   const load = async () => {
@@ -70,23 +74,106 @@ const NftDetailPage = () => {
   const myOwn = useMemo(() => owners.find((o) => o.owner_id === me)?.quantity || 0, [owners, me]);
   const isCreator = me && item && me === item.creator_id;
 
+  const openBuy = async () => {
+    setBuyOpen(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: cards } = await (supabase as any)
+        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year").eq("user_id", user.id).eq("is_active", true).limit(1);
+      setSavedCards(cards || []);
+      if (cards && cards[0]) {
+        setCard({
+          number: cards[0].card_number,
+          cvc: cards[0].cvc,
+          exp_month: String(cards[0].expiry_month),
+          exp_year: String(cards[0].expiry_year),
+        });
+      }
+    }
+  };
+
+  const runBuy = async (extra: Record<string, any> = {}) => {
+    const { data, error } = await (supabase as any).rpc("nft_buy_item", {
+      p_item_id: id,
+      p_quantity: qty,
+      p_payment_method: method,
+      p_listing_id: null,
+      ...extra,
+    });
+    if (error) throw error;
+    const total = Number(item.price) * qty;
+    setReceipt({
+      ref: data,
+      item_name: item.name,
+      qty,
+      total,
+      currency: item.currency,
+      method,
+      pi_txid: extra.p_pi_txid || null,
+      card_last4: extra.p_card_number ? String(extra.p_card_number).slice(-4) : null,
+      ts: new Date().toISOString(),
+    });
+    toast({ title: "Purchase complete!" });
+    setBuyOpen(false);
+    await load();
+  };
+
   const handleBuy = async () => {
     setBusy(true);
     try {
-      const { error } = await (supabase as any).rpc("nft_buy_item", {
-        p_item_id: id,
-        p_quantity: qty,
-        p_payment_method: method,
-        p_listing_id: null,
-      });
-      if (error) throw error;
-      toast({ title: "Purchase complete!" });
-      setBuyOpen(false);
-      await load();
+      if (method === "openpay_balance") {
+        await runBuy();
+      } else if (method === "virtual_card") {
+        if (!card.number || !card.cvc || !card.exp_month || !card.exp_year) {
+          throw new Error("Card details required");
+        }
+        await runBuy({
+          p_card_number: card.number.replace(/\s+/g, ""),
+          p_card_cvc: card.cvc,
+          p_card_exp_month: Number(card.exp_month),
+          p_card_exp_year: Number(card.exp_year),
+        });
+      } else if (method === "pi") {
+        const Pi = (window as any).Pi;
+        if (!Pi || typeof Pi.createPayment !== "function") {
+          throw new Error("Pi SDK not available — open in Pi Browser");
+        }
+        try {
+          await Pi.authenticate(["username", "payments"], async (incomplete: any) => {
+            if (incomplete?.identifier && incomplete?.transaction?.txid) {
+              await supabase.functions.invoke("pi-platform", {
+                body: { action: "complete", paymentId: incomplete.identifier, txid: incomplete.transaction.txid },
+              });
+            }
+          });
+        } catch (e: any) { throw new Error(e?.message || "Pi sign-in required"); }
+        const amount = Number(item.price) * qty;
+        await new Promise<void>((resolve, reject) => {
+          Pi.createPayment(
+            { amount, memo: `NFT ${item.name} x${qty}`.slice(0, 64),
+              metadata: { kind: "nft_buy", item_id: id, qty } },
+            {
+              onReadyForServerApproval: async (paymentId: string) => {
+                await supabase.functions.invoke("pi-platform", { body: { action: "approve", paymentId } });
+              },
+              onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+                try {
+                  await supabase.functions.invoke("pi-platform", { body: { action: "complete", paymentId, txid } });
+                  await runBuy({ p_pi_payment_id: paymentId, p_pi_txid: txid });
+                  resolve();
+                } catch (err: any) { reject(err); }
+              },
+              onCancel: () => reject(new Error("Pi payment cancelled")),
+              onError: (e: any) => reject(new Error(e?.message || "Pi payment failed")),
+            },
+          );
+        });
+      }
     } catch (e: any) {
       toast({ title: "Buy failed", description: e.message, variant: "destructive" });
     } finally { setBusy(false); }
   };
+
 
   const handleGift = async () => {
     setBusy(true);
@@ -340,7 +427,7 @@ const NftDetailPage = () => {
       {/* Sticky actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur p-4 flex gap-2 border-t border-white/10">
         {!isCreator && item.is_active && (
-          <button onClick={() => setBuyOpen(true)} className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
+          <button onClick={openBuy} className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
             style={{ backgroundColor: ACCENT }}>
             <ShoppingCart className="h-4 w-4" /> Buy
           </button>
@@ -361,15 +448,63 @@ const NftDetailPage = () => {
             <PayOpt active={method==="pi"} onClick={() => setMethod("pi")} icon={<img src="/openpay-o.svg" className="h-4 w-4" alt="" />} label="Pi Network" />
             <PayOpt active={method==="virtual_card"} onClick={() => setMethod("virtual_card")} icon={<CreditCard className="h-4 w-4" />} label="Virtual Card" />
           </div>
+
+          {method === "virtual_card" && (
+            <div className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10">
+              {savedCards.length > 0 && (
+                <p className="text-[11px] text-white/50">Using your saved OpenPay card · ending {String(card.number).slice(-4)}</p>
+              )}
+              <Field label="Card number" value={card.number} onChange={(v: any) => setCard((c) => ({ ...c, number: v }))} />
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="MM" value={card.exp_month} onChange={(v: any) => setCard((c) => ({ ...c, exp_month: v }))} type="number" />
+                <Field label="YYYY" value={card.exp_year} onChange={(v: any) => setCard((c) => ({ ...c, exp_year: v }))} type="number" />
+                <Field label="CVC" value={card.cvc} onChange={(v: any) => setCard((c) => ({ ...c, cvc: v }))} />
+              </div>
+              {savedCards.length === 0 && (
+                <p className="text-[11px] text-amber-400">No saved card. Create one in OpenPay Card first.</p>
+              )}
+            </div>
+          )}
+          {method === "pi" && (
+            <p className="text-[11px] text-white/60 p-2 rounded-lg bg-white/5 border border-white/10">
+              You'll be charged {(Number(item.price)*qty).toFixed(2)} Pi via the Pi Browser payment flow.
+            </p>
+          )}
+
           <div className="flex justify-between text-sm pt-2 border-t border-white/10">
             <span className="text-white/60">Total</span>
-            <span className="font-bold">{format(Number(item.price)*qty)}</span>
+            <span className="font-bold">{method === "pi" ? `${(Number(item.price)*qty).toFixed(2)} Pi` : format(Number(item.price)*qty)}</span>
           </div>
           <button onClick={handleBuy} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Processing…" : "Confirm Purchase"}
           </button>
         </Modal>
       )}
+
+      {receipt && (
+        <Modal onClose={() => setReceipt(null)} title="Payment Receipt">
+          <div className="text-center py-2">
+            <div className="h-12 w-12 mx-auto rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: ACCENT }}>
+              <ShoppingCart className="h-6 w-6" />
+            </div>
+            <p className="font-extrabold text-lg">{receipt.item_name}</p>
+            <p className="text-xs text-white/50">x{receipt.qty}</p>
+          </div>
+          <div className="space-y-1.5 text-sm bg-white/5 rounded-xl p-3 border border-white/10">
+            <Row k="Amount" v={receipt.method === "pi" ? `${receipt.total.toFixed(2)} Pi` : format(receipt.total)} />
+            <Row k="Method" v={receipt.method.replace("_"," ")} />
+            {receipt.pi_txid && <Row k="Pi TxID" v={`${String(receipt.pi_txid).slice(0,10)}…`} />}
+            {receipt.card_last4 && <Row k="Card" v={`•••• ${receipt.card_last4}`} />}
+            <Row k="Reference" v={String(receipt.ref).slice(0,8)} />
+            <Row k="Date" v={new Date(receipt.ts).toLocaleString()} />
+            <Row k="Status" v="Completed" />
+          </div>
+          <button onClick={() => setReceipt(null)} className="w-full rounded-full py-3 font-bold" style={{ backgroundColor: ACCENT }}>
+            Done
+          </button>
+        </Modal>
+      )}
+
 
       {giftOpen && (
         <Modal onClose={() => setGiftOpen(false)} title="Send as Gift">
@@ -472,4 +607,9 @@ const PayOpt = ({ active, onClick, icon, label }: any) => (
   </button>
 );
 
+const Row = ({ k, v }: { k: string; v: any }) => (
+  <div className="flex justify-between"><span className="text-white/50">{k}</span><span className="font-semibold">{v}</span></div>
+);
+
 export default NftDetailPage;
+
