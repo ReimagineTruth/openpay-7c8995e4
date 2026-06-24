@@ -153,6 +153,19 @@ const NftCreatePage = () => {
           <Select label="Currency" value={form.currency} onChange={(v) => upd("currency", v)} options={["OUSD","USD","PI"]} />
         </div>
 
+        <div>
+          <label className="text-xs text-white/60 font-semibold">Category</label>
+          <select
+            value={form.category}
+            onChange={(e) => upd("category", e.target.value)}
+            className="mt-1 w-full rounded-xl bg-[#0f0f0f] border border-white/10 p-3 text-sm outline-none"
+          >
+            {NFT_CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>
+            ))}
+          </select>
+        </div>
+
         <Field label="Royalty %" value={String(form.royalty_pct)} onChange={(v) => upd("royalty_pct", Number(v) || 0)} type="number" />
         <Field label="Properties (JSON or notes)" value={form.properties} onChange={(v) => upd("properties", v)} multiline />
 
