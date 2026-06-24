@@ -81,7 +81,7 @@ const NftCreatePage = () => {
       const { data, error } = await (supabase as any).rpc("nft_mint_item", {
         p_collection_id: collectionId,
         p_name: form.name,
-        p_code: form.code,
+        p_code: itemCode,
         p_description: form.description,
         p_image_url: form.image_url,
         p_media_url: form.image_url,
