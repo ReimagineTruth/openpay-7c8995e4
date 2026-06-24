@@ -350,7 +350,15 @@ const NftDetailPage = () => {
   };
 
   const totalSold = txs.filter((t) => ["sale","resale"].includes(t.tx_kind)).reduce((s,t) => s + Number(t.quantity || 0), 0);
-  const hasActiveAuction = auctions.some((a: any) => a.status === "active" && new Date(a.ends_at).getTime() > Date.now());
+  const activeAuctions = auctions.filter((a: any) => a.status === "active" && new Date(a.ends_at).getTime() > Date.now());
+  const hasActiveAuction = activeAuctions.length > 0;
+  const topAuction = activeAuctions.reduce((best: any, a: any) => {
+    const cur = Number(a.current_bid ?? a.start_price);
+    if (!best) return a;
+    const bestCur = Number(best.current_bid ?? best.start_price);
+    return cur > bestCur ? a : best;
+  }, null);
+  const livePrice = topAuction ? Number(topAuction.current_bid ?? topAuction.start_price) : Number(item?.price || 0);
 
   if (!item) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading…</div>;
 
