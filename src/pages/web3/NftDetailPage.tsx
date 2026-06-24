@@ -492,6 +492,8 @@ const NftDetailPage = () => {
                         <button onClick={() => { setEditListing(l); setListPrice(String(l.price)); }} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Edit3 className="h-4 w-4" /></button>
                         <button onClick={() => handleCancelListing(l)} disabled={busy} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Trash2 className="h-4 w-4" /></button>
                       </>
+                    ) : hasActiveAuction ? (
+                      <span className="text-[10px] font-bold px-3 py-2 rounded-full bg-white/5 text-white/40">Locked · auction live</span>
                     ) : (
                       <button onClick={() => handleBuyListing(l)} disabled={busy} className="text-xs font-bold px-3 py-2 rounded-full" style={{ backgroundColor: ACCENT }}>Buy</button>
                     )}
