@@ -71,8 +71,23 @@ const toPreviewText = (value: string, max = 68) => {
   return `${tokenShortened.slice(0, max - 3)}...`;
 };
 
+interface NftActivityRow {
+  id: string;
+  total: number;
+  created_at: string;
+  status: string;
+  tx_kind: string;
+  payment_method: string;
+  quantity: number;
+  is_buyer: boolean;
+  item_name: string;
+  item_code: string;
+  item_id: string;
+}
+
 const ActivityPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [nftActivity, setNftActivity] = useState<NftActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
