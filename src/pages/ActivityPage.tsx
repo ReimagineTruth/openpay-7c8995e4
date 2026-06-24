@@ -71,8 +71,23 @@ const toPreviewText = (value: string, max = 68) => {
   return `${tokenShortened.slice(0, max - 3)}...`;
 };
 
+interface NftActivityRow {
+  id: string;
+  total: number;
+  created_at: string;
+  status: string;
+  tx_kind: string;
+  payment_method: string;
+  quantity: number;
+  is_buyer: boolean;
+  item_name: string;
+  item_code: string;
+  item_id: string;
+}
+
 const ActivityPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [nftActivity, setNftActivity] = useState<NftActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
@@ -92,7 +107,7 @@ const ActivityPage = () => {
         return;
       }
 
-      const [{ data: txs }, { data: wallet }, { data: merchantRows }, { data: withdrawalRows }] = await Promise.all([
+      const [{ data: txs }, { data: wallet }, { data: merchantRows }, { data: withdrawalRows }, { data: nftRows }] = await Promise.all([
         supabase
           .from("transactions")
           .select("id, sender_id, receiver_id, amount, note, status, created_at")
@@ -111,7 +126,29 @@ const ActivityPage = () => {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(20),
+        (supabase as any)
+          .from("nft_transactions")
+          .select("id, total, created_at, status, tx_kind, payment_method, quantity, buyer_id, seller_id, item_id, nft_items(name, code)")
+          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+          .order("created_at", { ascending: false })
+          .limit(60),
       ]);
+
+      setNftActivity(
+        ((nftRows as any[]) || []).map((n) => ({
+          id: String(n.id),
+          total: Number(n.total || 0),
+          created_at: String(n.created_at),
+          status: String(n.status || "completed"),
+          tx_kind: String(n.tx_kind || "sale"),
+          payment_method: String(n.payment_method || "openpay_balance"),
+          quantity: Number(n.quantity || 1),
+          is_buyer: n.buyer_id === user.id,
+          item_name: n.nft_items?.name || "NFT",
+          item_code: n.nft_items?.code || "",
+          item_id: String(n.item_id || ""),
+        })),
+      );
 
       if (txs) {
         const otherIds = Array.from(
@@ -229,6 +266,45 @@ const ActivityPage = () => {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {!loading && nftActivity.length > 0 && (
+        <div className="mb-4 rounded-3xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">NFT activity</h3>
+            <button onClick={() => navigate("/web3/nft")} className="text-xs font-semibold text-primary">Marketplace →</button>
+          </div>
+          <div className="mt-2 space-y-2">
+            {nftActivity.map((n) => {
+              const kindLabel =
+                n.tx_kind === "gift"
+                  ? n.is_buyer ? "Gift received" : "Gift sent"
+                  : n.tx_kind === "mint" ? "Minted"
+                  : n.is_buyer ? "Bought" : "Sold";
+              const sign = n.is_buyer && n.tx_kind !== "gift" && n.tx_kind !== "mint" ? "-" : (!n.is_buyer ? "+" : "");
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => navigate(`/web3/nft/${n.item_id}`)}
+                  className="w-full text-left rounded-xl border border-border px-3 py-2 hover:bg-secondary/40 transition"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{kindLabel}: {n.item_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        #{n.item_code} · qty {n.quantity} · {n.payment_method.replace("_", " ")} · {n.status}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{format(new Date(n.created_at), "MMM d, yyyy p")}</p>
+                    </div>
+                    <p className={`text-sm font-semibold ${n.is_buyer && n.tx_kind !== "gift" ? "text-red-500" : "text-paypal-success"}`}>
+                      {sign}{formatCurrency(n.total)}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

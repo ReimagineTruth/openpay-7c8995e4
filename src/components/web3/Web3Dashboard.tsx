@@ -101,14 +101,42 @@ const Web3Dashboard = () => {
       setLoadingTx(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoadingTx(false); return; }
-      const { data } = await supabase
-        .from("transactions")
-        .select("id, type, amount, created_at, description, status")
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const [{ data: txData }, { data: nftTx }] = await Promise.all([
+        supabase
+          .from("transactions")
+          .select("id, type, amount, created_at, description, status")
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        (supabase as any)
+          .from("nft_transactions")
+          .select("id, total, created_at, status, tx_kind, buyer_id, seller_id, quantity, payment_method, item_id, nft_items(name, code)")
+          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ]);
       if (!mounted) return;
-      setTxs((data as any) || []);
+      const nftRows: TxRow[] = (nftTx || []).map((n: any) => {
+        const isBuyer = n.buyer_id === user.id;
+        const kind = String(n.tx_kind || "sale");
+        const itemName = n.nft_items?.name || "NFT";
+        let label = "";
+        if (kind === "gift") label = isBuyer ? `Received NFT gift: ${itemName}` : `Sent NFT gift: ${itemName}`;
+        else if (kind === "mint") label = `Minted ${itemName}`;
+        else label = isBuyer ? `Bought NFT: ${itemName}` : `Sold NFT: ${itemName}`;
+        return {
+          id: `nft_${n.id}`,
+          type: isBuyer ? (kind === "gift" ? "nft_gift_in" : "nft_buy") : (kind === "gift" ? "nft_gift_out" : "nft_sell"),
+          amount: isBuyer ? -Number(n.total || 0) : Number(n.total || 0),
+          created_at: n.created_at,
+          description: label,
+          status: n.status,
+        };
+      });
+      const merged = [...((txData as any) || []), ...nftRows].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setTxs(merged);
       setLoadingTx(false);
     })();
     return () => { mounted = false; };
@@ -122,9 +150,10 @@ const Web3Dashboard = () => {
     return txs.filter((t) => {
       if (f === "all") return true;
       const type = (t.type || "").toLowerCase();
+      if (f === "nft") return type.startsWith("nft");
       if (f === "deposits") return ["topup", "top_up", "deposit", "receive"].some((k) => type.includes(k));
       if (f === "withdrawals") return type.includes("withdraw");
-      if (f === "sent") return type.includes("send") || type.includes("transfer");
+      if (f === "sent") return type.includes("send") || type.includes("transfer") || type === "nft_buy" || type === "nft_gift_out";
       if (f === "converts") return type.includes("convert") || type.includes("swap");
       return true;
     });
@@ -289,7 +318,7 @@ const Web3Dashboard = () => {
           </div>
 
           <div className="mt-5 flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            {["All", "Converts", "Deposits", "Withdrawals", "Sent"].map((c) => (
+            {["All", "NFT", "Converts", "Deposits", "Withdrawals", "Sent"].map((c) => (
               <button
                 key={c}
                 onClick={() => setActivityFilter(c)}
@@ -469,18 +498,20 @@ const ActionRow = ({ color, icon, title, desc, onClick }: { color: string; icon:
 
 const TxRowItem = ({ tx, format, onClick }: { tx: TxRow; format: (n: number) => string; onClick: () => void }) => {
   const t = (tx.type || "").toLowerCase();
-  const isIn = ["receive", "topup", "top_up", "deposit"].some((k) => t.includes(k));
+  const isNft = t.startsWith("nft");
+  const amt = Number(tx.amount || 0);
+  const isIn = isNft ? amt >= 0 : ["receive", "topup", "top_up", "deposit"].some((k) => t.includes(k));
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#0f0f0f] hover:bg-[#161616] transition">
-      <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
-        {isIn ? <ArrowDown className="h-5 w-5 text-green-400" /> : <ArrowUp className="h-5 w-5 text-white/70" />}
+      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isNft ? "bg-blue-500/15" : "bg-white/5"}`}>
+        {isNft ? <Sparkles className="h-5 w-5" style={{ color: ACCENT }} /> : isIn ? <ArrowDown className="h-5 w-5 text-green-400" /> : <ArrowUp className="h-5 w-5 text-white/70" />}
       </div>
       <div className="flex-1 text-left min-w-0">
         <p className="font-semibold text-[14px] truncate">{tx.description || tx.type || "Transaction"}</p>
-        <p className="text-xs text-white/50">{new Date(tx.created_at).toLocaleString()}</p>
+        <p className="text-xs text-white/50">{new Date(tx.created_at).toLocaleString()}{isNft ? " · NFT" : ""}</p>
       </div>
       <p className={`font-bold text-[15px] ${isIn ? "text-green-400" : "text-white"}`}>
-        {isIn ? "+" : "-"}{format(Math.abs(Number(tx.amount || 0)))}
+        {isIn ? "+" : "-"}{format(Math.abs(amt))}
       </p>
     </button>
   );
