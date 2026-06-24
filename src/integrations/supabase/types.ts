@@ -2159,6 +2159,7 @@ export type Database = {
       }
       nft_items: {
         Row: {
+          category: string
           code: string
           collection_id: string | null
           created_at: string
@@ -2178,6 +2179,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string
           code: string
           collection_id?: string | null
           created_at?: string
@@ -2197,6 +2199,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string
           code?: string
           collection_id?: string | null
           created_at?: string
@@ -2330,6 +2333,7 @@ export type Database = {
           avatar_url: string | null
           banner_url: string | null
           bio: string | null
+          category: string
           created_at: string
           discord_url: string | null
           display_name: string | null
@@ -2349,6 +2353,7 @@ export type Database = {
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
+          category?: string
           created_at?: string
           discord_url?: string | null
           display_name?: string | null
@@ -2368,6 +2373,7 @@ export type Database = {
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
+          category?: string
           created_at?: string
           discord_url?: string | null
           display_name?: string | null
