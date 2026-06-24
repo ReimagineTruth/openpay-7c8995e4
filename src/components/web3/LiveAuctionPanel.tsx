@@ -150,18 +150,41 @@ export const LiveAuctionPanel = ({
         </div>
       )}
 
-      {bids.length > 0 && !settled && (
-        <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
-          <p className="text-[10px] uppercase tracking-wide text-white/40 font-bold">Recent bids</p>
-          {bids.slice(0, 5).map((b) => {
-            const p = profiles[b.bidder_id];
-            return (
-              <div key={b.id} className="flex items-center justify-between text-xs py-1">
-                <span className="text-white/70 truncate">@{p?.username || b.bidder_id.slice(0,6)}</span>
-                <span className="font-bold" style={{ color: ACCENT }}>{format(Number(b.amount))}</span>
-              </div>
-            );
-          })}
+      {bids.length > 0 && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[10px] uppercase tracking-wide text-white/40 font-bold flex items-center gap-1">
+              <History className="h-3 w-3" /> Bid history ({bids.length})
+            </p>
+            {bids.length > 5 && (
+              <button onClick={() => setShowAll((v) => !v)} className="text-[10px] text-white/60 hover:text-white underline">
+                {showAll ? "Show less" : "Show all"}
+              </button>
+            )}
+          </div>
+          <div className={`space-y-1 overflow-y-auto ${showAll ? "max-h-64" : "max-h-32"}`}>
+            {(showAll ? bids : bids.slice(0, 5)).map((b, idx) => {
+              const p = profiles[b.bidder_id];
+              const isTop = idx === 0;
+              const isMe = b.bidder_id === me;
+              const ts = b.created_at ? new Date(b.created_at) : null;
+              return (
+                <div key={b.id} className={`flex items-center justify-between text-xs py-1 px-2 rounded ${isTop ? "bg-amber-500/10 border border-amber-400/20" : ""}`}>
+                  <span className="flex items-center gap-1.5 truncate">
+                    {isTop && <Crown className="h-3.5 w-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />}
+                    <span className={`truncate ${isTop ? "text-white font-semibold" : "text-white/70"}`}>
+                      @{p?.username || p?.full_name?.slice(0,10) || b.bidder_id.slice(0,6)}
+                    </span>
+                    {isMe && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">YOU</span>}
+                  </span>
+                  <span className="flex items-center gap-2 flex-shrink-0">
+                    {ts && <span className="text-[10px] text-white/40">{ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>}
+                    <span className="font-bold" style={{ color: isTop ? "#fbbf24" : ACCENT }}>{format(Number(b.amount))}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
