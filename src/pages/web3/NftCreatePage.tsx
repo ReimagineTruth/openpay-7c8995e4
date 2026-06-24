@@ -194,6 +194,36 @@ const NftCreatePage = () => {
         <Field label="Royalty %" value={String(form.royalty_pct)} onChange={(v) => upd("royalty_pct", Number(v) || 0)} type="number" />
         <Field label="Properties (JSON or notes)" value={form.properties} onChange={(v) => upd("properties", v)} multiline />
 
+        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-3 space-y-3">
+          <p className="text-xs font-bold text-white/70 uppercase tracking-wide flex items-center gap-1">
+            <Gavel className="h-3.5 w-3.5" style={{ color: ACCENT }} /> Sale Type
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => upd("sale_type", "fixed")}
+              className={`p-3 rounded-xl border text-left transition ${form.sale_type === "fixed" ? "border-blue-500 bg-blue-500/10" : "border-white/10"}`}>
+              <p className="font-bold text-sm">💰 Fixed Price</p>
+              <p className="text-[11px] text-white/50">Buyers pay the set price</p>
+            </button>
+            <button type="button" onClick={() => upd("sale_type", "auction")}
+              className={`p-3 rounded-xl border text-left transition ${form.sale_type === "auction" ? "border-amber-400 bg-amber-400/10" : "border-white/10"}`}>
+              <p className="font-bold text-sm">🔥 Live Auction</p>
+              <p className="text-[11px] text-white/50">Realtime bidding war</p>
+            </button>
+          </div>
+          {form.sale_type === "auction" && (
+            <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Starting bid" value={String(form.auction_start_price)} onChange={(v: any) => upd("auction_start_price", Number(v) || 0)} type="number" />
+                <Field label="Min increment" value={String(form.auction_min_increment)} onChange={(v: any) => upd("auction_min_increment", Number(v) || 1)} type="number" />
+              </div>
+              <Field label="Duration (hours)" value={String(form.auction_duration_hours)} onChange={(v: any) => upd("auction_duration_hours", Number(v) || 24)} type="number" />
+              <p className="text-[11px] text-white/50 leading-relaxed">
+                ⏱️ Live countdown · 📈 Bid amount goes up in realtime · 🏆 Highest bidder wins when timer ends · 💸 Funds escrowed safely.
+              </p>
+            </div>
+          )}
+        </div>
+
         <button
           onClick={submit}
           disabled={loading}
