@@ -32,7 +32,6 @@ const NftMarketplacePage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    playNftSound("splash");
     (async () => {
       const { data } = await (supabase as any)
         .from("nft_items")
