@@ -176,7 +176,11 @@ const Web3Dashboard = () => {
     >
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-5 gap-3">
-        <button onClick={() => navigate("/menu")} className="flex items-center gap-2 min-w-0">
+        <button
+          onClick={() => navigate(profile.username ? `/web3/nft/store/${profile.username}` : "/web3/nft/store")}
+          className="flex items-center gap-2 min-w-0"
+          aria-label="Open my NFT store"
+        >
           {avatar ? (
             <img src={avatar} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-white/10" />
           ) : (
