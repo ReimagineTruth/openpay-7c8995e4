@@ -33,29 +33,24 @@ const AdminNftPage = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const [m, items, act, feeCfg, mintCfg] = await Promise.all([
+      const [m, items, act, feeCfg, mintCfg, bidCfg] = await Promise.all([
         (supabase as any).rpc("nft_admin_metrics"),
         (supabase as any).rpc("nft_admin_list_items", { p_limit: 200, p_search: search || null }),
         (supabase as any).rpc("nft_admin_recent_activity", { p_limit: 100 }),
         (supabase as any).rpc("nft_get_platform_fee"),
         (supabase as any).rpc("nft_get_mint_fee"),
+        (supabase as any).rpc("nft_get_bid_fee"),
       ]);
       if (m.error) throw m.error;
       setMetrics(m.data || {});
       setItems(items.data || []);
       setActivity(act.data || []);
       const f = feeCfg.data || {};
-      setFee({
-        enabled: !!f.enabled,
-        rate: Number(f.rate || 0),
-        collector_user_id: f.collector_user_id || "",
-      });
+      setFee({ enabled: !!f.enabled, rate: Number(f.rate || 0), collector_user_id: f.collector_user_id || "" });
       const mf = mintCfg.data || {};
-      setMintFee({
-        enabled: !!mf.enabled,
-        rate: Number(mf.rate || 0),
-        collector_user_id: mf.collector_user_id || "",
-      });
+      setMintFee({ enabled: !!mf.enabled, rate: Number(mf.rate || 0), collector_user_id: mf.collector_user_id || "" });
+      const bf = bidCfg.data || {};
+      setBidFee({ enabled: !!bf.enabled, rate: Number(bf.rate || 0), collector_user_id: bf.collector_user_id || "" });
     } catch (e: any) {
       toast({ title: "Access denied", description: e.message, variant: "destructive" });
     } finally {
