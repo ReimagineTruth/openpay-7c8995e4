@@ -17,6 +17,7 @@ const NftStoreSettingsPage = () => {
     avatar_url: "", banner_url: "",
     website_url: "", twitter_url: "", instagram_url: "", discord_url: "",
     email_public: "", feature_nfts: true,
+    category: "general",
   });
 
   useEffect(() => {
