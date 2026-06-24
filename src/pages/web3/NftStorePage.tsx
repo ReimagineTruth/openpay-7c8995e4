@@ -319,6 +319,7 @@ const NftStorePage = () => {
                 <div className="p-2.5">
                   <p className="text-xs font-bold truncate">{it.name}</p>
                   <p className="text-[10px] text-white/40 truncate">#{it.code}</p>
+                  <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} className="mt-1.5" />
                   <p className="text-sm font-extrabold mt-1" style={{ color: ACCENT }}>{format(Number(it.price || 0))}</p>
                 </div>
               </button>
@@ -333,7 +334,10 @@ const NftStorePage = () => {
                   {it.image_url && <img src={it.image_url} className="h-full w-full object-cover" alt="" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{it.name}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold truncate">{it.name}</p>
+                    <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} />
+                  </div>
                   <p className="text-[11px] text-white/50">#{it.code}</p>
                 </div>
                 <p className="text-sm font-extrabold" style={{ color: ACCENT }}>{format(Number(it.price || 0))}</p>
