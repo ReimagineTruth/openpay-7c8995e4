@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store } from "lucide-react";
-import NftSplash from "@/components/web3/NftSplash";
+
 import { playNftSound } from "@/lib/nftFx";
 
 const ACCENT = "hsl(217 91% 60%)";
