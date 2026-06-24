@@ -420,6 +420,26 @@ const NftMarketplacePage = () => {
             </>
           );
         })()}
+
+        {/* Pull-up-to-refresh indicator */}
+        <div
+          className="flex items-center justify-center gap-2 pt-6 pb-2 text-xs text-white/50 transition-opacity"
+          style={{ opacity: refreshing || pullProgress > 0 ? 1 : 0.4 }}
+        >
+          <RefreshCw
+            className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+            style={{ transform: refreshing ? undefined : `rotate(${pullProgress * 360}deg)` }}
+          />
+          <span>
+            {refreshing
+              ? "Refreshing…"
+              : pullProgress >= 1
+              ? "Release to refresh"
+              : pullProgress > 0
+              ? "Pull up to refresh"
+              : "Pull up at bottom to refresh"}
+          </span>
+        </div>
       </div>
     </div>
   );
