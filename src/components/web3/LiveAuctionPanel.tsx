@@ -61,6 +61,7 @@ export const LiveAuctionPanel = ({
   const [bids, setBids] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [flash, setFlash] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const loadProfiles = async (ids: string[]) => {
     const unique = Array.from(new Set(ids)).filter(Boolean);
