@@ -139,6 +139,13 @@ const NftStoreSettingsPage = () => {
           <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })}
             placeholder="Tell collectors about your store…" rows={3} className="input resize-none" />
         </Field>
+        <Field label="Category" icon={<Tag className="h-4 w-4" />} hint="Helps collectors discover your store on the marketplace.">
+          <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input">
+            {NFT_CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>
+            ))}
+          </select>
+        </Field>
 
         <p className="text-[11px] uppercase text-white/40 font-bold pt-2">Links</p>
         <Field label="Website" icon={<Globe className="h-4 w-4" />}>
