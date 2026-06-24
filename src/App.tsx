@@ -499,6 +499,8 @@ const AppRoutes = () => {
         <Route path="/admin-kyc-review" element={<AdminKycReview />} />
         <Route path="/admin-kyc-metrics" element={<AdminKycMetricsPage />} />
         <Route path="/admin-openpay-metrics" element={<AdminOpenPayMetricsPage />} />
+        <Route path="/admin-nft" element={<AdminNftPage />} />
+
 
         <Route path="/remittance-merchant" element={<RemittanceMerchantPage />} />
         <Route path="/openpay-official" element={<OpenPayOfficialPage />} />
