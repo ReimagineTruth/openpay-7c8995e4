@@ -426,8 +426,11 @@ const NftDetailPage = () => {
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-white/50">Price</p>
-              <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(item.price, item.currency)}</p>
+              <p className="text-xs text-white/50">{hasActiveAuction ? "Current bid" : "Price"}</p>
+              <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(livePrice, item.currency)}</p>
+              {hasActiveAuction && (
+                <p className="text-[10px] text-white/40 mt-0.5">Starting price <span className="line-through">{formatNftPrice(item.price, item.currency)}</span> · only the winning bidder can buy</p>
+              )}
             </div>
             <div className="text-right">
               <NftStatusBadge sold={totalSold} total={item.quantity_total} hasAuction={hasActiveAuction} className="mb-1" />
