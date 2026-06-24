@@ -27,6 +27,7 @@ import { PhantomConnect } from "@/components/ui/PhantomConnect";
 import DashboardSectionTabs from "@/components/dashboard/DashboardSectionTabs";
 import DashboardSectionQuickBar from "@/components/dashboard/DashboardSectionQuickBar";
 import DashboardRecommendations from "@/components/dashboard/DashboardRecommendations";
+import NftShowcase from "@/components/web3/NftShowcase";
 import DashboardSwapPanel from "@/components/dashboard/DashboardSwapPanel";
 import { MRWN_SWAP_OUSD_PER_TOKEN } from "@/lib/mrwnRates";
 import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
