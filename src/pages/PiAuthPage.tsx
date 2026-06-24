@@ -17,7 +17,9 @@ const PiAuthPage = () => {
   const [sdkReady, setSdkReady] = useState(() => typeof window !== "undefined" && !!window.Pi);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const inPiBrowser = isPiBrowserUserAgent() || sdkReady;
+  // Only hide email sign-in when actually running inside Pi Browser (UA-based).
+  // The Pi SDK script can load in regular browsers too, so do NOT rely on sdkReady here.
+  const inPiBrowser = isPiBrowserUAOnly();
 
   const envSandbox = String(import.meta.env.VITE_PI_SANDBOX || "").trim().toLowerCase();
   const sandbox =
