@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users } from "lucide-react";
+import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Tag, Gavel, HelpCircle, Edit3, Trash2, Clock } from "lucide-react";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -19,10 +19,21 @@ const NftDetailPage = () => {
   const [busy, setBusy] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const [auctionOpen, setAuctionOpen] = useState(false);
+  const [bidOpen, setBidOpen] = useState<any>(null);
+  const [editListing, setEditListing] = useState<any>(null);
   const [qty, setQty] = useState(1);
   const [method, setMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
   const [giftUsername, setGiftUsername] = useState("");
   const [giftMsg, setGiftMsg] = useState("");
+  const [listings, setListings] = useState<any[]>([]);
+  const [auctions, setAuctions] = useState<any[]>([]);
+  const [listPrice, setListPrice] = useState("");
+  const [aStart, setAStart] = useState("");
+  const [aInc, setAInc] = useState("1");
+  const [aHours, setAHours] = useState("24");
+  const [bidAmt, setBidAmt] = useState("");
 
   const load = async () => {
     if (!id) return;
@@ -45,6 +56,12 @@ const NftDetailPage = () => {
       setOwners((own || []).map((o: any) => ({ ...o, profile: profMap[o.owner_id] })));
       setTxs(tx || []);
       setCreator(prof);
+      const [{ data: ls }, { data: au }] = await Promise.all([
+        (supabase as any).from("nft_listings").select("*").eq("item_id", id).eq("status", "active").order("price"),
+        (supabase as any).from("nft_auctions").select("*").eq("item_id", id).in("status", ["active","ended"]).order("created_at", { ascending: false }),
+      ]);
+      setListings(ls || []);
+      setAuctions(au || []);
     }
   };
 
@@ -102,6 +119,55 @@ const NftDetailPage = () => {
     toast({ title: "Link copied!" });
   };
 
+  const callRpc = async (fn: string, args: any, ok: string) => {
+    setBusy(true);
+    try {
+      const { error } = await (supabase as any).rpc(fn, args);
+      if (error) throw error;
+      toast({ title: ok });
+      await load();
+      return true;
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+      return false;
+    } finally { setBusy(false); }
+  };
+
+  const handleList = async () => {
+    if (!listPrice || Number(listPrice) < 0) return;
+    const ok = await callRpc("nft_create_listing", { p_item_id: id, p_price: Number(listPrice), p_quantity: qty }, "Listed for resale");
+    if (ok) { setListOpen(false); setListPrice(""); }
+  };
+  const handleEditPrice = async () => {
+    if (!editListing || !listPrice) return;
+    const ok = await callRpc("nft_update_listing_price", { p_listing_id: editListing.id, p_new_price: Number(listPrice) }, "Price updated");
+    if (ok) { setEditListing(null); setListPrice(""); }
+  };
+  const handleCancelListing = async (l: any) => {
+    await callRpc("nft_cancel_listing", { p_listing_id: l.id }, "Listing cancelled");
+  };
+  const handleBuyListing = async (l: any) => {
+    await callRpc("nft_buy_item", { p_item_id: id, p_quantity: 1, p_payment_method: "openpay_balance", p_listing_id: l.id }, "Purchased");
+  };
+  const handleCreateAuction = async () => {
+    const ok = await callRpc("nft_create_auction", {
+      p_item_id: id, p_quantity: qty,
+      p_start_price: Number(aStart || 0), p_min_increment: Number(aInc || 1), p_duration_hours: Number(aHours || 24),
+    }, "Auction started");
+    if (ok) { setAuctionOpen(false); setAStart(""); }
+  };
+  const handlePlaceBid = async () => {
+    if (!bidOpen) return;
+    const ok = await callRpc("nft_place_bid", { p_auction_id: bidOpen.id, p_amount: Number(bidAmt) }, "Bid placed");
+    if (ok) { setBidOpen(null); setBidAmt(""); }
+  };
+  const handleFinalize = async (a: any) => {
+    await callRpc("nft_finalize_auction", { p_auction_id: a.id }, "Auction finalized");
+  };
+  const handleCancelAuction = async (a: any) => {
+    await callRpc("nft_cancel_auction", { p_auction_id: a.id }, "Auction cancelled");
+  };
+
   if (!item) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading…</div>;
 
   const img = item.media_url || item.image_url;
@@ -113,6 +179,9 @@ const NftDetailPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="text-lg font-extrabold flex-1 truncate">{item.name}</h1>
+        <button onClick={() => nav("/web3/nft/how-to")} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="How it works">
+          <HelpCircle className="h-5 w-5" />
+        </button>
         <button onClick={share} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <Share2 className="h-5 w-5" />
         </button>
@@ -169,6 +238,83 @@ const NftDetailPage = () => {
                   <span className="text-sm text-white/70 font-bold">×{o.quantity}</span>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* RESALE LISTINGS */}
+        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-white/50 flex items-center gap-1"><Tag className="h-3 w-3" /> RESALE LISTINGS</p>
+            {myOwn > 0 && (
+              <button onClick={() => { setListPrice(String(item.price)); setListOpen(true); }} className="text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: ACCENT }}>+ List</button>
+            )}
+          </div>
+          {listings.length === 0 ? <p className="text-sm text-white/50">No active listings</p> : (
+            <div className="space-y-2">
+              {listings.map((l) => {
+                const mine = l.seller_id === me;
+                return (
+                  <div key={l.id} className="flex items-center gap-2 border-b border-white/5 pb-2 last:border-0">
+                    <div className="flex-1">
+                      <p className="font-bold" style={{ color: ACCENT }}>{format(Number(l.price))}</p>
+                      <p className="text-xs text-white/40">×{l.quantity} available {mine && "· You"}</p>
+                    </div>
+                    {mine ? (
+                      <>
+                        <button onClick={() => { setEditListing(l); setListPrice(String(l.price)); }} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Edit3 className="h-4 w-4" /></button>
+                        <button onClick={() => handleCancelListing(l)} disabled={busy} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Trash2 className="h-4 w-4" /></button>
+                      </>
+                    ) : (
+                      <button onClick={() => handleBuyListing(l)} disabled={busy} className="text-xs font-bold px-3 py-2 rounded-full" style={{ backgroundColor: ACCENT }}>Buy</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* AUCTIONS */}
+        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-white/50 flex items-center gap-1"><Gavel className="h-3 w-3" /> AUCTIONS</p>
+            {myOwn > 0 && (
+              <button onClick={() => { setAStart(String(item.price)); setAuctionOpen(true); }} className="text-xs font-bold px-3 py-1 rounded-full bg-white/10">+ Auction</button>
+            )}
+          </div>
+          {auctions.length === 0 ? <p className="text-sm text-white/50">No auctions running</p> : (
+            <div className="space-y-3">
+              {auctions.map((a) => {
+                const ended = new Date(a.ends_at).getTime() < Date.now();
+                const mine = a.seller_id === me;
+                return (
+                  <div key={a.id} className="rounded-xl bg-black/40 border border-white/5 p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-white/50">Current bid</p>
+                        <p className="text-xl font-extrabold" style={{ color: ACCENT }}>{format(Number(a.current_bid ?? a.start_price))}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-white/50 flex items-center gap-1"><Clock className="h-3 w-3" />{ended ? "Ended" : "Ends"}</p>
+                        <p className="text-xs text-white/80">{new Date(a.ends_at).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      {a.status === "active" && !ended && !mine && (
+                        <button onClick={() => { setBidOpen(a); setBidAmt(String((Number(a.current_bid ?? a.start_price)) + Number(a.min_increment))); }} className="flex-1 rounded-full py-2 text-sm font-bold" style={{ backgroundColor: ACCENT }}>Place bid</button>
+                      )}
+                      {ended && a.status === "active" && (
+                        <button onClick={() => handleFinalize(a)} disabled={busy} className="flex-1 rounded-full py-2 text-sm font-bold bg-white/10">Finalize</button>
+                      )}
+                      {mine && a.status === "active" && !a.current_bid && (
+                        <button onClick={() => handleCancelAuction(a)} disabled={busy} className="rounded-full px-3 py-2 text-sm bg-white/10">Cancel</button>
+                      )}
+                      {a.status === "settled" && <span className="text-xs text-emerald-400 font-bold">SETTLED</span>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -232,6 +378,52 @@ const NftDetailPage = () => {
           <Field label="Message (optional)" value={giftMsg} onChange={setGiftMsg} multiline />
           <button onClick={handleGift} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Sending…" : "Send Gift"}
+          </button>
+        </Modal>
+      )}
+
+      {listOpen && (
+        <Modal onClose={() => setListOpen(false)} title="List for resale">
+          <Field label={`Price per item (you own ×${myOwn})`} value={listPrice} onChange={setListPrice} type="number" />
+          <Field label="Quantity" value={qty} onChange={(v: any) => setQty(Math.min(myOwn, Math.max(1, Number(v)||1)))} type="number" />
+          <p className="text-xs text-white/50">You can change the price or cancel any time.</p>
+          <button onClick={handleList} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Listing…" : "List Now"}
+          </button>
+        </Modal>
+      )}
+
+      {editListing && (
+        <Modal onClose={() => setEditListing(null)} title="Update price">
+          <Field label="New price" value={listPrice} onChange={setListPrice} type="number" />
+          <p className="text-xs text-white/50">Increase or decrease the price freely.</p>
+          <button onClick={handleEditPrice} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Saving…" : "Save Price"}
+          </button>
+        </Modal>
+      )}
+
+      {auctionOpen && (
+        <Modal onClose={() => setAuctionOpen(false)} title="Start an auction">
+          <Field label={`Quantity (you own ×${myOwn})`} value={qty} onChange={(v: any) => setQty(Math.min(myOwn, Math.max(1, Number(v)||1)))} type="number" />
+          <Field label="Start price" value={aStart} onChange={setAStart} type="number" />
+          <Field label="Minimum bid increment" value={aInc} onChange={setAInc} type="number" />
+          <Field label="Duration (hours)" value={aHours} onChange={setAHours} type="number" />
+          <p className="text-xs text-white/50">Bids escrow from OpenPay balance. Highest bid wins when the timer ends.</p>
+          <button onClick={handleCreateAuction} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Starting…" : "Start Auction"}
+          </button>
+        </Modal>
+      )}
+
+      {bidOpen && (
+        <Modal onClose={() => setBidOpen(null)} title="Place a bid">
+          <p className="text-sm text-white/70">Current bid: <span className="font-bold text-white">{format(Number(bidOpen.current_bid ?? bidOpen.start_price))}</span></p>
+          <p className="text-xs text-white/50">Minimum next bid: {format(Number(bidOpen.current_bid ?? bidOpen.start_price) + (bidOpen.current_bid ? Number(bidOpen.min_increment) : 0))}</p>
+          <Field label="Your bid" value={bidAmt} onChange={setBidAmt} type="number" />
+          <p className="text-xs text-white/50">Funds are escrowed. If outbid, you'll be refunded automatically.</p>
+          <button onClick={handlePlaceBid} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Bidding…" : "Place Bid"}
           </button>
         </Modal>
       )}
