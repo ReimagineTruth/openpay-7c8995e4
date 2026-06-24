@@ -45,7 +45,7 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
     (async () => {
       const { data } = await (supabase as any)
         .from("nft_items")
-        .select("id, name, code, image_url, media_url, price, creator_id, created_at")
+        .select("id, name, code, image_url, media_url, price, creator_id, quantity_total, created_at")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -54,7 +54,7 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
       if (list.length) {
         const creatorIds = Array.from(new Set(list.map((i) => i.creator_id)));
         const itemIds = list.map((i) => i.id);
-        const [{ data: sp }, { data: au }] = await Promise.all([
+        const [{ data: sp }, { data: au }, { data: tx }] = await Promise.all([
           (supabase as any)
             .from("nft_store_profiles")
             .select("user_id, handle, display_name, avatar_url, is_verified")
@@ -64,6 +64,11 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
             .select("item_id")
             .in("item_id", itemIds)
             .eq("status", "active"),
+          (supabase as any)
+            .from("nft_transactions")
+            .select("item_id, quantity, tx_kind")
+            .in("item_id", itemIds)
+            .in("tx_kind", ["sale", "resale"]),
         ]);
         const sMap: Record<string, StoreLite> = {};
         (sp || []).forEach((s: any) => { sMap[s.user_id] = s; });
@@ -71,10 +76,14 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
         const aMap: Record<string, boolean> = {};
         (au || []).forEach((a: any) => { aMap[a.item_id] = true; });
         setAuctions(aMap);
+        const soldMap: Record<string, number> = {};
+        (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
+        setSales(soldMap);
       }
       setLoading(false);
     })();
   }, []);
+
 
   if (!loading && items.length === 0) return null;
 
