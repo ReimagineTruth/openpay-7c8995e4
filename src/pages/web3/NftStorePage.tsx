@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
-  ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram,
+  ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send,
   BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
