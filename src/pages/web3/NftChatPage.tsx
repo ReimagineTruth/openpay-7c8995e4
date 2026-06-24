@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Image as ImageIcon, X, Trash2, MessageCircle } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, X, Trash2, MessageCircle, BadgeCheck, Store as StoreIcon, ExternalLink } from "lucide-react";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -19,12 +19,14 @@ const NftChatPage = () => {
   const [me, setMe] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
+  const [storesByUser, setStoresByUser] = useState<Record<string, any>>({});
   const [items, setItems] = useState<Record<string, any>>({});
   const [text, setText] = useState("");
   const [attaching, setAttaching] = useState(false);
   const [myNfts, setMyNfts] = useState<any[]>([]);
   const [attached, setAttached] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [profilePeek, setProfilePeek] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadProfilesAndItems = async (rows: Msg[]) => {
@@ -35,11 +37,16 @@ const NftChatPage = () => {
       new Set(rows.map((m) => m.item_id).filter(Boolean) as string[]),
     ).filter((id) => !items[id]);
     if (userIds.length) {
-      const { data } = await (supabase as any)
-        .from("profiles").select("id, username, full_name, avatar_url").in("id", userIds);
-      const map: Record<string, any> = { ...profiles };
-      (data || []).forEach((p: any) => (map[p.id] = p));
-      setProfiles(map);
+      const [{ data: pData }, { data: sData }] = await Promise.all([
+        (supabase as any).from("profiles").select("id, username, full_name, avatar_url").in("id", userIds),
+        (supabase as any).from("nft_store_profiles").select("user_id, handle, display_name, avatar_url, banner_url, bio, is_verified, category").in("user_id", userIds),
+      ]);
+      const pMap: Record<string, any> = { ...profiles };
+      (pData || []).forEach((p: any) => (pMap[p.id] = p));
+      setProfiles(pMap);
+      const sMap: Record<string, any> = { ...storesByUser };
+      (sData || []).forEach((s: any) => (sMap[s.user_id] = s));
+      setStoresByUser(sMap);
     }
     if (itemIds.length) {
       const { data } = await (supabase as any)
@@ -48,6 +55,11 @@ const NftChatPage = () => {
       (data || []).forEach((it: any) => (map[it.id] = it));
       setItems(map);
     }
+  };
+
+  const openProfile = (userId: string) => {
+    if (userId === me) { nav("/web3/nft/store"); return; }
+    setProfilePeek(userId);
   };
 
   useEffect(() => {
@@ -155,20 +167,35 @@ const NftChatPage = () => {
         )}
         {msgs.map((m) => {
           const p = profiles[m.user_id];
+          const s = storesByUser[m.user_id];
           const it = m.item_id ? items[m.item_id] : null;
           const mine = m.user_id === me;
+          const displayName = s?.display_name || p?.full_name || p?.username || "User";
+          const handle = s?.handle || p?.username || m.user_id.slice(0, 6);
+          const avatar = s?.avatar_url || p?.avatar_url;
           return (
             <div key={m.id} className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
-              {p?.avatar_url
-                ? <img src={p.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
-                : <div className="h-8 w-8 rounded-full bg-white/10 flex-shrink-0" />}
+              <button
+                onClick={() => openProfile(m.user_id)}
+                className="flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-white/30 transition active:scale-95"
+                aria-label={`View @${handle}`}
+              >
+                {avatar
+                  ? <img src={avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                  : <div className="h-8 w-8 rounded-full bg-gradient-to-br from-pink-500 to-blue-500" />}
+              </button>
               <div className={`max-w-[78%] ${mine ? "items-end" : "items-start"} flex flex-col gap-1`}>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-white/50 font-semibold">
-                    {mine ? "You" : `@${p?.username || (m.user_id.slice(0, 6))}`}
+                <button
+                  onClick={() => openProfile(m.user_id)}
+                  className={`flex items-center gap-1.5 hover:opacity-80 transition ${mine ? "flex-row-reverse" : ""}`}
+                >
+                  <span className="text-[11px] text-white/70 font-bold">
+                    {mine ? "You" : displayName}
                   </span>
-                  <span className="text-[10px] text-white/30">{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                </div>
+                  {s?.is_verified && <BadgeCheck className="h-3 w-3" style={{ color: ACCENT }} />}
+                  <span className="text-[10px] text-white/40">@{handle}</span>
+                  <span className="text-[10px] text-white/30">· {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                </button>
                 <div className={`rounded-2xl px-3 py-2 ${mine ? "rounded-tr-sm" : "rounded-tl-sm bg-white/10"}`} style={mine ? { background: ACCENT } : {}}>
                   {m.message && <p className="text-sm break-words whitespace-pre-wrap">{m.message}</p>}
                   {it && (
