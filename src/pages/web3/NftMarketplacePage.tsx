@@ -340,7 +340,7 @@ const NftMarketplacePage = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <Store className="h-4 w-4" style={{ color: ACCENT }} />
                     <h2 className="font-extrabold">Browse stores</h2>
-                    <button onClick={() => nav("/web3/nft/store")} className="ml-auto text-xs text-white/60 hover:text-white">My store →</button>
+                    <button onClick={() => nav("/web3/nft/stores")} className="ml-auto text-xs font-bold" style={{ color: ACCENT }}>View all →</button>
                   </div>
                   <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-2 snap-x">
                     {recommendedStores.map(renderStore)}
