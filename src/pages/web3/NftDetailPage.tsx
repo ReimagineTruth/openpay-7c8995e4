@@ -718,7 +718,66 @@ const NftDetailPage = () => {
           <p className="text-sm text-white/70">Current bid: <span className="font-bold text-white">{formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price), item.currency)}</span></p>
           <p className="text-xs text-white/50">Minimum next bid: {formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price) + (bidOpen.current_bid ? Number(bidOpen.min_increment) : 0), item.currency)}</p>
           <Field label="Your bid" value={bidAmt} onChange={setBidAmt} type="number" />
-          <p className="text-xs text-white/50">Funds are escrowed. If outbid, you'll be refunded automatically.</p>
+
+          <div className="space-y-2">
+            <p className="text-xs text-white/60 font-semibold">Payment</p>
+            <PayOpt active={bidMethod==="openpay_balance"} onClick={() => setBidMethod("openpay_balance")} icon={<Wallet className="h-4 w-4" />} label="OpenPay Balance" />
+            <PayOpt active={bidMethod==="pi"} onClick={() => setBidMethod("pi")} icon={<img src="https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png" className="h-4 w-4 rounded-full" alt="Pi" />} label="Pi Network" />
+            <PayOpt active={bidMethod==="virtual_card"} onClick={() => setBidMethod("virtual_card")} icon={<CreditCard className="h-4 w-4" />} label="Virtual Card" />
+          </div>
+
+          {bidMethod === "virtual_card" && (
+            <div
+              className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10"
+              style={cardHidden ? { WebkitUserSelect: "none", userSelect: "none" } : undefined}
+            >
+              <div className="flex items-center justify-between">
+                {savedCards.length > 0 ? (
+                  <p className="text-[11px] text-white/50">
+                    Using your saved OpenPay card · ending {cardHidden ? "••••" : String(card.number).slice(-4)}
+                  </p>
+                ) : <span />}
+                <button
+                  type="button"
+                  onClick={() => setCardHidden((h) => !h)}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-white/70 hover:text-white px-2 py-1 rounded-full bg-white/5 border border-white/10"
+                  aria-label={cardHidden ? "Show card details" : "Hide card details"}
+                >
+                  {cardHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  {cardHidden ? "Show" : "Hide"}
+                </button>
+              </div>
+              {cardHidden ? (
+                <>
+                  <MaskedField label="Card number" value={card.number ? "•••• •••• •••• " + String(card.number).slice(-4) : "•••• •••• •••• ••••"} />
+                  <div className="grid grid-cols-3 gap-2">
+                    <MaskedField label="MM" value="••" />
+                    <MaskedField label="YYYY" value="••••" />
+                    <MaskedField label="CVC" value="•••" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Field label="Card number" value={card.number} onChange={(v: any) => setCard((c) => ({ ...c, number: v }))} />
+                  <div className="grid grid-cols-3 gap-2">
+                    <Field label="MM" value={card.exp_month} onChange={(v: any) => setCard((c) => ({ ...c, exp_month: v }))} type="number" />
+                    <Field label="YYYY" value={card.exp_year} onChange={(v: any) => setCard((c) => ({ ...c, exp_year: v }))} type="number" />
+                    <Field label="CVC" value={card.cvc} onChange={(v: any) => setCard((c) => ({ ...c, cvc: v }))} />
+                  </div>
+                </>
+              )}
+              {savedCards.length === 0 && (
+                <p className="text-[11px] text-amber-400">No saved card. Create one in OpenPay Card first.</p>
+              )}
+            </div>
+          )}
+          {bidMethod === "pi" && (
+            <p className="text-[11px] text-white/60 p-2 rounded-lg bg-white/5 border border-white/10">
+              You'll be charged {Number(bidAmt || 0).toFixed(2)} Pi via the Pi Browser. Refunded automatically if outbid.
+            </p>
+          )}
+
+          <p className="text-xs text-white/50">Funds are escrowed. If outbid, you'll be refunded to your OpenPay balance.</p>
           <button onClick={handlePlaceBid} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Bidding…" : "Place Bid"}
           </button>
