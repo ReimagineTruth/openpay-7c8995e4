@@ -41,8 +41,18 @@ const NftCreatePage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sign in required");
 
+      // Ensure unique item code by appending a short suffix if taken
+      const baseCode = form.code;
+      let itemCode = baseCode;
+      const { data: existingItem } = await (supabase as any)
+        .from("nft_items").select("id").eq("code", itemCode).maybeSingle();
+      if (existingItem) {
+        itemCode = `${baseCode}-${Date.now().toString(36).slice(-5)}`;
+      }
+
       // Create or reuse collection by code prefix
-      const colCode = `${form.code}-col`;
+      const colCode = `${baseCode}-col`;
+
       const { data: existingCol } = await (supabase as any)
         .from("nft_collections").select("id").eq("code", colCode).maybeSingle();
       let collectionId = existingCol?.id as string | undefined;
