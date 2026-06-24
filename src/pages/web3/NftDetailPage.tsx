@@ -91,6 +91,10 @@ const NftDetailPage = () => {
   const isCreator = me && item && me === item.creator_id;
 
   const openBuy = async () => {
+    if (auctions.some((a: any) => a.status === "active" && new Date(a.ends_at).getTime() > Date.now())) {
+      toast({ title: "Auction in progress", description: "Only the winning bidder can claim this NFT while an auction is live.", variant: "destructive" });
+      return;
+    }
     setBuyOpen(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -350,7 +354,15 @@ const NftDetailPage = () => {
   };
 
   const totalSold = txs.filter((t) => ["sale","resale"].includes(t.tx_kind)).reduce((s,t) => s + Number(t.quantity || 0), 0);
-  const hasActiveAuction = auctions.some((a: any) => a.status === "active" && new Date(a.ends_at).getTime() > Date.now());
+  const activeAuctions = auctions.filter((a: any) => a.status === "active" && new Date(a.ends_at).getTime() > Date.now());
+  const hasActiveAuction = activeAuctions.length > 0;
+  const topAuction = activeAuctions.reduce((best: any, a: any) => {
+    const cur = Number(a.current_bid ?? a.start_price);
+    if (!best) return a;
+    const bestCur = Number(best.current_bid ?? best.start_price);
+    return cur > bestCur ? a : best;
+  }, null);
+  const livePrice = topAuction ? Number(topAuction.current_bid ?? topAuction.start_price) : Number(item?.price || 0);
 
   if (!item) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading…</div>;
 
@@ -418,8 +430,11 @@ const NftDetailPage = () => {
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-white/50">Price</p>
-              <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(item.price, item.currency)}</p>
+              <p className="text-xs text-white/50">{hasActiveAuction ? "Current bid" : "Price"}</p>
+              <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(livePrice, item.currency)}</p>
+              {hasActiveAuction && (
+                <p className="text-[10px] text-white/40 mt-0.5">Starting price <span className="line-through">{formatNftPrice(item.price, item.currency)}</span> · only the winning bidder can buy</p>
+              )}
             </div>
             <div className="text-right">
               <NftStatusBadge sold={totalSold} total={item.quantity_total} hasAuction={hasActiveAuction} className="mb-1" />
@@ -481,6 +496,8 @@ const NftDetailPage = () => {
                         <button onClick={() => { setEditListing(l); setListPrice(String(l.price)); }} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Edit3 className="h-4 w-4" /></button>
                         <button onClick={() => handleCancelListing(l)} disabled={busy} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Trash2 className="h-4 w-4" /></button>
                       </>
+                    ) : hasActiveAuction ? (
+                      <span className="text-[10px] font-bold px-3 py-2 rounded-full bg-white/5 text-white/40">Locked · auction live</span>
                     ) : (
                       <button onClick={() => handleBuyListing(l)} disabled={busy} className="text-xs font-bold px-3 py-2 rounded-full" style={{ backgroundColor: ACCENT }}>Buy</button>
                     )}
@@ -557,10 +574,26 @@ const NftDetailPage = () => {
       {/* Sticky actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur p-4 flex gap-2 border-t border-white/10">
         {!isCreator && item.is_active && (
-          <button onClick={openBuy} className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
-            style={{ backgroundColor: ACCENT }}>
-            <ShoppingCart className="h-4 w-4" /> Buy
-          </button>
+          hasActiveAuction ? (
+            <button
+              onClick={() => {
+                const a = topAuction;
+                if (!a) return;
+                setBidOpen(a);
+                setBidAmt(String((Number(a.current_bid ?? a.start_price)) + Number(a.min_increment)));
+                setBidMethod("openpay_balance");
+              }}
+              className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
+              style={{ backgroundColor: ACCENT }}
+            >
+              <Gavel className="h-4 w-4" /> Place bid · {formatNftPrice(livePrice, item.currency)}
+            </button>
+          ) : (
+            <button onClick={openBuy} className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
+              style={{ backgroundColor: ACCENT }}>
+              <ShoppingCart className="h-4 w-4" /> Buy
+            </button>
+          )
         )}
         {myOwn > 0 && (
           <button onClick={() => setGiftOpen(true)} className="flex-1 rounded-full py-3 font-bold bg-white/10 flex items-center justify-center gap-2">
