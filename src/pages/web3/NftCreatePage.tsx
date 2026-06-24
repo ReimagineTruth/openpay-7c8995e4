@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, Gavel } from "lucide-react";
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
 import { NFT_CATEGORIES } from "@/lib/nftCategories";
@@ -23,6 +23,10 @@ const NftCreatePage = () => {
     royalty_pct: 5,
     category: "general",
     properties: "",
+    sale_type: "fixed" as "fixed" | "auction",
+    auction_start_price: 0,
+    auction_min_increment: 1,
+    auction_duration_hours: 24,
   });
   const [loading, setLoading] = useState(false);
 
@@ -102,6 +106,27 @@ const NftCreatePage = () => {
       try {
         await (supabase as any).from("nft_items").update({ category: form.category }).eq("id", data);
       } catch {}
+
+      // If sale_type is auction, immediately start an auction for the full supply
+      if (form.sale_type === "auction") {
+        try {
+          const startPrice = Number(form.auction_start_price) > 0
+            ? Number(form.auction_start_price)
+            : Number(form.price) || 1;
+          const { error: aErr } = await (supabase as any).rpc("nft_create_auction", {
+            p_item_id: data,
+            p_quantity: Number(form.quantity),
+            p_start_price: startPrice,
+            p_min_increment: Math.max(0.01, Number(form.auction_min_increment) || 1),
+            p_duration_hours: Math.max(1, Number(form.auction_duration_hours) || 24),
+          });
+          if (aErr) throw aErr;
+          toast({ title: "🔥 Auction is live!", description: "Bidders can now compete in realtime." });
+        } catch (ae: any) {
+          toast({ title: "Auction not started", description: ae.message, variant: "destructive" });
+        }
+      }
+
       celebrate("mint");
       toast({ title: "NFT minted!" });
       setMinted({ id: data, name: form.name });
@@ -169,13 +194,43 @@ const NftCreatePage = () => {
         <Field label="Royalty %" value={String(form.royalty_pct)} onChange={(v) => upd("royalty_pct", Number(v) || 0)} type="number" />
         <Field label="Properties (JSON or notes)" value={form.properties} onChange={(v) => upd("properties", v)} multiline />
 
+        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-3 space-y-3">
+          <p className="text-xs font-bold text-white/70 uppercase tracking-wide flex items-center gap-1">
+            <Gavel className="h-3.5 w-3.5" style={{ color: ACCENT }} /> Sale Type
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => upd("sale_type", "fixed")}
+              className={`p-3 rounded-xl border text-left transition ${form.sale_type === "fixed" ? "border-blue-500 bg-blue-500/10" : "border-white/10"}`}>
+              <p className="font-bold text-sm">💰 Fixed Price</p>
+              <p className="text-[11px] text-white/50">Buyers pay the set price</p>
+            </button>
+            <button type="button" onClick={() => upd("sale_type", "auction")}
+              className={`p-3 rounded-xl border text-left transition ${form.sale_type === "auction" ? "border-amber-400 bg-amber-400/10" : "border-white/10"}`}>
+              <p className="font-bold text-sm">🔥 Live Auction</p>
+              <p className="text-[11px] text-white/50">Realtime bidding war</p>
+            </button>
+          </div>
+          {form.sale_type === "auction" && (
+            <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Starting bid" value={String(form.auction_start_price)} onChange={(v: any) => upd("auction_start_price", Number(v) || 0)} type="number" />
+                <Field label="Min increment" value={String(form.auction_min_increment)} onChange={(v: any) => upd("auction_min_increment", Number(v) || 1)} type="number" />
+              </div>
+              <Field label="Duration (hours)" value={String(form.auction_duration_hours)} onChange={(v: any) => upd("auction_duration_hours", Number(v) || 24)} type="number" />
+              <p className="text-[11px] text-white/50 leading-relaxed">
+                ⏱️ Live countdown · 📈 Bid amount goes up in realtime · 🏆 Highest bidder wins when timer ends · 💸 Funds escrowed safely.
+              </p>
+            </div>
+          )}
+        </div>
+
         <button
           onClick={submit}
           disabled={loading}
           className="w-full rounded-full py-3 font-bold disabled:opacity-50"
           style={{ backgroundColor: ACCENT }}
         >
-          {loading ? "Minting…" : "Mint NFT"}
+          {loading ? "Minting…" : form.sale_type === "auction" ? "🔥 Mint & Start Auction" : "Mint NFT"}
         </button>
       </div>
       <NftBurst show={!!minted} kind="mint" message={minted ? `${minted.name} minted!` : ""} />

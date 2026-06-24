@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { NftStatusBadge } from "@/lib/nftStatus";
-import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X, RefreshCw, MessageCircle } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
 import { NFT_CATEGORIES, getCategoryMeta } from "@/lib/nftCategories";
 
@@ -183,6 +183,10 @@ const NftMarketplacePage = () => {
         </button>
         <button onClick={() => nav("/web3/nft/store")} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="My store">
           <Store className="h-5 w-5" />
+        </button>
+        <button onClick={() => nav("/web3/nft/chat")} className="relative h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Live chat">
+          <MessageCircle className="h-5 w-5" />
+          <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
         </button>
         <button onClick={() => load("refresh")} disabled={refreshing} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center disabled:opacity-60" aria-label="Refresh">
           <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
