@@ -154,6 +154,7 @@ const NftMarketplacePage = () => {
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((it) => {
+      if (auctionsOnly && !auctions[it.id]) return false;
       if (category !== "all" && (it.category || "general") !== category) return false;
       if (!q) return true;
       const store = storeByUser[it.creator_id];
@@ -165,7 +166,7 @@ const NftMarketplacePage = () => {
         (store?.display_name || "").toLowerCase().includes(q)
       );
     });
-  }, [items, search, category, storeByUser]);
+  }, [items, search, category, storeByUser, auctionsOnly, auctions]);
 
   const filteredStores = useMemo(() => {
     const q = search.trim().toLowerCase();
