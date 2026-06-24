@@ -16,6 +16,7 @@ interface NftCard {
   media_url: string | null;
   price: number;
   creator_id: string;
+  quantity_total: number;
 }
 interface StoreLite {
   user_id: string;
