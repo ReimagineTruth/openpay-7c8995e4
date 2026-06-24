@@ -102,6 +102,13 @@ const NftMarketplacePage = () => {
           <LayoutDashboard className="h-5 w-5" />
         </button>
         <button
+          onClick={() => nav("/web3/nft/store")}
+          className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center"
+          aria-label="My store"
+        >
+          <Store className="h-5 w-5" />
+        </button>
+        <button
           onClick={() => nav("/web3/nft/create")}
           className="h-9 px-3 rounded-full flex items-center gap-1 font-semibold text-sm"
           style={{ backgroundColor: ACCENT }}
