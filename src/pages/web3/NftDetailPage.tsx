@@ -276,6 +276,9 @@ const NftDetailPage = () => {
     await callRpc("nft_cancel_auction", { p_auction_id: a.id }, "Auction cancelled");
   };
 
+  const totalSold = txs.filter((t) => ["sale","resale"].includes(t.tx_kind)).reduce((s,t) => s + Number(t.quantity || 0), 0);
+  const hasActiveAuction = auctions.some((a: any) => a.status === "active" && new Date(a.ends_at).getTime() > Date.now());
+
   if (!item) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading…</div>;
 
   const img = item.media_url || item.image_url;
