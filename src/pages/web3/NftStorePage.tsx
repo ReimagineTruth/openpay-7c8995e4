@@ -84,6 +84,17 @@ const NftStorePage = () => {
         .from("nft_items").select("*").eq("creator_id", targetUserId)
         .order("created_at", { ascending: false });
       setCreated(cre || []);
+      const createdIds = (cre || []).map((i: any) => i.id);
+      if (createdIds.length) {
+        const { data: tx } = await (supabase as any)
+          .from("nft_transactions")
+          .select("item_id, quantity, tx_kind")
+          .in("item_id", createdIds)
+          .in("tx_kind", ["sale", "resale"]);
+        const soldMap: Record<string, number> = {};
+        (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
+        setSales(soldMap);
+      }
 
       // Activity
       const { data: tx } = await (supabase as any)
