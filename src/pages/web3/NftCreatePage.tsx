@@ -21,6 +21,7 @@ const NftCreatePage = () => {
     price: 0,
     currency: "OUSD",
     royalty_pct: 5,
+    category: "general",
     properties: "",
   });
   const [loading, setLoading] = useState(false);
