@@ -98,6 +98,10 @@ const NftCreatePage = () => {
         p_properties: properties,
       });
       if (error) throw error;
+      // Attach category to the newly minted item (column added via migration)
+      try {
+        await (supabase as any).from("nft_items").update({ category: form.category }).eq("id", data);
+      } catch {}
       celebrate("mint");
       toast({ title: "NFT minted!" });
       setMinted({ id: data, name: form.name });
