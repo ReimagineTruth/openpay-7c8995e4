@@ -171,6 +171,14 @@ const NftStoreSettingsPage = () => {
           <input value={form.telegram_url} onChange={(e) => setForm({ ...form, telegram_url: e.target.value })}
             placeholder="https://t.me/…" className="input" />
         </Field>
+        <Field label="Facebook (optional)" icon={<Facebook className="h-4 w-4" />}>
+          <input value={form.facebook_url} onChange={(e) => setForm({ ...form, facebook_url: e.target.value })}
+            placeholder="https://facebook.com/…" className="input" />
+        </Field>
+        <Field label="YouTube (optional)" icon={<Youtube className="h-4 w-4" />}>
+          <input value={form.youtube_url} onChange={(e) => setForm({ ...form, youtube_url: e.target.value })}
+            placeholder="https://youtube.com/@…" className="input" />
+        </Field>
         <Field label="Public email" icon={<User className="h-4 w-4" />}>
           <input value={form.email_public} onChange={(e) => setForm({ ...form, email_public: e.target.value })}
             placeholder="contact@…" className="input" />
