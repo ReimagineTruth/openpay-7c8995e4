@@ -74,23 +74,106 @@ const NftDetailPage = () => {
   const myOwn = useMemo(() => owners.find((o) => o.owner_id === me)?.quantity || 0, [owners, me]);
   const isCreator = me && item && me === item.creator_id;
 
+  const openBuy = async () => {
+    setBuyOpen(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: cards } = await (supabase as any)
+        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year").eq("user_id", user.id).eq("is_active", true).limit(1);
+      setSavedCards(cards || []);
+      if (cards && cards[0]) {
+        setCard({
+          number: cards[0].card_number,
+          cvc: cards[0].cvc,
+          exp_month: String(cards[0].expiry_month),
+          exp_year: String(cards[0].expiry_year),
+        });
+      }
+    }
+  };
+
+  const runBuy = async (extra: Record<string, any> = {}) => {
+    const { data, error } = await (supabase as any).rpc("nft_buy_item", {
+      p_item_id: id,
+      p_quantity: qty,
+      p_payment_method: method,
+      p_listing_id: null,
+      ...extra,
+    });
+    if (error) throw error;
+    const total = Number(item.price) * qty;
+    setReceipt({
+      ref: data,
+      item_name: item.name,
+      qty,
+      total,
+      currency: item.currency,
+      method,
+      pi_txid: extra.p_pi_txid || null,
+      card_last4: extra.p_card_number ? String(extra.p_card_number).slice(-4) : null,
+      ts: new Date().toISOString(),
+    });
+    toast({ title: "Purchase complete!" });
+    setBuyOpen(false);
+    await load();
+  };
+
   const handleBuy = async () => {
     setBusy(true);
     try {
-      const { error } = await (supabase as any).rpc("nft_buy_item", {
-        p_item_id: id,
-        p_quantity: qty,
-        p_payment_method: method,
-        p_listing_id: null,
-      });
-      if (error) throw error;
-      toast({ title: "Purchase complete!" });
-      setBuyOpen(false);
-      await load();
+      if (method === "openpay_balance") {
+        await runBuy();
+      } else if (method === "virtual_card") {
+        if (!card.number || !card.cvc || !card.exp_month || !card.exp_year) {
+          throw new Error("Card details required");
+        }
+        await runBuy({
+          p_card_number: card.number.replace(/\s+/g, ""),
+          p_card_cvc: card.cvc,
+          p_card_exp_month: Number(card.exp_month),
+          p_card_exp_year: Number(card.exp_year),
+        });
+      } else if (method === "pi") {
+        const Pi = (window as any).Pi;
+        if (!Pi || typeof Pi.createPayment !== "function") {
+          throw new Error("Pi SDK not available — open in Pi Browser");
+        }
+        try {
+          await Pi.authenticate(["username", "payments"], async (incomplete: any) => {
+            if (incomplete?.identifier && incomplete?.transaction?.txid) {
+              await supabase.functions.invoke("pi-platform", {
+                body: { action: "complete", paymentId: incomplete.identifier, txid: incomplete.transaction.txid },
+              });
+            }
+          });
+        } catch (e: any) { throw new Error(e?.message || "Pi sign-in required"); }
+        const amount = Number(item.price) * qty;
+        await new Promise<void>((resolve, reject) => {
+          Pi.createPayment(
+            { amount, memo: `NFT ${item.name} x${qty}`.slice(0, 64),
+              metadata: { kind: "nft_buy", item_id: id, qty } },
+            {
+              onReadyForServerApproval: async (paymentId: string) => {
+                await supabase.functions.invoke("pi-platform", { body: { action: "approve", paymentId } });
+              },
+              onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+                try {
+                  await supabase.functions.invoke("pi-platform", { body: { action: "complete", paymentId, txid } });
+                  await runBuy({ p_pi_payment_id: paymentId, p_pi_txid: txid });
+                  resolve();
+                } catch (err: any) { reject(err); }
+              },
+              onCancel: () => reject(new Error("Pi payment cancelled")),
+              onError: (e: any) => reject(new Error(e?.message || "Pi payment failed")),
+            },
+          );
+        });
+      }
     } catch (e: any) {
       toast({ title: "Buy failed", description: e.message, variant: "destructive" });
     } finally { setBusy(false); }
   };
+
 
   const handleGift = async () => {
     setBusy(true);
