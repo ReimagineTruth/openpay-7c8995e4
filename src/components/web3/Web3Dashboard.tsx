@@ -71,6 +71,9 @@ const Web3Dashboard = () => {
   const [activityFilter, setActivityFilter] = useState<string>("All");
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [balanceVisible, setBalanceVisible] = useState(() => {
+    try { return localStorage.getItem("openpay_web3_balance_visible") !== "false"; } catch { return true; }
+  });
 
 
   useEffect(() => {
