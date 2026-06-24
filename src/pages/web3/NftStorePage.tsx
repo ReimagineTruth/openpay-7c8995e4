@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { NftStatusBadge } from "@/lib/nftStatus";
+import { formatNftPrice } from "@/lib/nftPrice";
 import {
   ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send, Facebook, Youtube,
   BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart, X, MessageCircle,
@@ -341,7 +342,7 @@ const NftStorePage = () => {
                     <p className="text-sm font-semibold truncate capitalize">{a.tx_kind} · {a.item?.name || "NFT"}</p>
                     <p className="text-[11px] text-white/50">{new Date(a.created_at).toLocaleString()}</p>
                   </div>
-                  <p className="text-sm font-bold" style={{ color: ACCENT }}>{format(Number(a.amount || 0))}</p>
+                  <p className="text-sm font-bold" style={{ color: ACCENT }}>{formatNftPrice(a.amount, a.item?.currency)}</p>
                 </div>
               ))}
             </div>
@@ -369,7 +370,7 @@ const NftStorePage = () => {
                   <p className="text-xs font-bold truncate">{it.name}</p>
                   <p className="text-[10px] text-white/40 truncate">#{it.code}</p>
                   <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} className="mt-1.5" />
-                  <p className="text-sm font-extrabold mt-1" style={{ color: ACCENT }}>{format(Number(it.price || 0))}</p>
+                  <p className="text-sm font-extrabold mt-1" style={{ color: ACCENT }}>{formatNftPrice(it.price, it.currency)}</p>
                 </div>
               </button>
             ))}
@@ -389,7 +390,7 @@ const NftStorePage = () => {
                   </div>
                   <p className="text-[11px] text-white/50">#{it.code}</p>
                 </div>
-                <p className="text-sm font-extrabold" style={{ color: ACCENT }}>{format(Number(it.price || 0))}</p>
+                <p className="text-sm font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(it.price, it.currency)}</p>
               </button>
             ))}
           </div>
