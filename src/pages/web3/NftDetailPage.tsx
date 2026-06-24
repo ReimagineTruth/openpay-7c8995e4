@@ -30,6 +30,7 @@ const NftDetailPage = () => {
   const [method, setMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
   const [card, setCard] = useState({ number: "", cvc: "", exp_month: "", exp_year: "" });
   const [savedCards, setSavedCards] = useState<any[]>([]);
+  const [cardHidden, setCardHidden] = useState(true);
   const [receipt, setReceipt] = useState<any>(null);
   const [giftUsername, setGiftUsername] = useState("");
   const [giftMsg, setGiftMsg] = useState("");
