@@ -278,6 +278,7 @@ const NftDetailPage = () => {
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
         </button>
+        <img src="/openpay-nft-logo.png" alt="OpenPay NFT" className="h-9 w-9 object-contain rounded-lg flex-shrink-0" />
         <h1 className="text-lg font-extrabold flex-1 truncate">{item.name}</h1>
         <button onClick={() => nav("/web3/nft/how-to")} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="How it works">
           <HelpCircle className="h-5 w-5" />
