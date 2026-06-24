@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Tag, Gavel, HelpCircle, Edit3, Trash2, Clock } from "lucide-react";
+import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Tag, Gavel, HelpCircle, Edit3, Trash2, Clock, Eye, EyeOff } from "lucide-react";
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
 
@@ -30,6 +30,7 @@ const NftDetailPage = () => {
   const [method, setMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
   const [card, setCard] = useState({ number: "", cvc: "", exp_month: "", exp_year: "" });
   const [savedCards, setSavedCards] = useState<any[]>([]);
+  const [cardHidden, setCardHidden] = useState(true);
   const [receipt, setReceipt] = useState<any>(null);
   const [giftUsername, setGiftUsername] = useState("");
   const [giftMsg, setGiftMsg] = useState("");
@@ -499,16 +500,48 @@ const NftDetailPage = () => {
           </div>
 
           {method === "virtual_card" && (
-            <div className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10">
-              {savedCards.length > 0 && (
-                <p className="text-[11px] text-white/50">Using your saved OpenPay card · ending {String(card.number).slice(-4)}</p>
-              )}
-              <Field label="Card number" value={card.number} onChange={(v: any) => setCard((c) => ({ ...c, number: v }))} />
-              <div className="grid grid-cols-3 gap-2">
-                <Field label="MM" value={card.exp_month} onChange={(v: any) => setCard((c) => ({ ...c, exp_month: v }))} type="number" />
-                <Field label="YYYY" value={card.exp_year} onChange={(v: any) => setCard((c) => ({ ...c, exp_year: v }))} type="number" />
-                <Field label="CVC" value={card.cvc} onChange={(v: any) => setCard((c) => ({ ...c, cvc: v }))} />
+            <div
+              className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10"
+              style={cardHidden ? { WebkitUserSelect: "none", userSelect: "none" } : undefined}
+            >
+              <div className="flex items-center justify-between">
+                {savedCards.length > 0 ? (
+                  <p className="text-[11px] text-white/50">
+                    Using your saved OpenPay card · ending {cardHidden ? "••••" : String(card.number).slice(-4)}
+                  </p>
+                ) : <span />}
+                <button
+                  type="button"
+                  onClick={() => setCardHidden((h) => !h)}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-white/70 hover:text-white px-2 py-1 rounded-full bg-white/5 border border-white/10"
+                  aria-label={cardHidden ? "Show card details" : "Hide card details"}
+                >
+                  {cardHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  {cardHidden ? "Show" : "Hide"}
+                </button>
               </div>
+              {cardHidden ? (
+                <>
+                  <MaskedField label="Card number" value={card.number ? "•••• •••• •••• " + String(card.number).slice(-4) : "•••• •••• •••• ••••"} />
+                  <div className="grid grid-cols-3 gap-2">
+                    <MaskedField label="MM" value="••" />
+                    <MaskedField label="YYYY" value="••••" />
+                    <MaskedField label="CVC" value="•••" />
+                  </div>
+                  <p className="text-[10px] text-white/40 flex items-center gap-1">
+                    <EyeOff className="h-3 w-3" /> Hidden to protect your card from screenshots & screen recordings.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Field label="Card number" value={card.number} onChange={(v: any) => setCard((c) => ({ ...c, number: v }))} />
+                  <div className="grid grid-cols-3 gap-2">
+                    <Field label="MM" value={card.exp_month} onChange={(v: any) => setCard((c) => ({ ...c, exp_month: v }))} type="number" />
+                    <Field label="YYYY" value={card.exp_year} onChange={(v: any) => setCard((c) => ({ ...c, exp_year: v }))} type="number" />
+                    <Field label="CVC" value={card.cvc} onChange={(v: any) => setCard((c) => ({ ...c, cvc: v }))} />
+                  </div>
+                </>
+              )}
               {savedCards.length === 0 && (
                 <p className="text-[11px] text-amber-400">No saved card. Create one in OpenPay Card first.</p>
               )}
@@ -656,6 +689,15 @@ const PayOpt = ({ active, onClick, icon, label }: any) => (
     {icon}
     <span className="text-sm font-semibold">{label}</span>
   </button>
+);
+
+const MaskedField = ({ label, value }: { label: string; value: string }) => (
+  <label className="block">
+    <span className="text-[11px] text-white/60">{label}</span>
+    <div className="mt-1 px-3 py-2 rounded-lg bg-[#0f0f0f] border border-white/10 text-sm tracking-widest text-white/80 select-none">
+      {value}
+    </div>
+  </label>
 );
 
 const Row = ({ k, v }: { k: string; v: any }) => (
