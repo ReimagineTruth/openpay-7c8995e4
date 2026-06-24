@@ -106,6 +106,27 @@ const NftCreatePage = () => {
       try {
         await (supabase as any).from("nft_items").update({ category: form.category }).eq("id", data);
       } catch {}
+
+      // If sale_type is auction, immediately start an auction for the full supply
+      if (form.sale_type === "auction") {
+        try {
+          const startPrice = Number(form.auction_start_price) > 0
+            ? Number(form.auction_start_price)
+            : Number(form.price) || 1;
+          const { error: aErr } = await (supabase as any).rpc("nft_create_auction", {
+            p_item_id: data,
+            p_quantity: Number(form.quantity),
+            p_start_price: startPrice,
+            p_min_increment: Math.max(0.01, Number(form.auction_min_increment) || 1),
+            p_duration_hours: Math.max(1, Number(form.auction_duration_hours) || 24),
+          });
+          if (aErr) throw aErr;
+          toast({ title: "🔥 Auction is live!", description: "Bidders can now compete in realtime." });
+        } catch (ae: any) {
+          toast({ title: "Auction not started", description: ae.message, variant: "destructive" });
+        }
+      }
+
       celebrate("mint");
       toast({ title: "NFT minted!" });
       setMinted({ id: data, name: form.name });
