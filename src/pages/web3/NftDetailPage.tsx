@@ -25,6 +25,9 @@ const NftDetailPage = () => {
   const [editListing, setEditListing] = useState<any>(null);
   const [qty, setQty] = useState(1);
   const [method, setMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
+  const [card, setCard] = useState({ number: "", cvc: "", exp_month: "", exp_year: "" });
+  const [savedCards, setSavedCards] = useState<any[]>([]);
+  const [receipt, setReceipt] = useState<any>(null);
   const [giftUsername, setGiftUsername] = useState("");
   const [giftMsg, setGiftMsg] = useState("");
   const [listings, setListings] = useState<any[]>([]);
@@ -33,6 +36,7 @@ const NftDetailPage = () => {
   const [aStart, setAStart] = useState("");
   const [aInc, setAInc] = useState("1");
   const [aHours, setAHours] = useState("24");
+
   const [bidAmt, setBidAmt] = useState("");
 
   const load = async () => {
