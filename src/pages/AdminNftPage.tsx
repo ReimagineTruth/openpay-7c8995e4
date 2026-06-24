@@ -93,6 +93,7 @@ const AdminNftPage = () => {
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
         </button>
+        <img src="/openpay-nft-logo.png" alt="OpenPay NFT" className="h-9 w-9 object-contain rounded-lg" />
         <ShieldCheck className="h-5 w-5" style={{ color: ACCENT }} />
         <h1 className="text-xl font-extrabold flex-1">NFT Admin</h1>
         <button onClick={load} className="h-9 px-3 rounded-full bg-white/10 text-xs font-semibold">Refresh</button>
