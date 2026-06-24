@@ -607,4 +607,9 @@ const PayOpt = ({ active, onClick, icon, label }: any) => (
   </button>
 );
 
+const Row = ({ k, v }: { k: string; v: any }) => (
+  <div className="flex justify-between"><span className="text-white/50">{k}</span><span className="font-semibold">{v}</span></div>
+);
+
 export default NftDetailPage;
+
