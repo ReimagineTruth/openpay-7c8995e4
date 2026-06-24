@@ -56,6 +56,12 @@ const NftDetailPage = () => {
       setOwners((own || []).map((o: any) => ({ ...o, profile: profMap[o.owner_id] })));
       setTxs(tx || []);
       setCreator(prof);
+      const [{ data: ls }, { data: au }] = await Promise.all([
+        (supabase as any).from("nft_listings").select("*").eq("item_id", id).eq("status", "active").order("price"),
+        (supabase as any).from("nft_auctions").select("*").eq("item_id", id).in("status", ["active","ended"]).order("created_at", { ascending: false }),
+      ]);
+      setListings(ls || []);
+      setAuctions(au || []);
     }
   };
 
