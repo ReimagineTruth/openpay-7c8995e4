@@ -167,6 +167,7 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
                     </div>
                   )}
                   <p className={`font-bold text-xs truncate ${titleColor}`}>{it.name}</p>
+                  <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} hasAuction={live} className="mt-1" />
                   <p className="font-bold text-[12px] mt-0.5" style={{ color: ACCENT }}>{format(Number(it.price || 0))}</p>
                 </div>
               </button>
