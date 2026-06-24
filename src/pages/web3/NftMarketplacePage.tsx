@@ -192,7 +192,10 @@ const NftMarketplacePage = () => {
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-lg font-extrabold flex-1 truncate">NFT Marketplace</h1>
+        <h1 className="text-lg font-extrabold flex-1 truncate flex items-center gap-2">
+          {auctionsOnly && <Gavel className="h-4 w-4" style={{ color: ACCENT }} />}
+          {auctionsOnly ? "Live Auctions" : "NFT Marketplace"}
+        </h1>
         <button onClick={() => nav("/web3/nft/chat")} className="relative h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Live chat">
           <MessageCircle className="h-5 w-5" />
           <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
