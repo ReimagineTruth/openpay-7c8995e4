@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { NftStatusBadge } from "@/lib/nftStatus";
 import {
-  ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send,
-  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart,
+  ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send, Facebook, Youtube,
+  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart, X, MessageCircle,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
