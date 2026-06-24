@@ -3719,6 +3719,9 @@ const Dashboard = () => {
 
       <DashboardRecommendations items={recommendationCards} className="mx-4 mt-4" />
 
+      <NftShowcase variant="light" className="mx-4 mt-4" />
+
+
       <div className="mx-4 mt-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
