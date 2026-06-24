@@ -349,6 +349,7 @@ const NftDetailPage = () => {
               <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>{format(Number(item.price || 0))}</p>
             </div>
             <div className="text-right">
+              <NftStatusBadge sold={totalSold} total={item.quantity_total} hasAuction={hasActiveAuction} className="mb-1" />
               <p className="text-xs text-white/50">Supply</p>
               <p className="font-bold">{item.quantity_total}</p>
             </div>
