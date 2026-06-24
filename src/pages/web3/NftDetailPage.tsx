@@ -17,6 +17,7 @@ const NftDetailPage = () => {
   const [owners, setOwners] = useState<any[]>([]);
   const [txs, setTxs] = useState<any[]>([]);
   const [creator, setCreator] = useState<any>(null);
+  const [creatorStore, setCreatorStore] = useState<any>(null);
   const [me, setMe] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
@@ -51,10 +52,13 @@ const NftDetailPage = () => {
     const { data: it } = await (supabase as any).from("nft_items").select("*").eq("id", id).maybeSingle();
     setItem(it);
     if (it) {
-      const [{ data: own }, { data: tx }, { data: prof }] = await Promise.all([
+      const [{ data: own }, { data: tx }, { data: prof }, { data: storeProf }] = await Promise.all([
         (supabase as any).from("nft_ownership").select("owner_id, quantity").eq("item_id", id).gt("quantity", 0),
         (supabase as any).from("nft_transactions").select("*").eq("item_id", id).order("created_at", { ascending: false }).limit(20),
         (supabase as any).from("profiles").select("username, full_name, avatar_url").eq("id", it.creator_id).maybeSingle(),
+        (supabase as any).from("nft_store_profiles")
+          .select("handle, display_name, avatar_url, banner_url, bio, category, is_verified")
+          .eq("user_id", it.creator_id).maybeSingle(),
       ]);
       const ownerIds = (own || []).map((o: any) => o.owner_id);
       const { data: ownerProfs } = ownerIds.length
@@ -65,6 +69,7 @@ const NftDetailPage = () => {
       setOwners((own || []).map((o: any) => ({ ...o, profile: profMap[o.owner_id] })));
       setTxs(tx || []);
       setCreator(prof);
+      setCreatorStore(storeProf);
       const [{ data: ls }, { data: au }] = await Promise.all([
         (supabase as any).from("nft_listings").select("*").eq("item_id", id).eq("status", "active").order("price"),
         (supabase as any).from("nft_auctions").select("*").eq("item_id", id).in("status", ["active","ended"]).order("created_at", { ascending: false }),
@@ -299,6 +304,37 @@ const NftDetailPage = () => {
             <p className="text-sm text-white/60 mt-1">by @{creator.username || creator.full_name || "creator"}</p>
           )}
         </div>
+
+        {creatorStore && (
+          <button
+            onClick={() => nav(`/web3/nft/store/${creatorStore.handle}`)}
+            className="w-full rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/10 hover:border-white/30 transition-all text-left group"
+          >
+            <div
+              className="h-20 w-full"
+              style={creatorStore.banner_url
+                ? { backgroundImage: `url(${creatorStore.banner_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+                : { background: `linear-gradient(135deg, hsl(280 80% 30%), ${ACCENT})` }}
+            />
+            <div className="px-3 pb-3 -mt-7 flex items-end gap-3">
+              {creatorStore.avatar_url ? (
+                <img src={creatorStore.avatar_url} alt="" className="h-14 w-14 rounded-2xl ring-2 ring-black object-cover" />
+              ) : (
+                <div className="h-14 w-14 rounded-2xl ring-2 ring-black bg-gradient-to-br from-pink-500 to-blue-500" />
+              )}
+              <div className="flex-1 min-w-0 pb-1">
+                <div className="flex items-center gap-1">
+                  <p className="font-bold truncate">{creatorStore.display_name || creatorStore.handle}</p>
+                </div>
+                <p className="text-[11px] text-white/50 truncate">@{creatorStore.handle} · Owner store</p>
+              </div>
+              <span className="text-xs font-bold pb-1 group-hover:translate-x-0.5 transition-transform" style={{ color: ACCENT }}>
+                Visit →
+              </span>
+            </div>
+          </button>
+        )}
+
 
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
           <div className="flex items-center justify-between">

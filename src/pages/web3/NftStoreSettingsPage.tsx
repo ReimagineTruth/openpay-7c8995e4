@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle } from "lucide-react";
+import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle, Tag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { NFT_CATEGORIES } from "@/lib/nftCategories";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -16,6 +17,7 @@ const NftStoreSettingsPage = () => {
     avatar_url: "", banner_url: "",
     website_url: "", twitter_url: "", instagram_url: "", discord_url: "",
     email_public: "", feature_nfts: true,
+    category: "general",
   });
 
   useEffect(() => {
@@ -38,6 +40,7 @@ const NftStoreSettingsPage = () => {
           discord_url: data.discord_url || "",
           email_public: data.email_public || "",
           feature_nfts: data.feature_nfts ?? true,
+          category: data.category || "general",
         });
       } else {
         const { data: base } = await (supabase as any)
@@ -135,6 +138,13 @@ const NftStoreSettingsPage = () => {
         <Field label="Bio">
           <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })}
             placeholder="Tell collectors about your store…" rows={3} className="input resize-none" />
+        </Field>
+        <Field label="Category" icon={<Tag className="h-4 w-4" />} hint="Helps collectors discover your store on the marketplace.">
+          <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input">
+            {NFT_CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>
+            ))}
+          </select>
         </Field>
 
         <p className="text-[11px] uppercase text-white/40 font-bold pt-2">Links</p>

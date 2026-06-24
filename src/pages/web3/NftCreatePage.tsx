@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload } from "lucide-react";
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
+import { NFT_CATEGORIES } from "@/lib/nftCategories";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -20,6 +21,7 @@ const NftCreatePage = () => {
     price: 0,
     currency: "OUSD",
     royalty_pct: 5,
+    category: "general",
     properties: "",
   });
   const [loading, setLoading] = useState(false);
@@ -96,6 +98,10 @@ const NftCreatePage = () => {
         p_properties: properties,
       });
       if (error) throw error;
+      // Attach category to the newly minted item (column added via migration)
+      try {
+        await (supabase as any).from("nft_items").update({ category: form.category }).eq("id", data);
+      } catch {}
       celebrate("mint");
       toast({ title: "NFT minted!" });
       setMinted({ id: data, name: form.name });
@@ -145,6 +151,19 @@ const NftCreatePage = () => {
         <div className="grid grid-cols-2 gap-3">
           <Select label="Media type" value={form.media_type} onChange={(v) => upd("media_type", v)} options={["image","gif","video","audio"]} />
           <Select label="Currency" value={form.currency} onChange={(v) => upd("currency", v)} options={["OUSD","USD","PI"]} />
+        </div>
+
+        <div>
+          <label className="text-xs text-white/60 font-semibold">Category</label>
+          <select
+            value={form.category}
+            onChange={(e) => upd("category", e.target.value)}
+            className="mt-1 w-full rounded-xl bg-[#0f0f0f] border border-white/10 p-3 text-sm outline-none"
+          >
+            {NFT_CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>
+            ))}
+          </select>
         </div>
 
         <Field label="Royalty %" value={String(form.royalty_pct)} onChange={(v) => upd("royalty_pct", Number(v) || 0)} type="number" />
