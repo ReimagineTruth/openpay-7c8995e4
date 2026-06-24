@@ -259,6 +259,10 @@ const AppRoutes = () => {
             <DashboardSwitcher />
           </ProtectedRoute>
         } />
+        <Route path="/web3/nft" element={<ProtectedRoute><NftMarketplacePage /></ProtectedRoute>} />
+        <Route path="/web3/nft/create" element={<ProtectedRoute><NftCreatePage /></ProtectedRoute>} />
+        <Route path="/web3/nft/dashboard" element={<ProtectedRoute><NftCreatorDashboardPage /></ProtectedRoute>} />
+        <Route path="/web3/nft/:id" element={<ProtectedRoute><NftDetailPage /></ProtectedRoute>} />
         <Route path="/send" element={
           <ProtectedRoute>
             <SendMoney />
