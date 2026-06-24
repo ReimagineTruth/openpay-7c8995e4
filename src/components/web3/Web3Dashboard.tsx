@@ -150,9 +150,10 @@ const Web3Dashboard = () => {
     return txs.filter((t) => {
       if (f === "all") return true;
       const type = (t.type || "").toLowerCase();
+      if (f === "nft") return type.startsWith("nft");
       if (f === "deposits") return ["topup", "top_up", "deposit", "receive"].some((k) => type.includes(k));
       if (f === "withdrawals") return type.includes("withdraw");
-      if (f === "sent") return type.includes("send") || type.includes("transfer");
+      if (f === "sent") return type.includes("send") || type.includes("transfer") || type === "nft_buy" || type === "nft_gift_out";
       if (f === "converts") return type.includes("convert") || type.includes("swap");
       return true;
     });
