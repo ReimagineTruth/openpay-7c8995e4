@@ -273,6 +273,11 @@ const AppRoutes = () => {
         <Route path="/web3/nft/store/settings" element={<ProtectedRoute><NftStoreSettingsPage /></ProtectedRoute>} />
         <Route path="/web3/nft/store" element={<ProtectedRoute><NftStorePage /></ProtectedRoute>} />
         <Route path="/web3/nft/stores" element={<NftStoresPage />} />
+        <Route path="/web3/nft/leaderboard" element={<NftStoresPage />} />
+        <Route path="/web3/nft/following" element={<NftStoresPage />} />
+        <Route path="/web3/nft/auctions" element={<ProtectedRoute><NftMarketplacePage /></ProtectedRoute>} />
+        <Route path="/web3/nft/my-nfts" element={<ProtectedRoute><NftStorePage /></ProtectedRoute>} />
+        <Route path="/web3/nft/gifts" element={<ProtectedRoute><NftStorePage /></ProtectedRoute>} />
         <Route path="/web3/nft/store/:handle" element={<NftStorePage />} />
         <Route path="/web3/nft/:id" element={<ProtectedRoute><NftDetailPage /></ProtectedRoute>} />
         <Route path="/send" element={
