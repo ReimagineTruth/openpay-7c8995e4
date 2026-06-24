@@ -498,18 +498,20 @@ const ActionRow = ({ color, icon, title, desc, onClick }: { color: string; icon:
 
 const TxRowItem = ({ tx, format, onClick }: { tx: TxRow; format: (n: number) => string; onClick: () => void }) => {
   const t = (tx.type || "").toLowerCase();
-  const isIn = ["receive", "topup", "top_up", "deposit"].some((k) => t.includes(k));
+  const isNft = t.startsWith("nft");
+  const amt = Number(tx.amount || 0);
+  const isIn = isNft ? amt >= 0 : ["receive", "topup", "top_up", "deposit"].some((k) => t.includes(k));
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#0f0f0f] hover:bg-[#161616] transition">
-      <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
-        {isIn ? <ArrowDown className="h-5 w-5 text-green-400" /> : <ArrowUp className="h-5 w-5 text-white/70" />}
+      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isNft ? "bg-blue-500/15" : "bg-white/5"}`}>
+        {isNft ? <Sparkles className="h-5 w-5" style={{ color: ACCENT }} /> : isIn ? <ArrowDown className="h-5 w-5 text-green-400" /> : <ArrowUp className="h-5 w-5 text-white/70" />}
       </div>
       <div className="flex-1 text-left min-w-0">
         <p className="font-semibold text-[14px] truncate">{tx.description || tx.type || "Transaction"}</p>
-        <p className="text-xs text-white/50">{new Date(tx.created_at).toLocaleString()}</p>
+        <p className="text-xs text-white/50">{new Date(tx.created_at).toLocaleString()}{isNft ? " · NFT" : ""}</p>
       </div>
       <p className={`font-bold text-[15px] ${isIn ? "text-green-400" : "text-white"}`}>
-        {isIn ? "+" : "-"}{format(Math.abs(Number(tx.amount || 0)))}
+        {isIn ? "+" : "-"}{format(Math.abs(amt))}
       </p>
     </button>
   );
