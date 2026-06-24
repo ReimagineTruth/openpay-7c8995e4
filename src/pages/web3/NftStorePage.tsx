@@ -211,7 +211,7 @@ const NftStorePage = () => {
         {profile?.bio && <p className="text-sm text-white/75 leading-relaxed">{profile.bio}</p>}
 
         {/* Socials */}
-        {(profile?.website_url || profile?.twitter_url || profile?.instagram_url) && (
+        {(profile?.website_url || profile?.twitter_url || profile?.instagram_url || profile?.telegram_url) && (
           <div className="flex gap-2 pt-1">
             {profile?.website_url && <a href={profile.website_url} target="_blank" rel="noreferrer"
               className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Globe className="h-4 w-4" /></a>}
@@ -219,6 +219,8 @@ const NftStorePage = () => {
               className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Twitter className="h-4 w-4" /></a>}
             {profile?.instagram_url && <a href={profile.instagram_url} target="_blank" rel="noreferrer"
               className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Instagram className="h-4 w-4" /></a>}
+            {profile?.telegram_url && <a href={profile.telegram_url} target="_blank" rel="noreferrer"
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Telegram"><Send className="h-4 w-4" /></a>}
           </div>
         )}
 
