@@ -119,6 +119,55 @@ const NftDetailPage = () => {
     toast({ title: "Link copied!" });
   };
 
+  const callRpc = async (fn: string, args: any, ok: string) => {
+    setBusy(true);
+    try {
+      const { error } = await (supabase as any).rpc(fn, args);
+      if (error) throw error;
+      toast({ title: ok });
+      await load();
+      return true;
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+      return false;
+    } finally { setBusy(false); }
+  };
+
+  const handleList = async () => {
+    if (!listPrice || Number(listPrice) < 0) return;
+    const ok = await callRpc("nft_create_listing", { p_item_id: id, p_price: Number(listPrice), p_quantity: qty }, "Listed for resale");
+    if (ok) { setListOpen(false); setListPrice(""); }
+  };
+  const handleEditPrice = async () => {
+    if (!editListing || !listPrice) return;
+    const ok = await callRpc("nft_update_listing_price", { p_listing_id: editListing.id, p_new_price: Number(listPrice) }, "Price updated");
+    if (ok) { setEditListing(null); setListPrice(""); }
+  };
+  const handleCancelListing = async (l: any) => {
+    await callRpc("nft_cancel_listing", { p_listing_id: l.id }, "Listing cancelled");
+  };
+  const handleBuyListing = async (l: any) => {
+    await callRpc("nft_buy_item", { p_item_id: id, p_quantity: 1, p_payment_method: "openpay_balance", p_listing_id: l.id }, "Purchased");
+  };
+  const handleCreateAuction = async () => {
+    const ok = await callRpc("nft_create_auction", {
+      p_item_id: id, p_quantity: qty,
+      p_start_price: Number(aStart || 0), p_min_increment: Number(aInc || 1), p_duration_hours: Number(aHours || 24),
+    }, "Auction started");
+    if (ok) { setAuctionOpen(false); setAStart(""); }
+  };
+  const handlePlaceBid = async () => {
+    if (!bidOpen) return;
+    const ok = await callRpc("nft_place_bid", { p_auction_id: bidOpen.id, p_amount: Number(bidAmt) }, "Bid placed");
+    if (ok) { setBidOpen(null); setBidAmt(""); }
+  };
+  const handleFinalize = async (a: any) => {
+    await callRpc("nft_finalize_auction", { p_auction_id: a.id }, "Auction finalized");
+  };
+  const handleCancelAuction = async (a: any) => {
+    await callRpc("nft_cancel_auction", { p_auction_id: a.id }, "Auction cancelled");
+  };
+
   if (!item) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading…</div>;
 
   const img = item.media_url || item.image_url;
