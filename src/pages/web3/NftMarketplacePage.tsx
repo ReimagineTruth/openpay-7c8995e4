@@ -81,7 +81,7 @@ const NftMarketplacePage = () => {
 
   return (
     <div className="min-h-screen bg-black text-white pb-24 animate-in fade-in duration-500">
-      <NftSplash />
+      
       <header className="sticky top-0 z-10 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-white/5">
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
