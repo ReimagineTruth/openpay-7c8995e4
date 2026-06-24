@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { NftStatusBadge } from "@/lib/nftStatus";
 import {
-  ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send,
-  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart,
+  ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send, Facebook, Youtube,
+  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart, X, MessageCircle,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,7 +25,11 @@ const NftStorePage = () => {
   const [created, setCreated] = useState<any[]>([]);
   const [activity, setActivity] = useState<any[]>([]);
   const [followers, setFollowers] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [following, setFollowing] = useState(false);
+  const [followModal, setFollowModal] = useState<null | "followers" | "following">(null);
+  const [followList, setFollowList] = useState<any[]>([]);
+  const [followListLoading, setFollowListLoading] = useState(false);
   const [sales, setSales] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const { format } = useCurrency();
@@ -110,6 +114,11 @@ const NftStorePage = () => {
         .eq("followed_id", targetUserId);
       setFollowers(count || 0);
 
+      const { count: followingC } = await (supabase as any)
+        .from("nft_store_follows").select("*", { count: "exact", head: true })
+        .eq("follower_id", targetUserId);
+      setFollowingCount(followingC || 0);
+
       if (user && user.id !== targetUserId) {
         const { data: f } = await (supabase as any)
           .from("nft_store_follows").select("id")
@@ -147,6 +156,35 @@ const NftStorePage = () => {
     await navigator.clipboard.writeText(owner?.id || "");
     toast({ title: "ID copied" });
   };
+
+  const openFollowList = async (kind: "followers" | "following") => {
+    if (!owner) return;
+    setFollowModal(kind);
+    setFollowListLoading(true);
+    setFollowList([]);
+    const col = kind === "followers" ? "followed_id" : "follower_id";
+    const otherCol = kind === "followers" ? "follower_id" : "followed_id";
+    const { data: rels } = await (supabase as any)
+      .from("nft_store_follows").select(`${otherCol}, created_at`).eq(col, owner.id)
+      .order("created_at", { ascending: false }).limit(200);
+    const ids = (rels || []).map((r: any) => r[otherCol]);
+    if (!ids.length) { setFollowListLoading(false); return; }
+    const [{ data: profs }, { data: stores }] = await Promise.all([
+      (supabase as any).from("profiles").select("id, username, full_name, avatar_url").in("id", ids),
+      (supabase as any).from("nft_store_profiles").select("user_id, handle, display_name, avatar_url, is_verified, bio").in("user_id", ids),
+    ]);
+    const profMap: Record<string, any> = {};
+    (profs || []).forEach((p: any) => (profMap[p.id] = p));
+    const storeMap: Record<string, any> = {};
+    (stores || []).forEach((s: any) => (storeMap[s.user_id] = s));
+    setFollowList(ids.map((id: string) => ({
+      id,
+      profile: profMap[id],
+      store: storeMap[id],
+    })));
+    setFollowListLoading(false);
+  };
+
 
   if (loading) {
     return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading store…</div>;
@@ -226,25 +264,36 @@ const NftStorePage = () => {
         {profile?.bio && <p className="text-sm text-white/75 leading-relaxed">{profile.bio}</p>}
 
         {/* Socials */}
-        {(profile?.website_url || profile?.twitter_url || profile?.instagram_url || profile?.telegram_url) && (
-          <div className="flex gap-2 pt-1">
+        {(profile?.website_url || profile?.twitter_url || profile?.instagram_url || profile?.telegram_url || profile?.discord_url || profile?.facebook_url || profile?.youtube_url) && (
+          <div className="flex gap-2 pt-1 flex-wrap">
             {profile?.website_url && <a href={profile.website_url} target="_blank" rel="noreferrer"
-              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Globe className="h-4 w-4" /></a>}
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Website"><Globe className="h-4 w-4" /></a>}
             {profile?.twitter_url && <a href={profile.twitter_url} target="_blank" rel="noreferrer"
-              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Twitter className="h-4 w-4" /></a>}
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Twitter / X"><Twitter className="h-4 w-4" /></a>}
             {profile?.instagram_url && <a href={profile.instagram_url} target="_blank" rel="noreferrer"
-              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Instagram className="h-4 w-4" /></a>}
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Instagram"><Instagram className="h-4 w-4" /></a>}
+            {profile?.facebook_url && <a href={profile.facebook_url} target="_blank" rel="noreferrer"
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Facebook"><Facebook className="h-4 w-4" /></a>}
+            {profile?.youtube_url && <a href={profile.youtube_url} target="_blank" rel="noreferrer"
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="YouTube"><Youtube className="h-4 w-4" /></a>}
             {profile?.telegram_url && <a href={profile.telegram_url} target="_blank" rel="noreferrer"
               className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Telegram"><Send className="h-4 w-4" /></a>}
+            {profile?.discord_url && <a href={profile.discord_url} target="_blank" rel="noreferrer"
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Discord"><MessageCircle className="h-4 w-4" /></a>}
           </div>
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 pt-3">
+        <div className="grid grid-cols-5 gap-2 pt-3">
           <Stat label="Value" value={format(totalValue)} icon={<TrendingUp className="h-3 w-3" />} />
           <Stat label="NFTs" value={String(collected.length)} icon={<Package className="h-3 w-3" />} />
           <Stat label="Created" value={String(created.length)} icon={<Grid3x3 className="h-3 w-3" />} />
-          <Stat label="Followers" value={String(followers)} icon={<Users className="h-3 w-3" />} />
+          <button onClick={() => openFollowList("followers")} className="text-left">
+            <Stat label="Followers" value={String(followers)} icon={<Users className="h-3 w-3" />} />
+          </button>
+          <button onClick={() => openFollowList("following")} className="text-left">
+            <Stat label="Following" value={String(followingCount)} icon={<Heart className="h-3 w-3" />} />
+          </button>
         </div>
       </div>
 
@@ -346,6 +395,60 @@ const NftStorePage = () => {
           </div>
         )}
       </div>
+
+      {followModal && (
+        <>
+          <div className="fixed inset-0 bg-black/70 z-40" onClick={() => setFollowModal(null)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#111] p-4 max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-extrabold capitalize">{followModal} · {followModal === "followers" ? followers : followingCount}</h3>
+              <button onClick={() => setFollowModal(null)} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {followListLoading ? (
+              <p className="text-center text-sm text-white/50 py-10">Loading…</p>
+            ) : followList.length === 0 ? (
+              <p className="text-center text-sm text-white/50 py-10">
+                {followModal === "followers" ? "No followers yet" : "Not following anyone yet"}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {followList.map((u) => {
+                  const name = u.store?.display_name || u.profile?.full_name || u.profile?.username || u.id.slice(0,8);
+                  const handle = u.store?.handle || u.profile?.username;
+                  const avatar = u.store?.avatar_url || u.profile?.avatar_url;
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => {
+                        setFollowModal(null);
+                        if (handle) nav(`/web3/nft/store/${handle}`);
+                      }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition text-left"
+                    >
+                      {avatar
+                        ? <img src={avatar} alt="" className="h-11 w-11 rounded-full object-cover flex-shrink-0" />
+                        : <div className="h-11 w-11 rounded-full bg-gradient-to-br from-pink-500 to-blue-500 flex-shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="font-bold truncate">{name}</p>
+                          {u.store?.is_verified && <BadgeCheck className="h-3.5 w-3.5 flex-shrink-0" style={{ color: ACCENT }} />}
+                        </div>
+                        {handle && <p className="text-xs text-white/50 truncate">@{handle}</p>}
+                        {u.store?.bio && <p className="text-[11px] text-white/40 truncate">{u.store.bio}</p>}
+                      </div>
+                      {u.store?.handle && (
+                        <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-white/10">View store</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

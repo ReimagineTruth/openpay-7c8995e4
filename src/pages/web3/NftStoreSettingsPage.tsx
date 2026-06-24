@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle, Tag, Send } from "lucide-react";
+import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle, Tag, Send, Facebook, Youtube } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { NFT_CATEGORIES } from "@/lib/nftCategories";
 
@@ -15,7 +15,7 @@ const NftStoreSettingsPage = () => {
   const [form, setForm] = useState({
     handle: "", display_name: "", bio: "",
     avatar_url: "", banner_url: "",
-    website_url: "", twitter_url: "", instagram_url: "", discord_url: "", telegram_url: "",
+    website_url: "", twitter_url: "", instagram_url: "", discord_url: "", telegram_url: "", facebook_url: "", youtube_url: "",
     email_public: "", feature_nfts: true,
     category: "general",
   });
@@ -39,6 +39,8 @@ const NftStoreSettingsPage = () => {
           instagram_url: data.instagram_url || "",
           discord_url: data.discord_url || "",
           telegram_url: data.telegram_url || "",
+          facebook_url: data.facebook_url || "",
+          youtube_url: data.youtube_url || "",
           email_public: data.email_public || "",
           feature_nfts: data.feature_nfts ?? true,
           category: data.category || "general",
@@ -168,6 +170,14 @@ const NftStoreSettingsPage = () => {
         <Field label="Telegram" icon={<Send className="h-4 w-4" />} hint="Your Telegram channel, group, or @username link.">
           <input value={form.telegram_url} onChange={(e) => setForm({ ...form, telegram_url: e.target.value })}
             placeholder="https://t.me/…" className="input" />
+        </Field>
+        <Field label="Facebook (optional)" icon={<Facebook className="h-4 w-4" />}>
+          <input value={form.facebook_url} onChange={(e) => setForm({ ...form, facebook_url: e.target.value })}
+            placeholder="https://facebook.com/…" className="input" />
+        </Field>
+        <Field label="YouTube (optional)" icon={<Youtube className="h-4 w-4" />}>
+          <input value={form.youtube_url} onChange={(e) => setForm({ ...form, youtube_url: e.target.value })}
+            placeholder="https://youtube.com/@…" className="input" />
         </Field>
         <Field label="Public email" icon={<User className="h-4 w-4" />}>
           <input value={form.email_public} onChange={(e) => setForm({ ...form, email_public: e.target.value })}
