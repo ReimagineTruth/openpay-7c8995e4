@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, Gavel } from "lucide-react";
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
 import { NFT_CATEGORIES } from "@/lib/nftCategories";
