@@ -318,7 +318,7 @@ const Web3Dashboard = () => {
           </div>
 
           <div className="mt-5 flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            {["All", "Converts", "Deposits", "Withdrawals", "Sent"].map((c) => (
+            {["All", "NFT", "Converts", "Deposits", "Withdrawals", "Sent"].map((c) => (
               <button
                 key={c}
                 onClick={() => setActivityFilter(c)}
