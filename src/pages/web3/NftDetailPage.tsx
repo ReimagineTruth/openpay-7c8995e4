@@ -46,6 +46,7 @@ const NftDetailPage = () => {
   const [aHours, setAHours] = useState("24");
 
   const [bidAmt, setBidAmt] = useState("");
+  const [bidMethod, setBidMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
   const [burst, setBurst] = useState<{ kind: "buy"|"gift"|"list"|"bid"|"auction"; msg: string } | null>(null);
 
 
