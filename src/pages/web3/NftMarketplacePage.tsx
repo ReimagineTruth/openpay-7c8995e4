@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel } from "lucide-react";
+import NftSplash from "@/components/web3/NftSplash";
+import { playNftSound } from "@/lib/nftFx";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -30,6 +32,7 @@ const NftMarketplacePage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    playNftSound("splash");
     (async () => {
       const { data } = await (supabase as any)
         .from("nft_items")
@@ -77,7 +80,8 @@ const NftMarketplacePage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
+    <div className="min-h-screen bg-black text-white pb-24 animate-in fade-in duration-500">
+      <NftSplash />
       <header className="sticky top-0 z-10 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-white/5">
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
@@ -147,8 +151,8 @@ const NftMarketplacePage = () => {
             return (
               <button
                 key={it.id}
-                onClick={() => nav(`/web3/nft/${it.id}`)}
-                className="text-left rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/5 hover:border-white/20 transition"
+                onClick={() => { playNftSound("list"); nav(`/web3/nft/${it.id}`); }}
+                className="text-left rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/5 hover:border-white/20 hover:scale-[1.02] transition-all duration-200 animate-in fade-in slide-in-from-bottom-2"
               >
                 <div className="aspect-square bg-[#161616] flex items-center justify-center overflow-hidden relative">
                   {img ? <img src={img} alt={it.name} className="h-full w-full object-cover" /> : <span className="text-white/30 text-sm">No image</span>}

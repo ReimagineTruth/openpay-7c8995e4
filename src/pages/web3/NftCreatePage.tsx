@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload } from "lucide-react";
+import { celebrate, playNftSound } from "@/lib/nftFx";
+import NftBurst from "@/components/web3/NftBurst";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -21,6 +23,8 @@ const NftCreatePage = () => {
     properties: "",
   });
   const [loading, setLoading] = useState(false);
+
+  const [minted, setMinted] = useState<{ id: string; name: string } | null>(null);
 
   const upd = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -92,9 +96,12 @@ const NftCreatePage = () => {
         p_properties: properties,
       });
       if (error) throw error;
+      celebrate("mint");
       toast({ title: "NFT minted!" });
-      nav(`/web3/nft/${data}`);
+      setMinted({ id: data, name: form.name });
+      setTimeout(() => nav(`/web3/nft/${data}`), 1800);
     } catch (e: any) {
+      playNftSound("error");
       toast({ title: "Mint failed", description: e.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -152,6 +159,7 @@ const NftCreatePage = () => {
           {loading ? "Minting…" : "Mint NFT"}
         </button>
       </div>
+      <NftBurst show={!!minted} kind="mint" message={minted ? `${minted.name} minted!` : ""} />
     </div>
   );
 };

@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Tag, Gavel, HelpCircle, Edit3, Trash2, Clock } from "lucide-react";
+import { celebrate, playNftSound } from "@/lib/nftFx";
+import NftBurst from "@/components/web3/NftBurst";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -38,6 +40,9 @@ const NftDetailPage = () => {
   const [aHours, setAHours] = useState("24");
 
   const [bidAmt, setBidAmt] = useState("");
+  const [burst, setBurst] = useState<{ kind: "buy"|"gift"|"list"|"bid"|"auction"; msg: string } | null>(null);
+
+
 
   const load = async () => {
     if (!id) return;
@@ -114,6 +119,8 @@ const NftDetailPage = () => {
       ts: new Date().toISOString(),
     });
     toast({ title: "Purchase complete!" });
+    celebrate("buy");
+    setBurst({ kind: "buy", msg: `You own ${item.name}!` });
     setBuyOpen(false);
     await load();
   };
@@ -170,6 +177,7 @@ const NftDetailPage = () => {
         });
       }
     } catch (e: any) {
+      playNftSound("error");
       toast({ title: "Buy failed", description: e.message, variant: "destructive" });
     } finally { setBusy(false); }
   };
@@ -188,10 +196,13 @@ const NftDetailPage = () => {
         p_message: giftMsg,
       });
       if (error) throw error;
+      celebrate("gift");
+      setBurst({ kind: "gift", msg: `Gift sent to @${uname}!` });
       toast({ title: "Gift sent!" });
       setGiftOpen(false);
       await load();
     } catch (e: any) {
+      playNftSound("error");
       toast({ title: "Gift failed", description: e.message, variant: "destructive" });
     } finally { setBusy(false); }
   };
@@ -206,15 +217,17 @@ const NftDetailPage = () => {
     toast({ title: "Link copied!" });
   };
 
-  const callRpc = async (fn: string, args: any, ok: string) => {
+  const callRpc = async (fn: string, args: any, ok: string, sfx?: { kind: "buy"|"gift"|"list"|"bid"|"auction"; sound: "buy"|"gift"|"list"|"bid"|"auction"|"mint" }) => {
     setBusy(true);
     try {
       const { error } = await (supabase as any).rpc(fn, args);
       if (error) throw error;
       toast({ title: ok });
+      if (sfx) { playNftSound(sfx.sound); setBurst({ kind: sfx.kind, msg: ok }); }
       await load();
       return true;
     } catch (e: any) {
+      playNftSound("error");
       toast({ title: "Failed", description: e.message, variant: "destructive" });
       return false;
     } finally { setBusy(false); }
@@ -222,34 +235,34 @@ const NftDetailPage = () => {
 
   const handleList = async () => {
     if (!listPrice || Number(listPrice) < 0) return;
-    const ok = await callRpc("nft_create_listing", { p_item_id: id, p_price: Number(listPrice), p_quantity: qty }, "Listed for resale");
+    const ok = await callRpc("nft_create_listing", { p_item_id: id, p_price: Number(listPrice), p_quantity: qty }, "Listed for resale", { kind: "list", sound: "list" });
     if (ok) { setListOpen(false); setListPrice(""); }
   };
   const handleEditPrice = async () => {
     if (!editListing || !listPrice) return;
-    const ok = await callRpc("nft_update_listing_price", { p_listing_id: editListing.id, p_new_price: Number(listPrice) }, "Price updated");
+    const ok = await callRpc("nft_update_listing_price", { p_listing_id: editListing.id, p_new_price: Number(listPrice) }, "Price updated", { kind: "list", sound: "list" });
     if (ok) { setEditListing(null); setListPrice(""); }
   };
   const handleCancelListing = async (l: any) => {
     await callRpc("nft_cancel_listing", { p_listing_id: l.id }, "Listing cancelled");
   };
   const handleBuyListing = async (l: any) => {
-    await callRpc("nft_buy_item", { p_item_id: id, p_quantity: 1, p_payment_method: "openpay_balance", p_listing_id: l.id }, "Purchased");
+    await callRpc("nft_buy_item", { p_item_id: id, p_quantity: 1, p_payment_method: "openpay_balance", p_listing_id: l.id }, "Purchased", { kind: "buy", sound: "buy" });
   };
   const handleCreateAuction = async () => {
     const ok = await callRpc("nft_create_auction", {
       p_item_id: id, p_quantity: qty,
       p_start_price: Number(aStart || 0), p_min_increment: Number(aInc || 1), p_duration_hours: Number(aHours || 24),
-    }, "Auction started");
+    }, "Auction started", { kind: "auction", sound: "auction" });
     if (ok) { setAuctionOpen(false); setAStart(""); }
   };
   const handlePlaceBid = async () => {
     if (!bidOpen) return;
-    const ok = await callRpc("nft_place_bid", { p_auction_id: bidOpen.id, p_amount: Number(bidAmt) }, "Bid placed");
+    const ok = await callRpc("nft_place_bid", { p_auction_id: bidOpen.id, p_amount: Number(bidAmt) }, "Bid placed", { kind: "bid", sound: "bid" });
     if (ok) { setBidOpen(null); setBidAmt(""); }
   };
   const handleFinalize = async (a: any) => {
-    await callRpc("nft_finalize_auction", { p_auction_id: a.id }, "Auction finalized");
+    await callRpc("nft_finalize_auction", { p_auction_id: a.id }, "Auction finalized", { kind: "auction", sound: "auction" });
   };
   const handleCancelAuction = async (a: any) => {
     await callRpc("nft_cancel_auction", { p_auction_id: a.id }, "Auction cancelled");
@@ -562,6 +575,8 @@ const NftDetailPage = () => {
           </button>
         </Modal>
       )}
+
+      <NftBurst show={!!burst} kind={burst?.kind} message={burst?.msg} onDone={() => setBurst(null)} />
     </div>
   );
 };
