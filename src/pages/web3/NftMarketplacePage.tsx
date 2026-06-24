@@ -134,7 +134,31 @@ const NftMarketplacePage = () => {
         )}
 
         {loading ? (
-          <p className="text-white/50 text-center mt-20">Loading marketplace…</p>
+          <div className="space-y-5 animate-in fade-in duration-300">
+            <div className="flex gap-3 overflow-hidden">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="w-44 shrink-0 rounded-2xl overflow-hidden bg-white/5">
+                  <div className="aspect-square bg-gradient-to-br from-white/5 via-white/10 to-white/5 animate-pulse" />
+                  <div className="p-3 space-y-2">
+                    <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
+                    <div className="h-3 w-1/2 rounded bg-white/10 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-2xl overflow-hidden bg-white/5" style={{ animationDelay: `${i * 60}ms` }}>
+                  <div className="aspect-square bg-gradient-to-br from-white/5 via-white/10 to-white/5 animate-pulse" />
+                  <div className="p-3 space-y-2">
+                    <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
+                    <div className="h-3 w-1/2 rounded bg-white/10 animate-pulse" />
+                    <div className="h-4 w-1/3 rounded bg-white/10 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : items.length === 0 ? (
           <div className="text-center mt-24">
             <p className="text-white/70 font-semibold">No NFTs yet</p>
