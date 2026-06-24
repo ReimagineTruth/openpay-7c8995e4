@@ -2304,6 +2304,87 @@ export type Database = {
           },
         ]
       }
+      nft_store_follows: {
+        Row: {
+          created_at: string
+          followed_id: string
+          follower_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          followed_id: string
+          follower_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          followed_id?: string
+          follower_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      nft_store_profiles: {
+        Row: {
+          avatar_url: string | null
+          banner_url: string | null
+          bio: string | null
+          created_at: string
+          discord_url: string | null
+          display_name: string | null
+          email_public: string | null
+          feature_nfts: boolean
+          handle: string | null
+          id: string
+          instagram_url: string | null
+          is_verified: boolean
+          twitter_url: string | null
+          updated_at: string
+          user_id: string
+          view_count: number
+          website_url: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          bio?: string | null
+          created_at?: string
+          discord_url?: string | null
+          display_name?: string | null
+          email_public?: string | null
+          feature_nfts?: boolean
+          handle?: string | null
+          id?: string
+          instagram_url?: string | null
+          is_verified?: boolean
+          twitter_url?: string | null
+          updated_at?: string
+          user_id: string
+          view_count?: number
+          website_url?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          bio?: string | null
+          created_at?: string
+          discord_url?: string | null
+          display_name?: string | null
+          email_public?: string | null
+          feature_nfts?: boolean
+          handle?: string | null
+          id?: string
+          instagram_url?: string | null
+          is_verified?: boolean
+          twitter_url?: string | null
+          updated_at?: string
+          user_id?: string
+          view_count?: number
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       nft_transactions: {
         Row: {
           buyer_id: string | null
