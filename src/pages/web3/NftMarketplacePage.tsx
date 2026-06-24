@@ -84,6 +84,13 @@ const NftMarketplacePage = () => {
         </button>
         <h1 className="text-xl font-extrabold flex-1">NFT Marketplace</h1>
         <button
+          onClick={() => nav("/web3/nft/how-to")}
+          className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center"
+          aria-label="How it works"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </button>
+        <button
           onClick={() => nav("/web3/nft/dashboard")}
           className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center"
           aria-label="Creator dashboard"
@@ -99,7 +106,23 @@ const NftMarketplacePage = () => {
         </button>
       </header>
 
-      <div className="px-4 pt-4">
+      <div className="px-4 pt-4 space-y-4">
+        {!loading && items.length > 0 && (
+          <button
+            onClick={() => nav("/web3/nft/how-to")}
+            className="w-full rounded-2xl p-3 flex items-center gap-3 text-left border border-white/10 bg-gradient-to-r from-blue-600/20 to-blue-900/10"
+          >
+            <div className="h-9 w-9 rounded-full flex items-center justify-center" style={{ backgroundColor: ACCENT }}>
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold">New to NFTs?</p>
+              <p className="text-[11px] text-white/60">Learn how to mint, buy, resell and auction in 1 minute.</p>
+            </div>
+            <span className="text-xs font-bold" style={{ color: ACCENT }}>View →</span>
+          </button>
+        )}
+
         {loading ? (
           <p className="text-white/50 text-center mt-20">Loading marketplace…</p>
         ) : items.length === 0 ? (
