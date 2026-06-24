@@ -691,6 +691,15 @@ const PayOpt = ({ active, onClick, icon, label }: any) => (
   </button>
 );
 
+const MaskedField = ({ label, value }: { label: string; value: string }) => (
+  <label className="block">
+    <span className="text-[11px] text-white/60">{label}</span>
+    <div className="mt-1 px-3 py-2 rounded-lg bg-[#0f0f0f] border border-white/10 text-sm tracking-widest text-white/80 select-none">
+      {value}
+    </div>
+  </label>
+);
+
 const Row = ({ k, v }: { k: string; v: any }) => (
   <div className="flex justify-between"><span className="text-white/50">{k}</span><span className="font-semibold">{v}</span></div>
 );
