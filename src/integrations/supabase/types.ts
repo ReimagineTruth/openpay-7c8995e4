@@ -2343,6 +2343,7 @@ export type Database = {
           id: string
           instagram_url: string | null
           is_verified: boolean
+          telegram_url: string | null
           twitter_url: string | null
           updated_at: string
           user_id: string
@@ -2363,6 +2364,7 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           is_verified?: boolean
+          telegram_url?: string | null
           twitter_url?: string | null
           updated_at?: string
           user_id: string
@@ -2383,6 +2385,7 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           is_verified?: boolean
+          telegram_url?: string | null
           twitter_url?: string | null
           updated_at?: string
           user_id?: string
