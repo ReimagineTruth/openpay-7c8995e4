@@ -101,14 +101,42 @@ const Web3Dashboard = () => {
       setLoadingTx(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoadingTx(false); return; }
-      const { data } = await supabase
-        .from("transactions")
-        .select("id, type, amount, created_at, description, status")
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const [{ data: txData }, { data: nftTx }] = await Promise.all([
+        supabase
+          .from("transactions")
+          .select("id, type, amount, created_at, description, status")
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        (supabase as any)
+          .from("nft_transactions")
+          .select("id, total, created_at, status, tx_kind, buyer_id, seller_id, quantity, payment_method, item_id, nft_items(name, code)")
+          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ]);
       if (!mounted) return;
-      setTxs((data as any) || []);
+      const nftRows: TxRow[] = (nftTx || []).map((n: any) => {
+        const isBuyer = n.buyer_id === user.id;
+        const kind = String(n.tx_kind || "sale");
+        const itemName = n.nft_items?.name || "NFT";
+        let label = "";
+        if (kind === "gift") label = isBuyer ? `Received NFT gift: ${itemName}` : `Sent NFT gift: ${itemName}`;
+        else if (kind === "mint") label = `Minted ${itemName}`;
+        else label = isBuyer ? `Bought NFT: ${itemName}` : `Sold NFT: ${itemName}`;
+        return {
+          id: `nft_${n.id}`,
+          type: isBuyer ? (kind === "gift" ? "nft_gift_in" : "nft_buy") : (kind === "gift" ? "nft_gift_out" : "nft_sell"),
+          amount: isBuyer ? -Number(n.total || 0) : Number(n.total || 0),
+          created_at: n.created_at,
+          description: label,
+          status: n.status,
+        };
+      });
+      const merged = [...((txData as any) || []), ...nftRows].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setTxs(merged);
       setLoadingTx(false);
     })();
     return () => { mounted = false; };
