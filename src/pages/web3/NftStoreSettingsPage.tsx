@@ -165,6 +165,10 @@ const NftStoreSettingsPage = () => {
           <input value={form.discord_url} onChange={(e) => setForm({ ...form, discord_url: e.target.value })}
             placeholder="https://discord.gg/…" className="input" />
         </Field>
+        <Field label="Telegram" icon={<Send className="h-4 w-4" />} hint="Your Telegram channel, group, or @username link.">
+          <input value={form.telegram_url} onChange={(e) => setForm({ ...form, telegram_url: e.target.value })}
+            placeholder="https://t.me/…" className="input" />
+        </Field>
         <Field label="Public email" icon={<User className="h-4 w-4" />}>
           <input value={form.email_public} onChange={(e) => setForm({ ...form, email_public: e.target.value })}
             placeholder="contact@…" className="input" />
