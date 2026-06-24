@@ -38,6 +38,7 @@ const NftStoreSettingsPage = () => {
           twitter_url: data.twitter_url || "",
           instagram_url: data.instagram_url || "",
           discord_url: data.discord_url || "",
+          telegram_url: data.telegram_url || "",
           email_public: data.email_public || "",
           feature_nfts: data.feature_nfts ?? true,
           category: data.category || "general",
