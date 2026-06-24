@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store } from "lucide-react";
-import NftSplash from "@/components/web3/NftSplash";
+
 import { playNftSound } from "@/lib/nftFx";
 
 const ACCENT = "hsl(217 91% 60%)";
@@ -32,7 +32,6 @@ const NftMarketplacePage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    playNftSound("splash");
     (async () => {
       const { data } = await (supabase as any)
         .from("nft_items")
@@ -81,7 +80,7 @@ const NftMarketplacePage = () => {
 
   return (
     <div className="min-h-screen bg-black text-white pb-24 animate-in fade-in duration-500">
-      <NftSplash />
+      
       <header className="sticky top-0 z-10 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-white/5">
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
@@ -135,7 +134,31 @@ const NftMarketplacePage = () => {
         )}
 
         {loading ? (
-          <p className="text-white/50 text-center mt-20">Loading marketplace…</p>
+          <div className="space-y-5 animate-in fade-in duration-300">
+            <div className="flex gap-3 overflow-hidden">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="w-44 shrink-0 rounded-2xl overflow-hidden bg-white/5">
+                  <div className="aspect-square bg-gradient-to-br from-white/5 via-white/10 to-white/5 animate-pulse" />
+                  <div className="p-3 space-y-2">
+                    <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
+                    <div className="h-3 w-1/2 rounded bg-white/10 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-2xl overflow-hidden bg-white/5" style={{ animationDelay: `${i * 60}ms` }}>
+                  <div className="aspect-square bg-gradient-to-br from-white/5 via-white/10 to-white/5 animate-pulse" />
+                  <div className="p-3 space-y-2">
+                    <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
+                    <div className="h-3 w-1/2 rounded bg-white/10 animate-pulse" />
+                    <div className="h-4 w-1/3 rounded bg-white/10 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : items.length === 0 ? (
           <div className="text-center mt-24">
             <p className="text-white/70 font-semibold">No NFTs yet</p>
