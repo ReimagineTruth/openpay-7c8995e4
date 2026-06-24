@@ -1,0 +1,1 @@
+ALTER TABLE public.nft_store_profiles ADD COLUMN IF NOT EXISTS telegram_url text;
