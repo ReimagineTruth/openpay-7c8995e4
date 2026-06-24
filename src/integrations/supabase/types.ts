@@ -1941,6 +1941,347 @@ export type Database = {
         }
         Relationships: []
       }
+      nft_collections: {
+        Row: {
+          code: string
+          cover_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          name: string
+          royalty_pct: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          cover_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          name: string
+          royalty_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          cover_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          royalty_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      nft_earnings: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          item_id: string | null
+          source: string
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          item_id?: string | null
+          source: string
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          item_id?: string | null
+          source?: string
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nft_earnings_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "nft_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nft_earnings_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "nft_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nft_gifts: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          message: string | null
+          quantity: number
+          recipient_id: string
+          sender_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          message?: string | null
+          quantity: number
+          recipient_id: string
+          sender_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          message?: string | null
+          quantity?: number
+          recipient_id?: string
+          sender_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nft_gifts_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "nft_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nft_items: {
+        Row: {
+          code: string
+          collection_id: string | null
+          created_at: string
+          creator_id: string
+          currency: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          media_type: string
+          media_url: string | null
+          name: string
+          price: number
+          properties: Json
+          quantity_minted: number
+          quantity_total: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          collection_id?: string | null
+          created_at?: string
+          creator_id: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          media_type?: string
+          media_url?: string | null
+          name: string
+          price?: number
+          properties?: Json
+          quantity_minted?: number
+          quantity_total: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          collection_id?: string | null
+          created_at?: string
+          creator_id?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          media_type?: string
+          media_url?: string | null
+          name?: string
+          price?: number
+          properties?: Json
+          quantity_minted?: number
+          quantity_total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nft_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "nft_collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nft_listings: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          item_id: string
+          price: number
+          quantity: number
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          item_id: string
+          price: number
+          quantity: number
+          seller_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          item_id?: string
+          price?: number
+          quantity?: number
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nft_listings_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "nft_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nft_ownership: {
+        Row: {
+          acquired_at: string
+          id: string
+          item_id: string
+          owner_id: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          acquired_at?: string
+          id?: string
+          item_id: string
+          owner_id: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          acquired_at?: string
+          id?: string
+          item_id?: string
+          owner_id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nft_ownership_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "nft_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nft_transactions: {
+        Row: {
+          buyer_id: string | null
+          created_at: string
+          currency: string
+          id: string
+          item_id: string
+          listing_id: string | null
+          payment_method: string
+          price_each: number
+          quantity: number
+          royalty_amount: number
+          seller_id: string | null
+          status: string
+          total: number
+          tx_kind: string
+          tx_ref: string | null
+        }
+        Insert: {
+          buyer_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          item_id: string
+          listing_id?: string | null
+          payment_method?: string
+          price_each: number
+          quantity: number
+          royalty_amount?: number
+          seller_id?: string | null
+          status?: string
+          total: number
+          tx_kind?: string
+          tx_ref?: string | null
+        }
+        Update: {
+          buyer_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          item_id?: string
+          listing_id?: string | null
+          payment_method?: string
+          price_each?: number
+          quantity?: number
+          royalty_amount?: number
+          seller_id?: string | null
+          status?: string
+          total?: number
+          tx_kind?: string
+          tx_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nft_transactions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "nft_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nft_transactions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "nft_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -4279,6 +4620,40 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      nft_buy_item: {
+        Args: {
+          p_item_id: string
+          p_listing_id?: string
+          p_payment_method: string
+          p_quantity: number
+        }
+        Returns: string
+      }
+      nft_gift_item: {
+        Args: {
+          p_item_id: string
+          p_message: string
+          p_quantity: number
+          p_recipient_id: string
+        }
+        Returns: string
+      }
+      nft_mint_item: {
+        Args: {
+          p_code: string
+          p_collection_id: string
+          p_currency: string
+          p_description: string
+          p_image_url: string
+          p_media_type: string
+          p_media_url: string
+          p_name: string
+          p_price: number
+          p_properties: Json
+          p_quantity: number
+        }
+        Returns: string
       }
       normalize_openpay_authorization_code: {
         Args: { p_code: string }

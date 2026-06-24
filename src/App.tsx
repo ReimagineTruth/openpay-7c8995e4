@@ -15,6 +15,10 @@ import ForgotMpinPage from "./pages/ForgotMpinPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import Dashboard from "./pages/Dashboard";
 import DashboardSwitcher from "./components/DashboardSwitcher";
+import NftMarketplacePage from "./pages/web3/NftMarketplacePage";
+import NftCreatePage from "./pages/web3/NftCreatePage";
+import NftDetailPage from "./pages/web3/NftDetailPage";
+import NftCreatorDashboardPage from "./pages/web3/NftCreatorDashboardPage";
 import SendMoney from "./pages/SendMoney";
 import QrScannerPage from "./pages/QrScannerPage";
 import TopUp from "./pages/TopUp";
@@ -255,6 +259,10 @@ const AppRoutes = () => {
             <DashboardSwitcher />
           </ProtectedRoute>
         } />
+        <Route path="/web3/nft" element={<ProtectedRoute><NftMarketplacePage /></ProtectedRoute>} />
+        <Route path="/web3/nft/create" element={<ProtectedRoute><NftCreatePage /></ProtectedRoute>} />
+        <Route path="/web3/nft/dashboard" element={<ProtectedRoute><NftCreatorDashboardPage /></ProtectedRoute>} />
+        <Route path="/web3/nft/:id" element={<ProtectedRoute><NftDetailPage /></ProtectedRoute>} />
         <Route path="/send" element={
           <ProtectedRoute>
             <SendMoney />

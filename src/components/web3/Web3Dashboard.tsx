@@ -236,6 +236,7 @@ const Web3Dashboard = () => {
           {/* Markets / Tools */}
           <h3 className="mt-8 mx-5 text-white/60 text-[15px] font-semibold">Tools</h3>
           <div className="mt-3 mx-4 space-y-3">
+            <RowTile icon={<Sparkles className="h-5 w-5" style={{ color: ACCENT }} />} title="NFT Marketplace" subtitle="Mint, buy, sell & gift collectibles" onClick={() => navigate("/web3/nft")} />
             <RowTile icon={<Pickaxe className="h-5 w-5 text-white/70" />} title="Mining" subtitle="Earn daily rewards" onClick={() => navigate("/mining")} />
             <RowTile icon={<Store className="h-5 w-5 text-white/70" />} title="Merchant POS" subtitle="Accept payments" onClick={() => navigate("/merchant-pos")} />
             <RowTile icon={<TrendingUp className="h-5 w-5 text-white/70" />} title="Affiliate" subtitle="Invite & earn" onClick={() => navigate("/affiliate")} />
