@@ -500,16 +500,48 @@ const NftDetailPage = () => {
           </div>
 
           {method === "virtual_card" && (
-            <div className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10">
-              {savedCards.length > 0 && (
-                <p className="text-[11px] text-white/50">Using your saved OpenPay card · ending {String(card.number).slice(-4)}</p>
-              )}
-              <Field label="Card number" value={card.number} onChange={(v: any) => setCard((c) => ({ ...c, number: v }))} />
-              <div className="grid grid-cols-3 gap-2">
-                <Field label="MM" value={card.exp_month} onChange={(v: any) => setCard((c) => ({ ...c, exp_month: v }))} type="number" />
-                <Field label="YYYY" value={card.exp_year} onChange={(v: any) => setCard((c) => ({ ...c, exp_year: v }))} type="number" />
-                <Field label="CVC" value={card.cvc} onChange={(v: any) => setCard((c) => ({ ...c, cvc: v }))} />
+            <div
+              className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10"
+              style={cardHidden ? { WebkitUserSelect: "none", userSelect: "none" } : undefined}
+            >
+              <div className="flex items-center justify-between">
+                {savedCards.length > 0 ? (
+                  <p className="text-[11px] text-white/50">
+                    Using your saved OpenPay card · ending {cardHidden ? "••••" : String(card.number).slice(-4)}
+                  </p>
+                ) : <span />}
+                <button
+                  type="button"
+                  onClick={() => setCardHidden((h) => !h)}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-white/70 hover:text-white px-2 py-1 rounded-full bg-white/5 border border-white/10"
+                  aria-label={cardHidden ? "Show card details" : "Hide card details"}
+                >
+                  {cardHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  {cardHidden ? "Show" : "Hide"}
+                </button>
               </div>
+              {cardHidden ? (
+                <>
+                  <MaskedField label="Card number" value={card.number ? "•••• •••• •••• " + String(card.number).slice(-4) : "•••• •••• •••• ••••"} />
+                  <div className="grid grid-cols-3 gap-2">
+                    <MaskedField label="MM" value="••" />
+                    <MaskedField label="YYYY" value="••••" />
+                    <MaskedField label="CVC" value="•••" />
+                  </div>
+                  <p className="text-[10px] text-white/40 flex items-center gap-1">
+                    <EyeOff className="h-3 w-3" /> Hidden to protect your card from screenshots & screen recordings.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Field label="Card number" value={card.number} onChange={(v: any) => setCard((c) => ({ ...c, number: v }))} />
+                  <div className="grid grid-cols-3 gap-2">
+                    <Field label="MM" value={card.exp_month} onChange={(v: any) => setCard((c) => ({ ...c, exp_month: v }))} type="number" />
+                    <Field label="YYYY" value={card.exp_year} onChange={(v: any) => setCard((c) => ({ ...c, exp_year: v }))} type="number" />
+                    <Field label="CVC" value={card.cvc} onChange={(v: any) => setCard((c) => ({ ...c, cvc: v }))} />
+                  </div>
+                </>
+              )}
               {savedCards.length === 0 && (
                 <p className="text-[11px] text-amber-400">No saved card. Create one in OpenPay Card first.</p>
               )}
