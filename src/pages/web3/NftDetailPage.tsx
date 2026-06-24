@@ -119,6 +119,8 @@ const NftDetailPage = () => {
       ts: new Date().toISOString(),
     });
     toast({ title: "Purchase complete!" });
+    celebrate("buy");
+    setBurst({ kind: "buy", msg: `You own ${item.name}!` });
     setBuyOpen(false);
     await load();
   };
@@ -175,6 +177,7 @@ const NftDetailPage = () => {
         });
       }
     } catch (e: any) {
+      playNftSound("error");
       toast({ title: "Buy failed", description: e.message, variant: "destructive" });
     } finally { setBusy(false); }
   };
@@ -193,10 +196,13 @@ const NftDetailPage = () => {
         p_message: giftMsg,
       });
       if (error) throw error;
+      celebrate("gift");
+      setBurst({ kind: "gift", msg: `Gift sent to @${uname}!` });
       toast({ title: "Gift sent!" });
       setGiftOpen(false);
       await load();
     } catch (e: any) {
+      playNftSound("error");
       toast({ title: "Gift failed", description: e.message, variant: "destructive" });
     } finally { setBusy(false); }
   };
