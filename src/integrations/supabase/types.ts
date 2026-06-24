@@ -2032,6 +2032,48 @@ export type Database = {
           },
         ]
       }
+      nft_chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string | null
+          message: string
+          reply_to: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          message: string
+          reply_to?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          message?: string
+          reply_to?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nft_chat_messages_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "nft_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nft_chat_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "nft_chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nft_collections: {
         Row: {
           code: string
