@@ -40,6 +40,7 @@ const NftStoreSettingsPage = () => {
           discord_url: data.discord_url || "",
           email_public: data.email_public || "",
           feature_nfts: data.feature_nfts ?? true,
+          category: data.category || "general",
         });
       } else {
         const { data: base } = await (supabase as any)
