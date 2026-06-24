@@ -5,6 +5,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { setUiMode } from "@/lib/uiMode";
 import CurrencySelector from "@/components/CurrencySelector";
 import OpenPayTutorial from "@/components/OpenPayTutorial";
+import NftShowcase from "@/components/web3/NftShowcase";
 import {
   Home,
   Clock,
@@ -176,7 +177,11 @@ const Web3Dashboard = () => {
     >
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-5 gap-3">
-        <button onClick={() => navigate("/menu")} className="flex items-center gap-2 min-w-0">
+        <button
+          onClick={() => navigate(profile.username ? `/web3/nft/store/${profile.username}` : "/web3/nft/store")}
+          className="flex items-center gap-2 min-w-0"
+          aria-label="Open my NFT store"
+        >
           {avatar ? (
             <img src={avatar} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-white/10" />
           ) : (
@@ -260,6 +265,11 @@ const Web3Dashboard = () => {
           <div className="mt-4 mx-4 grid grid-cols-2 gap-3">
             <Tile icon={<Building2 className="h-5 w-5 text-white/70" />} title="Cash" subtitle="Manage funds" onClick={() => navigate("/activity")} />
             <Tile icon={<LineChart className="h-5 w-5 text-white/70" />} title="Earn" subtitle="Stake & rewards" onClick={() => navigate("/staking")} />
+          </div>
+
+          {/* NFT showcase */}
+          <div className="mt-6 mx-4">
+            <NftShowcase variant="dark" />
           </div>
 
           {/* Markets / Tools */}
