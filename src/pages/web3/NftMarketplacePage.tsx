@@ -137,40 +137,65 @@ const NftMarketplacePage = () => {
               Mint your NFT
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {items.map((it) => {
-              const img = it.media_url || it.image_url || "";
-              return (
-                <button
-                  key={it.id}
-                  onClick={() => nav(`/web3/nft/${it.id}`)}
-                  className="text-left rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/5 hover:border-white/20 transition"
-                >
-                  <div className="aspect-square bg-[#161616] flex items-center justify-center overflow-hidden">
-                    {img ? (
-                      <img src={img} alt={it.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="text-white/30 text-sm">No image</span>
-                    )}
+        ) : (() => {
+          const recommended = [...items]
+            .sort((a, b) => (sales[b.id] || 0) - (sales[a.id] || 0) || (owners[b.id] || 0) - (owners[a.id] || 0))
+            .slice(0, 6);
+          const renderCard = (it: NftRow) => {
+            const img = it.media_url || it.image_url || "";
+            const au = auctions[it.id];
+            return (
+              <button
+                key={it.id}
+                onClick={() => nav(`/web3/nft/${it.id}`)}
+                className="text-left rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/5 hover:border-white/20 transition"
+              >
+                <div className="aspect-square bg-[#161616] flex items-center justify-center overflow-hidden relative">
+                  {img ? <img src={img} alt={it.name} className="h-full w-full object-cover" /> : <span className="text-white/30 text-sm">No image</span>}
+                  {au && (
+                    <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-1 rounded-full bg-black/70 flex items-center gap-1" style={{ color: ACCENT }}>
+                      <Gavel className="h-3 w-3" /> LIVE AUCTION
+                    </span>
+                  )}
+                </div>
+                <div className="p-3">
+                  <p className="font-bold text-sm truncate">{it.name}</p>
+                  <p className="text-xs text-white/40 truncate">#{it.code}</p>
+                  <p className="mt-2 font-bold text-[15px]" style={{ color: ACCENT }}>
+                    {au ? format(Number(au.current_bid || au.start_price || 0)) : format(Number(it.price || 0))}
+                    {au && <span className="text-[10px] text-white/50 font-normal ml-1">bid</span>}
+                  </p>
+                  <div className="mt-2 flex items-center gap-3 text-[11px] text-white/55">
+                    <span className="flex items-center gap-1"><Users className="h-3 w-3" />{owners[it.id] || 0}</span>
+                    <span className="flex items-center gap-1"><Tag className="h-3 w-3" />{sales[it.id] || 0} sold</span>
+                    <span className="ml-auto">/{it.quantity_total}</span>
                   </div>
-                  <div className="p-3">
-                    <p className="font-bold text-sm truncate">{it.name}</p>
-                    <p className="text-xs text-white/40 truncate">#{it.code}</p>
-                    <p className="mt-2 font-bold text-[15px]" style={{ color: ACCENT }}>
-                      {format(Number(it.price || 0))}
-                    </p>
-                    <div className="mt-2 flex items-center gap-3 text-[11px] text-white/55">
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{owners[it.id] || 0}</span>
-                      <span className="flex items-center gap-1"><Tag className="h-3 w-3" />{sales[it.id] || 0} sold</span>
-                      <span className="ml-auto">/{it.quantity_total}</span>
-                    </div>
+                </div>
+              </button>
+            );
+          };
+          return (
+            <>
+              {recommended.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-4 w-4" style={{ color: ACCENT }} />
+                    <h2 className="font-extrabold">Recommended for you</h2>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                  <div className="flex gap-3 overflow-x-auto -mx-4 px-4 pb-2 snap-x">
+                    {recommended.map((it) => (
+                      <div key={it.id} className="w-44 shrink-0 snap-start">{renderCard(it)}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <h2 className="font-extrabold mb-2">All NFTs</h2>
+                <div className="grid grid-cols-2 gap-3">{items.map(renderCard)}</div>
+              </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   );
