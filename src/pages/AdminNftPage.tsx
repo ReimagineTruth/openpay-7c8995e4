@@ -173,6 +173,45 @@ const AdminNftPage = () => {
           </button>
         </div>
 
+        {/* Mint Fee */}
+        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Percent className="h-4 w-4" style={{ color: ACCENT }} />
+            <h2 className="font-bold">Mint Fee</h2>
+            <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${mintFee.enabled ? "bg-green-500/20 text-green-400" : "bg-white/10 text-white/50"}`}>
+              {mintFee.enabled ? "ON" : "OFF"}
+            </span>
+          </div>
+          <p className="text-xs text-white/50 mb-3">Charged from the creator's OpenPay wallet at mint time. Calculated as a % of (price × quantity).</p>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <label className="block">
+              <span className="text-xs text-white/60 font-semibold">Rate (%)</span>
+              <input type="number" step="0.1" min={0} max={50} value={mintFee.rate}
+                onChange={(e) => setMintFee((f) => ({ ...f, rate: Number(e.target.value) }))}
+                className="mt-1 w-full rounded-xl bg-[#161616] border border-white/10 p-3 text-sm outline-none" />
+            </label>
+            <label className="flex items-end gap-2">
+              <input id="mint-fee-enabled" type="checkbox" checked={mintFee.enabled}
+                onChange={(e) => setMintFee((f) => ({ ...f, enabled: e.target.checked }))}
+                className="h-5 w-5" />
+              <span className="text-sm pb-2">Enable mint fee</span>
+            </label>
+          </div>
+          <label className="block mb-3">
+            <span className="text-xs text-white/60 font-semibold">Collector User ID (UUID)</span>
+            <input value={mintFee.collector_user_id}
+              onChange={(e) => setMintFee((f) => ({ ...f, collector_user_id: e.target.value }))}
+              placeholder="UUID of OpenPay treasury wallet user"
+              className="mt-1 w-full rounded-xl bg-[#161616] border border-white/10 p-3 text-sm outline-none font-mono" />
+          </label>
+          <button onClick={saveMintFee} disabled={savingMintFee}
+            className="w-full rounded-full py-2.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            style={{ backgroundColor: ACCENT }}>
+            <Save className="h-4 w-4" /> {savingMintFee ? "Saving…" : "Save Mint Fee"}
+          </button>
+        </div>
+
+
         {/* Items */}
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
           <div className="flex items-center gap-2 mb-3">
