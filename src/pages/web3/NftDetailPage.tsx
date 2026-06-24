@@ -575,6 +575,8 @@ const NftDetailPage = () => {
           </button>
         </Modal>
       )}
+
+      <NftBurst show={!!burst} kind={burst?.kind} message={burst?.msg} onDone={() => setBurst(null)} />
     </div>
   );
 };
