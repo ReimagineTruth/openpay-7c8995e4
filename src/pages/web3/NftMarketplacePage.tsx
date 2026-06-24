@@ -38,6 +38,8 @@ interface StoreRow {
 
 const NftMarketplacePage = () => {
   const nav = useNavigate();
+  const location = useLocation();
+  const auctionsOnly = location.pathname === "/web3/nft/auctions";
   const { format } = useCurrency();
   const [items, setItems] = useState<NftRow[]>([]);
   const [owners, setOwners] = useState<Record<string, number>>({});
