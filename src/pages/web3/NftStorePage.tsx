@@ -395,6 +395,60 @@ const NftStorePage = () => {
           </div>
         )}
       </div>
+
+      {followModal && (
+        <>
+          <div className="fixed inset-0 bg-black/70 z-40" onClick={() => setFollowModal(null)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#111] p-4 max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-extrabold capitalize">{followModal} · {followModal === "followers" ? followers : followingCount}</h3>
+              <button onClick={() => setFollowModal(null)} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {followListLoading ? (
+              <p className="text-center text-sm text-white/50 py-10">Loading…</p>
+            ) : followList.length === 0 ? (
+              <p className="text-center text-sm text-white/50 py-10">
+                {followModal === "followers" ? "No followers yet" : "Not following anyone yet"}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {followList.map((u) => {
+                  const name = u.store?.display_name || u.profile?.full_name || u.profile?.username || u.id.slice(0,8);
+                  const handle = u.store?.handle || u.profile?.username;
+                  const avatar = u.store?.avatar_url || u.profile?.avatar_url;
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => {
+                        setFollowModal(null);
+                        if (handle) nav(`/web3/nft/store/${handle}`);
+                      }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition text-left"
+                    >
+                      {avatar
+                        ? <img src={avatar} alt="" className="h-11 w-11 rounded-full object-cover flex-shrink-0" />
+                        : <div className="h-11 w-11 rounded-full bg-gradient-to-br from-pink-500 to-blue-500 flex-shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="font-bold truncate">{name}</p>
+                          {u.store?.is_verified && <BadgeCheck className="h-3.5 w-3.5 flex-shrink-0" style={{ color: ACCENT }} />}
+                        </div>
+                        {handle && <p className="text-xs text-white/50 truncate">@{handle}</p>}
+                        {u.store?.bio && <p className="text-[11px] text-white/40 truncate">{u.store.bio}</p>}
+                      </div>
+                      {u.store?.handle && (
+                        <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-white/10">View store</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };
