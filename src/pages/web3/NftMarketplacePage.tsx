@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X } from "lucide-react";
+import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X, RefreshCw } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
 import { NFT_CATEGORIES, getCategoryMeta } from "@/lib/nftCategories";
 
@@ -44,59 +44,93 @@ const NftMarketplacePage = () => {
   const [storeByUser, setStoreByUser] = useState<Record<string, StoreRow>>({});
   const [storeItemCounts, setStoreItemCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pullProgress, setPullProgress] = useState(0); // 0..1
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
 
-  useEffect(() => {
-    (async () => {
-      const [{ data: itemData }, { data: storeData }] = await Promise.all([
-        (supabase as any)
-          .from("nft_items")
-          .select("*")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false }),
-        (supabase as any)
-          .from("nft_store_profiles")
-          .select("user_id, handle, display_name, avatar_url, banner_url, category, is_verified")
-          .order("view_count", { ascending: false })
-          .limit(60),
-      ]);
-      const list = (itemData as NftRow[]) || [];
-      setItems(list);
-      const sList = (storeData as StoreRow[]) || [];
-      setStores(sList);
-      const sMap: Record<string, StoreRow> = {};
-      sList.forEach((s) => { sMap[s.user_id] = s; });
-      setStoreByUser(sMap);
+  const load = useCallback(async (mode: "initial" | "refresh" = "initial") => {
+    if (mode === "refresh") setRefreshing(true);
+    // 1) Fetch the items + stores quickly and render them.
+    const [{ data: itemData }, { data: storeData }] = await Promise.all([
+      (supabase as any)
+        .from("nft_items")
+        .select("id,name,code,description,image_url,media_url,media_type,quantity_total,price,currency,creator_id,category")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(120),
+      (supabase as any)
+        .from("nft_store_profiles")
+        .select("user_id, handle, display_name, avatar_url, banner_url, category, is_verified")
+        .order("view_count", { ascending: false })
+        .limit(40),
+    ]);
+    const list = (itemData as NftRow[]) || [];
+    const sList = (storeData as StoreRow[]) || [];
+    setItems(list);
+    setStores(sList);
+    const sMap: Record<string, StoreRow> = {};
+    sList.forEach((s) => { sMap[s.user_id] = s; });
+    setStoreByUser(sMap);
+    const counts: Record<string, number> = {};
+    list.forEach((it) => { counts[it.creator_id] = (counts[it.creator_id] || 0) + 1; });
+    setStoreItemCounts(counts);
+    setLoading(false);
 
-      if (list.length) {
-        const ids = list.map((i) => i.id);
-        const [{ data: own }, { data: tx }, { data: au }] = await Promise.all([
-          (supabase as any).from("nft_ownership").select("item_id, owner_id, quantity").in("item_id", ids),
-          (supabase as any).from("nft_transactions").select("item_id, quantity, tx_kind").in("item_id", ids).in("tx_kind", ["sale","resale"]),
-          (supabase as any).from("nft_auctions").select("item_id, current_bid, start_price, ends_at").in("item_id", ids).eq("status", "active"),
-        ]);
+    // 2) Background-load stats so the UI is not blocked.
+    if (list.length) {
+      const ids = list.map((i) => i.id);
+      Promise.all([
+        (supabase as any).from("nft_ownership").select("item_id, owner_id, quantity").in("item_id", ids),
+        (supabase as any).from("nft_transactions").select("item_id, quantity, tx_kind").in("item_id", ids).in("tx_kind", ["sale","resale"]),
+        (supabase as any).from("nft_auctions").select("item_id, current_bid, start_price, ends_at").in("item_id", ids).eq("status", "active"),
+      ]).then(([{ data: own }, { data: tx }, { data: au }]) => {
         const ownerCount: Record<string, number> = {};
-        (own || []).forEach((o: any) => {
-          if (Number(o.quantity) > 0) ownerCount[o.item_id] = (ownerCount[o.item_id] || 0) + 1;
-        });
+        (own || []).forEach((o: any) => { if (Number(o.quantity) > 0) ownerCount[o.item_id] = (ownerCount[o.item_id] || 0) + 1; });
         setOwners(ownerCount);
         const soldMap: Record<string, number> = {};
-        (tx || []).forEach((t: any) => {
-          soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0);
-        });
+        (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
         setSales(soldMap);
         const auMap: Record<string, any> = {};
         (au || []).forEach((a: any) => { auMap[a.item_id] = a; });
         setAuctions(auMap);
-
-        const counts: Record<string, number> = {};
-        list.forEach((it) => { counts[it.creator_id] = (counts[it.creator_id] || 0) + 1; });
-        setStoreItemCounts(counts);
-      }
-      setLoading(false);
-    })();
+      }).finally(() => setRefreshing(false));
+    } else {
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => { load("initial"); }, [load]);
+
+  // Pull-up-to-refresh when scrolled to the bottom.
+  const pullRef = useRef({ startY: 0, pulling: false, fired: false });
+  useEffect(() => {
+    const THRESHOLD = 90;
+    const atBottom = () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+    const onTouchStart = (e: TouchEvent) => {
+      if (!atBottom()) return;
+      pullRef.current = { startY: e.touches[0].clientY, pulling: true, fired: false };
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pullRef.current.pulling) return;
+      const dy = pullRef.current.startY - e.touches[0].clientY;
+      if (dy <= 0) { setPullProgress(0); return; }
+      setPullProgress(Math.min(1, dy / THRESHOLD));
+      if (dy > THRESHOLD && !pullRef.current.fired) {
+        pullRef.current.fired = true;
+        load("refresh");
+      }
+    };
+    const onTouchEnd = () => { pullRef.current.pulling = false; setPullProgress(0); };
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd);
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [load]);
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -147,6 +181,9 @@ const NftMarketplacePage = () => {
         </button>
         <button onClick={() => nav("/web3/nft/store")} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="My store">
           <Store className="h-5 w-5" />
+        </button>
+        <button onClick={() => load("refresh")} disabled={refreshing} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center disabled:opacity-60" aria-label="Refresh">
+          <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
         </button>
         <button onClick={() => nav("/web3/nft/create")} className="h-9 px-3 rounded-full flex items-center gap-1 font-semibold text-sm" style={{ backgroundColor: ACCENT }}>
           <Plus className="h-4 w-4" /> Mint
@@ -383,6 +420,26 @@ const NftMarketplacePage = () => {
             </>
           );
         })()}
+
+        {/* Pull-up-to-refresh indicator */}
+        <div
+          className="flex items-center justify-center gap-2 pt-6 pb-2 text-xs text-white/50 transition-opacity"
+          style={{ opacity: refreshing || pullProgress > 0 ? 1 : 0.4 }}
+        >
+          <RefreshCw
+            className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+            style={{ transform: refreshing ? undefined : `rotate(${pullProgress * 360}deg)` }}
+          />
+          <span>
+            {refreshing
+              ? "Refreshing…"
+              : pullProgress >= 1
+              ? "Release to refresh"
+              : pullProgress > 0
+              ? "Pull up to refresh"
+              : "Pull up at bottom to refresh"}
+          </span>
+        </div>
       </div>
     </div>
   );
