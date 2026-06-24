@@ -1,4 +1,3 @@
-import React from "react";
 
 export type NftStatus = "available" | "limited" | "soldout" | "auction";
 
