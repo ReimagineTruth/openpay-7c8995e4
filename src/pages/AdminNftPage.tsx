@@ -24,9 +24,11 @@ const AdminNftPage = () => {
   const [search, setSearch] = useState("");
   const [fee, setFee] = useState({ enabled: false, rate: 0, collector_user_id: "" });
   const [mintFee, setMintFee] = useState({ enabled: false, rate: 0, collector_user_id: "" });
+  const [bidFee, setBidFee] = useState({ enabled: false, rate: 0, collector_user_id: "" });
   const [loading, setLoading] = useState(true);
   const [savingFee, setSavingFee] = useState(false);
   const [savingMintFee, setSavingMintFee] = useState(false);
+  const [savingBidFee, setSavingBidFee] = useState(false);
 
   const load = async () => {
     setLoading(true);
