@@ -427,7 +427,7 @@ const NftDetailPage = () => {
       {/* Sticky actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur p-4 flex gap-2 border-t border-white/10">
         {!isCreator && item.is_active && (
-          <button onClick={() => setBuyOpen(true)} className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
+          <button onClick={openBuy} className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
             style={{ backgroundColor: ACCENT }}>
             <ShoppingCart className="h-4 w-4" /> Buy
           </button>
