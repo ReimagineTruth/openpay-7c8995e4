@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { NftStatusBadge } from "@/lib/nftStatus";
 import { Sparkles, BadgeCheck, ChevronRight, Gavel } from "lucide-react";
+
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -14,6 +16,7 @@ interface NftCard {
   media_url: string | null;
   price: number;
   creator_id: string;
+  quantity_total: number;
 }
 interface StoreLite {
   user_id: string;
@@ -34,13 +37,15 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
   const [items, setItems] = useState<NftCard[]>([]);
   const [stores, setStores] = useState<Record<string, StoreLite>>({});
   const [auctions, setAuctions] = useState<Record<string, boolean>>({});
+  const [sales, setSales] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     (async () => {
       const { data } = await (supabase as any)
         .from("nft_items")
-        .select("id, name, code, image_url, media_url, price, creator_id, created_at")
+        .select("id, name, code, image_url, media_url, price, creator_id, quantity_total, created_at")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -49,7 +54,7 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
       if (list.length) {
         const creatorIds = Array.from(new Set(list.map((i) => i.creator_id)));
         const itemIds = list.map((i) => i.id);
-        const [{ data: sp }, { data: au }] = await Promise.all([
+        const [{ data: sp }, { data: au }, { data: tx }] = await Promise.all([
           (supabase as any)
             .from("nft_store_profiles")
             .select("user_id, handle, display_name, avatar_url, is_verified")
@@ -59,6 +64,11 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
             .select("item_id")
             .in("item_id", itemIds)
             .eq("status", "active"),
+          (supabase as any)
+            .from("nft_transactions")
+            .select("item_id, quantity, tx_kind")
+            .in("item_id", itemIds)
+            .in("tx_kind", ["sale", "resale"]),
         ]);
         const sMap: Record<string, StoreLite> = {};
         (sp || []).forEach((s: any) => { sMap[s.user_id] = s; });
@@ -66,10 +76,14 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
         const aMap: Record<string, boolean> = {};
         (au || []).forEach((a: any) => { aMap[a.item_id] = true; });
         setAuctions(aMap);
+        const soldMap: Record<string, number> = {};
+        (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
+        setSales(soldMap);
       }
       setLoading(false);
     })();
   }, []);
+
 
   if (!loading && items.length === 0) return null;
 
@@ -153,6 +167,7 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
                     </div>
                   )}
                   <p className={`font-bold text-xs truncate ${titleColor}`}>{it.name}</p>
+                  <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} hasAuction={live} className="mt-1" />
                   <p className="font-bold text-[12px] mt-0.5" style={{ color: ACCENT }}>{format(Number(it.price || 0))}</p>
                 </div>
               </button>

@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { NftStatusBadge } from "@/lib/nftStatus";
 import {
   ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send,
   BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -24,9 +26,11 @@ const NftStorePage = () => {
   const [activity, setActivity] = useState<any[]>([]);
   const [followers, setFollowers] = useState(0);
   const [following, setFollowing] = useState(false);
+  const [sales, setSales] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const { format } = useCurrency();
   const [view, setView] = useState<"grid" | "list">("grid");
+
 
   const isOwner = me?.id && owner?.id && me.id === owner.id;
 
@@ -80,6 +84,17 @@ const NftStorePage = () => {
         .from("nft_items").select("*").eq("creator_id", targetUserId)
         .order("created_at", { ascending: false });
       setCreated(cre || []);
+      const createdIds = (cre || []).map((i: any) => i.id);
+      if (createdIds.length) {
+        const { data: tx } = await (supabase as any)
+          .from("nft_transactions")
+          .select("item_id, quantity, tx_kind")
+          .in("item_id", createdIds)
+          .in("tx_kind", ["sale", "resale"]);
+        const soldMap: Record<string, number> = {};
+        (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
+        setSales(soldMap);
+      }
 
       // Activity
       const { data: tx } = await (supabase as any)
@@ -304,6 +319,7 @@ const NftStorePage = () => {
                 <div className="p-2.5">
                   <p className="text-xs font-bold truncate">{it.name}</p>
                   <p className="text-[10px] text-white/40 truncate">#{it.code}</p>
+                  <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} className="mt-1.5" />
                   <p className="text-sm font-extrabold mt-1" style={{ color: ACCENT }}>{format(Number(it.price || 0))}</p>
                 </div>
               </button>
@@ -318,7 +334,10 @@ const NftStorePage = () => {
                   {it.image_url && <img src={it.image_url} className="h-full w-full object-cover" alt="" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{it.name}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold truncate">{it.name}</p>
+                    <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} />
+                  </div>
                   <p className="text-[11px] text-white/50">#{it.code}</p>
                 </div>
                 <p className="text-sm font-extrabold" style={{ color: ACCENT }}>{format(Number(it.price || 0))}</p>

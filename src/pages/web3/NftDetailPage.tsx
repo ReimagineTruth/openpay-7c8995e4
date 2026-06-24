@@ -3,9 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { NftStatusBadge } from "@/lib/nftStatus";
 import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Tag, Gavel, HelpCircle, Edit3, Trash2, Clock, Eye, EyeOff } from "lucide-react";
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
+
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -274,6 +276,9 @@ const NftDetailPage = () => {
     await callRpc("nft_cancel_auction", { p_auction_id: a.id }, "Auction cancelled");
   };
 
+  const totalSold = txs.filter((t) => ["sale","resale"].includes(t.tx_kind)).reduce((s,t) => s + Number(t.quantity || 0), 0);
+  const hasActiveAuction = auctions.some((a: any) => a.status === "active" && new Date(a.ends_at).getTime() > Date.now());
+
   if (!item) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading…</div>;
 
   const img = item.media_url || item.image_url;
@@ -344,6 +349,7 @@ const NftDetailPage = () => {
               <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>{format(Number(item.price || 0))}</p>
             </div>
             <div className="text-right">
+              <NftStatusBadge sold={totalSold} total={item.quantity_total} hasAuction={hasActiveAuction} className="mb-1" />
               <p className="text-xs text-white/50">Supply</p>
               <p className="font-bold">{item.quantity_total}</p>
             </div>
