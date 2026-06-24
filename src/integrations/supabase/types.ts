@@ -1941,6 +1941,97 @@ export type Database = {
         }
         Relationships: []
       }
+      nft_auction_bids: {
+        Row: {
+          amount: number
+          auction_id: string
+          bidder_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          amount: number
+          auction_id: string
+          bidder_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          amount?: number
+          auction_id?: string
+          bidder_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nft_auction_bids_auction_id_fkey"
+            columns: ["auction_id"]
+            isOneToOne: false
+            referencedRelation: "nft_auctions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nft_auctions: {
+        Row: {
+          created_at: string
+          currency: string
+          current_bid: number | null
+          current_bidder: string | null
+          ends_at: string
+          id: string
+          item_id: string
+          min_increment: number
+          quantity: number
+          seller_id: string
+          start_price: number
+          status: string
+          updated_at: string
+          winner_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          current_bid?: number | null
+          current_bidder?: string | null
+          ends_at: string
+          id?: string
+          item_id: string
+          min_increment?: number
+          quantity?: number
+          seller_id: string
+          start_price: number
+          status?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          current_bid?: number | null
+          current_bidder?: string | null
+          ends_at?: string
+          id?: string
+          item_id?: string
+          min_increment?: number
+          quantity?: number
+          seller_id?: string
+          start_price?: number
+          status?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nft_auctions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "nft_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nft_collections: {
         Row: {
           code: string
@@ -4630,6 +4721,23 @@ export type Database = {
         }
         Returns: string
       }
+      nft_cancel_auction: { Args: { p_auction_id: string }; Returns: boolean }
+      nft_cancel_listing: { Args: { p_listing_id: string }; Returns: boolean }
+      nft_create_auction: {
+        Args: {
+          p_duration_hours: number
+          p_item_id: string
+          p_min_increment: number
+          p_quantity: number
+          p_start_price: number
+        }
+        Returns: string
+      }
+      nft_create_listing: {
+        Args: { p_item_id: string; p_price: number; p_quantity: number }
+        Returns: string
+      }
+      nft_finalize_auction: { Args: { p_auction_id: string }; Returns: string }
       nft_gift_item: {
         Args: {
           p_item_id: string
@@ -4654,6 +4762,14 @@ export type Database = {
           p_quantity: number
         }
         Returns: string
+      }
+      nft_place_bid: {
+        Args: { p_amount: number; p_auction_id: string }
+        Returns: string
+      }
+      nft_update_listing_price: {
+        Args: { p_listing_id: string; p_new_price: number }
+        Returns: boolean
       }
       normalize_openpay_authorization_code: {
         Args: { p_code: string }
