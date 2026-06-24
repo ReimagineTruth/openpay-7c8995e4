@@ -96,9 +96,12 @@ const NftCreatePage = () => {
         p_properties: properties,
       });
       if (error) throw error;
+      celebrate("mint");
       toast({ title: "NFT minted!" });
-      nav(`/web3/nft/${data}`);
+      setMinted({ id: data, name: form.name });
+      setTimeout(() => nav(`/web3/nft/${data}`), 1800);
     } catch (e: any) {
+      playNftSound("error");
       toast({ title: "Mint failed", description: e.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -156,6 +159,7 @@ const NftCreatePage = () => {
           {loading ? "Minting…" : "Mint NFT"}
         </button>
       </div>
+      <NftBurst show={!!minted} kind="mint" message={minted ? `${minted.name} minted!` : ""} />
     </div>
   );
 };
