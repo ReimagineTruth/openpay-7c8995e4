@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Tag, Gavel, HelpCircle, Edit3, Trash2, Clock } from "lucide-react";
+import { celebrate, playNftSound } from "@/lib/nftFx";
+import NftBurst from "@/components/web3/NftBurst";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -38,6 +40,9 @@ const NftDetailPage = () => {
   const [aHours, setAHours] = useState("24");
 
   const [bidAmt, setBidAmt] = useState("");
+  const [burst, setBurst] = useState<{ kind: "buy"|"gift"|"list"|"bid"|"auction"; msg: string } | null>(null);
+
+
 
   const load = async () => {
     if (!id) return;
