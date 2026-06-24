@@ -17,6 +17,7 @@ const NftDetailPage = () => {
   const [owners, setOwners] = useState<any[]>([]);
   const [txs, setTxs] = useState<any[]>([]);
   const [creator, setCreator] = useState<any>(null);
+  const [creatorStore, setCreatorStore] = useState<any>(null);
   const [me, setMe] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
