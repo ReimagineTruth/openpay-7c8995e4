@@ -76,7 +76,7 @@ export const LiveAuctionPanel = ({
 
   const loadBids = async () => {
     const { data } = await (supabase as any).from("nft_auction_bids")
-      .select("*").eq("auction_id", a.id).order("created_at", { ascending: false }).limit(10);
+      .select("*").eq("auction_id", a.id).order("created_at", { ascending: false }).limit(100);
     setBids(data || []);
     await loadProfiles([...(data || []).map((b: any) => b.bidder_id), a.current_bidder || "", a.winner_id || "", a.seller_id]);
   };
