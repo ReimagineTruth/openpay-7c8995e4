@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { NftStatusBadge } from "@/lib/nftStatus";
-import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X, RefreshCw, MessageCircle } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
 import { NFT_CATEGORIES, getCategoryMeta } from "@/lib/nftCategories";
 
