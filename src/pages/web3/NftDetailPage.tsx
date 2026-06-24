@@ -267,10 +267,80 @@ const NftDetailPage = () => {
     }, "Auction started", { kind: "auction", sound: "auction" });
     if (ok) { setAuctionOpen(false); setAStart(""); }
   };
+  const runBidRpc = async (extra: Record<string, any> = {}) => {
+    const { error } = await (supabase as any).rpc("nft_place_bid_with_payment", {
+      p_auction_id: bidOpen.id,
+      p_amount: Number(bidAmt),
+      p_payment_method: bidMethod,
+      ...extra,
+    });
+    if (error) throw error;
+    playNftSound("bid");
+    setBurst({ kind: "bid", msg: "Bid placed" });
+    toast({ title: "Bid placed" });
+    await load();
+  };
+
   const handlePlaceBid = async () => {
     if (!bidOpen) return;
-    const ok = await callRpc("nft_place_bid", { p_auction_id: bidOpen.id, p_amount: Number(bidAmt) }, "Bid placed", { kind: "bid", sound: "bid" });
-    if (ok) { setBidOpen(null); setBidAmt(""); }
+    setBusy(true);
+    try {
+      const amount = Number(bidAmt);
+      if (!amount || amount <= 0) throw new Error("Enter a bid amount");
+
+      if (bidMethod === "openpay_balance") {
+        await runBidRpc();
+      } else if (bidMethod === "virtual_card") {
+        if (!card.number || !card.cvc || !card.exp_month || !card.exp_year) {
+          throw new Error("Card details required");
+        }
+        await runBidRpc({
+          p_card_number: card.number.replace(/\s+/g, ""),
+          p_card_cvc: card.cvc,
+          p_card_exp_month: Number(card.exp_month),
+          p_card_exp_year: Number(card.exp_year),
+        });
+      } else if (bidMethod === "pi") {
+        const Pi = (window as any).Pi;
+        if (!Pi || typeof Pi.createPayment !== "function") {
+          throw new Error("Pi SDK not available — open in Pi Browser");
+        }
+        try {
+          await Pi.authenticate(["username", "payments"], async (incomplete: any) => {
+            if (incomplete?.identifier && incomplete?.transaction?.txid) {
+              await supabase.functions.invoke("pi-platform", {
+                body: { action: "complete", paymentId: incomplete.identifier, txid: incomplete.transaction.txid },
+              });
+            }
+          });
+        } catch (e: any) { throw new Error(e?.message || "Pi sign-in required"); }
+        await new Promise<void>((resolve, reject) => {
+          Pi.createPayment(
+            { amount, memo: `Bid on ${item.name}`.slice(0, 64),
+              metadata: { kind: "nft_bid", auction_id: bidOpen.id, amount } },
+            {
+              onReadyForServerApproval: async (paymentId: string) => {
+                await supabase.functions.invoke("pi-platform", { body: { action: "approve", paymentId } });
+              },
+              onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+                try {
+                  await supabase.functions.invoke("pi-platform", { body: { action: "complete", paymentId, txid } });
+                  await runBidRpc({ p_pi_payment_id: paymentId, p_pi_txid: txid });
+                  resolve();
+                } catch (err: any) { reject(err); }
+              },
+              onCancel: () => reject(new Error("Pi payment cancelled")),
+              onError: (e: any) => reject(new Error(e?.message || "Pi payment failed")),
+            },
+          );
+        });
+      }
+      setBidOpen(null);
+      setBidAmt("");
+    } catch (e: any) {
+      playNftSound("error");
+      toast({ title: "Bid failed", description: e.message, variant: "destructive" });
+    } finally { setBusy(false); }
   };
   const handleFinalize = async (a: any) => {
     await callRpc("nft_finalize_auction", { p_auction_id: a.id }, "Auction finalized", { kind: "auction", sound: "auction" });
