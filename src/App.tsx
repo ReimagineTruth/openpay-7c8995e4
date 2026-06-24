@@ -19,6 +19,7 @@ import NftMarketplacePage from "./pages/web3/NftMarketplacePage";
 import NftCreatePage from "./pages/web3/NftCreatePage";
 import NftDetailPage from "./pages/web3/NftDetailPage";
 import NftCreatorDashboardPage from "./pages/web3/NftCreatorDashboardPage";
+import NftHowToPage from "./pages/web3/NftHowToPage";
 import SendMoney from "./pages/SendMoney";
 import QrScannerPage from "./pages/QrScannerPage";
 import TopUp from "./pages/TopUp";
