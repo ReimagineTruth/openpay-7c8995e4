@@ -62,6 +62,15 @@ const NftMarketplacePage = () => {
           soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0);
         });
         setSales(soldMap);
+
+        const { data: au } = await (supabase as any)
+          .from("nft_auctions")
+          .select("item_id, current_bid, start_price, ends_at")
+          .in("item_id", ids)
+          .eq("status", "active");
+        const auMap: Record<string, any> = {};
+        (au || []).forEach((a: any) => { auMap[a.item_id] = a; });
+        setAuctions(auMap);
       }
       setLoading(false);
     })();
