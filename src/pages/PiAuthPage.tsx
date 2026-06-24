@@ -172,6 +172,24 @@ const PiAuthPage = () => {
     return true;
   };
 
+  const showRewardedAdBeforeAuth = async () => {
+    try {
+      if (!window.Pi?.Ads || typeof window.Pi.nativeFeaturesList !== "function") return;
+      const features = await window.Pi.nativeFeaturesList();
+      if (!features.includes("ad_network")) return;
+      const ready = await window.Pi.Ads.isAdReady("rewarded").catch(() => ({ ready: false }));
+      if (!ready?.ready) {
+        await window.Pi.Ads.requestAd("rewarded").catch(() => null);
+      }
+      const shown = await window.Pi.Ads.showAd("rewarded").catch(() => null);
+      if (shown?.result === "AD_REWARDED") {
+        toast.success("Thanks for watching! Authenticating...");
+      }
+    } catch {
+      // best-effort; never block auth
+    }
+  };
+
   const handlePiAuth = async () => {
     const expectedCode = authorizationCode.trim().toUpperCase();
 
@@ -179,8 +197,10 @@ const PiAuthPage = () => {
     setBusyAuth(true);
     try {
       const referralCode = (searchParams.get("ref") || "").trim().toLowerCase();
+      await showRewardedAdBeforeAuth();
       const auth = await window.Pi.authenticate(["username"]);
       const verified = await verifyPiAccessToken(auth.accessToken);
+
       const username =
         verified.username ||
         auth.user.username ||
