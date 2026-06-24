@@ -570,10 +570,26 @@ const NftDetailPage = () => {
       {/* Sticky actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur p-4 flex gap-2 border-t border-white/10">
         {!isCreator && item.is_active && (
-          <button onClick={openBuy} className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
-            style={{ backgroundColor: ACCENT }}>
-            <ShoppingCart className="h-4 w-4" /> Buy
-          </button>
+          hasActiveAuction ? (
+            <button
+              onClick={() => {
+                const a = topAuction;
+                if (!a) return;
+                setBidOpen(a);
+                setBidAmt(String((Number(a.current_bid ?? a.start_price)) + Number(a.min_increment)));
+                setBidMethod("openpay_balance");
+              }}
+              className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
+              style={{ backgroundColor: ACCENT }}
+            >
+              <Gavel className="h-4 w-4" /> Place bid · {formatNftPrice(livePrice, item.currency)}
+            </button>
+          ) : (
+            <button onClick={openBuy} className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
+              style={{ backgroundColor: ACCENT }}>
+              <ShoppingCart className="h-4 w-4" /> Buy
+            </button>
+          )
         )}
         {myOwn > 0 && (
           <button onClick={() => setGiftOpen(true)} className="flex-1 rounded-full py-3 font-bold bg-white/10 flex items-center justify-center gap-2">
