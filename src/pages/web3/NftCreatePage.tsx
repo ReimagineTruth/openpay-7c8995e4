@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload } from "lucide-react";
+import { celebrate, playNftSound } from "@/lib/nftFx";
+import NftBurst from "@/components/web3/NftBurst";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -21,6 +23,8 @@ const NftCreatePage = () => {
     properties: "",
   });
   const [loading, setLoading] = useState(false);
+
+  const [minted, setMinted] = useState<{ id: string; name: string } | null>(null);
 
   const upd = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
