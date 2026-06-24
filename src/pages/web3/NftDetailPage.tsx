@@ -228,7 +228,7 @@ const NftDetailPage = () => {
       {giftOpen && (
         <Modal onClose={() => setGiftOpen(false)} title="Send as Gift">
           <Field label="Recipient @username" value={giftUsername} onChange={setGiftUsername} />
-          <Field label="Quantity (you own ×" + myOwn + ")" value={qty} onChange={(v) => setQty(Math.min(myOwn, Math.max(1, Number(v)||1)))} type="number" />
+          <Field label={`Quantity (you own ×${myOwn})`} value={qty} onChange={(v: any) => setQty(Math.min(myOwn, Math.max(1, Number(v)||1)))} type="number" />
           <Field label="Message (optional)" value={giftMsg} onChange={setGiftMsg} multiline />
           <button onClick={handleGift} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Sending…" : "Send Gift"}
