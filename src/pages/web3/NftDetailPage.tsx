@@ -46,6 +46,7 @@ const NftDetailPage = () => {
   const [aHours, setAHours] = useState("24");
 
   const [bidAmt, setBidAmt] = useState("");
+  const [bidMethod, setBidMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
   const [burst, setBurst] = useState<{ kind: "buy"|"gift"|"list"|"bid"|"auction"; msg: string } | null>(null);
 
 
@@ -266,10 +267,80 @@ const NftDetailPage = () => {
     }, "Auction started", { kind: "auction", sound: "auction" });
     if (ok) { setAuctionOpen(false); setAStart(""); }
   };
+  const runBidRpc = async (extra: Record<string, any> = {}) => {
+    const { error } = await (supabase as any).rpc("nft_place_bid_with_payment", {
+      p_auction_id: bidOpen.id,
+      p_amount: Number(bidAmt),
+      p_payment_method: bidMethod,
+      ...extra,
+    });
+    if (error) throw error;
+    playNftSound("bid");
+    setBurst({ kind: "bid", msg: "Bid placed" });
+    toast({ title: "Bid placed" });
+    await load();
+  };
+
   const handlePlaceBid = async () => {
     if (!bidOpen) return;
-    const ok = await callRpc("nft_place_bid", { p_auction_id: bidOpen.id, p_amount: Number(bidAmt) }, "Bid placed", { kind: "bid", sound: "bid" });
-    if (ok) { setBidOpen(null); setBidAmt(""); }
+    setBusy(true);
+    try {
+      const amount = Number(bidAmt);
+      if (!amount || amount <= 0) throw new Error("Enter a bid amount");
+
+      if (bidMethod === "openpay_balance") {
+        await runBidRpc();
+      } else if (bidMethod === "virtual_card") {
+        if (!card.number || !card.cvc || !card.exp_month || !card.exp_year) {
+          throw new Error("Card details required");
+        }
+        await runBidRpc({
+          p_card_number: card.number.replace(/\s+/g, ""),
+          p_card_cvc: card.cvc,
+          p_card_exp_month: Number(card.exp_month),
+          p_card_exp_year: Number(card.exp_year),
+        });
+      } else if (bidMethod === "pi") {
+        const Pi = (window as any).Pi;
+        if (!Pi || typeof Pi.createPayment !== "function") {
+          throw new Error("Pi SDK not available — open in Pi Browser");
+        }
+        try {
+          await Pi.authenticate(["username", "payments"], async (incomplete: any) => {
+            if (incomplete?.identifier && incomplete?.transaction?.txid) {
+              await supabase.functions.invoke("pi-platform", {
+                body: { action: "complete", paymentId: incomplete.identifier, txid: incomplete.transaction.txid },
+              });
+            }
+          });
+        } catch (e: any) { throw new Error(e?.message || "Pi sign-in required"); }
+        await new Promise<void>((resolve, reject) => {
+          Pi.createPayment(
+            { amount, memo: `Bid on ${item.name}`.slice(0, 64),
+              metadata: { kind: "nft_bid", auction_id: bidOpen.id, amount } },
+            {
+              onReadyForServerApproval: async (paymentId: string) => {
+                await supabase.functions.invoke("pi-platform", { body: { action: "approve", paymentId } });
+              },
+              onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+                try {
+                  await supabase.functions.invoke("pi-platform", { body: { action: "complete", paymentId, txid } });
+                  await runBidRpc({ p_pi_payment_id: paymentId, p_pi_txid: txid });
+                  resolve();
+                } catch (err: any) { reject(err); }
+              },
+              onCancel: () => reject(new Error("Pi payment cancelled")),
+              onError: (e: any) => reject(new Error(e?.message || "Pi payment failed")),
+            },
+          );
+        });
+      }
+      setBidOpen(null);
+      setBidAmt("");
+    } catch (e: any) {
+      playNftSound("error");
+      toast({ title: "Bid failed", description: e.message, variant: "destructive" });
+    } finally { setBusy(false); }
   };
   const handleFinalize = async (a: any) => {
     await callRpc("nft_finalize_auction", { p_auction_id: a.id }, "Auction finalized", { kind: "auction", sound: "auction" });
@@ -436,7 +507,26 @@ const NftDetailPage = () => {
                   auction={a}
                   format={(n: number) => formatNftPrice(n, item.currency)}
                   me={me}
-                  onBid={() => { setBidOpen(a); setBidAmt(String((Number(a.current_bid ?? a.start_price)) + Number(a.min_increment))); }}
+                  onBid={async () => {
+                    setBidOpen(a);
+                    setBidAmt(String((Number(a.current_bid ?? a.start_price)) + Number(a.min_increment)));
+                    setBidMethod("openpay_balance");
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                      const { data: cards } = await (supabase as any)
+                        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year")
+                        .eq("user_id", user.id).eq("is_active", true).limit(1);
+                      setSavedCards(cards || []);
+                      if (cards && cards[0]) {
+                        setCard({
+                          number: cards[0].card_number,
+                          cvc: cards[0].cvc,
+                          exp_month: String(cards[0].expiry_month),
+                          exp_year: String(cards[0].expiry_year),
+                        });
+                      }
+                    }
+                  }}
                   onFinalize={() => handleFinalize(a)}
                   onCancel={() => handleCancelAuction(a)}
                   onRefresh={load}
@@ -628,7 +718,66 @@ const NftDetailPage = () => {
           <p className="text-sm text-white/70">Current bid: <span className="font-bold text-white">{formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price), item.currency)}</span></p>
           <p className="text-xs text-white/50">Minimum next bid: {formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price) + (bidOpen.current_bid ? Number(bidOpen.min_increment) : 0), item.currency)}</p>
           <Field label="Your bid" value={bidAmt} onChange={setBidAmt} type="number" />
-          <p className="text-xs text-white/50">Funds are escrowed. If outbid, you'll be refunded automatically.</p>
+
+          <div className="space-y-2">
+            <p className="text-xs text-white/60 font-semibold">Payment</p>
+            <PayOpt active={bidMethod==="openpay_balance"} onClick={() => setBidMethod("openpay_balance")} icon={<Wallet className="h-4 w-4" />} label="OpenPay Balance" />
+            <PayOpt active={bidMethod==="pi"} onClick={() => setBidMethod("pi")} icon={<img src="https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png" className="h-4 w-4 rounded-full" alt="Pi" />} label="Pi Network" />
+            <PayOpt active={bidMethod==="virtual_card"} onClick={() => setBidMethod("virtual_card")} icon={<CreditCard className="h-4 w-4" />} label="Virtual Card" />
+          </div>
+
+          {bidMethod === "virtual_card" && (
+            <div
+              className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10"
+              style={cardHidden ? { WebkitUserSelect: "none", userSelect: "none" } : undefined}
+            >
+              <div className="flex items-center justify-between">
+                {savedCards.length > 0 ? (
+                  <p className="text-[11px] text-white/50">
+                    Using your saved OpenPay card · ending {cardHidden ? "••••" : String(card.number).slice(-4)}
+                  </p>
+                ) : <span />}
+                <button
+                  type="button"
+                  onClick={() => setCardHidden((h) => !h)}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-white/70 hover:text-white px-2 py-1 rounded-full bg-white/5 border border-white/10"
+                  aria-label={cardHidden ? "Show card details" : "Hide card details"}
+                >
+                  {cardHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  {cardHidden ? "Show" : "Hide"}
+                </button>
+              </div>
+              {cardHidden ? (
+                <>
+                  <MaskedField label="Card number" value={card.number ? "•••• •••• •••• " + String(card.number).slice(-4) : "•••• •••• •••• ••••"} />
+                  <div className="grid grid-cols-3 gap-2">
+                    <MaskedField label="MM" value="••" />
+                    <MaskedField label="YYYY" value="••••" />
+                    <MaskedField label="CVC" value="•••" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Field label="Card number" value={card.number} onChange={(v: any) => setCard((c) => ({ ...c, number: v }))} />
+                  <div className="grid grid-cols-3 gap-2">
+                    <Field label="MM" value={card.exp_month} onChange={(v: any) => setCard((c) => ({ ...c, exp_month: v }))} type="number" />
+                    <Field label="YYYY" value={card.exp_year} onChange={(v: any) => setCard((c) => ({ ...c, exp_year: v }))} type="number" />
+                    <Field label="CVC" value={card.cvc} onChange={(v: any) => setCard((c) => ({ ...c, cvc: v }))} />
+                  </div>
+                </>
+              )}
+              {savedCards.length === 0 && (
+                <p className="text-[11px] text-amber-400">No saved card. Create one in OpenPay Card first.</p>
+              )}
+            </div>
+          )}
+          {bidMethod === "pi" && (
+            <p className="text-[11px] text-white/60 p-2 rounded-lg bg-white/5 border border-white/10">
+              You'll be charged {Number(bidAmt || 0).toFixed(2)} Pi via the Pi Browser. Refunded automatically if outbid.
+            </p>
+          )}
+
+          <p className="text-xs text-white/50">Funds are escrowed. If outbid, you'll be refunded to your OpenPay balance.</p>
           <button onClick={handlePlaceBid} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Bidding…" : "Place Bid"}
           </button>
