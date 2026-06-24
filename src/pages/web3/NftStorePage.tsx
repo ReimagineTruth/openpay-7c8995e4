@@ -157,6 +157,35 @@ const NftStorePage = () => {
     toast({ title: "ID copied" });
   };
 
+  const openFollowList = async (kind: "followers" | "following") => {
+    if (!owner) return;
+    setFollowModal(kind);
+    setFollowListLoading(true);
+    setFollowList([]);
+    const col = kind === "followers" ? "followed_id" : "follower_id";
+    const otherCol = kind === "followers" ? "follower_id" : "followed_id";
+    const { data: rels } = await (supabase as any)
+      .from("nft_store_follows").select(`${otherCol}, created_at`).eq(col, owner.id)
+      .order("created_at", { ascending: false }).limit(200);
+    const ids = (rels || []).map((r: any) => r[otherCol]);
+    if (!ids.length) { setFollowListLoading(false); return; }
+    const [{ data: profs }, { data: stores }] = await Promise.all([
+      (supabase as any).from("profiles").select("id, username, full_name, avatar_url").in("id", ids),
+      (supabase as any).from("nft_store_profiles").select("user_id, handle, display_name, avatar_url, is_verified, bio").in("user_id", ids),
+    ]);
+    const profMap: Record<string, any> = {};
+    (profs || []).forEach((p: any) => (profMap[p.id] = p));
+    const storeMap: Record<string, any> = {};
+    (stores || []).forEach((s: any) => (storeMap[s.user_id] = s));
+    setFollowList(ids.map((id: string) => ({
+      id,
+      profile: profMap[id],
+      store: storeMap[id],
+    })));
+    setFollowListLoading(false);
+  };
+
+
   if (loading) {
     return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading store…</div>;
   }
