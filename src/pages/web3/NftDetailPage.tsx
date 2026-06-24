@@ -242,6 +242,83 @@ const NftDetailPage = () => {
           )}
         </div>
 
+        {/* RESALE LISTINGS */}
+        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-white/50 flex items-center gap-1"><Tag className="h-3 w-3" /> RESALE LISTINGS</p>
+            {myOwn > 0 && (
+              <button onClick={() => { setListPrice(String(item.price)); setListOpen(true); }} className="text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: ACCENT }}>+ List</button>
+            )}
+          </div>
+          {listings.length === 0 ? <p className="text-sm text-white/50">No active listings</p> : (
+            <div className="space-y-2">
+              {listings.map((l) => {
+                const mine = l.seller_id === me;
+                return (
+                  <div key={l.id} className="flex items-center gap-2 border-b border-white/5 pb-2 last:border-0">
+                    <div className="flex-1">
+                      <p className="font-bold" style={{ color: ACCENT }}>{format(Number(l.price))}</p>
+                      <p className="text-xs text-white/40">×{l.quantity} available {mine && "· You"}</p>
+                    </div>
+                    {mine ? (
+                      <>
+                        <button onClick={() => { setEditListing(l); setListPrice(String(l.price)); }} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Edit3 className="h-4 w-4" /></button>
+                        <button onClick={() => handleCancelListing(l)} disabled={busy} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Trash2 className="h-4 w-4" /></button>
+                      </>
+                    ) : (
+                      <button onClick={() => handleBuyListing(l)} disabled={busy} className="text-xs font-bold px-3 py-2 rounded-full" style={{ backgroundColor: ACCENT }}>Buy</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* AUCTIONS */}
+        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-white/50 flex items-center gap-1"><Gavel className="h-3 w-3" /> AUCTIONS</p>
+            {myOwn > 0 && (
+              <button onClick={() => { setAStart(String(item.price)); setAuctionOpen(true); }} className="text-xs font-bold px-3 py-1 rounded-full bg-white/10">+ Auction</button>
+            )}
+          </div>
+          {auctions.length === 0 ? <p className="text-sm text-white/50">No auctions running</p> : (
+            <div className="space-y-3">
+              {auctions.map((a) => {
+                const ended = new Date(a.ends_at).getTime() < Date.now();
+                const mine = a.seller_id === me;
+                return (
+                  <div key={a.id} className="rounded-xl bg-black/40 border border-white/5 p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-white/50">Current bid</p>
+                        <p className="text-xl font-extrabold" style={{ color: ACCENT }}>{format(Number(a.current_bid ?? a.start_price))}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-white/50 flex items-center gap-1"><Clock className="h-3 w-3" />{ended ? "Ended" : "Ends"}</p>
+                        <p className="text-xs text-white/80">{new Date(a.ends_at).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      {a.status === "active" && !ended && !mine && (
+                        <button onClick={() => { setBidOpen(a); setBidAmt(String((Number(a.current_bid ?? a.start_price)) + Number(a.min_increment))); }} className="flex-1 rounded-full py-2 text-sm font-bold" style={{ backgroundColor: ACCENT }}>Place bid</button>
+                      )}
+                      {ended && a.status === "active" && (
+                        <button onClick={() => handleFinalize(a)} disabled={busy} className="flex-1 rounded-full py-2 text-sm font-bold bg-white/10">Finalize</button>
+                      )}
+                      {mine && a.status === "active" && !a.current_bid && (
+                        <button onClick={() => handleCancelAuction(a)} disabled={busy} className="rounded-full px-3 py-2 text-sm bg-white/10">Cancel</button>
+                      )}
+                      {a.status === "settled" && <span className="text-xs text-emerald-400 font-bold">SETTLED</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
           <p className="text-xs font-semibold text-white/50 mb-2">TRANSPARENT HISTORY</p>
           {txs.length === 0 ? <p className="text-sm text-white/50">No activity yet</p> : (
