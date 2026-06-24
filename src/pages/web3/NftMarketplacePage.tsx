@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel } from "lucide-react";
+import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store } from "lucide-react";
 import NftSplash from "@/components/web3/NftSplash";
 import { playNftSound } from "@/lib/nftFx";
 
@@ -100,6 +100,13 @@ const NftMarketplacePage = () => {
           aria-label="Creator dashboard"
         >
           <LayoutDashboard className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => nav("/web3/nft/store")}
+          className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center"
+          aria-label="My store"
+        >
+          <Store className="h-5 w-5" />
         </button>
         <button
           onClick={() => nav("/web3/nft/create")}

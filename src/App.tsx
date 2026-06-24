@@ -20,6 +20,8 @@ import NftCreatePage from "./pages/web3/NftCreatePage";
 import NftDetailPage from "./pages/web3/NftDetailPage";
 import NftCreatorDashboardPage from "./pages/web3/NftCreatorDashboardPage";
 import NftHowToPage from "./pages/web3/NftHowToPage";
+import NftStorePage from "./pages/web3/NftStorePage";
+import NftStoreSettingsPage from "./pages/web3/NftStoreSettingsPage";
 import SendMoney from "./pages/SendMoney";
 import QrScannerPage from "./pages/QrScannerPage";
 import TopUp from "./pages/TopUp";
@@ -265,6 +267,9 @@ const AppRoutes = () => {
         <Route path="/web3/nft/create" element={<ProtectedRoute><NftCreatePage /></ProtectedRoute>} />
         <Route path="/web3/nft/how-to" element={<ProtectedRoute><NftHowToPage /></ProtectedRoute>} />
         <Route path="/web3/nft/dashboard" element={<ProtectedRoute><NftCreatorDashboardPage /></ProtectedRoute>} />
+        <Route path="/web3/nft/store/settings" element={<ProtectedRoute><NftStoreSettingsPage /></ProtectedRoute>} />
+        <Route path="/web3/nft/store" element={<ProtectedRoute><NftStorePage /></ProtectedRoute>} />
+        <Route path="/web3/nft/store/:handle" element={<NftStorePage />} />
         <Route path="/web3/nft/:id" element={<ProtectedRoute><NftDetailPage /></ProtectedRoute>} />
         <Route path="/send" element={
           <ProtectedRoute>
