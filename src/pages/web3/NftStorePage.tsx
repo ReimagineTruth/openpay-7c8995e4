@@ -264,25 +264,36 @@ const NftStorePage = () => {
         {profile?.bio && <p className="text-sm text-white/75 leading-relaxed">{profile.bio}</p>}
 
         {/* Socials */}
-        {(profile?.website_url || profile?.twitter_url || profile?.instagram_url || profile?.telegram_url) && (
-          <div className="flex gap-2 pt-1">
+        {(profile?.website_url || profile?.twitter_url || profile?.instagram_url || profile?.telegram_url || profile?.discord_url || profile?.facebook_url || profile?.youtube_url) && (
+          <div className="flex gap-2 pt-1 flex-wrap">
             {profile?.website_url && <a href={profile.website_url} target="_blank" rel="noreferrer"
-              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Globe className="h-4 w-4" /></a>}
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Website"><Globe className="h-4 w-4" /></a>}
             {profile?.twitter_url && <a href={profile.twitter_url} target="_blank" rel="noreferrer"
-              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Twitter className="h-4 w-4" /></a>}
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Twitter / X"><Twitter className="h-4 w-4" /></a>}
             {profile?.instagram_url && <a href={profile.instagram_url} target="_blank" rel="noreferrer"
-              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Instagram className="h-4 w-4" /></a>}
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Instagram"><Instagram className="h-4 w-4" /></a>}
+            {profile?.facebook_url && <a href={profile.facebook_url} target="_blank" rel="noreferrer"
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Facebook"><Facebook className="h-4 w-4" /></a>}
+            {profile?.youtube_url && <a href={profile.youtube_url} target="_blank" rel="noreferrer"
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="YouTube"><Youtube className="h-4 w-4" /></a>}
             {profile?.telegram_url && <a href={profile.telegram_url} target="_blank" rel="noreferrer"
               className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Telegram"><Send className="h-4 w-4" /></a>}
+            {profile?.discord_url && <a href={profile.discord_url} target="_blank" rel="noreferrer"
+              className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center" title="Discord"><MessageCircle className="h-4 w-4" /></a>}
           </div>
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 pt-3">
+        <div className="grid grid-cols-5 gap-2 pt-3">
           <Stat label="Value" value={format(totalValue)} icon={<TrendingUp className="h-3 w-3" />} />
           <Stat label="NFTs" value={String(collected.length)} icon={<Package className="h-3 w-3" />} />
           <Stat label="Created" value={String(created.length)} icon={<Grid3x3 className="h-3 w-3" />} />
-          <Stat label="Followers" value={String(followers)} icon={<Users className="h-3 w-3" />} />
+          <button onClick={() => openFollowList("followers")} className="text-left">
+            <Stat label="Followers" value={String(followers)} icon={<Users className="h-3 w-3" />} />
+          </button>
+          <button onClick={() => openFollowList("following")} className="text-left">
+            <Stat label="Following" value={String(followingCount)} icon={<Heart className="h-3 w-3" />} />
+          </button>
         </div>
       </div>
 
