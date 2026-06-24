@@ -33,6 +33,8 @@ import {
   GraduationCap,
   User,
   Bell,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 
@@ -69,6 +71,9 @@ const Web3Dashboard = () => {
   const [activityFilter, setActivityFilter] = useState<string>("All");
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [balanceVisible, setBalanceVisible] = useState(() => {
+    try { return localStorage.getItem("openpay_web3_balance_visible") !== "false"; } catch { return true; }
+  });
 
 
   useEffect(() => {
@@ -213,11 +218,30 @@ const Web3Dashboard = () => {
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
           {/* Balance */}
           <div className="flex flex-col items-center pt-12">
-            <div className="flex items-baseline">
-              <span className="text-6xl font-extrabold tracking-tight">{format(balance).replace(/\.\d+$/, "")}</span>
-              <span className="text-4xl font-extrabold tracking-tight text-white/40">
-                .{(balance.toFixed(2).split(".")[1]) || "00"}
-              </span>
+            <div className="flex items-center gap-3">
+              {balanceVisible ? (
+                <div className="flex items-baseline">
+                  <span className="text-6xl font-extrabold tracking-tight">{format(balance).replace(/\.\d+$/, "")}</span>
+                  <span className="text-4xl font-extrabold tracking-tight text-white/40">
+                    .{(balance.toFixed(2).split(".")[1]) || "00"}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-6xl font-extrabold tracking-tight text-white/80">••••••</span>
+              )}
+              <button
+                onClick={() => {
+                  setBalanceVisible((v) => {
+                    const next = !v;
+                    try { localStorage.setItem("openpay_web3_balance_visible", String(next)); } catch {}
+                    return next;
+                  });
+                }}
+                aria-label={balanceVisible ? "Hide balance" : "Show balance"}
+                className="h-9 w-9 rounded-full bg-white/10 border border-white/10 flex items-center justify-center active:scale-95 transition hover:bg-white/15"
+              >
+                {balanceVisible ? <EyeOff className="h-4 w-4 text-white/70" /> : <Eye className="h-4 w-4 text-white/70" />}
+              </button>
             </div>
             <p className="mt-3 text-center text-[15px] text-white/60 whitespace-pre-line">
               {balance > 0 ? "Your OpenPay balance" : "Add cash or crypto to start\nusing OpenPay"}
