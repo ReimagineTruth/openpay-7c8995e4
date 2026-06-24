@@ -52,10 +52,13 @@ const NftDetailPage = () => {
     const { data: it } = await (supabase as any).from("nft_items").select("*").eq("id", id).maybeSingle();
     setItem(it);
     if (it) {
-      const [{ data: own }, { data: tx }, { data: prof }] = await Promise.all([
+      const [{ data: own }, { data: tx }, { data: prof }, { data: storeProf }] = await Promise.all([
         (supabase as any).from("nft_ownership").select("owner_id, quantity").eq("item_id", id).gt("quantity", 0),
         (supabase as any).from("nft_transactions").select("*").eq("item_id", id).order("created_at", { ascending: false }).limit(20),
         (supabase as any).from("profiles").select("username, full_name, avatar_url").eq("id", it.creator_id).maybeSingle(),
+        (supabase as any).from("nft_store_profiles")
+          .select("handle, display_name, avatar_url, banner_url, bio, category, is_verified")
+          .eq("user_id", it.creator_id).maybeSingle(),
       ]);
       const ownerIds = (own || []).map((o: any) => o.owner_id);
       const { data: ownerProfs } = ownerIds.length
@@ -66,6 +69,7 @@ const NftDetailPage = () => {
       setOwners((own || []).map((o: any) => ({ ...o, profile: profMap[o.owner_id] })));
       setTxs(tx || []);
       setCreator(prof);
+      setCreatorStore(storeProf);
       const [{ data: ls }, { data: au }] = await Promise.all([
         (supabase as any).from("nft_listings").select("*").eq("item_id", id).eq("status", "active").order("price"),
         (supabase as any).from("nft_auctions").select("*").eq("item_id", id).in("status", ["active","ended"]).order("created_at", { ascending: false }),
