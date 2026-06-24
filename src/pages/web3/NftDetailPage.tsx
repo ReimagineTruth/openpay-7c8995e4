@@ -305,6 +305,37 @@ const NftDetailPage = () => {
           )}
         </div>
 
+        {creatorStore && (
+          <button
+            onClick={() => nav(`/web3/nft/store/${creatorStore.handle}`)}
+            className="w-full rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/10 hover:border-white/30 transition-all text-left group"
+          >
+            <div
+              className="h-20 w-full"
+              style={creatorStore.banner_url
+                ? { backgroundImage: `url(${creatorStore.banner_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+                : { background: `linear-gradient(135deg, hsl(280 80% 30%), ${ACCENT})` }}
+            />
+            <div className="px-3 pb-3 -mt-7 flex items-end gap-3">
+              {creatorStore.avatar_url ? (
+                <img src={creatorStore.avatar_url} alt="" className="h-14 w-14 rounded-2xl ring-2 ring-black object-cover" />
+              ) : (
+                <div className="h-14 w-14 rounded-2xl ring-2 ring-black bg-gradient-to-br from-pink-500 to-blue-500" />
+              )}
+              <div className="flex-1 min-w-0 pb-1">
+                <div className="flex items-center gap-1">
+                  <p className="font-bold truncate">{creatorStore.display_name || creatorStore.handle}</p>
+                </div>
+                <p className="text-[11px] text-white/50 truncate">@{creatorStore.handle} · Owner store</p>
+              </div>
+              <span className="text-xs font-bold pb-1 group-hover:translate-x-0.5 transition-transform" style={{ color: ACCENT }}>
+                Visit →
+              </span>
+            </div>
+          </button>
+        )}
+
+
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
           <div className="flex items-center justify-between">
             <div>
