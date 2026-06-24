@@ -267,6 +267,11 @@ const Web3Dashboard = () => {
             <Tile icon={<LineChart className="h-5 w-5 text-white/70" />} title="Earn" subtitle="Stake & rewards" onClick={() => navigate("/staking")} />
           </div>
 
+          {/* NFT showcase */}
+          <div className="mt-6 mx-4">
+            <NftShowcase variant="dark" />
+          </div>
+
           {/* Markets / Tools */}
           <h3 className="mt-8 mx-5 text-white/60 text-[15px] font-semibold">Tools</h3>
           <div className="mt-3 mx-4 space-y-3">
