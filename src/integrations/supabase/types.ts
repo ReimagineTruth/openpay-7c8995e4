@@ -4764,31 +4764,21 @@ export type Database = {
         Args: { p_collector?: string; p_enabled: boolean; p_rate: number }
         Returns: Json
       }
-      nft_buy_item:
-        | {
-            Args: {
-              p_item_id: string
-              p_listing_id?: string
-              p_payment_method: string
-              p_quantity: number
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_card_cvc?: string
-              p_card_exp_month?: number
-              p_card_exp_year?: number
-              p_card_number?: string
-              p_item_id: string
-              p_listing_id?: string
-              p_payment_method: string
-              p_pi_payment_id?: string
-              p_pi_txid?: string
-              p_quantity: number
-            }
-            Returns: string
-          }
+      nft_buy_item: {
+        Args: {
+          p_card_cvc?: string
+          p_card_exp_month?: number
+          p_card_exp_year?: number
+          p_card_number?: string
+          p_item_id: string
+          p_listing_id?: string
+          p_payment_method: string
+          p_pi_payment_id?: string
+          p_pi_txid?: string
+          p_quantity: number
+        }
+        Returns: string
+      }
       nft_cancel_auction: { Args: { p_auction_id: string }; Returns: boolean }
       nft_cancel_listing: { Args: { p_listing_id: string }; Returns: boolean }
       nft_create_auction: {

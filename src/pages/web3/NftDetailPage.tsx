@@ -445,7 +445,7 @@ const NftDetailPage = () => {
           <div className="space-y-2">
             <p className="text-xs text-white/60 font-semibold">Payment</p>
             <PayOpt active={method==="openpay_balance"} onClick={() => setMethod("openpay_balance")} icon={<Wallet className="h-4 w-4" />} label="OpenPay Balance" />
-            <PayOpt active={method==="pi"} onClick={() => setMethod("pi")} icon={<img src="/openpay-o.svg" className="h-4 w-4" alt="" />} label="Pi Network" />
+            <PayOpt active={method==="pi"} onClick={() => setMethod("pi")} icon={<img src="https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png" className="h-4 w-4 rounded-full" alt="Pi" />} label="Pi Network" />
             <PayOpt active={method==="virtual_card"} onClick={() => setMethod("virtual_card")} icon={<CreditCard className="h-4 w-4" />} label="Virtual Card" />
           </div>
 
