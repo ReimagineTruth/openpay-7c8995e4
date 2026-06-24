@@ -91,6 +91,10 @@ const NftDetailPage = () => {
   const isCreator = me && item && me === item.creator_id;
 
   const openBuy = async () => {
+    if (auctions.some((a: any) => a.status === "active" && new Date(a.ends_at).getTime() > Date.now())) {
+      toast({ title: "Auction in progress", description: "Only the winning bidder can claim this NFT while an auction is live.", variant: "destructive" });
+      return;
+    }
     setBuyOpen(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
