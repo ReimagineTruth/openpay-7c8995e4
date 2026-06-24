@@ -94,6 +94,23 @@ const AdminNftPage = () => {
     }
   };
 
+  const saveBidFee = async () => {
+    setSavingBidFee(true);
+    try {
+      const { error } = await (supabase as any).rpc("nft_admin_set_bid_fee", {
+        p_enabled: bidFee.enabled,
+        p_rate: Number(bidFee.rate) || 0,
+        p_collector: bidFee.collector_user_id || null,
+      });
+      if (error) throw error;
+      toast({ title: "Bid fee saved" });
+    } catch (e: any) {
+      toast({ title: "Save failed", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingBidFee(false);
+    }
+  };
+
   const remove = async (id: string, name: string) => {
     const reason = prompt(`Remove "${name}"? Enter reason (policy violation):`);
     if (!reason) return;
