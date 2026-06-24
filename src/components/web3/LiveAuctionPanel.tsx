@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Clock, Trophy } from "lucide-react";
+import { Clock, Trophy, Crown, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const ACCENT = "hsl(217 91% 60%)";
