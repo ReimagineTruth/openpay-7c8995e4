@@ -4964,6 +4964,20 @@ export type Database = {
         Args: { p_amount: number; p_auction_id: string }
         Returns: string
       }
+      nft_place_bid_with_payment: {
+        Args: {
+          p_amount: number
+          p_auction_id: string
+          p_card_cvc?: string
+          p_card_exp_month?: number
+          p_card_exp_year?: number
+          p_card_number?: string
+          p_payment_method?: string
+          p_pi_payment_id?: string
+          p_pi_txid?: string
+        }
+        Returns: string
+      }
       nft_update_listing_price: {
         Args: { p_listing_id: string; p_new_price: number }
         Returns: boolean
