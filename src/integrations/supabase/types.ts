@@ -2312,6 +2312,7 @@ export type Database = {
           id: string
           item_id: string
           listing_id: string | null
+          metadata: Json | null
           payment_method: string
           price_each: number
           quantity: number
@@ -2329,6 +2330,7 @@ export type Database = {
           id?: string
           item_id: string
           listing_id?: string | null
+          metadata?: Json | null
           payment_method?: string
           price_each: number
           quantity: number
@@ -2346,6 +2348,7 @@ export type Database = {
           id?: string
           item_id?: string
           listing_id?: string | null
+          metadata?: Json | null
           payment_method?: string
           price_each?: number
           quantity?: number
@@ -4681,6 +4684,7 @@ export type Database = {
           submitted_at: string
         }[]
       }
+      is_nft_admin: { Args: { _user_id: string }; Returns: boolean }
       is_openpay_core_admin: { Args: never; Returns: boolean }
       is_openpay_metrics_admin: { Args: never; Returns: boolean }
       is_support_agent: { Args: { p_user_id: string }; Returns: boolean }
@@ -4712,6 +4716,54 @@ export type Database = {
         }
         Returns: number
       }
+      nft_admin_list_items: {
+        Args: { p_limit?: number; p_search?: string }
+        Returns: {
+          code: string
+          created_at: string
+          creator_email: string
+          creator_id: string
+          currency: string
+          id: string
+          image_url: string
+          is_active: boolean
+          name: string
+          owners_count: number
+          price: number
+          quantity_total: number
+          sales_volume: number
+          sold_count: number
+        }[]
+      }
+      nft_admin_metrics: { Args: never; Returns: Json }
+      nft_admin_recent_activity: {
+        Args: { p_limit?: number }
+        Returns: {
+          buyer_id: string
+          created_at: string
+          currency: string
+          id: string
+          item_id: string
+          item_name: string
+          payment_method: string
+          platform_fee: number
+          quantity: number
+          royalty_amount: number
+          seller_id: string
+          status: string
+          total: number
+          tx_kind: string
+        }[]
+      }
+      nft_admin_remove_item: {
+        Args: { p_item_id: string; p_reason?: string }
+        Returns: boolean
+      }
+      nft_admin_restore_item: { Args: { p_item_id: string }; Returns: boolean }
+      nft_admin_set_platform_fee: {
+        Args: { p_collector?: string; p_enabled: boolean; p_rate: number }
+        Returns: Json
+      }
       nft_buy_item: {
         Args: {
           p_item_id: string
@@ -4738,6 +4790,7 @@ export type Database = {
         Returns: string
       }
       nft_finalize_auction: { Args: { p_auction_id: string }; Returns: string }
+      nft_get_platform_fee: { Args: never; Returns: Json }
       nft_gift_item: {
         Args: {
           p_item_id: string

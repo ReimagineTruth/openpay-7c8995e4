@@ -112,6 +112,7 @@ import KycStatusPage from "./pages/KycStatusPage";
 import AdminKycReview from "./pages/AdminKycReview";
 import AdminKycMetricsPage from "./pages/AdminKycMetricsPage";
 import AdminOpenPayMetricsPage from "./pages/AdminOpenPayMetricsPage";
+import AdminNftPage from "./pages/AdminNftPage";
 import LiveCustomerServicePage from "./pages/LiveCustomerServicePage";
 import SwapWithdrawalPage from "./pages/SwapWithdrawalPage";
 import ConfirmPinPage from "./pages/ConfirmPinPage";
@@ -498,6 +499,8 @@ const AppRoutes = () => {
         <Route path="/admin-kyc-review" element={<AdminKycReview />} />
         <Route path="/admin-kyc-metrics" element={<AdminKycMetricsPage />} />
         <Route path="/admin-openpay-metrics" element={<AdminOpenPayMetricsPage />} />
+        <Route path="/admin-nft" element={<AdminNftPage />} />
+
 
         <Route path="/remittance-merchant" element={<RemittanceMerchantPage />} />
         <Route path="/openpay-official" element={<OpenPayOfficialPage />} />

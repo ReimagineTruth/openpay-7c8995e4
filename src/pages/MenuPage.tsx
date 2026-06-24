@@ -674,6 +674,9 @@ const MenuPage = () => {
 
             { icon: ShieldCheck, label: "Network Metrics", action: () => navigate("/admin-openpay-metrics") },
 
+            { icon: ShieldCheck, label: "NFT Admin", action: () => navigate("/admin-nft") },
+
+
             { icon: ShieldCheck, label: "Withdrawals", action: () => navigate("/admin-swap-withrawals") },
 
             { icon: ShieldCheck, label: "Loans", action: () => navigate("/admin-loan-applications") },
