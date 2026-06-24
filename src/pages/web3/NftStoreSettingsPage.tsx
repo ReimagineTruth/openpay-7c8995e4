@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle } from "lucide-react";
+import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle, Tag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { NFT_CATEGORIES } from "@/lib/nftCategories";
 
 const ACCENT = "hsl(217 91% 60%)";
 
