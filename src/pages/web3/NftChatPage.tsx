@@ -292,6 +292,72 @@ const NftChatPage = () => {
           </div>
         </>
       )}
+
+      {profilePeek && (() => {
+        const p = profiles[profilePeek];
+        const s = storesByUser[profilePeek];
+        const name = s?.display_name || p?.full_name || p?.username || "User";
+        const handle = s?.handle || p?.username;
+        const avatar = s?.avatar_url || p?.avatar_url;
+        const msgCount = msgs.filter((m) => m.user_id === profilePeek).length;
+        return (
+          <>
+            <div className="fixed inset-0 bg-black/70 z-40 animate-in fade-in" onClick={() => setProfilePeek(null)} />
+            <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#0f0f0f] border-t border-white/10 overflow-hidden animate-in slide-in-from-bottom duration-200">
+              {s?.banner_url ? (
+                <div className="h-24 w-full" style={{ backgroundImage: `url(${s.banner_url})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+              ) : (
+                <div className="h-24 w-full" style={{ background: `linear-gradient(135deg, hsl(280 80% 30%), ${ACCENT})` }} />
+              )}
+              <div className="p-4 -mt-10">
+                <div className="flex items-end justify-between">
+                  {avatar ? (
+                    <img src={avatar} alt="" className="h-20 w-20 rounded-full object-cover border-4 border-[#0f0f0f]" />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full border-4 border-[#0f0f0f] bg-gradient-to-br from-pink-500 to-blue-500" />
+                  )}
+                  <button onClick={() => setProfilePeek(null)} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-extrabold">{name}</h3>
+                    {s?.is_verified && <BadgeCheck className="h-5 w-5" style={{ color: ACCENT }} />}
+                  </div>
+                  {handle && <p className="text-sm text-white/60">@{handle}</p>}
+                  {s?.bio && <p className="text-sm text-white/70 mt-2 leading-snug">{s.bio}</p>}
+                  <div className="mt-3 flex items-center gap-2 text-[11px] text-white/60">
+                    {s?.category && <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10">{s.category}</span>}
+                    <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10">{msgCount} msgs</span>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {handle ? (
+                    <button
+                      onClick={() => { setProfilePeek(null); nav(`/web3/nft/store/${handle}`); }}
+                      className="rounded-xl py-3 font-bold text-sm flex items-center justify-center gap-2"
+                      style={{ background: ACCENT }}
+                    >
+                      <StoreIcon className="h-4 w-4" /> View Store
+                    </button>
+                  ) : (
+                    <button disabled className="rounded-xl py-3 font-bold text-sm bg-white/5 text-white/40 flex items-center justify-center gap-2">
+                      <StoreIcon className="h-4 w-4" /> No store yet
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setProfilePeek(null); setText((t) => `@${handle || name} ${t}`); }}
+                    className="rounded-xl py-3 font-bold text-sm bg-white/10 flex items-center justify-center gap-2 hover:bg-white/15"
+                  >
+                    <ExternalLink className="h-4 w-4" /> Mention
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };
