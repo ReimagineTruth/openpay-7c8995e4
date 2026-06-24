@@ -37,7 +37,9 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
   const [items, setItems] = useState<NftCard[]>([]);
   const [stores, setStores] = useState<Record<string, StoreLite>>({});
   const [auctions, setAuctions] = useState<Record<string, boolean>>({});
+  const [sales, setSales] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     (async () => {
