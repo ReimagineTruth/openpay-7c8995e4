@@ -26,6 +26,7 @@ const NftMarketplacePage = () => {
   const [items, setItems] = useState<NftRow[]>([]);
   const [owners, setOwners] = useState<Record<string, number>>({});
   const [sales, setSales] = useState<Record<string, number>>({});
+  const [auctions, setAuctions] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
