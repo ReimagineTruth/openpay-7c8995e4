@@ -381,6 +381,52 @@ const NftDetailPage = () => {
           </button>
         </Modal>
       )}
+
+      {listOpen && (
+        <Modal onClose={() => setListOpen(false)} title="List for resale">
+          <Field label={`Price per item (you own ×${myOwn})`} value={listPrice} onChange={setListPrice} type="number" />
+          <Field label="Quantity" value={qty} onChange={(v: any) => setQty(Math.min(myOwn, Math.max(1, Number(v)||1)))} type="number" />
+          <p className="text-xs text-white/50">You can change the price or cancel any time.</p>
+          <button onClick={handleList} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Listing…" : "List Now"}
+          </button>
+        </Modal>
+      )}
+
+      {editListing && (
+        <Modal onClose={() => setEditListing(null)} title="Update price">
+          <Field label="New price" value={listPrice} onChange={setListPrice} type="number" />
+          <p className="text-xs text-white/50">Increase or decrease the price freely.</p>
+          <button onClick={handleEditPrice} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Saving…" : "Save Price"}
+          </button>
+        </Modal>
+      )}
+
+      {auctionOpen && (
+        <Modal onClose={() => setAuctionOpen(false)} title="Start an auction">
+          <Field label={`Quantity (you own ×${myOwn})`} value={qty} onChange={(v: any) => setQty(Math.min(myOwn, Math.max(1, Number(v)||1)))} type="number" />
+          <Field label="Start price" value={aStart} onChange={setAStart} type="number" />
+          <Field label="Minimum bid increment" value={aInc} onChange={setAInc} type="number" />
+          <Field label="Duration (hours)" value={aHours} onChange={setAHours} type="number" />
+          <p className="text-xs text-white/50">Bids escrow from OpenPay balance. Highest bid wins when the timer ends.</p>
+          <button onClick={handleCreateAuction} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Starting…" : "Start Auction"}
+          </button>
+        </Modal>
+      )}
+
+      {bidOpen && (
+        <Modal onClose={() => setBidOpen(null)} title="Place a bid">
+          <p className="text-sm text-white/70">Current bid: <span className="font-bold text-white">{format(Number(bidOpen.current_bid ?? bidOpen.start_price))}</span></p>
+          <p className="text-xs text-white/50">Minimum next bid: {format(Number(bidOpen.current_bid ?? bidOpen.start_price) + (bidOpen.current_bid ? Number(bidOpen.min_increment) : 0))}</p>
+          <Field label="Your bid" value={bidAmt} onChange={setBidAmt} type="number" />
+          <p className="text-xs text-white/50">Funds are escrowed. If outbid, you'll be refunded automatically.</p>
+          <button onClick={handlePlaceBid} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Bidding…" : "Place Bid"}
+          </button>
+        </Modal>
+      )}
     </div>
   );
 };
