@@ -230,7 +230,7 @@ const NftCreatePage = () => {
           className="w-full rounded-full py-3 font-bold disabled:opacity-50"
           style={{ backgroundColor: ACCENT }}
         >
-          {loading ? "Minting…" : "Mint NFT"}
+          {loading ? "Minting…" : form.sale_type === "auction" ? "🔥 Mint & Start Auction" : "Mint NFT"}
         </button>
       </div>
       <NftBurst show={!!minted} kind="mint" message={minted ? `${minted.name} minted!` : ""} />
