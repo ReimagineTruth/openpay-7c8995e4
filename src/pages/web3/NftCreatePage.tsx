@@ -23,6 +23,10 @@ const NftCreatePage = () => {
     royalty_pct: 5,
     category: "general",
     properties: "",
+    sale_type: "fixed" as "fixed" | "auction",
+    auction_start_price: 0,
+    auction_min_increment: 1,
+    auction_duration_hours: 24,
   });
   const [loading, setLoading] = useState(false);
 
