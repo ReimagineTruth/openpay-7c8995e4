@@ -237,7 +237,7 @@ const PiAuthPage = () => {
         auth.user.username ||
         `pi_${verified.uid.replace(/-/g, "").slice(0, 16)}`;
 
-      const signInResult = await signInPiBackedAccount(verified.uid, username, referralCode || undefined, auth.accessToken);
+      await signInPiBackedAccount(verified.uid, username, referralCode || undefined, auth.accessToken);
       if (expectedCode) {
         try {
           await verifyAuthorizationCode(expectedCode);
@@ -248,9 +248,6 @@ const PiAuthPage = () => {
       }
 
       // Ensure current authenticated user has latest Pi metadata.
-      const {
-        data: user,
-      } = await supabase.auth.getUser();
       try {
         await callRpc("upsert_my_user_account");
       } catch {
