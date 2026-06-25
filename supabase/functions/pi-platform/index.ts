@@ -120,7 +120,7 @@ serve(async (req) => {
         }
 
         const listed = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
-        userId = listed.data?.users?.find((u: any) => String(u.email || "").toLowerCase() === email.toLowerCase())?.id || null;
+        userId = listed.data?.users?.find((u: { email?: string; id?: string }) => String(u.email || "").toLowerCase() === email.toLowerCase())?.id || null;
         if (userId) {
           await supabase.auth.admin.updateUserById(userId, {
             password,

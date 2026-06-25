@@ -36,6 +36,13 @@ type AdVerifyResult = {
   mediator_revoked_at: string | null;
 };
 
+type AdProgressPayload = {
+  ads_completed?: number;
+  required_ads?: number;
+  remaining_ads?: number;
+  can_start_mining?: boolean;
+};
+
 const MiningPage = () => {
   const navigate = useNavigate();
   const { format: formatCurrency } = useCurrency();
@@ -529,7 +536,8 @@ const MiningPage = () => {
       });
       
       // Increment ad count locally
-      const newAdCount = Math.max(Number((progress as any)?.ads_completed || 0), adsWatched + 1);
+      const progressPayload = progress as AdProgressPayload | null;
+      const newAdCount = Math.max(Number(progressPayload?.ads_completed || 0), adsWatched + 1);
       rewardedAdCountRef.current = newAdCount;
       setAdsWatched(newAdCount);
       persistAdWatchCount(newAdCount);
@@ -566,7 +574,8 @@ const MiningPage = () => {
       pi_result: adResult.result,
       verification: verification.data,
     });
-    const newAdCount = Math.max(Number((progress as any)?.ads_completed || 0), adsWatched + 1);
+    const progressPayload = progress as AdProgressPayload | null;
+    const newAdCount = Math.max(Number(progressPayload?.ads_completed || 0), adsWatched + 1);
     rewardedAdCountRef.current = newAdCount;
     setAdsWatched(newAdCount);
     persistAdWatchCount(newAdCount);

@@ -33,6 +33,9 @@ const PiAuthPage = () => {
           window.location.hostname.endsWith(".test")
         : false;
 
+  const callRpc = (fn: string, args?: Record<string, unknown>) =>
+    (supabase.rpc as unknown as (name: string, params?: Record<string, unknown>) => ReturnType<typeof supabase.rpc>)(fn, args);
+
   const initPi = () => {
     if (!window.Pi) {
       toast.error("Pi authentication requires Pi Browser. Open this page in Pi Browser.");
@@ -124,7 +127,7 @@ const PiAuthPage = () => {
           const preparedSignIn = await doSignIn();
           if (!preparedSignIn.error && preparedSignIn.session) {
             try {
-              await supabase.rpc("upsert_my_user_account" as any);
+              await callRpc("upsert_my_user_account");
             } catch {
               // ignore best-effort
             }
@@ -161,7 +164,7 @@ const PiAuthPage = () => {
       }
       // Ensure profile/account records exist and reflect latest metadata
       try {
-        await supabase.rpc("upsert_my_user_account" as any);
+        await callRpc("upsert_my_user_account");
       } catch {
         // ignore best-effort
       }
@@ -188,7 +191,7 @@ const PiAuthPage = () => {
 
   const verifyAuthorizationCode = async (code: string) => {
     if (!code) return true;
-    const { data, error } = await supabase.rpc("verify_my_openpay_authorization_code" as any, {
+    const { data, error } = await callRpc("verify_my_openpay_authorization_code", {
       p_code: code,
     });
     if (error) throw new Error(error.message || "Authorization code verification failed");
@@ -249,7 +252,7 @@ const PiAuthPage = () => {
         data: user,
       } = await supabase.auth.getUser();
       try {
-        await supabase.rpc("upsert_my_user_account" as any);
+        await callRpc("upsert_my_user_account");
       } catch {
         // ignore best-effort
       }
