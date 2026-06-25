@@ -9,6 +9,7 @@ import { setAppCookie } from "@/lib/userPreferences";
 import AuthFooter from "@/components/AuthFooter";
 import { Loader2, ExternalLink } from "lucide-react";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
+import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 
 const PiAuthPage = () => {
   const [piUser, setPiUser] = useState<{ uid: string; username: string } | null>(null);
@@ -78,7 +79,7 @@ const PiAuthPage = () => {
     if (incomingCode) setAuthorizationCode(incomingCode);
   }, [searchParams]);
 
-  const signInPiBackedAccount = async (piUid: string, piUsername: string, referralCode?: string) => {
+  const signInPiBackedAccount = async (piUid: string, piUsername: string, referralCode?: string, accessToken?: string) => {
     const piEmail = `pi_${piUid}@openpay.local`;
     const piPassword = `OpenPay-Pi-${piUid}-v1!`;
     // Prefer Pi username when creating OpenPay account; fallback to uid-derived handle if missing
@@ -113,6 +114,27 @@ const PiAuthPage = () => {
       firstSignInMessage.includes("user not found");
 
     if (accountMissing) {
+      if (accessToken) {
+        try {
+          const { error } = await supabase.functions.invoke("pi-platform", {
+            body: { action: "auth_prepare_user", accessToken, referralCode },
+          });
+          if (error) throw new Error(await getFunctionErrorMessage(error, "Failed to prepare Pi account"));
+
+          const preparedSignIn = await doSignIn();
+          if (!preparedSignIn.error && preparedSignIn.session) {
+            try {
+              await supabase.rpc("upsert_my_user_account" as any);
+            } catch {
+              // ignore best-effort
+            }
+            return { created: false };
+          }
+        } catch {
+          // Fall back to client sign-up below for older backend deployments.
+        }
+      }
+
       const { error: signUpError } = await supabase.auth.signUp({
         email: piEmail,
         password: piPassword,
@@ -183,7 +205,11 @@ const PiAuthPage = () => {
       if (!ready?.ready) {
         await window.Pi.Ads.requestAd("rewarded").catch(() => null);
       }
-      const shown = await window.Pi.Ads.showAd("rewarded").catch(() => null);
+      let shown = await window.Pi.Ads.showAd("rewarded").catch(() => null);
+      if (shown?.result === "USER_UNAUTHENTICATED") {
+        await window.Pi.authenticate(["username"]);
+        shown = await window.Pi.Ads.showAd("rewarded").catch(() => null);
+      }
       if (shown?.result === "AD_REWARDED") {
         toast.success("Thanks for watching! Authenticating...");
       }
@@ -199,8 +225,8 @@ const PiAuthPage = () => {
     setBusyAuth(true);
     try {
       const referralCode = (searchParams.get("ref") || "").trim().toLowerCase();
-      await showRewardedAdBeforeAuth();
       const auth = await window.Pi.authenticate(["username"]);
+      await showRewardedAdBeforeAuth();
       const verified = await verifyPiAccessToken(auth.accessToken);
 
       const username =
@@ -208,7 +234,7 @@ const PiAuthPage = () => {
         auth.user.username ||
         `pi_${verified.uid.replace(/-/g, "").slice(0, 16)}`;
 
-      const signInResult = await signInPiBackedAccount(verified.uid, username, referralCode || undefined);
+      const signInResult = await signInPiBackedAccount(verified.uid, username, referralCode || undefined, auth.accessToken);
       if (expectedCode) {
         try {
           await verifyAuthorizationCode(expectedCode);

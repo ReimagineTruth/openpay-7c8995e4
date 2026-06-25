@@ -21,6 +21,41 @@ const parseJson = (raw: string) => {
   }
 };
 
+const buildPiCredentials = (uid: string) => ({
+  email: `pi_${uid}@openpay.local`,
+  password: `OpenPay-Pi-${uid}-v1!`,
+});
+
+const cleanUsername = (uid: string, username?: string | null) => {
+  const clean = String(username || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  return clean.length >= 3 ? clean : `pi_${uid.replace(/-/g, "").slice(0, 16)}`;
+};
+
+const verifyPiAccessToken = async (accessToken: string) => {
+  const piResponse = await fetch("https://api.minepi.com/v2/me", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const data = parseJson(await piResponse.text());
+  if (!piResponse.ok) {
+    console.error("Pi auth verification failed", piResponse.status, data);
+    throw new Error(`Pi auth verification failed (${piResponse.status})`);
+  }
+
+  const uid = typeof data.uid === "string" ? data.uid : null;
+  const username = typeof data.username === "string" ? data.username : "";
+  if (!uid) throw new Error("Pi auth response missing uid");
+
+  return { uid, username };
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -29,7 +64,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase: any = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, paymentId, txid, accessToken, adId } = await req.json();
+    const { action, paymentId, txid, accessToken, adId, referralCode } = await req.json();
     if (!action || typeof action !== "string") {
       return jsonResponse({ error: "Missing action" }, 400);
     }
@@ -40,24 +75,74 @@ serve(async (req) => {
         return jsonResponse({ error: "Missing accessToken" }, 400);
       }
 
-      const piResponse = await fetch("https://api.minepi.com/v2/me", {
-        method: "GET",
-        headers: { Authorization: `Bearer ${accessToken}` },
+      try {
+        const data = await verifyPiAccessToken(accessToken);
+        return jsonResponse({ success: true, data });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Pi auth verification failed";
+        return jsonResponse({ error: message }, 400);
+      }
+    }
+
+    // Verifies Pi auth and creates/confirms the matching OpenPay auth user.
+    // This keeps Pi Auth working even when public email sign-ups require confirmation.
+    if (action === "auth_prepare_user") {
+      if (!accessToken || typeof accessToken !== "string") {
+        return jsonResponse({ error: "Missing accessToken" }, 400);
+      }
+
+      const verified = await verifyPiAccessToken(accessToken);
+      const { email, password } = buildPiCredentials(verified.uid);
+      const username = cleanUsername(verified.uid, verified.username);
+      const fullName = verified.username || username;
+      const metadata = {
+        full_name: fullName,
+        username,
+        referral_code: typeof referralCode === "string" ? referralCode : undefined,
+        pi_uid: verified.uid,
+        pi_username: fullName,
+        pi_connected_at: new Date().toISOString(),
+      };
+
+      const created = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: metadata,
       });
 
-      const data = parseJson(await piResponse.text());
-      if (!piResponse.ok) {
-        console.error("Pi auth_verify failed", piResponse.status, data);
-        return jsonResponse({ error: "Pi auth verification failed", status: piResponse.status, data }, 400);
+      let userId = created.data?.user?.id || null;
+      if (created.error) {
+        const message = String(created.error.message || "").toLowerCase();
+        const alreadyExists = message.includes("already") || message.includes("registered") || message.includes("exists");
+        if (!alreadyExists) {
+          return jsonResponse({ error: created.error.message || "Failed to prepare Pi account" }, 400);
+        }
+
+        const listed = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        userId = listed.data?.users?.find((u: any) => String(u.email || "").toLowerCase() === email.toLowerCase())?.id || null;
+        if (userId) {
+          await supabase.auth.admin.updateUserById(userId, {
+            password,
+            email_confirm: true,
+            user_metadata: metadata,
+          });
+        }
       }
 
-      const uid = typeof data.uid === "string" ? data.uid : null;
-      const username = typeof data.username === "string" ? data.username : null;
-      if (!uid) {
-        return jsonResponse({ error: "Pi auth response missing uid" }, 400);
+      if (userId) {
+        await supabase.rpc("create_complete_user_profile", {
+          p_user_id: userId,
+          p_full_name: fullName,
+          p_username: username,
+          p_email: email,
+          p_referral_code: typeof referralCode === "string" ? referralCode : null,
+          p_pi_uid: verified.uid,
+          p_pi_username: fullName,
+        }).catch(() => null);
       }
 
-      return jsonResponse({ success: true, data: { uid, username } });
+      return jsonResponse({ success: true, data: { uid: verified.uid, username, email } });
     }
 
     // All other actions require a valid Supabase session

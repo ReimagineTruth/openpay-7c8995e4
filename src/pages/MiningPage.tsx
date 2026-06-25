@@ -56,6 +56,7 @@ const MiningPage = () => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [activeReferrals, setActiveReferrals] = useState(0);
   const adRewardHandledRef = useRef(false);
+  const rewardedAdCountRef = useRef<number | null>(null);
   const [piAuthUser, setPiAuthUser] = useState(false);
   const [adsWatched, setAdsWatched] = useState(0);
   const [requiredAds, setRequiredAds] = useState(2);
@@ -521,18 +522,22 @@ const MiningPage = () => {
       }
       
       // Record in database without Pi Network verification
-      await recordAdCompletion(fallbackAdId, {
+      const progress = await recordAdCompletion(fallbackAdId, {
         rewarded_at: Date.now(),
         fallback_used: true,
         pi_result: adResult.result
       });
       
       // Increment ad count locally
-      const newAdCount = adsWatched + 1;
+      const newAdCount = Math.max(Number((progress as any)?.ads_completed || 0), adsWatched + 1);
+      rewardedAdCountRef.current = newAdCount;
       setAdsWatched(newAdCount);
       persistAdWatchCount(newAdCount);
       
-      toast.success(`Ad ${newAdCount}/${requiredAds} completed! Watch ${requiredAds - newAdCount} more ad${requiredAds - newAdCount > 1 ? 's' : ''} to start mining.`);
+      if (newAdCount < requiredAds) {
+        toast.success(`Ad ${newAdCount}/${requiredAds} completed! Watch ${requiredAds - newAdCount} more ad${requiredAds - newAdCount > 1 ? 's' : ''} to start mining.`);
+        return false;
+      }
       
       return true; // Return success even without verification
     }
@@ -554,6 +559,21 @@ const MiningPage = () => {
         // ignore localStorage failures
       }
       throw new Error(`Ad verification status: ${verification.data.mediator_ack_status ?? "null"}`);
+    }
+
+    const progress = await recordAdCompletion(String(adResult.adId), {
+      rewarded_at: Date.now(),
+      pi_result: adResult.result,
+      verification: verification.data,
+    });
+    const newAdCount = Math.max(Number((progress as any)?.ads_completed || 0), adsWatched + 1);
+    rewardedAdCountRef.current = newAdCount;
+    setAdsWatched(newAdCount);
+    persistAdWatchCount(newAdCount);
+
+    if (newAdCount < requiredAds) {
+      toast.success(`Ad ${newAdCount}/${requiredAds} completed! Watch ${requiredAds - newAdCount} more ad${requiredAds - newAdCount > 1 ? 's' : ''} to start mining.`);
+      return false;
     }
 
     return true;
@@ -727,12 +747,18 @@ const MiningPage = () => {
       });
        
       // Try database function first
+      const effectiveAdsWatched = Math.max(
+        adsWatched,
+        loadAdWatchCount(),
+        rewardedAdCountRef.current || 0,
+      );
+
       console.log('Calling startMiningSessionRpc with params:', {
         deviceFingerprint,
         ipAddress: "client-side-ip",
         adVerified: adVerifiedFlag,
         piBrowserUsed,
-        adsWatched: adsWatched,
+        adsWatched: effectiveAdsWatched,
         requiredAds: requiredAds,
       });
       const result = await startMiningSessionRpc({
@@ -740,7 +766,7 @@ const MiningPage = () => {
         ipAddress: "client-side-ip",
         adVerified: adVerifiedFlag,
         piBrowserUsed,
-        adsWatched: adsWatched,
+        adsWatched: effectiveAdsWatched,
         requiredAds: requiredAds,
       });
       const data = result.data;
