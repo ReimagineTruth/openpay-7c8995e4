@@ -42,6 +42,7 @@ const NftStorePage = () => {
   useEffect(() => {
     (async () => {
       setLoading(true);
+      try {
       const { data: { user } } = await supabase.auth.getUser();
       setMe(user);
 
@@ -59,7 +60,7 @@ const NftStorePage = () => {
         prof = p;
       }
 
-      if (!targetUserId) { setLoading(false); return; }
+      if (!targetUserId) { return; }
 
       // Get base profile for fallback name/avatar
       const { data: base } = await (supabase as any)
@@ -127,7 +128,11 @@ const NftStorePage = () => {
         setFollowing(!!f);
       }
 
-      setLoading(false);
+      } catch (error) {
+        console.error("NFT store load failed", error);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [handle]);
 
