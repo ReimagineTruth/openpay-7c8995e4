@@ -2389,16 +2389,19 @@ export type Database = {
           discord_url: string | null
           display_name: string | null
           email_public: string | null
+          facebook_url: string | null
           feature_nfts: boolean
           handle: string | null
           id: string
           instagram_url: string | null
           is_verified: boolean
+          telegram_url: string | null
           twitter_url: string | null
           updated_at: string
           user_id: string
           view_count: number
           website_url: string | null
+          youtube_url: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -2409,16 +2412,19 @@ export type Database = {
           discord_url?: string | null
           display_name?: string | null
           email_public?: string | null
+          facebook_url?: string | null
           feature_nfts?: boolean
           handle?: string | null
           id?: string
           instagram_url?: string | null
           is_verified?: boolean
+          telegram_url?: string | null
           twitter_url?: string | null
           updated_at?: string
           user_id: string
           view_count?: number
           website_url?: string | null
+          youtube_url?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -2429,16 +2435,19 @@ export type Database = {
           discord_url?: string | null
           display_name?: string | null
           email_public?: string | null
+          facebook_url?: string | null
           feature_nfts?: boolean
           handle?: string | null
           id?: string
           instagram_url?: string | null
           is_verified?: boolean
+          telegram_url?: string | null
           twitter_url?: string | null
           updated_at?: string
           user_id?: string
           view_count?: number
           website_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
