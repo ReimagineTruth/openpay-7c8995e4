@@ -95,7 +95,7 @@ const NftStorePage = () => {
           .from("nft_transactions")
           .select("item_id, quantity, tx_kind")
           .in("item_id", createdIds)
-          .in("tx_kind", ["sale", "resale"]);
+          .in("tx_kind", ["sale", "primary_sale", "resale", "auction_settle"]);
         const soldMap: Record<string, number> = {};
         (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
         setSales(soldMap);
@@ -104,8 +104,8 @@ const NftStorePage = () => {
       // Activity
       const { data: tx } = await (supabase as any)
         .from("nft_transactions")
-        .select("id, tx_kind, quantity, amount, currency, created_at, item:nft_items(name,code,image_url)")
-        .or(`from_user_id.eq.${targetUserId},to_user_id.eq.${targetUserId}`)
+        .select("id, tx_kind, quantity, total, currency, seller_id, buyer_id, created_at, item:nft_items(name,code,image_url)")
+        .or(`seller_id.eq.${targetUserId},buyer_id.eq.${targetUserId}`)
         .order("created_at", { ascending: false }).limit(50);
       setActivity(tx || []);
 
@@ -342,7 +342,7 @@ const NftStorePage = () => {
                     <p className="text-sm font-semibold truncate capitalize">{a.tx_kind} · {a.item?.name || "NFT"}</p>
                     <p className="text-[11px] text-white/50">{new Date(a.created_at).toLocaleString()}</p>
                   </div>
-                  <p className="text-sm font-bold" style={{ color: ACCENT }}>{formatNftPrice(a.amount, a.item?.currency)}</p>
+                  <p className="text-sm font-bold" style={{ color: ACCENT }}>{formatNftPrice(a.total, a.currency || a.item?.currency)}</p>
                 </div>
               ))}
             </div>

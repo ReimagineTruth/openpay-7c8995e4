@@ -37,7 +37,7 @@ interface ItemRow {
   id: string; creator_id: string; price: number; quantity_total: number; category: string | null;
 }
 interface TxRow {
-  item_id: string; quantity: number; unit_price: number | null; total_amount: number | null; created_at: string; tx_kind: string;
+  item_id: string; quantity: number; price_each: number | null; total: number | null; created_at: string; tx_kind: string;
 }
 interface OwnRow { item_id: string; owner_id: string; quantity: number; }
 
@@ -97,9 +97,9 @@ const NftStoresPage = () => {
         const [{ data: tx }, { data: ow }] = await Promise.all([
           (supabase as any)
             .from("nft_transactions")
-            .select("item_id, quantity, unit_price, total_amount, created_at, tx_kind")
+            .select("item_id, quantity, price_each, total, created_at, tx_kind")
             .in("item_id", ids)
-            .in("tx_kind", ["sale", "resale", "auction_settle"]),
+            .in("tx_kind", ["sale", "primary_sale", "resale", "auction_settle"]),
           (supabase as any)
             .from("nft_ownership")
             .select("item_id, owner_id, quantity")
@@ -152,7 +152,7 @@ const NftStoresPage = () => {
       const c = itemCreator[t.item_id];
       if (!c) return;
       const ts = new Date(t.created_at).getTime();
-      const amount = Number(t.total_amount || (Number(t.unit_price || 0) * Number(t.quantity || 0)));
+      const amount = Number(t.total || (Number(t.price_each || 0) * Number(t.quantity || 0)));
       if (!rangeMs || ts >= startCur) {
         volCur[c] = (volCur[c] || 0) + amount;
         salesCur[c] = (salesCur[c] || 0) + Number(t.quantity || 0);
