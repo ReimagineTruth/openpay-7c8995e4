@@ -87,6 +87,7 @@ const NftCreatePage = () => {
         try { properties = JSON.parse(form.properties); }
         catch { properties = { notes: form.properties }; }
       }
+      properties = { ...properties, category: form.category };
 
       const { data, error } = await (supabase as any).rpc("nft_mint_item", {
         p_collection_id: collectionId,

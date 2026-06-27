@@ -101,7 +101,7 @@ const NftMarketplacePage = () => {
       const ids = list.map((i) => i.id);
       Promise.all([
         (supabase as any).from("nft_ownership").select("item_id, owner_id, quantity").in("item_id", ids),
-        (supabase as any).from("nft_transactions").select("item_id, quantity, tx_kind").in("item_id", ids).in("tx_kind", ["sale","resale"]),
+        (supabase as any).from("nft_transactions").select("item_id, quantity, tx_kind").in("item_id", ids).in("tx_kind", ["sale","primary_sale","resale","auction_settle"]),
         (supabase as any).from("nft_auctions").select("item_id, current_bid, start_price, ends_at").in("item_id", ids).eq("status", "active"),
       ]).then(([{ data: own }, { data: tx }, { data: au }]) => {
         const ownerCount: Record<string, number> = {};

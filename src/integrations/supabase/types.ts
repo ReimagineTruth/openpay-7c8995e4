@@ -1947,21 +1947,30 @@ export type Database = {
           auction_id: string
           bidder_id: string
           created_at: string
+          fee_amount: number
           id: string
+          metadata: Json
+          payment_method: string
         }
         Insert: {
           amount: number
           auction_id: string
           bidder_id: string
           created_at?: string
+          fee_amount?: number
           id?: string
+          metadata?: Json
+          payment_method?: string
         }
         Update: {
           amount?: number
           auction_id?: string
           bidder_id?: string
           created_at?: string
+          fee_amount?: number
           id?: string
+          metadata?: Json
+          payment_method?: string
         }
         Relationships: [
           {
@@ -2452,6 +2461,7 @@ export type Database = {
           listing_id: string | null
           metadata: Json | null
           payment_method: string
+          platform_fee: number
           price_each: number
           quantity: number
           royalty_amount: number
@@ -2470,6 +2480,7 @@ export type Database = {
           listing_id?: string | null
           metadata?: Json | null
           payment_method?: string
+          platform_fee?: number
           price_each: number
           quantity: number
           royalty_amount?: number
@@ -2488,6 +2499,7 @@ export type Database = {
           listing_id?: string | null
           metadata?: Json | null
           payment_method?: string
+          platform_fee?: number
           price_each?: number
           quantity?: number
           royalty_amount?: number
@@ -4941,6 +4953,7 @@ export type Database = {
         Args: { p_item_id: string; p_price: number; p_quantity: number }
         Returns: string
       }
+      nft_default_fee_json: { Args: never; Returns: Json }
       nft_finalize_auction: { Args: { p_auction_id: string }; Returns: string }
       nft_get_bid_fee: { Args: never; Returns: Json }
       nft_get_mint_fee: { Args: never; Returns: Json }
