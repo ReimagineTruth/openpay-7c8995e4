@@ -2032,48 +2032,6 @@ export type Database = {
           },
         ]
       }
-      nft_chat_messages: {
-        Row: {
-          created_at: string
-          id: string
-          item_id: string | null
-          message: string
-          reply_to: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          item_id?: string | null
-          message: string
-          reply_to?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          item_id?: string | null
-          message?: string
-          reply_to?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "nft_chat_messages_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "nft_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "nft_chat_messages_reply_to_fkey"
-            columns: ["reply_to"]
-            isOneToOne: false
-            referencedRelation: "nft_chat_messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       nft_collections: {
         Row: {
           code: string
@@ -2201,7 +2159,6 @@ export type Database = {
       }
       nft_items: {
         Row: {
-          category: string
           code: string
           collection_id: string | null
           created_at: string
@@ -2221,7 +2178,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          category?: string
           code: string
           collection_id?: string | null
           created_at?: string
@@ -2241,7 +2197,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          category?: string
           code?: string
           collection_id?: string | null
           created_at?: string
@@ -2375,70 +2330,58 @@ export type Database = {
           avatar_url: string | null
           banner_url: string | null
           bio: string | null
-          category: string
           created_at: string
           discord_url: string | null
           display_name: string | null
           email_public: string | null
-          facebook_url: string | null
           feature_nfts: boolean
           handle: string | null
           id: string
           instagram_url: string | null
           is_verified: boolean
-          telegram_url: string | null
           twitter_url: string | null
           updated_at: string
           user_id: string
           view_count: number
           website_url: string | null
-          youtube_url: string | null
         }
         Insert: {
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
-          category?: string
           created_at?: string
           discord_url?: string | null
           display_name?: string | null
           email_public?: string | null
-          facebook_url?: string | null
           feature_nfts?: boolean
           handle?: string | null
           id?: string
           instagram_url?: string | null
           is_verified?: boolean
-          telegram_url?: string | null
           twitter_url?: string | null
           updated_at?: string
           user_id: string
           view_count?: number
           website_url?: string | null
-          youtube_url?: string | null
         }
         Update: {
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
-          category?: string
           created_at?: string
           discord_url?: string | null
           display_name?: string | null
           email_public?: string | null
-          facebook_url?: string | null
           feature_nfts?: boolean
           handle?: string | null
           id?: string
           instagram_url?: string | null
           is_verified?: boolean
-          telegram_url?: string | null
           twitter_url?: string | null
           updated_at?: string
           user_id?: string
           view_count?: number
           website_url?: string | null
-          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -4898,14 +4841,6 @@ export type Database = {
         Returns: boolean
       }
       nft_admin_restore_item: { Args: { p_item_id: string }; Returns: boolean }
-      nft_admin_set_bid_fee: {
-        Args: { p_collector?: string; p_enabled: boolean; p_rate: number }
-        Returns: Json
-      }
-      nft_admin_set_mint_fee: {
-        Args: { p_collector?: string; p_enabled: boolean; p_rate: number }
-        Returns: Json
-      }
       nft_admin_set_platform_fee: {
         Args: { p_collector?: string; p_enabled: boolean; p_rate: number }
         Returns: Json
@@ -4942,8 +4877,6 @@ export type Database = {
         Returns: string
       }
       nft_finalize_auction: { Args: { p_auction_id: string }; Returns: string }
-      nft_get_bid_fee: { Args: never; Returns: Json }
-      nft_get_mint_fee: { Args: never; Returns: Json }
       nft_get_platform_fee: { Args: never; Returns: Json }
       nft_gift_item: {
         Args: {
@@ -4972,20 +4905,6 @@ export type Database = {
       }
       nft_place_bid: {
         Args: { p_amount: number; p_auction_id: string }
-        Returns: string
-      }
-      nft_place_bid_with_payment: {
-        Args: {
-          p_amount: number
-          p_auction_id: string
-          p_card_cvc?: string
-          p_card_exp_month?: number
-          p_card_exp_year?: number
-          p_card_number?: string
-          p_payment_method?: string
-          p_pi_payment_id?: string
-          p_pi_txid?: string
-        }
         Returns: string
       }
       nft_update_listing_price: {
