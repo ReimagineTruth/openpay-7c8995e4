@@ -9,6 +9,10 @@ const AuthMark = ({ className }: AuthMarkProps) => (
     <img
       src="/openpay-o-white.svg"
       alt="OpenPay logo"
+      width={64}
+      height={64}
+      fetchPriority="high"
+      decoding="async"
       className="h-full w-full object-contain"
     />
   </div>
