@@ -482,6 +482,7 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/regulatory-status" element={<RegulatoryStatusPage />} />
         <Route path="/about-openpay" element={<AboutOpenPayPage />} />
+        <Route path="/socials" element={<SocialsPage />} />
         <Route path="/openpay-documentation" element={<OpenPayDocumentationPage />} />
         <Route path="/openpay-api-docs" element={<OpenPayApiDocsPage />} />
         <Route path="/openpay-pos-docs" element={<OpenPayPosDocsPage />} />
