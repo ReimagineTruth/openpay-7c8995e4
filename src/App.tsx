@@ -76,6 +76,7 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import RegulatoryStatusPage from "./pages/RegulatoryStatusPage";
 import AboutOpenPayPage from "./pages/AboutOpenPayPage";
+import SocialsPage from "./pages/SocialsPage";
 import LegalPage from "./pages/LegalPage";
 import OpenPayDocumentationPage from "./pages/OpenPayDocumentationPage";
 import OpenPayApiDocsPage from "./pages/OpenPayApiDocsPage";
