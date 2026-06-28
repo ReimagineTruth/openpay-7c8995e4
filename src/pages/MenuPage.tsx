@@ -562,6 +562,8 @@ const MenuPage = () => {
 
         { icon: Handshake, label: "Open Partner", action: () => navigate("/open-partner") },
 
+        { icon: ExternalLink, label: "Socials", subtitle: "OpenPay & Mrwain Org", action: () => navigate("/socials") },
+
       ],
 
     },
