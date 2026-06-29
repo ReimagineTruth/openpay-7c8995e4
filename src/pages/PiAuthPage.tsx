@@ -10,6 +10,7 @@ import AuthFooter from "@/components/AuthFooter";
 import { Loader2, ExternalLink } from "lucide-react";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
+import { isPiOAuthEnabled } from "@/lib/piOAuth";
 
 const PiAuthPage = () => {
   const [piUser, setPiUser] = useState<{ uid: string; username: string } | null>(null);
