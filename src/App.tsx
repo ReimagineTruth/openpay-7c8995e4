@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import AdminMrwainAuth from "./pages/AdminMrwainAuth";
 import AuthCallbackPage from "./pages/AuthCallback";
 import AuthCallback from "./pages/AuthCallback";
+import PiOAuthLoginPage from "./pages/PiOAuthLoginPage";
+import PiOAuthCallbackPage from "./pages/PiOAuthCallbackPage";
+import { usePiOAuthAutoLink } from "./hooks/usePiOAuthAutoLink";
 import TwoFactorAuthPage from "./pages/TwoFactorAuthPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ForgotMpinPage from "./pages/ForgotMpinPage";
@@ -155,6 +158,7 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  usePiOAuthAutoLink();
   const routeLoaderReady = useRef(false);
   const [showRouteSplash, setShowRouteSplash] = useState(true);
   const navigateRef = useRef(navigate);
@@ -261,6 +265,8 @@ const AppRoutes = () => {
         <Route path="/signin" element={<Navigate to="/sign-in?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-in?mode=signup" replace />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/auth/pi/login" element={<PiOAuthLoginPage />} />
+        <Route path="/auth/pi/callback" element={<PiOAuthCallbackPage />} />
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <DashboardSwitcher />

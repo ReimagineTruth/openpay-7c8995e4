@@ -2741,6 +2741,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pi_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          last_authenticated_at: string | null
+          linked_via: string
+          pi_uid: string
+          pi_username: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_authenticated_at?: string | null
+          linked_via?: string
+          pi_uid: string
+          pi_username: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_authenticated_at?: string | null
+          linked_via?: string
+          pi_uid?: string
+          pi_username?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pi_payment_credits: {
         Row: {
           amount: number

@@ -10,6 +10,7 @@ import AuthFooter from "@/components/AuthFooter";
 import { Loader2, ExternalLink } from "lucide-react";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
+import { isPiOAuthEnabled } from "@/lib/piOAuth";
 
 const PiAuthPage = () => {
   const [piUser, setPiUser] = useState<{ uid: string; username: string } | null>(null);
@@ -405,6 +406,16 @@ const PiAuthPage = () => {
                     OpenPay Blog
                   </a>
                 </Button>
+                {isPiOAuthEnabled() && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 w-full rounded-2xl"
+                    onClick={() => navigate("/auth/pi/login")}
+                  >
+                    Continue with Pi (OAuth)
+                  </Button>
+                )}
               </div>
             </div>
             <p className="mt-2 text-xs text-gray-600">
