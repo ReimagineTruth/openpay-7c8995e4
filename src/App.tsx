@@ -158,6 +158,7 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  usePiOAuthAutoLink();
   const routeLoaderReady = useRef(false);
   const [showRouteSplash, setShowRouteSplash] = useState(true);
   const navigateRef = useRef(navigate);
