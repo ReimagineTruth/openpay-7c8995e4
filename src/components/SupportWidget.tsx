@@ -460,7 +460,7 @@ const SupportWidget = () => {
         message_status: "sent",
         priority: selectedPriority,
         category: selectedCategory,
-      });
+      } as never);
     if (error) {
       toast.error(error.message || "Failed to send message");
       return;
