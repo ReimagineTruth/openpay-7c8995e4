@@ -265,6 +265,8 @@ const AppRoutes = () => {
         <Route path="/signin" element={<Navigate to="/sign-in?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-in?mode=signup" replace />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/auth/pi/login" element={<PiOAuthLoginPage />} />
+        <Route path="/auth/pi/callback" element={<PiOAuthCallbackPage />} />
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <DashboardSwitcher />
