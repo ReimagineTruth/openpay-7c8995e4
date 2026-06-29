@@ -583,7 +583,7 @@ const App = () => {
 const AppWithNotifications = () => {
   useRealtimePushNotifications();
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <BrowserRouter>
       <AppRoutes />
       <GlobalThankYouModal />
     </BrowserRouter>

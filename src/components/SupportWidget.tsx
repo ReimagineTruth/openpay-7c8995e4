@@ -460,7 +460,7 @@ const SupportWidget = () => {
         message_status: "sent",
         priority: selectedPriority,
         category: selectedCategory,
-      });
+      } as never);
     if (error) {
       toast.error(error.message || "Failed to send message");
       return;
@@ -492,7 +492,7 @@ const SupportWidget = () => {
         last_message_at: new Date().toISOString(),
         priority: selectedPriority,
         category: selectedCategory
-      })
+      } as never)
       .eq("id", conversationId);
     if (convoUpdateError) {
       toast.error(convoUpdateError.message || "Message sent but failed to refresh conversation");
