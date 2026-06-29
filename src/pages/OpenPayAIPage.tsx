@@ -836,7 +836,7 @@ const OpenPayAIPage = () => {
           status: 'completed',
           description: `Transfer to @${pendingPayment.recipient}`,
           created_at: new Date().toISOString()
-        });
+        } as never);
       
       toast.success(`Payment of $${pendingPayment.amount.toFixed(2)} to @${pendingPayment.recipient} completed!`);
       
