@@ -820,7 +820,7 @@ const OpenPayAIPage = () => {
             balance: pendingPayment.amount,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          });
+          } as never);
       }
       
       // Create transaction record
