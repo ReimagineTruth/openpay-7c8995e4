@@ -492,7 +492,7 @@ const SupportWidget = () => {
         last_message_at: new Date().toISOString(),
         priority: selectedPriority,
         category: selectedCategory
-      })
+      } as never)
       .eq("id", conversationId);
     if (convoUpdateError) {
       toast.error(convoUpdateError.message || "Message sent but failed to refresh conversation");
