@@ -406,6 +406,16 @@ const PiAuthPage = () => {
                     OpenPay Blog
                   </a>
                 </Button>
+                {isPiOAuthEnabled() && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 w-full rounded-2xl"
+                    onClick={() => navigate("/auth/pi/login")}
+                  >
+                    Continue with Pi (OAuth)
+                  </Button>
+                )}
               </div>
             </div>
             <p className="mt-2 text-xs text-gray-600">
