@@ -27,7 +27,7 @@ export const PI_OAUTH_CONFIG = {
   enabled: (import.meta.env.VITE_ENABLE_PI_OAUTH ?? "true") !== "false",
   clientId:
     import.meta.env.VITE_PI_OAUTH_CLIENT_ID ??
-    "sLjpGeQVXc-fSGwaOC5Y84ItLtPqKf829ZHMaF2iUD",
+    "sLjpGeQVXc-fSGwaOC5Y84ItLtPqKf829ZHMaF2iUDo",
   redirectUri:
     import.meta.env.VITE_PI_OAUTH_REDIRECT_URI ??
     "https://openpy.space/auth/pi/callback",
@@ -67,6 +67,18 @@ export function beginPiOAuth(): void {
   }
   const state = randomState();
   sessionStorage.setItem(STATE_KEY, state);
+
+  // Official Pi docs recommend the SDK helper when it is available. It builds
+  // the same implicit-flow authorize request, then returns to this callback.
+  if (window.Pi?.signIn) {
+    window.Pi.signIn({
+      clientId: PI_OAUTH_CONFIG.clientId,
+      redirectUri: PI_OAUTH_CONFIG.redirectUri,
+      scopes: [...PI_OAUTH_CONFIG.scopes],
+      state,
+    });
+    return;
+  }
 
   const params = new URLSearchParams({
     response_type: "token",

@@ -46,6 +46,13 @@ type PiAuthResult = {
   accessToken: string;
 };
 
+type PiSignInOptions = {
+  clientId: string;
+  redirectUri: string;
+  scopes?: string[];
+  state?: string;
+};
+
 type PiAdsApi = {
   isAdReady?: (
     adType: "interstitial" | "rewarded",
@@ -81,6 +88,7 @@ type PiSdk = {
     scopes: string[],
     onIncompletePaymentFound?: (payment: PiPaymentDto) => void,
   ) => Promise<PiAuthResult>;
+  signIn?: (options: PiSignInOptions) => void;
   createPayment: (payment: PiPaymentData, callbacks: PiPaymentCallbacks) => void;
   nativeFeaturesList?: () => Promise<Array<"inline_media" | "request_permission" | "ad_network">>;
   openShareDialog?: (title: string, message: string) => void;
