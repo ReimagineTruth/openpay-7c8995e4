@@ -33,7 +33,7 @@ export const PI_OAUTH_CONFIG = {
     "https://openpy.space/auth/pi/callback",
   authorizeUrl:
     import.meta.env.VITE_PI_OAUTH_AUTHORIZE_URL ??
-    "https://api.minepi.com/v2/oauth/authorize",
+    "https://accounts.pinet.com/oauth/authorize",
   meUrl:
     import.meta.env.VITE_PI_OAUTH_ME_URL ??
     "https://api.minepi.com/v2/me",
