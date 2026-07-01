@@ -2804,6 +2804,48 @@ export type Database = {
         }
         Relationships: []
       }
+      piverify_sessions: {
+        Row: {
+          allowed_action: string | null
+          created_at: string
+          external_user_id: string
+          hosted_flow_url: string | null
+          id: string
+          last_event: Json | null
+          rejection_reason: string | null
+          session_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_action?: string | null
+          created_at?: string
+          external_user_id: string
+          hosted_flow_url?: string | null
+          id?: string
+          last_event?: Json | null
+          rejection_reason?: string | null
+          session_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_action?: string | null
+          created_at?: string
+          external_user_id?: string
+          hosted_flow_url?: string | null
+          id?: string
+          last_event?: Json | null
+          rejection_reason?: string | null
+          session_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
