@@ -6,7 +6,8 @@ This is a standalone KYC verification feature using PiVerify. It's completely is
 ## Configuration Details
 
 ### Provided API Credentials
-- **API Key**: `sbx_b88d08264ab300b0d9398d8ad4e16c4bb774482174501a21` (Sandbox)
+- **API Key**: `sbx_9a519766b1cdc375b83785aafc46ebe1f9421f7616ec685c` (Sandbox)
+- **Webhook Secret**: `sbx_039d52cdde3108e0cc4c367ac2bf4bcbee1aad799a3d0f24`
 - **Base URL**: `https://backend.piverify-czgzri81fq2lioqn.staging.piappengine.com`
 - **Environment**: Sandbox (simulated results, no billing)
 
@@ -26,12 +27,12 @@ The following environment variables are already configured in `.env.example`:
 
 ```bash
 # PiVerify KYC Integration (Standalone Feature)
-PIVERIFY_API_KEY="sbx_b88d08264ab300b0d9398d8ad4e16c4bb774482174501a21"
+PIVERIFY_API_KEY="sbx_9a519766b1cdc375b83785aafc46ebe1f9421f7616ec685c"
 PIVERIFY_BASE_URL="https://backend.piverify-czgzri81fq2lioqn.staging.piappengine.com"
-PIVERIFY_WEBHOOK_SECRET="your_webhook_signing_secret_from_piverify_portal"
+PIVERIFY_WEBHOOK_SECRET="sbx_039d52cdde3108e0cc4c367ac2bf4bcbee1aad799a3d0f24"
 ```
 
-**Important**: Copy `.env.example` to `.env` and update `PIVERIFY_WEBHOOK_SECRET` after you get it from PiVerify.
+**Important**: Copy `.env.example` to `.env` with these updated credentials.
 
 ### Step 2: Set Up Webhook in PiVerify Portal
 
@@ -45,8 +46,7 @@ PIVERIFY_WEBHOOK_SECRET="your_webhook_signing_secret_from_piverify_portal"
      - `kyc.session.approved`
      - `kyc.session.rejected`
      - `kyc.session.failed`
-4. After creating the webhook, copy the **Signing Secret** provided
-5. Update `PIVERIFY_WEBHOOK_SECRET` in your `.env` file with this secret
+4. The webhook secret is already configured: `sbx_039d52cdde3108e0cc4c367ac2bf4bcbee1aad799a3d0f24`
 
 ### Step 3: Deploy Edge Functions
 
