@@ -51,9 +51,14 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const piData = await piRes.json();
+    const piText = await piRes.text();
+    let piData: any = {};
+    try { piData = JSON.parse(piText); } catch { piData = { raw: piText }; }
     if (!piRes.ok) {
-      return new Response(JSON.stringify({ error: piData?.error || 'PiVerify error', status: piRes.status }), {
+      const msg = piRes.status === 401
+        ? 'PiVerify rejected the API key (401). Update PIVERIFY_API_KEY with a currently active key from the PiVerify portal.'
+        : (piData?.error || piData?.message || 'PiVerify error');
+      return new Response(JSON.stringify({ error: msg, upstream_status: piRes.status, upstream: piData }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

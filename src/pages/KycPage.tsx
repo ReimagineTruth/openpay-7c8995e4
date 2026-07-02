@@ -481,6 +481,21 @@ const KycPage = () => {
               ))}
             </div>
             <p className="text-xs text-muted-foreground">Estimated time: 5–8 minutes. Have your ID ready in good lighting.</p>
+
+            <button
+              type="button"
+              onClick={() => navigate("/kyc/piverify")}
+              className="mt-3 flex w-full items-center justify-between rounded-2xl border border-paypal-blue/20 bg-paypal-light-blue/10 p-4 text-left hover:bg-paypal-light-blue/20"
+            >
+              <div className="flex items-start gap-3">
+                <Shield className="mt-0.5 h-5 w-5 text-paypal-blue" />
+                <div>
+                  <p className="font-semibold text-foreground">Prefer a hosted flow? Try PiVerify</p>
+                  <p className="text-xs text-muted-foreground">Fast ID + selfie check on PiVerify. Standalone from this form.</p>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 text-paypal-blue" />
+            </button>
           </div>
         );
 
