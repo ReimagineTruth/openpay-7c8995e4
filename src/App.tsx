@@ -12,6 +12,7 @@ import AuthCallback from "./pages/AuthCallback";
 import PiOAuthLoginPage from "./pages/PiOAuthLoginPage";
 import PiOAuthCallbackPage from "./pages/PiOAuthCallbackPage";
 import PiVerifyKycPage from "./pages/PiVerifyKycPage";
+import DeveloperLedgerPage from "./pages/DeveloperLedgerPage";
 import { usePiOAuthAutoLink } from "./hooks/usePiOAuthAutoLink";
 import TwoFactorAuthPage from "./pages/TwoFactorAuthPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -520,6 +521,7 @@ const AppRoutes = () => {
         <Route path="/kyc" element={<KycPage />} />
         <Route path="/kyc-status" element={<KycStatusPage />} />
         <Route path="/kyc/piverify" element={<PiVerifyKycPage />} />
+        <Route path="/developers/ledger" element={<DeveloperLedgerPage />} />
         <Route path="/admin-kyc-review" element={<AdminKycReview />} />
         <Route path="/admin-kyc-metrics" element={<AdminKycMetricsPage />} />
         <Route path="/admin-openpay-metrics" element={<AdminOpenPayMetricsPage />} />
