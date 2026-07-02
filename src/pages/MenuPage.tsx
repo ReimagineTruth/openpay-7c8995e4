@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import BottomNav from "@/components/BottomNav";
 
-import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot, QrCode, Bell, Settings, ExternalLink, RefreshCw } from "lucide-react";
+import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot, QrCode, Bell, Settings, ExternalLink, RefreshCw, Presentation } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -563,6 +563,8 @@ const MenuPage = () => {
         { icon: Handshake, label: "Open Partner", action: () => navigate("/open-partner") },
 
         { icon: ExternalLink, label: "Socials", subtitle: "OpenPay & Mrwain Org", action: () => navigate("/socials") },
+
+        { icon: Presentation, label: "Pitch Deck", subtitle: "OpenPay Features", action: () => navigate("/pitch-deck") },
 
       ],
 

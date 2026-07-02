@@ -106,6 +106,7 @@ import AdminTopUpRequestsPage from "./pages/AdminTopUpRequestsPage";
 import AdminMasterTopUp from "./pages/AdminMasterTopUp";
 import MerchantOnboardingPage from "./pages/MerchantOnboardingPage";
 import OpenPayOfficialPage from "./pages/OpenPayOfficialPage";
+import PitchDeckPage from "./pages/PitchDeckPage";
 import RemittanceMerchantPage from "./pages/RemittanceMerchantPage";
 import RemittanceCenterPage from "./pages/RemittanceCenterPage";
 import MerchantPosPage from "./pages/MerchantPosPage";
@@ -530,6 +531,7 @@ const AppRoutes = () => {
 
         <Route path="/remittance-merchant" element={<RemittanceMerchantPage />} />
         <Route path="/openpay-official" element={<OpenPayOfficialPage />} />
+        <Route path="/pitch-deck" element={<PitchDeckPage />} />
         <Route path="/openapp" element={<OpenAppPage />} />
         <Route path="/openpay-desktop" element={<OpenPayDesktopPage />} />
         <Route path="/download" element={<DownloadPage />} />
