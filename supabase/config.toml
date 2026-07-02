@@ -9,3 +9,7 @@ project_id = "araojncyittkahvvpdrn"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
+  [functions.piverify-create-session]
+    verify_jwt = false
+  [functions.piverify-webhook]
+    verify_jwt = false

@@ -466,6 +466,34 @@ const KycPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* PiVerify Alternative Option - Prominently displayed */}
+            <button
+              type="button"
+              onClick={() => navigate("/kyc/piverify")}
+              className="flex w-full items-center justify-between rounded-2xl border-2 border-paypal-blue/30 bg-gradient-to-r from-paypal-light-blue/20 to-paypal-blue/10 p-5 text-left hover:from-paypal-light-blue/30 hover:to-paypal-blue/20 transition-all shadow-sm"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/20">
+                  <Shield className="h-6 w-6 text-paypal-blue" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-base">Quick Verification with PiVerify</p>
+                  <p className="text-sm text-muted-foreground mt-1">Fast ID + selfie check. Complete verification in minutes with our hosted partner flow.</p>
+                </div>
+              </div>
+              <ArrowRight className="h-5 w-5 text-paypal-blue flex-shrink-0" />
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border/60" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or continue with manual form</span>
+              </div>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-2">
               {[
                 { icon: User, title: "Personal details", desc: "Legal name, address, contact" },
@@ -481,21 +509,6 @@ const KycPage = () => {
               ))}
             </div>
             <p className="text-xs text-muted-foreground">Estimated time: 5–8 minutes. Have your ID ready in good lighting.</p>
-
-            <button
-              type="button"
-              onClick={() => navigate("/kyc/piverify")}
-              className="mt-3 flex w-full items-center justify-between rounded-2xl border border-paypal-blue/20 bg-paypal-light-blue/10 p-4 text-left hover:bg-paypal-light-blue/20"
-            >
-              <div className="flex items-start gap-3">
-                <Shield className="mt-0.5 h-5 w-5 text-paypal-blue" />
-                <div>
-                  <p className="font-semibold text-foreground">Prefer a hosted flow? Try PiVerify</p>
-                  <p className="text-xs text-muted-foreground">Fast ID + selfie check on PiVerify. Standalone from this form.</p>
-                </div>
-              </div>
-              <ArrowRight className="h-4 w-4 text-paypal-blue" />
-            </button>
           </div>
         );
 

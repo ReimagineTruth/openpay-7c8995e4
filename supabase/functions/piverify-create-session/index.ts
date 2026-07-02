@@ -19,25 +19,34 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
-    if (claimsErr || !claims?.claims) {
+    
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const userId = claims.claims.sub as string;
+    const userId = user.id;
 
     const apiKey = Deno.env.get('PIVERIFY_API_KEY');
     const baseUrl = Deno.env.get('PIVERIFY_BASE_URL') ||
       'https://backend.piverify-czgzri81fq2lioqn.staging.piappengine.com';
+    
+    if (!supabaseUrl || !anonKey || !serviceKey) {
+      return new Response(JSON.stringify({ error: 'Supabase environment variables missing' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'PiVerify not configured' }), {
+      return new Response(JSON.stringify({ error: 'PiVerify API key not configured. Set PIVERIFY_API_KEY in Supabase secrets.' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const idempotencyKey = `${userId}-${Date.now()}`;
+
+    console.log(`Creating PiVerify session for user ${userId} with idempotency key ${idempotencyKey}`);
 
     const piRes = await fetch(`${baseUrl}/api/v1/kyc_sessions`, {
       method: 'POST',
@@ -54,6 +63,9 @@ Deno.serve(async (req) => {
     const piText = await piRes.text();
     let piData: any = {};
     try { piData = JSON.parse(piText); } catch { piData = { raw: piText }; }
+    
+    console.log(`PiVerify API response status: ${piRes.status}, data:`, piData);
+    
     if (!piRes.ok) {
       const msg = piRes.status === 401
         ? 'PiVerify rejected the API key (401). Update PIVERIFY_API_KEY with a currently active key from the PiVerify portal.'
@@ -64,7 +76,16 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey);
-    await admin.from('piverify_sessions').upsert({
+    
+    console.log('Upserting piverify session to database:', {
+      user_id: userId,
+      session_id: piData.id,
+      external_user_id: piData.external_user_id,
+      status: piData.status || 'created',
+      hosted_flow_url: piData.hosted_flow_url,
+    });
+
+    const { error: dbError } = await admin.from('piverify_sessions').upsert({
       user_id: userId,
       session_id: piData.id,
       external_user_id: piData.external_user_id,
@@ -72,6 +93,13 @@ Deno.serve(async (req) => {
       hosted_flow_url: piData.hosted_flow_url,
       rejection_reason: piData.rejection_reason,
     }, { onConflict: 'session_id' });
+    
+    if (dbError) {
+      console.error('Database upsert error:', dbError);
+      return new Response(JSON.stringify({ error: 'Failed to save session', details: dbError.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     return new Response(JSON.stringify({
       session_id: piData.id,
@@ -79,6 +107,7 @@ Deno.serve(async (req) => {
       status: piData.status,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
+    console.error('piverify-create-session error:', e);
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
