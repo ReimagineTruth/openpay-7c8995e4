@@ -22,7 +22,7 @@ const GROUPS: SocialGroup[] = [
     tagline: "Official channels for the OpenPay payments platform",
     accent: "from-paypal-blue to-[#072a7a]",
     links: [
-      { label: "All OpenPay Socials", url: "https://droplink.space/@openpay", icon: Globe, description: "Linktree of every official channel" },
+      { label: "All OpenPay Socials", url: "https://www.droplinkpi.space/@openpay", icon: Globe, description: "Linktree of every official channel" },
       { label: "Website", url: "https://www.openpy.space/", icon: Globe },
       { label: "Blog", url: "https://www.openpy.space/blog", icon: Globe },
       { label: "Telegram Community", url: "https://t.me/openpayofficial", icon: Send },

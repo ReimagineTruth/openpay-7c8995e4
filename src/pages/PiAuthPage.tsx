@@ -379,7 +379,7 @@ const PiAuthPage = () => {
                   className="h-11 w-full rounded-2xl"
                 >
                   <a 
-                    href="https://droplinkio.space/@openpay" 
+                    href="https://www.droplinkpi.space/@openpay" 
                     target="_blank" 
                     rel="noreferrer"
                   >

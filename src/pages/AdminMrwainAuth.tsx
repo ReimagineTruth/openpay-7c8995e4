@@ -115,7 +115,7 @@ const AdminMrwainAuth = () => {
             className="mb-4 h-10 w-full rounded-2xl border-gray-300 bg-white text-gray-800 hover:bg-gray-50 flex items-center justify-center"
           >
             <a 
-              href="https://droplink.space/@openpay" 
+              href="https://www.droplinkpi.space/@openpay" 
               target="_blank" 
               rel="noreferrer"
               className="w-full h-full flex items-center justify-center"
