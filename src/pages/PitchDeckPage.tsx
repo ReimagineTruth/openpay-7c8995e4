@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, X, TrendingUp, Globe, Zap, Shield, Wallet, Smartphone, Store, CreditCard, ArrowLeftRight, QrCode, FileText, Users, Code, Coins, Gift, BarChart3, Target, Rocket, Info } from "lucide-react";
+import { ArrowLeft, Check, X, TrendingUp, Globe, Zap, Shield, Wallet, Smartphone, Store, CreditCard, ArrowLeftRight, QrCode, FileText, Users, Code, Coins, Gift, BarChart3, Target, Rocket, Info, Github } from "lucide-react";
 
 const PitchDeckPage = () => {
   const navigate = useNavigate();
@@ -310,9 +310,24 @@ const PitchDeckPage = () => {
           </div>
         </div>
 
-        {/* Slide 13 - Contact */}
+        {/* Slide 13 - Whitepaper */}
+        <div className="mb-8 bg-gray-50 rounded-2xl p-8 border border-gray-200">
+          <div className="mb-4 text-sm font-semibold text-gray-600">Slide 13 — Documentation</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">OpenPay Whitepaper</h2>
+          <p className="text-gray-700 mb-6">
+            Access our comprehensive technical documentation and whitepaper to learn more about OpenPay's architecture, tokenomics, and future roadmap.
+          </p>
+          <button
+            onClick={() => navigate("/whitepaper")}
+            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+          >
+            View Whitepaper
+          </button>
+        </div>
+
+        {/* Slide 14 - Contact */}
         <div className="bg-blue-600 rounded-2xl p-8 text-white">
-          <div className="mb-4 text-sm font-semibold opacity-80">Slide 13 — Contact</div>
+          <div className="mb-4 text-sm font-semibold opacity-80">Slide 14 — Contact</div>
           <h2 className="text-3xl font-bold mb-6">OpenPay</h2>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -329,10 +344,31 @@ const PitchDeckPage = () => {
                 <button onClick={() => navigate("/about-openpay")} className="font-semibold hover:underline">https://openpy.space/about-openpay</button>
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <Github className="h-5 w-5" />
+              <div>
+                <div className="text-sm opacity-80">GitHub</div>
+                <a href="https://github.com/PiNetwork/PiRC/pull/34" target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline">OpenPay PiRC Integration</a>
+              </div>
+            </div>
           </div>
-          <div className="mt-8 pt-6 border-t border-white/20">
-            <p className="text-sm opacity-80">Powered by MRWAIN ORGANIZATION</p>
-            <p className="text-lg font-semibold mt-2">Building the future of Web3 commerce.</p>
+          <div className="mt-8 pt-6 border-t border-white/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm opacity-80">Launched</p>
+              <p className="font-semibold">February 26, 2026</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm opacity-80">Version</p>
+              <p className="font-semibold">1.1</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm opacity-80">Original</p>
+              <p className="font-semibold">Pi Network & MrWain Foundation</p>
+            </div>
+            <div className="pt-4 border-t border-white/20">
+              <p className="text-sm opacity-80">Powered by MRWAIN ORGANIZATION</p>
+              <p className="text-lg font-semibold mt-2">Building the future of Web3 commerce.</p>
+            </div>
           </div>
         </div>
 
