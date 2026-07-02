@@ -1202,6 +1202,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ledger_api_keys: {
+        Row: {
+          created_at: string
+          id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          revoked_at: string | null
+          scopes: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          revoked_at?: string | null
+          scopes?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          revoked_at?: string | null
+          scopes?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ledger_events: {
         Row: {
           actor_user_id: string | null
@@ -1244,6 +1283,45 @@ export type Database = {
           source_id?: string
           source_table?: string
           status?: string | null
+        }
+        Relationships: []
+      }
+      ledger_webhook_endpoints: {
+        Row: {
+          created_at: string
+          event_types: string[]
+          id: string
+          is_active: boolean
+          last_delivered_at: string | null
+          last_error: string | null
+          secret: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_types?: string[]
+          id?: string
+          is_active?: boolean
+          last_delivered_at?: string | null
+          last_error?: string | null
+          secret: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_types?: string[]
+          id?: string
+          is_active?: boolean
+          last_delivered_at?: string | null
+          last_error?: string | null
+          secret?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
         }
         Relationships: []
       }
