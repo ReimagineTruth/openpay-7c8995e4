@@ -837,6 +837,49 @@ const NftDetailPage = () => {
         </Modal>
       )}
 
+      {confirmPay && (
+        <>
+          <div className="fixed inset-0 bg-black/80 z-[60]" onClick={() => !busy && setConfirmPay(null)} />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-[92%] max-w-sm rounded-3xl bg-[#111] border border-white/10 p-5 space-y-4">
+            <div className="text-center">
+              <div className="h-12 w-12 mx-auto rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: ACCENT }}>
+                {confirmPay.kind === "buy" ? <ShoppingCart className="h-6 w-6" /> : <Gavel className="h-6 w-6" />}
+              </div>
+              <h3 className="text-lg font-extrabold">Confirm {confirmPay.kind === "buy" ? "Purchase" : "Bid"}</h3>
+              <p className="text-xs text-white/50 mt-1">Review before we charge your account</p>
+            </div>
+            <div className="space-y-2 bg-white/5 rounded-xl p-3 border border-white/10 text-sm">
+              <Row k="Item" v={item?.name} />
+              {confirmPay.kind === "buy" && <Row k="Quantity" v={`x${qty}`} />}
+              <Row k="Payment" v={confirmPay.method.replace(/_/g, " ")} />
+              <Row k="Amount" v={confirmPay.label} />
+            </div>
+            {(confirmPay.method === "openpay_balance" || confirmPay.method === "virtual_card") && (
+              <p className="text-[11px] text-amber-400/90 text-center">
+                Funds will be debited from your OpenPay wallet. Ensure you have enough balance.
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setConfirmPay(null)} disabled={busy}
+                className="rounded-full py-3 font-bold bg-white/10 text-white disabled:opacity-50">
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const fn = confirmPay.run;
+                  setConfirmPay(null);
+                  await fn();
+                }}
+                disabled={busy}
+                className="rounded-full py-3 font-bold disabled:opacity-50"
+                style={{ backgroundColor: ACCENT }}>
+                {busy ? "Processing…" : "Confirm & Pay"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       <NftBurst show={!!burst} kind={burst?.kind} message={burst?.msg} onDone={() => setBurst(null)} />
     </div>
   );
