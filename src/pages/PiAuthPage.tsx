@@ -277,160 +277,119 @@ const PiAuthPage = () => {
     await handlePiAuth();
   };
 
+  const refParam = (searchParams.get("ref") || "").trim().toLowerCase();
+  const emailHref = `/sign-in?mode=signin${refParam ? `&ref=${encodeURIComponent(refParam)}` : ""}`;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-paypal-blue to-[#072a7a] px-6 py-10">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-md lg:max-w-lg xl:max-w-xl flex-col justify-center">
-        <div className="mb-8 text-center">
-          <AuthMark className="mx-auto mb-5 h-16 w-16" />
-          <p className="mb-1 text-2xl font-bold tracking-tight text-white">OpenPay</p>
-          <p className="text-sm font-medium text-white/85">Welcome to OpenPay</p>
+    <div className="min-h-screen bg-gradient-to-b from-paypal-blue via-[#0a3fa8] to-[#062468] px-5 py-8">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center">
+        {/* Brand header */}
+        <div className="mb-6 text-center">
+          <AuthMark className="mx-auto mb-4 h-14 w-14" />
+          <h1 className="text-2xl font-bold tracking-tight text-white">OpenPay</h1>
+          <p className="mt-1 text-sm text-white/75">
+            {inPiBrowser ? "Sign in with your Pi account" : "Sign in to your wallet"}
+          </p>
         </div>
 
-        <div className="paypal-surface w-full rounded-3xl p-7 shadow-2xl shadow-black/15">
-          <div className="mb-4">
-            <h1 className="paypal-heading text-xl">Welcome</h1>
+        {/* Main card */}
+        <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-black/20 dark:bg-[#0f172a]">
+          {refParam && (
+            <div className="mb-4 rounded-xl bg-paypal-blue/10 px-3 py-2 text-xs font-medium text-paypal-blue">
+              Referral: {refParam}
+            </div>
+          )}
+          {inPiBrowser && !sdkReady && (
+            <div className="mb-4 rounded-xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+              Pi SDK unavailable. Please reopen in Pi Browser.
+            </div>
+          )}
+
+          {/* Primary action */}
+          <Button
+            onClick={handlePiAuthClick}
+            disabled={busyAuth || (inPiBrowser && !sdkReady)}
+            className="mb-3 h-12 w-full rounded-2xl bg-paypal-blue text-base font-semibold text-white shadow-md shadow-paypal-blue/30 hover:bg-[#004dc5]"
+          >
+            {busyAuth ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Authenticating…</>
+            ) : inPiBrowser && !sdkReady ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Pi SDK…</>
+            ) : (
+              <>Authenticate with Pi</>
+            )}
+          </Button>
+
+          {!inPiBrowser && (
+            <Button
+              asChild
+              variant="outline"
+              className="h-12 w-full rounded-2xl border-border/60 text-base font-semibold"
+            >
+              <Link to={emailHref}>
+                <Mail className="mr-2 h-4 w-4" /> Sign In with Email
+              </Link>
+            </Button>
+          )}
+
+          {isPiOAuthEnabled() && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-2 h-11 w-full rounded-2xl text-sm font-medium text-paypal-blue hover:bg-paypal-blue/5"
+              onClick={() => navigate("/auth/pi/login")}
+            >
+              <KeyRound className="mr-2 h-4 w-4" /> Continue with Pi (OAuth)
+            </Button>
+          )}
+
+          {/* Resources */}
+          <div className="mt-6">
+            <p className="mb-3 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Resources
+            </p>
+            <div className="divide-y divide-border/60 rounded-2xl border border-border/60 bg-muted/30">
+              <ResourceLink href="https://minepi.com/" icon={<Download className="h-4 w-4" />} label="Download Pi Browser" />
+              <ResourceLink href="https://www.droplinkpi.space/@openpay" icon={<Users className="h-4 w-4" />} label="OpenPay Socials" />
+              <ResourceLink href="https://www.openpy.space/" icon={<Globe className="h-4 w-4" />} label="OpenPay Website" />
+              <ResourceLink href="https://www.openpy.space/blog" icon={<BookOpen className="h-4 w-4" />} label="OpenPay Blog" />
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-border/70 bg-white dark:bg-[#0f172a] p-3">
-            <div className="mb-2 flex items-center justify-end">
-              <ThemeToggle />
-            </div>
-            <h2 className="text-base font-semibold text-gray-800 dark:text-white">
-              {inPiBrowser ? "Pi Browser" : "Sign In"}
-            </h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-white/80">
-              {inPiBrowser
-                ? "Connect your Pi account securely with Pi authentication."
-                : "Sign in with email to use OpenPay in any browser. Pi authentication is available when using Pi Browser."}
+          <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
+            {inPiBrowser
+              ? "Full-screen experience, notifications, POS, and Merchant Portal."
+              : "For the full Pi experience — notifications, POS, and merchant tools — open in Pi Browser."}
+          </p>
+
+          {piUser && (
+            <p className="mt-3 text-center text-sm text-foreground">
+              Connected as <span className="font-semibold">@{piUser.username}</span>
             </p>
-            {inPiBrowser ? (
-              <p className="mt-1 text-xs text-gray-500 dark:text-white/60">
-                You're using Pi Browser! For security, all users must authenticate through Pi Browser.
-              </p>
-            ) : (
-              <p className="mt-1 text-xs text-gray-500 dark:text-white/60">
-                You're using a regular browser. Use email sign-in here. To link or authenticate a Pi account, open this app in Pi Browser.
-              </p>
-            )}
-            {!!searchParams.get("ref") && (
-              <p className="mt-1 text-xs text-paypal-blue dark:text-blue-400">
-                Referral code detected: {(searchParams.get("ref") || "").trim().toLowerCase()}
-              </p>
-            )}
-            {inPiBrowser && !sdkReady && (
-              <p className="mt-1 text-xs text-destructive dark:text-red-300">
-                Pi SDK is unavailable. Please open this app in Pi Browser.
-              </p>
-            )}
-            <div className="mt-4 space-y-2">
-              <Button
-                onClick={handlePiAuthClick}
-                disabled={busyAuth || (inPiBrowser && !sdkReady)}
-                className="h-11 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5] relative overflow-hidden"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  {busyAuth ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Authenticating...</span>
-                    </>
-                  ) : inPiBrowser && !sdkReady ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Loading Pi SDK...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Authenticate with Pi</span>
-                    </>
-                  )}
-                </div>
-              </Button>
-              <div className="grid grid-cols-1 gap-2">
-                {!inPiBrowser && (
-                  <Button
-                    asChild
-                    type="button"
-                    variant="outline"
-                    className="h-11 w-full rounded-2xl"
-                  >
-                    <Link
-                      to={`/sign-in?mode=signin${searchParams.get("ref") ? `&ref=${encodeURIComponent((searchParams.get("ref") || '').trim().toLowerCase())}` : ""}`}
-                    >
-                      Sign In with Email
-                    </Link>
-                  </Button>
-                )}
-                <Button
-                  asChild
-                  type="button"
-                  variant="outline"
-                  className="h-11 w-full rounded-2xl"
-                >
-                  <a href="https://minepi.com/" target="_blank" rel="noreferrer">
-                    Download Pi Browser
-                  </a>
-                </Button>
-                <Button
-                  asChild
-                  type="button"
-                  variant="outline"
-                  className="h-11 w-full rounded-2xl"
-                >
-                  <a 
-                    href="https://www.droplinkpi.space/@openpay" 
-                    target="_blank" 
-                    rel="noreferrer"
-                  >
-                    OpenPay Socials
-                  </a>
-                </Button>
-                <Button
-                  asChild
-                  type="button"
-                  variant="outline"
-                  className="h-11 w-full rounded-2xl"
-                >
-                  <a href="https://www.openpy.space/" target="_blank" rel="noreferrer">
-                    OpenPay Website
-                  </a>
-                </Button>
-                <Button
-                  asChild
-                  type="button"
-                  variant="outline"
-                  className="h-11 w-full rounded-2xl"
-                >
-                  <a href="https://www.openpy.space/blog" target="_blank" rel="noreferrer">
-                    OpenPay Blog
-                  </a>
-                </Button>
-                {isPiOAuthEnabled() && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-11 w-full rounded-2xl"
-                    onClick={() => navigate("/auth/pi/login")}
-                  >
-                    Continue with Pi (OAuth)
-                  </Button>
-                )}
-              </div>
-            </div>
-            <p className="mt-2 text-xs text-gray-600">
-              Enjoy full-screen experience, notifications, POS, Merchant Portal access, and more.
-            </p>
-            {piUser && (
-              <p className="mt-3 text-sm text-gray-800">
-                Connected as <span className="font-semibold">@{piUser.username}</span> ({piUser.uid})
-              </p>
-            )}
+          )}
+
+          <div className="mt-5 border-t border-border/60 pt-4">
             <AuthFooter />
           </div>
+        </div>
       </div>
     </div>
-  </div>
   );
 };
+
+const ResourceLink = ({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noreferrer"
+    className="flex items-center justify-between px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+  >
+    <span className="flex items-center gap-3">
+      <span className="text-paypal-blue">{icon}</span>
+      {label}
+    </span>
+    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+  </a>
+);
 
 export default PiAuthPage;
