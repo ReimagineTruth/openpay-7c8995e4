@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import { Shield, ArrowLeft } from "lucide-react";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
+import { lovable } from "@/integrations/lovable";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
