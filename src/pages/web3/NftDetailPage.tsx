@@ -821,8 +821,18 @@ const NftDetailPage = () => {
           )}
 
           <p className="text-xs text-white/50">Funds are escrowed. If outbid, you'll be refunded to your OpenPay balance.</p>
-          <button onClick={handlePlaceBid} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
-            {busy ? "Bidding…" : "Place Bid"}
+          <button onClick={() => {
+            const total = Number(bidAmt || 0);
+            if (!total || total <= 0) { toast({ title: "Enter a bid amount", variant: "destructive" }); return; }
+            setConfirmPay({
+              kind: "bid",
+              total,
+              method: bidMethod,
+              label: bidMethod === "pi" ? `${total.toFixed(2)} Pi` : formatNftPrice(total, item.currency),
+              run: handlePlaceBid,
+            });
+          }} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Bidding…" : "Review & Place Bid"}
           </button>
         </Modal>
       )}
