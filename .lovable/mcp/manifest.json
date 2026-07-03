@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://araojncyittkahvvpdrn.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "openpay-mcp",
+      "version": "0.1.0",
+      "title": "OpenPay"
+    },
+    "tools": [
+      {
+        "name": "get_profile",
+        "title": "Get my OpenPay profile",
+        "description": "Return the signed-in user's OpenPay profile (name, username, KYC status).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_wallet_balance",
+        "title": "Get wallet balance",
+        "description": "Return the signed-in OpenPay user's current wallet balance.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_transactions",
+        "title": "List recent transactions",
+        "description": "List the signed-in user's most recent OpenPay transactions (sent or received).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "default": 10,
+              "description": "Max transactions to return (1-50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "send_money",
+        "title": "Send money to an OpenPay user",
+        "description": "Send funds from the signed-in user's OpenPay wallet to another user by their @username. Requires the sender's MPIN handled elsewhere in the app; the model must confirm with the user before invoking.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "recipient_username": {
+              "type": "string",
+              "minLength": 3,
+              "description": "Recipient's OpenPay @username (without @)."
+            },
+            "amount": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Amount to send in the sender's wallet currency."
+            },
+            "note": {
+              "description": "Optional note for the recipient.",
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "required": [
+            "recipient_username",
+            "amount"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
