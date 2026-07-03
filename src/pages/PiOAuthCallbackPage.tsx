@@ -75,17 +75,50 @@ const PiOAuthCallbackPage = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
 
-      if (!currentUserId) {
-        // No app session yet — stash the Pi profile so the user can complete
-        // linking after they sign in (or sign up) via email/password.
-        stashPendingPiProfile(profile);
-        setStatus({ kind: "needs_login", profile });
+      if (currentUserId) {
+        // User is already signed in — just link/refresh the Pi account.
+        await linkPiAccount(currentUserId, profile);
+        clearPendingPiProfile();
+        setStatus({ kind: "linked", profile });
+        setTimeout(() => navigate("/dashboard", { replace: true }), 800);
         return;
       }
 
-      await linkPiAccount(currentUserId, profile);
-      clearPendingPiProfile();
-      setStatus({ kind: "linked", profile });
+      // No app session — try to auto sign-in if this Pi UID is already linked
+      // to an existing OpenPay account.
+      setStatus({ kind: "loading", message: "Checking your OpenPay account…" });
+      const { data: signinData, error: signinErr } = await supabase.functions.invoke(
+        "pi-oauth-signin",
+        { body: { pi_access_token: profile.accessToken } },
+      );
+
+      if (signinErr) {
+        console.warn("pi-oauth-signin invoke failed", signinErr);
+      }
+
+      if (signinData?.linked && signinData?.token_hash && signinData?.email) {
+        setStatus({ kind: "loading", message: "Signing you in…" });
+        const { error: verifyErr } = await supabase.auth.verifyOtp({
+          type: "magiclink",
+          token_hash: signinData.token_hash,
+        });
+        if (verifyErr) {
+          console.error("verifyOtp failed", verifyErr);
+          throw new Error(verifyErr.message);
+        }
+        // Refresh link row now that we're authenticated.
+        const { data: s2 } = await supabase.auth.getSession();
+        const uid = s2?.session?.user?.id;
+        if (uid) await linkPiAccount(uid, profile).catch(() => undefined);
+        clearPendingPiProfile();
+        setStatus({ kind: "linked", profile });
+        setTimeout(() => navigate("/dashboard", { replace: true }), 600);
+        return;
+      }
+
+      // Not linked yet — fall back to the sign-in / sign-up prompt.
+      stashPendingPiProfile(profile);
+      setStatus({ kind: "needs_login", profile });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Unknown Pi sign-in error";
