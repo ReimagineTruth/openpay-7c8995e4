@@ -127,7 +127,6 @@ var send_money_default = defineTool4({
     note: z2.string().max(200).optional().describe("Optional note for the recipient.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
-  needsApproval: true,
   handler: async ({ recipient_username, amount, note }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
