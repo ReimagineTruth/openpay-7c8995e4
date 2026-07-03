@@ -48,6 +48,7 @@ const NftDetailPage = () => {
   const [bidAmt, setBidAmt] = useState("");
   const [bidMethod, setBidMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
   const [burst, setBurst] = useState<{ kind: "buy"|"gift"|"list"|"bid"|"auction"; msg: string } | null>(null);
+  const [confirmPay, setConfirmPay] = useState<null | { kind: "buy" | "bid"; total: number; method: string; label: string; run: () => Promise<void> }>(null);
 
 
 
