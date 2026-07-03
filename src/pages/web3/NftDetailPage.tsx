@@ -671,8 +671,17 @@ const NftDetailPage = () => {
             <span className="text-white/60">Total</span>
             <span className="font-bold">{method === "pi" ? `${(Number(item.price)*qty).toFixed(2)} Pi` : formatNftPrice(Number(item.price)*qty, item.currency)}</span>
           </div>
-          <button onClick={handleBuy} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
-            {busy ? "Processing…" : "Confirm Purchase"}
+          <button onClick={() => {
+            const total = Number(item.price) * qty;
+            setConfirmPay({
+              kind: "buy",
+              total,
+              method,
+              label: method === "pi" ? `${total.toFixed(2)} Pi` : formatNftPrice(total, item.currency),
+              run: handleBuy,
+            });
+          }} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
+            {busy ? "Processing…" : "Review & Pay"}
           </button>
         </Modal>
       )}
