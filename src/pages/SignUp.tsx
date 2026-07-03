@@ -63,6 +63,25 @@ const SignUp = () => {
       navigate("/onboarding", { replace: true });
     }
   };
+  const handleGoogleSignUp = async () => {
+    setLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error(result.error.message || "Google sign-in failed");
+        setLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+      navigate("/onboarding");
+    } catch (err: any) {
+      toast.error(err?.message || "Google sign-in failed");
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-paypal-blue to-[#072a7a] px-6 py-10">
