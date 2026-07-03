@@ -7,6 +7,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
+import { lovable } from "@/integrations/lovable";
 
 const SignUp = () => {
   const [email, setEmail] = useState("");
