@@ -65,7 +65,7 @@ const NftSplash = ({
         <div className="mt-5 mx-auto h-[3px] w-32 overflow-hidden rounded-full bg-white/10">
           <span
             className="block h-full bg-gradient-to-r from-blue-400 to-indigo-400"
-            style={{ animation: "nft-splash-bar 0.7s ease-out forwards" }}
+            style={{ animation: "nft-splash-bar 0.42s ease-out forwards" }}
           />
         </div>
       </div>
