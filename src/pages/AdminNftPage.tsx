@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, ShieldCheck, Trash2, RotateCcw, Search, Save, TrendingUp, Package, Users, Coins, Activity, Percent } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Trash2, RotateCcw, Search, Save, TrendingUp, Package, Users, Coins, Activity, Percent, BadgeCheck, Check, X } from "lucide-react";
 
 const ACCENT = "hsl(217 91% 60%)";
 
