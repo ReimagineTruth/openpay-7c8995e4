@@ -46,7 +46,7 @@ const NftSplash = ({
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 h-56 w-56 rounded-full bg-indigo-600/20 blur-[70px]" />
       </div>
 
-      <div className="relative text-center" style={{ animation: "nft-splash-in 0.5s cubic-bezier(.22,1.36,.5,1) forwards" }}>
+      <div className="relative text-center" style={{ animation: "nft-splash-in 0.32s cubic-bezier(.22,1.36,.5,1) forwards" }}>
         <div className="relative inline-block">
           {/* Ring */}
           <span
