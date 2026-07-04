@@ -7,6 +7,7 @@ import {
   LayoutGrid, List as ListIcon,
 } from "lucide-react";
 import { getCategoryMeta, NFT_CATEGORIES } from "@/lib/nftCategories";
+import NftPageShell from "@/components/web3/NftPageShell";
 
 const ACCENT = "hsl(217 91% 60%)";
 const WATCH_KEY = "openpay.nft.watchlist";
