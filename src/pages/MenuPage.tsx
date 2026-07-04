@@ -685,6 +685,8 @@ const MenuPage = () => {
 
             { icon: ShieldCheck, label: "NFT Admin", action: () => navigate("/admin-nft") },
 
+            { icon: ShieldCheck, label: "Pi Ads", action: () => navigate("/admin-pi-ads") },
+
 
             { icon: ShieldCheck, label: "Withdrawals", action: () => navigate("/admin-swap-withrawals") },
 
