@@ -167,6 +167,25 @@ const NftStorePage = () => {
     toast({ title: "ID copied" });
   };
 
+  const togglePin = async (it: any) => {
+    const prev = created;
+    const optimistic = created.map((x) => x.id === it.id ? { ...x, pinned: !x.pinned } : x);
+    optimistic.sort((a, b) => (Number(b.pinned || 0) - Number(a.pinned || 0)) || (new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+    setCreated(optimistic);
+    const { error } = await (supabase as any).rpc("nft_toggle_pin", { p_item_id: it.id });
+    if (error) { setCreated(prev); toast({ title: "Pin failed", description: error.message, variant: "destructive" }); return; }
+    toast({ title: it.pinned ? "Unpinned" : "Pinned to store" });
+  };
+
+  const deleteItem = async (it: any) => {
+    if (!confirm(`Delete "${it.name}"? This can't be undone. Items already sold will be hidden instead.`)) return;
+    const { data, error } = await (supabase as any).rpc("nft_delete_item", { p_item_id: it.id });
+    if (error) { toast({ title: "Delete failed", description: error.message, variant: "destructive" }); return; }
+    setCreated((c) => c.filter((x) => x.id !== it.id));
+    toast({ title: data?.hidden ? "Item hidden" : "Item deleted", description: data?.hidden ? "Hidden from your store — buyer records preserved." : undefined });
+  };
+
+
   const openFollowList = async (kind: "followers" | "following") => {
     if (!owner) return;
     setFollowModal(kind);
