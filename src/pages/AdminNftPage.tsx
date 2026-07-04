@@ -277,8 +277,72 @@ const AdminNftPage = () => {
           </button>
         </div>
 
-
-
+        {/* Verification Requests */}
+        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <BadgeCheck className="h-4 w-4" style={{ color: ACCENT }} />
+            <h2 className="font-bold flex-1">Store Verification Requests ({verifyReqs.length})</h2>
+            <div className="flex gap-1 bg-white/5 rounded-full p-0.5">
+              {(["pending", "approved", "rejected", "all"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setVerifyFilter(s)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-full capitalize ${verifyFilter === s ? "bg-white/15" : "text-white/60"}`}
+                >{s}</button>
+              ))}
+            </div>
+          </div>
+          {verifyReqs.length === 0 ? (
+            <p className="text-white/50 text-sm">No {verifyFilter === "all" ? "" : verifyFilter} requests.</p>
+          ) : (
+            <div className="space-y-2">
+              {verifyReqs.map((r: any) => (
+                <div key={r.id} className="rounded-xl bg-[#161616] border border-white/5 p-3">
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-full overflow-hidden bg-white/10 shrink-0">
+                      {r.avatar_url && <img src={r.avatar_url} alt="" className="h-full w-full object-cover" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-sm truncate">{r.display_name || r.handle}</p>
+                        {r.is_verified && <BadgeCheck className="h-3.5 w-3.5" style={{ color: ACCENT }} />}
+                        <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                          r.status === "pending" ? "bg-amber-500/20 text-amber-300" :
+                          r.status === "approved" ? "bg-emerald-500/20 text-emerald-300" :
+                          "bg-rose-500/20 text-rose-300"
+                        }`}>{r.status.toUpperCase()}</span>
+                      </div>
+                      <p className="text-[11px] text-white/50">@{r.handle} · {new Date(r.created_at).toLocaleString()}</p>
+                      <p className="text-[12px] text-white/80 mt-1.5 whitespace-pre-wrap break-words">{r.reason}</p>
+                      {r.links && (
+                        <p className="text-[11px] text-blue-300 mt-1 break-all">{r.links}</p>
+                      )}
+                      {r.admin_notes && (
+                        <p className="text-[11px] text-white/50 mt-1 italic">Notes: {r.admin_notes}</p>
+                      )}
+                      {r.status === "pending" && (
+                        <div className="mt-2.5 flex gap-2">
+                          <button
+                            onClick={() => reviewVerification(r.id, true)}
+                            className="rounded-full px-3 py-1 text-[11px] font-bold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 flex items-center gap-1"
+                          ><Check className="h-3 w-3" /> Approve</button>
+                          <button
+                            onClick={() => reviewVerification(r.id, false)}
+                            className="rounded-full px-3 py-1 text-[11px] font-bold bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 flex items-center gap-1"
+                          ><X className="h-3 w-3" /> Reject</button>
+                          <button
+                            onClick={() => nav(`/web3/nft/store/${r.handle}`)}
+                            className="ml-auto rounded-full px-3 py-1 text-[11px] font-bold bg-white/10 hover:bg-white/15"
+                          >View store</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Items */}
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
