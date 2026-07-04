@@ -2301,6 +2301,7 @@ export type Database = {
           media_type: string
           media_url: string | null
           name: string
+          pinned: boolean
           price: number
           properties: Json
           quantity_minted: number
@@ -2321,6 +2322,7 @@ export type Database = {
           media_type?: string
           media_url?: string | null
           name: string
+          pinned?: boolean
           price?: number
           properties?: Json
           quantity_minted?: number
@@ -2341,6 +2343,7 @@ export type Database = {
           media_type?: string
           media_url?: string | null
           name?: string
+          pinned?: boolean
           price?: number
           properties?: Json
           quantity_minted?: number
@@ -5107,6 +5110,7 @@ export type Database = {
         Returns: string
       }
       nft_default_fee_json: { Args: never; Returns: Json }
+      nft_delete_item: { Args: { p_item_id: string }; Returns: Json }
       nft_finalize_auction: { Args: { p_auction_id: string }; Returns: string }
       nft_get_bid_fee: { Args: never; Returns: Json }
       nft_get_mint_fee: { Args: never; Returns: Json }
@@ -5154,6 +5158,7 @@ export type Database = {
         }
         Returns: string
       }
+      nft_toggle_pin: { Args: { p_item_id: string }; Returns: boolean }
       nft_update_listing_price: {
         Args: { p_listing_id: string; p_new_price: number }
         Returns: boolean
