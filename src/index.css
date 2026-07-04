@@ -1384,8 +1384,8 @@ html:not(.dark) body.nft-scope {
 /* Solid black surfaces -> background surfaces */
 html:not(.dark) .nft-scope .bg-black,
 html:not(.dark) body.nft-scope .bg-black { background-color: hsl(var(--background)) !important; }
-html:not(.dark) .nft-scope [class*="bg-black\\/"],
-html:not(.dark) body.nft-scope [class*="bg-black\\/"] { background-color: hsl(var(--background) / 0.9) !important; }
+html:not(.dark) .nft-scope [class*="bg-black/"],
+html:not(.dark) body.nft-scope [class*="bg-black/"] { background-color: hsl(var(--background) / 0.9) !important; }
 
 /* White text -> foreground */
 html:not(.dark) .nft-scope .text-white,
