@@ -175,6 +175,16 @@ const AppRoutes = () => {
     navigateRef.current = navigate;
   }, [navigate]);
 
+  // Toggle a global `nft-scope` class on <body> while browsing NFT routes so
+  // theme-aware CSS overrides can adapt hardcoded dark utilities to light mode.
+  useEffect(() => {
+    const isNft = location.pathname.startsWith("/web3/nft");
+    document.body.classList.toggle("nft-scope", isNft);
+    return () => {
+      document.body.classList.remove("nft-scope");
+    };
+  }, [location.pathname]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       routeLoaderReady.current = true;
