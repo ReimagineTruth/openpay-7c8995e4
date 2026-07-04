@@ -9,6 +9,7 @@ import {
   BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart, X, MessageCircle,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
 
 
 const ACCENT = "hsl(217 91% 60%)";
@@ -193,15 +194,21 @@ const NftStorePage = () => {
 
 
   if (loading) {
-    return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading store…</div>;
+    return (
+      <NftPageShell loading className="pb-24" splashTitle="Store">
+        <DefaultNftSkeleton />
+      </NftPageShell>
+    );
   }
 
   if (!owner) {
     return (
-      <div className="min-h-screen bg-black text-white p-6 text-center">
-        <p>Store not found.</p>
-        <button onClick={() => nav("/web3/nft")} className="mt-4 underline">Back to marketplace</button>
-      </div>
+      <NftPageShell className="pb-24">
+        <div className="p-6 text-center">
+          <p>Store not found.</p>
+          <button onClick={() => nav("/web3/nft")} className="mt-4 underline">Back to marketplace</button>
+        </div>
+      </NftPageShell>
     );
   }
 
@@ -213,7 +220,8 @@ const NftStorePage = () => {
   const items = tab === "collected" ? collected : tab === "created" ? created : [];
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
+    <NftPageShell className="pb-24">
+
       {/* Banner */}
       <div className="relative">
         <div className="h-44 sm:h-60 w-full overflow-hidden"
@@ -455,7 +463,7 @@ const NftStorePage = () => {
           </div>
         </>
       )}
-    </div>
+    </NftPageShell>
   );
 };
 

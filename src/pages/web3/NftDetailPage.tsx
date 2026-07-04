@@ -9,6 +9,7 @@ import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Ta
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
 import { LiveAuctionPanel } from "@/components/web3/LiveAuctionPanel";
+import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
 
 
 const ACCENT = "hsl(217 91% 60%)";
@@ -365,12 +366,19 @@ const NftDetailPage = () => {
   }, null);
   const livePrice = topAuction ? Number(topAuction.current_bid ?? topAuction.start_price) : Number(item?.price || 0);
 
-  if (!item) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading…</div>;
+  if (!item) {
+    return (
+      <NftPageShell loading className="pb-36" splashTitle="Loading NFT">
+        <DefaultNftSkeleton />
+      </NftPageShell>
+    );
+  }
 
   const img = item.media_url || item.image_url;
 
   return (
-    <div className="min-h-screen bg-black text-white pb-36">
+    <NftPageShell className="pb-36">
+
       <header className="sticky top-0 z-10 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-white/5">
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
@@ -881,7 +889,7 @@ const NftDetailPage = () => {
       )}
 
       <NftBurst show={!!burst} kind={burst?.kind} message={burst?.msg} onDone={() => setBurst(null)} />
-    </div>
+    </NftPageShell>
   );
 };
 

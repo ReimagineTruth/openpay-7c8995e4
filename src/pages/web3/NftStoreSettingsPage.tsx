@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle, Tag, Send, Facebook, Youtube } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { NFT_CATEGORIES } from "@/lib/nftCategories";
+import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -84,11 +85,18 @@ const NftStoreSettingsPage = () => {
     nav(`/web3/nft/store/${payload.handle}`);
   };
 
-  if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading…</div>;
+  if (loading) {
+    return (
+      <NftPageShell loading className="pb-32" splashTitle="Store Settings">
+        <DefaultNftSkeleton />
+      </NftPageShell>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-32">
+    <NftPageShell className="pb-32">
       <header className="sticky top-0 z-10 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-white/5">
+
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -196,7 +204,7 @@ const NftStoreSettingsPage = () => {
       </div>
 
       <style>{`.input{width:100%;background:#0f0f0f;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 12px;color:#fff;font-size:14px;outline:none}.input:focus{border-color:${ACCENT}}`}</style>
-    </div>
+    </NftPageShell>
   );
 };
 
