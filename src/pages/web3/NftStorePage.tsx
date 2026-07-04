@@ -9,6 +9,7 @@ import {
   BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart, X, MessageCircle,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
 
 
 const ACCENT = "hsl(217 91% 60%)";
