@@ -8,9 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import AuthFooter from "@/components/AuthFooter";
-import { ExternalLink } from "lucide-react";
-import ThemeToggle from "@/components/ThemeToggle";
+import { ArrowLeft, Globe, BookOpen, Users, ChevronRight } from "lucide-react";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
+import { lovable } from "@/integrations/lovable";
 
 const AdminMrwainAuth = () => {
   const navigate = useNavigate();
