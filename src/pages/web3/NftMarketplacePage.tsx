@@ -7,6 +7,7 @@ import { formatNftPrice } from "@/lib/nftPrice";
 import { ArrowLeft, Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search, BadgeCheck, X, RefreshCw, MessageCircle, Menu, Gift, Image as ImageIcon, Settings, Trophy, Heart } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
 import { NFT_CATEGORIES, getCategoryMeta } from "@/lib/nftCategories";
+import NftPageShell from "@/components/web3/NftPageShell";
 
 
 const ACCENT = "hsl(217 91% 60%)";
