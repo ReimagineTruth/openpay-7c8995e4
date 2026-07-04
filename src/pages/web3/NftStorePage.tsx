@@ -6,7 +6,7 @@ import { NftStatusBadge } from "@/lib/nftStatus";
 import { formatNftPrice } from "@/lib/nftPrice";
 import {
   ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send, Facebook, Youtube,
-  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart, X, MessageCircle, Pin, PinOff, Trash2,
+  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, EyeOff, Heart, X, MessageCircle, Pin, PinOff, Trash2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
