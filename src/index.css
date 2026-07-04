@@ -1410,7 +1410,7 @@ html:not(.dark) .nft-scope .hover\:bg-white\/15:hover { background-color: hsl(va
 html:not(.dark) .nft-scope .hover\:bg-white\/5:hover { background-color: hsl(var(--foreground) / 0.05) !important; }
 
 /* White borders */
-html:not(.dark) .nft-scope [class*="border-white\\/"] { border-color: hsl(var(--border)) !important; }
+html:not(.dark) .nft-scope [class*="border-white/"] { border-color: hsl(var(--border)) !important; }
 html:not(.dark) .nft-scope .focus\:border-white\/30:focus { border-color: hsl(var(--ring)) !important; }
 html:not(.dark) .nft-scope .hover\:text-white:hover { color: hsl(var(--foreground)) !important; }
 
