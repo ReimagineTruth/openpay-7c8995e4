@@ -62,7 +62,17 @@ const AdminNftPage = () => {
     }
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [verifyFilter]);
+
+  const reviewVerification = async (id: string, approve: boolean) => {
+    const notes = approve ? null : prompt("Reason for rejection (optional):");
+    const { error } = await (supabase as any).rpc("nft_admin_review_verification", {
+      p_id: id, p_approve: approve, p_notes: notes || null,
+    });
+    if (error) return toast({ title: "Failed", description: error.message, variant: "destructive" });
+    toast({ title: approve ? "Store verified" : "Request rejected" });
+    load();
+  };
 
   const saveFee = async () => {
     setSavingFee(true);
