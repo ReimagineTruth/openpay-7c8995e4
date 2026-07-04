@@ -1429,3 +1429,12 @@ html:not(.dark) .nft-scope [class*="ring-[#0"] { --tw-ring-color: hsl(var(--bord
 html:not(.dark) .nft-scope [class*="border-[#"] { border-color: hsl(var(--border)) !important; }
 /* Ensure sidebar section dividers/labels remain readable */
 html:not(.dark) .nft-scope aside { color: hsl(var(--foreground)); }
+
+/* Escape hatch: keep white text on image/scrim overlays even in NFT light mode */
+html:not(.dark) .nft-scope .nft-on-media,
+html:not(.dark) .nft-scope .nft-on-media *,
+html:not(.dark) .nft-scope .nft-on-media .text-white,
+html:not(.dark) .nft-scope .nft-on-media [class*="text-white/"] { color: #fff !important; }
+html:not(.dark) .nft-scope .nft-on-media .text-white\/60,
+html:not(.dark) .nft-scope .nft-on-media .text-white\/50,
+html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,255,0.75) !important; }
