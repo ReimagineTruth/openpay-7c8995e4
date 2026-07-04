@@ -87,11 +87,13 @@ const NftStorePage = () => {
         .gt("quantity", 0);
       setCollected((own || []).map((o: any) => ({ ...o.item, qty: o.quantity })).filter((x: any) => x.id));
 
-      // Items created
+      // Items created — pinned first, then newest
       const { data: cre } = await (supabase as any)
         .from("nft_items").select("*").eq("creator_id", targetUserId)
+        .order("pinned", { ascending: false })
         .order("created_at", { ascending: false });
       setCreated(cre || []);
+
       const createdIds = (cre || []).map((i: any) => i.id);
       if (createdIds.length) {
         const { data: tx } = await (supabase as any)
