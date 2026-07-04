@@ -51,6 +51,7 @@ const NftStoreSettingsPage = () => {
           feature_nfts: data.feature_nfts ?? true,
           category: data.category || "general",
         });
+        setIsVerified(!!data.is_verified);
       } else {
         const { data: base } = await (supabase as any)
           .from("profiles").select("full_name,username,avatar_url").eq("id", user.id).maybeSingle();
@@ -61,9 +62,41 @@ const NftStoreSettingsPage = () => {
           avatar_url: base?.avatar_url || "",
         }));
       }
+
+      // Load latest verification request (if any)
+      const { data: reqData } = await (supabase as any)
+        .from("nft_store_verification_requests")
+        .select("id,status,reason,admin_notes,created_at,reviewed_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (reqData) setVerifyReq(reqData);
+
       setLoading(false);
     })();
   }, []);
+
+  const submitVerification = async () => {
+    if (!verifyForm.reason.trim() || verifyForm.reason.trim().length < 20) {
+      toast({ title: "Reason too short", description: "Please write at least 20 characters describing your store.", variant: "destructive" });
+      return;
+    }
+    setVerifySubmitting(true);
+    const { data, error } = await (supabase as any).rpc("nft_request_verification", {
+      p_reason: verifyForm.reason.trim(),
+      p_links: verifyForm.links.trim() || null,
+    });
+    setVerifySubmitting(false);
+    if (error) {
+      toast({ title: "Request failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Verification requested", description: "Admins will review your store soon." });
+    setShowVerifyModal(false);
+    setVerifyReq({ id: data, status: "pending", reason: verifyForm.reason, created_at: new Date().toISOString() });
+    setVerifyForm({ reason: "", links: "" });
+  };
 
   const handleImage = async (file: File, field: "avatar_url" | "banner_url") => {
     if (!me) return;
