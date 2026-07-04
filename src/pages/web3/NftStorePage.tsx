@@ -472,7 +472,8 @@ const NftStorePage = () => {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-bold truncate">{it.name}</p>
                         <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} />
-                        {it.is_active === false && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/80">Hidden</span>}
+                        {it.hidden && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/90 text-black inline-flex items-center gap-1"><EyeOff className="h-2.5 w-2.5" />Hidden</span>}
+                        {!it.hidden && it.is_active === false && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/80">Removed</span>}
                       </div>
                       <p className="text-[11px] text-white/50">#{it.code}</p>
                     </div>
