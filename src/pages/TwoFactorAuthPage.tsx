@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import BottomNav from "@/components/BottomNav";
 import QRCode from "qrcode";
-import * as authenticator from "otplib";
+import * as OTPAuth from "otpauth";
 
 const TwoFactorAuthPage = () => {
   const navigate = useNavigate();
