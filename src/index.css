@@ -1367,3 +1367,55 @@ body {
 /* Utility: hide scrollbar */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================================
+   NFT theme adaptation — many NFT pages ship hardcoded dark
+   utilities (bg-black, text-white, white/x overlays). When the
+   app is in light mode, remap those to semantic tokens so the
+   entire NFT feature respects the active theme.
+   ============================================================ */
+.nft-scope { background-color: hsl(var(--background)); color: hsl(var(--foreground)); }
+
+html:not(.dark) .nft-scope,
+html:not(.dark) body.nft-scope {
+  color: hsl(var(--foreground));
+}
+
+/* Solid black surfaces -> background surfaces */
+html:not(.dark) .nft-scope .bg-black,
+html:not(.dark) body.nft-scope .bg-black { background-color: hsl(var(--background)) !important; }
+html:not(.dark) .nft-scope [class*="bg-black\\/"],
+html:not(.dark) body.nft-scope [class*="bg-black\\/"] { background-color: hsl(var(--background) / 0.9) !important; }
+
+/* White text -> foreground */
+html:not(.dark) .nft-scope .text-white,
+html:not(.dark) body.nft-scope .text-white { color: hsl(var(--foreground)) !important; }
+html:not(.dark) .nft-scope .text-white\/90 { color: hsl(var(--foreground) / 0.9) !important; }
+html:not(.dark) .nft-scope .text-white\/80 { color: hsl(var(--foreground) / 0.8) !important; }
+html:not(.dark) .nft-scope .text-white\/70 { color: hsl(var(--foreground) / 0.75) !important; }
+html:not(.dark) .nft-scope .text-white\/60 { color: hsl(var(--muted-foreground)) !important; }
+html:not(.dark) .nft-scope .text-white\/55 { color: hsl(var(--muted-foreground)) !important; }
+html:not(.dark) .nft-scope .text-white\/50 { color: hsl(var(--muted-foreground)) !important; }
+html:not(.dark) .nft-scope .text-white\/40 { color: hsl(var(--muted-foreground) / 0.85) !important; }
+html:not(.dark) .nft-scope .text-white\/30 { color: hsl(var(--muted-foreground) / 0.7) !important; }
+
+/* White overlays (bg-white/x) -> subtle foreground overlays */
+html:not(.dark) .nft-scope .bg-white { background-color: hsl(var(--card)) !important; }
+html:not(.dark) .nft-scope .bg-white\/5 { background-color: hsl(var(--foreground) / 0.04) !important; }
+html:not(.dark) .nft-scope .bg-white\/10 { background-color: hsl(var(--foreground) / 0.06) !important; }
+html:not(.dark) .nft-scope .bg-white\/15 { background-color: hsl(var(--foreground) / 0.09) !important; }
+html:not(.dark) .nft-scope .bg-white\/20 { background-color: hsl(var(--foreground) / 0.12) !important; }
+html:not(.dark) .nft-scope .hover\:bg-white\/10:hover { background-color: hsl(var(--foreground) / 0.08) !important; }
+html:not(.dark) .nft-scope .hover\:bg-white\/15:hover { background-color: hsl(var(--foreground) / 0.1) !important; }
+html:not(.dark) .nft-scope .hover\:bg-white\/5:hover { background-color: hsl(var(--foreground) / 0.05) !important; }
+
+/* White borders */
+html:not(.dark) .nft-scope [class*="border-white\\/"] { border-color: hsl(var(--border)) !important; }
+html:not(.dark) .nft-scope .focus\:border-white\/30:focus { border-color: hsl(var(--ring)) !important; }
+html:not(.dark) .nft-scope .hover\:text-white:hover { color: hsl(var(--foreground)) !important; }
+
+/* Shimmer skeletons re-tinted for light bg */
+html:not(.dark) .nft-scope .nft-shimmer {
+  background: linear-gradient(90deg, hsl(var(--foreground) / 0.04) 0%, hsl(var(--foreground) / 0.1) 50%, hsl(var(--foreground) / 0.04) 100%) !important;
+  background-size: 200% 100% !important;
+}
