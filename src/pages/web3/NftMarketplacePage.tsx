@@ -188,8 +188,9 @@ const NftMarketplacePage = () => {
   }, [filteredStores, storeItemCounts]);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 animate-in fade-in duration-500">
+    <NftPageShell className="pb-24" splashTitle={auctionsOnly ? "Live Auctions" : "OpenPay NFT"}>
       <header className="sticky top-0 z-20 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-2 border-b border-white/5">
+
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
