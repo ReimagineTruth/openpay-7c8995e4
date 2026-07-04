@@ -100,7 +100,7 @@ const NftCreatorDashboardPage = () => {
           )}
         </div>
       </div>
-    </div>
+    </NftPageShell>
   );
 };
 
