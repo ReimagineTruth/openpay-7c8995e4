@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle, Tag, Send, Facebook, Youtube } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { NFT_CATEGORIES } from "@/lib/nftCategories";
+import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
 
 const ACCENT = "hsl(217 91% 60%)";
 
