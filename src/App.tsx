@@ -165,6 +165,7 @@ const AppRoutes = () => {
   const location = useLocation();
   const navigate = useNavigate();
   usePiOAuthAutoLink();
+  usePiAdsAutoShow();
   const routeLoaderReady = useRef(false);
   const [showRouteSplash, setShowRouteSplash] = useState(true);
   const navigateRef = useRef(navigate);
