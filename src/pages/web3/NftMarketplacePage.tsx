@@ -50,7 +50,7 @@ const SIDEBAR_ITEMS = [
   { icon: ArrowLeftRight, label: "Swap", to: "/web3/nft/gifts" },
   { icon: Calendar, label: "Drops", to: "/web3/nft/auctions" },
   { icon: ActivityIcon, label: "Activity", to: "/web3/nft/dashboard" },
-  { icon: LayoutDashboard, label: "Creator Dashboard", to: "/web3/nft/creator-dashboard" },
+  { icon: LayoutDashboard, label: "Creator Dashboard", to: "/web3/nft/dashboard" },
   { icon: Anchor, label: "Rewards", to: "/web3/nft/leaderboard" },
   { icon: Wrench, label: "Tools", to: "/web3/nft/store/settings", beta: true },
   { icon: Palette, label: "Studio", to: "/web3/nft/create" },
