@@ -239,7 +239,99 @@ const NftStoreSettingsPage = () => {
             onChange={(e) => setForm({ ...form, feature_nfts: e.target.checked })}
             className="h-5 w-5 accent-blue-500" />
         </label>
+
+        {/* Verified badge */}
+        <div className="rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border border-blue-500/20 p-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+              <BadgeCheck className="h-5 w-5" style={{ color: ACCENT }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm flex items-center gap-1.5">
+                Verified Store Badge
+                {isVerified && <BadgeCheck className="h-4 w-4" style={{ color: ACCENT }} />}
+              </p>
+              <p className="text-[11px] text-white/60 mt-0.5">
+                Get the blue check next to your store. Admins review authenticity, activity, and originality.
+              </p>
+
+              {isVerified ? (
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold" style={{ color: ACCENT }}>
+                  <BadgeCheck className="h-3.5 w-3.5" /> Verified
+                </div>
+              ) : verifyReq?.status === "pending" ? (
+                <div className="mt-3 flex items-center gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 text-amber-300 px-3 py-1 font-bold">
+                    <Clock className="h-3.5 w-3.5" /> Under Review
+                  </span>
+                  <span className="text-white/50">Submitted {new Date(verifyReq.created_at).toLocaleDateString()}</span>
+                </div>
+              ) : (
+                <>
+                  {verifyReq?.status === "rejected" && (
+                    <div className="mt-2 rounded-lg bg-rose-500/10 border border-rose-500/20 p-2 text-[11px]">
+                      <p className="flex items-center gap-1 font-bold text-rose-300"><XCircle className="h-3.5 w-3.5" /> Previously rejected</p>
+                      {verifyReq.admin_notes && <p className="text-white/60 mt-0.5">Admin: {verifyReq.admin_notes}</p>}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setShowVerifyModal(true)}
+                    className="mt-3 rounded-full px-4 py-1.5 text-xs font-bold"
+                    style={{ backgroundColor: ACCENT }}
+                  >
+                    Apply for verification
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Verify modal */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-3">
+          <div className="w-full max-w-md rounded-2xl bg-[#0f0f10] border border-white/10 p-5 animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">
+            <div className="flex items-center gap-2 mb-3">
+              <BadgeCheck className="h-5 w-5" style={{ color: ACCENT }} />
+              <h3 className="font-extrabold text-base flex-1">Apply for Verified Badge</h3>
+              <button onClick={() => setShowVerifyModal(false)} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                <XCircle className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-[11px] text-white/60 mb-4">
+              Tell admins why your store deserves verification. Include your identity, official links, and any prior verification (e.g. blue check on X/Instagram).
+            </p>
+            <label className="text-xs font-bold text-white/70 block mb-1">About your store *</label>
+            <textarea
+              value={verifyForm.reason}
+              onChange={(e) => setVerifyForm({ ...verifyForm, reason: e.target.value })}
+              rows={4}
+              placeholder="I'm the founder of X collection, verified on X.com…"
+              className="input resize-none mb-3"
+            />
+            <label className="text-xs font-bold text-white/70 block mb-1">Proof links (optional)</label>
+            <textarea
+              value={verifyForm.links}
+              onChange={(e) => setVerifyForm({ ...verifyForm, links: e.target.value })}
+              rows={2}
+              placeholder="https://x.com/handle, https://your-site.com"
+              className="input resize-none mb-4"
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setShowVerifyModal(false)} className="flex-1 rounded-full py-2.5 text-sm font-bold bg-white/10">Cancel</button>
+              <button
+                onClick={submitVerification}
+                disabled={verifySubmitting}
+                className="flex-1 rounded-full py-2.5 text-sm font-bold disabled:opacity-60"
+                style={{ backgroundColor: ACCENT }}
+              >
+                {verifySubmitting ? "Submitting…" : "Submit request"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`.input{width:100%;background:#0f0f0f;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 12px;color:#fff;font-size:14px;outline:none}.input:focus{border-color:${ACCENT}}`}</style>
     </NftPageShell>
