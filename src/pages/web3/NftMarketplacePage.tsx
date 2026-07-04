@@ -9,11 +9,12 @@ import {
   BadgeCheck, X, RefreshCw, MessageCircle, Menu, Gift, Image as ImageIcon,
   Settings, Trophy, Heart, Compass, LayoutGrid, Coins, ArrowLeftRight, Calendar,
   Activity as ActivityIcon, Anchor, Wrench, Palette, ChevronRight, ChevronLeft,
-  Bell, Wallet, TrendingUp, TrendingDown,
+  Bell, Wallet, TrendingUp, TrendingDown, Sun, Moon, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
 import { NFT_CATEGORIES, getCategoryMeta } from "@/lib/nftCategories";
 import NftPageShell from "@/components/web3/NftPageShell";
+import { persistAndApplyAppTheme, getStoredAppTheme } from "@/lib/appTheme";
 
 const ACCENT = "hsl(217 91% 60%)";
 
@@ -49,6 +50,7 @@ const SIDEBAR_ITEMS = [
   { icon: ArrowLeftRight, label: "Swap", to: "/web3/nft/gifts" },
   { icon: Calendar, label: "Drops", to: "/web3/nft/auctions" },
   { icon: ActivityIcon, label: "Activity", to: "/web3/nft/dashboard" },
+  { icon: LayoutDashboard, label: "Creator Dashboard", to: "/web3/nft/dashboard" },
   { icon: Anchor, label: "Rewards", to: "/web3/nft/leaderboard" },
   { icon: Wrench, label: "Tools", to: "/web3/nft/store/settings", beta: true },
   { icon: Palette, label: "Studio", to: "/web3/nft/create" },
@@ -82,6 +84,23 @@ const NftMarketplacePage = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [tab, setTab] = useState<"nfts" | "tokens">("nfts");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("openpay_nft_sidebar_collapsed") === "1";
+  });
+  const [theme, setThemeState] = useState<"light" | "dark" | "system">(() => getStoredAppTheme());
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setThemeState(next);
+    persistAndApplyAppTheme(next);
+  };
+  const toggleSidebar = () => {
+    setSidebarCollapsed((v) => {
+      const nv = !v;
+      try { localStorage.setItem("openpay_nft_sidebar_collapsed", nv ? "1" : "0"); } catch {}
+      return nv;
+    });
+  };
 
   const load = useCallback(async (mode: "initial" | "refresh" = "initial") => {
     if (mode === "refresh") setRefreshing(true);
@@ -255,25 +274,27 @@ const NftMarketplacePage = () => {
   const Sidebar = ({ compact = false, onNav }: { compact?: boolean; onNav?: () => void }) => (
     <nav className="flex flex-col h-full">
       <div className={`px-4 pt-5 pb-4 flex items-center gap-2 ${compact ? "justify-center" : ""}`}>
-        <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 40%))` }}>
+        <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 40%))` }}>
           <Sparkles className="h-4 w-4" />
         </div>
-        {!compact && <span className="font-extrabold text-[17px] tracking-tight">OpenPay NFT</span>}
+        {!compact && <span className="font-extrabold text-[17px] tracking-tight whitespace-nowrap overflow-hidden">OpenPay NFT</span>}
       </div>
       <div className="px-2 space-y-0.5">
-        {SIDEBAR_ITEMS.map((it) => {
+        {SIDEBAR_ITEMS.map((it, idx) => {
           const active = location.pathname === it.to || (it.to === "/web3/nft" && location.pathname === "/web3/nft");
           return (
             <button
               key={it.label}
               onClick={() => { onNav?.(); nav(it.to); }}
+              title={compact ? it.label : undefined}
+              style={{ animation: `nft-nav-in 0.35s ease-out ${idx * 40}ms both` }}
               className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
                 active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"
               } ${compact ? "justify-center" : ""}`}
             >
               <it.icon className="h-[18px] w-[18px] shrink-0" />
               {!compact && (
-                <span className="flex-1 text-left flex items-center gap-1.5">
+                <span className="flex-1 text-left flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
                   {it.label}
                   {it.beta && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/60">Beta</span>}
                 </span>
@@ -284,15 +305,17 @@ const NftMarketplacePage = () => {
       </div>
       {!compact && <div className="mx-4 my-4 h-px bg-white/10" />}
       <div className="px-2 space-y-0.5">
-        {SECONDARY_ITEMS.map((it) => (
+        {SECONDARY_ITEMS.map((it, idx) => (
           <button
             key={it.label}
             onClick={() => { onNav?.(); nav(it.to); }}
+            title={compact ? it.label : undefined}
+            style={{ animation: `nft-nav-in 0.35s ease-out ${(SIDEBAR_ITEMS.length + idx) * 40}ms both` }}
             className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 hover:bg-white/5 hover:text-white transition ${compact ? "justify-center" : ""}`}
           >
             <it.icon className="h-[18px] w-[18px] shrink-0" />
             {!compact && (
-              <span className="flex-1 text-left flex items-center gap-1.5">
+              <span className="flex-1 text-left flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
                 {it.label}
                 {"live" in it && (it as any).live && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />}
               </span>
@@ -300,15 +323,39 @@ const NftMarketplacePage = () => {
           </button>
         ))}
       </div>
-      <div className="mt-auto p-3">
+
+      {/* Theme toggle */}
+      <div className={`mt-4 px-2`}>
+        <button
+          onClick={toggleTheme}
+          title={compact ? (theme === "dark" ? "Light mode" : "Dark mode") : undefined}
+          className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 hover:bg-white/5 hover:text-white transition ${compact ? "justify-center" : ""}`}
+        >
+          {theme === "dark" ? <Sun className="h-[18px] w-[18px] shrink-0" /> : <Moon className="h-[18px] w-[18px] shrink-0" />}
+          {!compact && (
+            <span className="flex-1 text-left whitespace-nowrap overflow-hidden">
+              {theme === "dark" ? "Light mode" : "Dark mode"}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div className="mt-auto p-3 space-y-2">
         <button
           onClick={() => { onNav?.(); nav("/web3/nft/create"); }}
+          title={compact ? "Mint NFT" : undefined}
           className="w-full rounded-xl py-2.5 text-sm font-bold flex items-center justify-center gap-1.5"
           style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 45%))` }}
         >
-          <Plus className="h-4 w-4" /> {compact ? "" : "Mint NFT"}
+          <Plus className="h-4 w-4" /> {!compact && "Mint NFT"}
         </button>
       </div>
+      <style>{`
+        @keyframes nft-nav-in {
+          from { opacity: 0; transform: translateX(-8px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
     </nav>
   );
 
@@ -316,9 +363,23 @@ const NftMarketplacePage = () => {
     <NftPageShell className="pb-24 md:pb-6" splashTitle={auctionsOnly ? "Live Auctions" : "OpenPay NFT"}>
       <div className="md:flex md:min-h-screen">
         {/* Desktop sidebar */}
-        <aside className="hidden md:block w-[240px] shrink-0 border-r border-white/10 bg-[#08080a] sticky top-0 h-screen overflow-y-auto">
-          <Sidebar />
+        <aside
+          className={`hidden md:block shrink-0 border-r border-white/10 bg-[#08080a] sticky top-0 h-screen overflow-y-auto overflow-x-hidden transition-[width] duration-300 ease-out ${
+            sidebarCollapsed ? "w-[68px]" : "w-[240px]"
+          }`}
+        >
+          <div className="relative h-full">
+            <button
+              onClick={toggleSidebar}
+              aria-label={sidebarCollapsed ? "Expand menu" : "Collapse menu"}
+              className="absolute top-4 -right-3 z-10 h-6 w-6 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 flex items-center justify-center backdrop-blur transition"
+            >
+              {sidebarCollapsed ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+            </button>
+            <Sidebar compact={sidebarCollapsed} />
+          </div>
         </aside>
+
 
         {/* Main */}
         <div className="flex-1 min-w-0">

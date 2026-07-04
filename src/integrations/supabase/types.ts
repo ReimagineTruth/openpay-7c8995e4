@@ -2532,6 +2532,45 @@ export type Database = {
         }
         Relationships: []
       }
+      nft_store_verification_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          handle: string | null
+          id: string
+          links: string | null
+          reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          handle?: string | null
+          id?: string
+          links?: string | null
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          handle?: string | null
+          id?: string
+          links?: string | null
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       nft_transactions: {
         Row: {
           buyer_id: string | null
@@ -5041,6 +5080,23 @@ export type Database = {
           sold_count: number
         }[]
       }
+      nft_admin_list_verification_requests: {
+        Args: { p_status?: string }
+        Returns: {
+          admin_notes: string
+          avatar_url: string
+          created_at: string
+          display_name: string
+          handle: string
+          id: string
+          is_verified: boolean
+          links: string
+          reason: string
+          reviewed_at: string
+          status: string
+          user_id: string
+        }[]
+      }
       nft_admin_metrics: { Args: never; Returns: Json }
       nft_admin_recent_activity: {
         Args: { p_limit?: number }
@@ -5066,6 +5122,10 @@ export type Database = {
         Returns: boolean
       }
       nft_admin_restore_item: { Args: { p_item_id: string }; Returns: boolean }
+      nft_admin_review_verification: {
+        Args: { p_approve: boolean; p_id: string; p_notes?: string }
+        Returns: undefined
+      }
       nft_admin_set_bid_fee: {
         Args: { p_collector?: string; p_enabled: boolean; p_rate: number }
         Returns: Json
@@ -5156,6 +5216,10 @@ export type Database = {
           p_pi_payment_id?: string
           p_pi_txid?: string
         }
+        Returns: string
+      }
+      nft_request_verification: {
+        Args: { p_links: string; p_reason: string }
         Returns: string
       }
       nft_toggle_pin: { Args: { p_item_id: string }; Returns: boolean }
