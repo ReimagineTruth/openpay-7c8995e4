@@ -50,6 +50,7 @@ const AppSecurityGate = () => {
   const [busy, setBusy] = useState(false);
   const [accountLabel, setAccountLabel] = useState("Secure Account");
   const [settings, setSettings] = useState(() => ({} as ReturnType<typeof loadAppSecuritySettings>));
+  const [method, setMethod] = useState<"pin" | "password">("pin");
   const pinInputRef = useRef<HTMLInputElement | null>(null);
   const lastPointerActionAtRef = useRef<number>(0);
 
