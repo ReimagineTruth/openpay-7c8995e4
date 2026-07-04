@@ -9,6 +9,7 @@ import { ArrowLeft, Share2, Gift, ShoppingCart, Wallet, CreditCard, X, Users, Ta
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
 import { LiveAuctionPanel } from "@/components/web3/LiveAuctionPanel";
+import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
 
 
 const ACCENT = "hsl(217 91% 60%)";
