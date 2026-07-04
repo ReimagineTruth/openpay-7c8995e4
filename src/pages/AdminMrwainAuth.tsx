@@ -340,4 +340,19 @@ const AdminMrwainAuth = () => {
   );
 };
 
+const ResourceLink = ({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noreferrer"
+    className="flex items-center justify-between px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+  >
+    <span className="flex items-center gap-3">
+      <span className="text-paypal-blue">{icon}</span>
+      {label}
+    </span>
+    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+  </a>
+);
+
 export default AdminMrwainAuth;
