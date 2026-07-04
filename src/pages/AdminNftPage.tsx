@@ -21,6 +21,8 @@ const AdminNftPage = () => {
   const [metrics, setMetrics] = useState<Metrics>({});
   const [items, setItems] = useState<any[]>([]);
   const [activity, setActivity] = useState<any[]>([]);
+  const [verifyReqs, setVerifyReqs] = useState<any[]>([]);
+  const [verifyFilter, setVerifyFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [search, setSearch] = useState("");
   const [fee, setFee] = useState({ enabled: false, rate: 0, collector_user_id: "" });
   const [mintFee, setMintFee] = useState({ enabled: false, rate: 0, collector_user_id: "" });
