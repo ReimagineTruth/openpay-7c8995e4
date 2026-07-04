@@ -102,15 +102,15 @@ const TwoFactorAuthPage = () => {
 
     setLoading(true);
     try {
-      const isValid = await verifyTOTP(verificationCode, secretKey);
-      
+      const { data: { user } } = await supabase.auth.getUser();
+      const accountName = user?.email || "OpenPay User";
+      const isValid = verifyTOTP(verificationCode, secretKey, accountName);
+
       if (isValid) {
         // Generate backup codes first
         const codes = generateBackupCodes();
         setBackupCodes(codes);
-        
-        // Save 2FA setup to user metadata
-        const { data: { user } } = await supabase.auth.getUser();
+
         if (user) {
           console.log("Setting up 2FA for user:", user.id);
           console.log("User metadata before update:", user.user_metadata);
