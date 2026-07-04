@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle, Tag, Send, Facebook, Youtube } from "lucide-react";
+import { ArrowLeft, Save, User, Image as ImageIcon, Globe, Twitter, Instagram, MessageCircle, Tag, Send, Facebook, Youtube, BadgeCheck, Clock, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { NFT_CATEGORIES } from "@/lib/nftCategories";
 import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
@@ -13,6 +13,11 @@ const NftStoreSettingsPage = () => {
   const [me, setMe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [verifyReq, setVerifyReq] = useState<any>(null);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyForm, setVerifyForm] = useState({ reason: "", links: "" });
+  const [verifySubmitting, setVerifySubmitting] = useState(false);
   const [form, setForm] = useState({
     handle: "", display_name: "", bio: "",
     avatar_url: "", banner_url: "",
