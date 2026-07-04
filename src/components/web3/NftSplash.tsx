@@ -34,9 +34,10 @@ const NftSplash = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[110] flex items-center justify-center bg-gradient-to-br from-black via-[#050a1a] to-black transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[110] flex items-center justify-center bg-gradient-to-br from-black via-[#050a1a] to-black transition-opacity duration-200 ${
         phase === "out" ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
+
       aria-hidden
     >
       {/* Ambient glow */}
