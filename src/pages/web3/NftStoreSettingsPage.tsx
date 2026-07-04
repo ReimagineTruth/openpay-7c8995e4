@@ -204,7 +204,7 @@ const NftStoreSettingsPage = () => {
       </div>
 
       <style>{`.input{width:100%;background:#0f0f0f;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 12px;color:#fff;font-size:14px;outline:none}.input:focus{border-color:${ACCENT}}`}</style>
-    </div>
+    </NftPageShell>
   );
 };
 
