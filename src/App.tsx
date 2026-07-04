@@ -100,6 +100,7 @@ import OAuthConsentPage from "./pages/OAuthConsentPage";
 import SetupProfilePage from "./pages/SetupProfilePage";
 import PiAdsPage from "./pages/PiAdsPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import FeatureQuestPage from "./pages/FeatureQuestPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSwapWithdrawalsPage from "./pages/AdminSwapWithdrawalsPage";
 import AdminLoanApplicationsPage from "./pages/AdminLoanApplicationsPage";
