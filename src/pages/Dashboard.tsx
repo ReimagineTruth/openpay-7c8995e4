@@ -3460,10 +3460,11 @@ const Dashboard = () => {
               type="button"
               onClick={() => setUiMode("web3")}
               aria-label="Switch to Web3 mode"
-              className="ml-auto ios-active flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-md hover:opacity-90 transition-all"
+              className="web3-cta ml-auto ios-active group relative flex items-center gap-1.5 overflow-hidden rounded-full px-3.5 py-1.5 text-xs font-bold text-white shadow-[0_6px_18px_-4px_hsl(217_91%_60%/0.55)] transition-transform active:scale-95"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              Web3
+              <span aria-hidden className="web3-cta-glow" />
+              <Sparkles className="relative h-3.5 w-3.5 web3-cta-spark" />
+              <span className="relative tracking-wide">Web3</span>
             </button>
             <button
               type="button"
