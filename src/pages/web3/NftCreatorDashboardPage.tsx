@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ArrowLeft, TrendingUp, Coins, Package, Plus } from "lucide-react";
+import NftPageShell from "@/components/web3/NftPageShell";
 
 const ACCENT = "hsl(217 91% 60%)";
 
