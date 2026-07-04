@@ -185,6 +185,14 @@ const NftStorePage = () => {
     toast({ title: data?.hidden ? "Item hidden" : "Item deleted", description: data?.hidden ? "Hidden from your store — buyer records preserved." : undefined });
   };
 
+  const toggleHidden = async (it: any) => {
+    const prev = created;
+    setCreated((c) => c.map((x) => x.id === it.id ? { ...x, hidden: !x.hidden } : x));
+    const { data, error } = await (supabase as any).rpc("nft_toggle_hidden", { p_item_id: it.id });
+    if (error) { setCreated(prev); toast({ title: "Update failed", description: error.message, variant: "destructive" }); return; }
+    toast({ title: data?.hidden ? "Hidden from store" : "Visible in store" });
+  };
+
 
   const openFollowList = async (kind: "followers" | "following") => {
     if (!owner) return;
