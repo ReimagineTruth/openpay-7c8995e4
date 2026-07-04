@@ -375,6 +375,15 @@ const NftDetailPage = () => {
   }
 
   const img = item.media_url || item.image_url;
+  const properties = Array.isArray(item.properties)
+    ? item.properties
+    : item.properties && typeof item.properties === "object"
+      ? Object.entries(item.properties).map(([trait_type, value]) => ({ trait_type, value }))
+      : [];
+  const contractRef = `openpay:nft:${String(item.id).slice(0, 8)}`;
+  const copyRef = async (value: string, label: string) => {
+    try { await navigator.clipboard.writeText(value); toast({ title: `${label} copied` }); } catch {}
+  };
 
   return (
     <NftPageShell className="pb-36">
@@ -392,17 +401,76 @@ const NftDetailPage = () => {
         </button>
       </header>
 
-      <div className="aspect-square bg-[#0f0f0f] flex items-center justify-center overflow-hidden">
-        {img ? <img src={img} alt={item.name} className="w-full h-full object-cover" /> : <span className="text-white/30">No media</span>}
-      </div>
+      {/* OpenSea-style two-column layout */}
+      <div className="max-w-7xl mx-auto lg:px-6 lg:py-6 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-8">
 
-      <div className="p-4 space-y-4">
+        {/* LEFT: hero image + collapsible detail cards */}
+        <div className="lg:sticky lg:top-20 lg:self-start space-y-4">
+          <div className="aspect-square bg-[#0f0f0f] lg:rounded-2xl border-y lg:border border-white/10 flex items-center justify-center overflow-hidden">
+            {img ? <img src={img} alt={item.name} className="w-full h-full object-contain" /> : <span className="text-white/30">No media</span>}
+          </div>
+
+          <div className="hidden lg:block space-y-3">
+            {item.description && (
+              <Details icon={<Info className="h-4 w-4" />} title="Description" defaultOpen>
+                <p className="text-sm text-white/85 whitespace-pre-wrap">{item.description}</p>
+              </Details>
+            )}
+            {properties.length > 0 && (
+              <Details icon={<Sparkles className="h-4 w-4" />} title={`Traits · ${properties.length}`} defaultOpen>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {properties.map((p: any, i: number) => (
+                    <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-center">
+                      <p className="text-[10px] uppercase tracking-wide text-blue-300/80 truncate">{p.trait_type}</p>
+                      <p className="text-sm font-bold truncate">{String(p.value)}</p>
+                    </div>
+                  ))}
+                </div>
+              </Details>
+            )}
+            <Details icon={<Layers className="h-4 w-4" />} title="Blockchain details">
+              <div className="text-sm space-y-1.5">
+                <Row k="Chain" v="OpenPay Ledger" />
+                <Row k="Standard" v="OP-721" />
+                <Row k="Token ID" v={`#${item.code}`} />
+                <div className="flex justify-between gap-2 items-center">
+                  <span className="text-white/50">Contract</span>
+                  <button onClick={() => copyRef(contractRef, "Contract")} className="font-mono text-xs text-white/80 flex items-center gap-1 hover:text-white">
+                    {contractRef} <Copy className="h-3 w-3" />
+                  </button>
+                </div>
+                <Row k="Minted" v={new Date(item.created_at).toLocaleDateString()} />
+                <Row k="Creator earnings" v="5% royalty" />
+              </div>
+            </Details>
+          </div>
+        </div>
+
+        {/* RIGHT: title, price, buy, tabs */}
+        <div className="p-4 lg:p-0 space-y-4">
         <div>
-          <p className="text-xs text-white/40">#{item.code}</p>
-          <h2 className="text-2xl font-extrabold">{item.name}</h2>
+          <div className="flex items-center gap-2 text-xs">
+            {creatorStore && (
+              <button onClick={() => nav(`/web3/nft/store/${creatorStore.handle}`)}
+                className="inline-flex items-center gap-1 font-bold hover:underline" style={{ color: ACCENT }}>
+                {creatorStore.display_name || creatorStore.handle}
+                {creatorStore.is_verified && <BadgeCheck className="h-3.5 w-3.5" />}
+              </button>
+            )}
+            <span className="text-white/40">·</span>
+            <span className="text-white/40">#{item.code}</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold mt-1">{item.name}</h2>
           {creator && (
-            <p className="text-sm text-white/60 mt-1">by @{creator.username || creator.full_name || "creator"}</p>
+            <p className="text-sm text-white/60 mt-1">Owned by creator @{creator.username || creator.full_name || "creator"} · {owners.length} owner{owners.length===1?"":"s"}</p>
           )}
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap text-[10px]">
+          <span className="px-2 py-0.5 rounded-full bg-white/10 font-bold uppercase tracking-wide">OP-721</span>
+          <span className="px-2 py-0.5 rounded-full bg-white/10 font-bold uppercase tracking-wide">OpenPay Ledger</span>
+          {item.category && <span className="px-2 py-0.5 rounded-full bg-white/10 font-bold uppercase tracking-wide">{item.category}</span>}
+          <span className="px-2 py-0.5 rounded-full bg-white/10 font-bold uppercase tracking-wide">Token #{item.code}</span>
         </div>
 
         {creatorStore && (
@@ -425,6 +493,7 @@ const NftDetailPage = () => {
               <div className="flex-1 min-w-0 pb-1">
                 <div className="flex items-center gap-1">
                   <p className="font-bold truncate">{creatorStore.display_name || creatorStore.handle}</p>
+                  {creatorStore.is_verified && <BadgeCheck className="h-4 w-4" style={{ color: ACCENT }} />}
                 </div>
                 <p className="text-[11px] text-white/50 truncate">@{creatorStore.handle} · Owner store</p>
               </div>
@@ -437,38 +506,66 @@ const NftDetailPage = () => {
 
 
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
-          <div className="flex items-center justify-between">
+          <div className="grid grid-cols-3 gap-3 text-xs">
             <div>
-              <p className="text-xs text-white/50">{hasActiveAuction ? "Current bid" : "Price"}</p>
-              <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(livePrice, item.currency)}</p>
-              {hasActiveAuction && (
-                <p className="text-[10px] text-white/40 mt-0.5">Starting price <span className="line-through">{formatNftPrice(item.price, item.currency)}</span> · only the winning bidder can buy</p>
-              )}
+              <p className="text-white/45 uppercase tracking-wide text-[10px]">{hasActiveAuction ? "Top bid" : "Price"}</p>
+              <p className="text-lg font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(livePrice, item.currency)}</p>
             </div>
-            <div className="text-right">
-              <NftStatusBadge sold={totalSold} total={item.quantity_total} hasAuction={hasActiveAuction} className="mb-1" />
-              <p className="text-xs text-white/50">Supply</p>
-              <p className="font-bold">{item.quantity_total}</p>
+            <div>
+              <p className="text-white/45 uppercase tracking-wide text-[10px]">Floor</p>
+              <p className="text-lg font-extrabold">{formatNftPrice(item.price, item.currency)}</p>
+            </div>
+            <div>
+              <p className="text-white/45 uppercase tracking-wide text-[10px]">Last sale</p>
+              <p className="text-lg font-extrabold">{txs[0]?.total ? formatNftPrice(txs[0].total, item.currency) : "—"}</p>
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+          {hasActiveAuction && topAuction && (
+            <p className="mt-3 text-[11px] text-amber-300/90 flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Auction ends {new Date(topAuction.ends_at).toLocaleString()} — only the winning bidder can buy while live.
+            </p>
+          )}
+          <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-4 gap-2 text-center">
+            <Stat label="Supply" value={item.quantity_total} />
             <Stat label="Owners" value={owners.length} />
-            <Stat label="Sold" value={txs.filter((t) => ["sale","resale"].includes(t.tx_kind)).reduce((s,t)=>s+Number(t.quantity||0),0)} />
+            <Stat label="Sold" value={totalSold} />
             <Stat label="You own" value={myOwn} />
+          </div>
+          <div className="mt-3 flex items-center justify-between">
+            <NftStatusBadge sold={totalSold} total={item.quantity_total} hasAuction={hasActiveAuction} />
+            <button onClick={share} className="text-xs text-white/60 flex items-center gap-1 hover:text-white">
+              <Share2 className="h-3 w-3" /> Share
+            </button>
           </div>
         </div>
 
+        {/* Description — mobile only (desktop shows in left column) */}
         {item.description && (
-          <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
+          <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4 lg:hidden">
             <p className="text-xs font-semibold text-white/50 mb-1">DESCRIPTION</p>
             <p className="text-sm text-white/85 whitespace-pre-wrap">{item.description}</p>
           </div>
         )}
 
+        {/* Traits — mobile only */}
+        {properties.length > 0 && (
+          <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4 lg:hidden">
+            <p className="text-xs font-semibold text-white/50 mb-2 flex items-center gap-1"><Sparkles className="h-3 w-3" /> TRAITS · {properties.length}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {properties.map((p: any, i: number) => (
+                <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-center">
+                  <p className="text-[10px] uppercase tracking-wide text-blue-300/80 truncate">{p.trait_type}</p>
+                  <p className="text-sm font-bold truncate">{String(p.value)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
-          <p className="text-xs font-semibold text-white/50 mb-2 flex items-center gap-1"><Users className="h-3 w-3" /> OWNERS</p>
+          <p className="text-xs font-semibold text-white/50 mb-2 flex items-center gap-1"><Users className="h-3 w-3" /> OWNERS · {owners.length}</p>
           {owners.length === 0 ? <p className="text-sm text-white/50">No owners yet</p> : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {owners.map((o) => (
                 <div key={o.owner_id} className="flex items-center gap-3">
                   {o.profile?.avatar_url
@@ -562,14 +659,32 @@ const NftDetailPage = () => {
           )}
         </div>
 
+        {/* Blockchain — mobile only */}
+        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4 lg:hidden">
+          <p className="text-xs font-semibold text-white/50 mb-2 flex items-center gap-1"><Layers className="h-3 w-3" /> BLOCKCHAIN DETAILS</p>
+          <div className="text-sm space-y-1.5">
+            <Row k="Chain" v="OpenPay Ledger" />
+            <Row k="Standard" v="OP-721" />
+            <Row k="Token ID" v={`#${item.code}`} />
+            <div className="flex justify-between gap-2 items-center">
+              <span className="text-white/50">Contract</span>
+              <button onClick={() => copyRef(contractRef, "Contract")} className="font-mono text-xs text-white/80 flex items-center gap-1 hover:text-white">
+                {contractRef} <Copy className="h-3 w-3" />
+              </button>
+            </div>
+            <Row k="Minted" v={new Date(item.created_at).toLocaleDateString()} />
+            <Row k="Creator earnings" v="5% royalty" />
+          </div>
+        </div>
+
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
-          <p className="text-xs font-semibold text-white/50 mb-2">TRANSPARENT HISTORY</p>
+          <p className="text-xs font-semibold text-white/50 mb-2">ITEM ACTIVITY</p>
           {txs.length === 0 ? <p className="text-sm text-white/50">No activity yet</p> : (
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2 text-sm max-h-72 overflow-y-auto pr-1">
               {txs.map((t) => (
                 <div key={t.id} className="flex items-center justify-between border-b border-white/5 pb-2 last:border-0">
                   <div>
-                    <p className="font-semibold capitalize">{t.tx_kind}</p>
+                    <p className="font-semibold capitalize">{t.tx_kind.replace(/_/g, " ")}</p>
                     <p className="text-xs text-white/40">{new Date(t.created_at).toLocaleString()}</p>
                   </div>
                   <p className="text-white/80">×{t.quantity} {t.total > 0 ? `· ${formatNftPrice(t.total, item.currency)}` : ""}</p>
@@ -578,7 +693,9 @@ const NftDetailPage = () => {
             </div>
           )}
         </div>
+        </div>
       </div>
+
 
       {/* Sticky actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur p-4 flex gap-2 border-t border-white/10">
