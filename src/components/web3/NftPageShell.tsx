@@ -59,7 +59,7 @@ const NftPageShell = ({
         />
       )}
       <div
-        className={`min-h-screen bg-black text-white animate-in fade-in duration-500 ${className}`}
+        className={`nft-scope min-h-screen bg-background text-foreground animate-in fade-in duration-500 ${className}`}
       >
         {loading ? (skeleton ?? <DefaultNftSkeleton />) : children}
       </div>
