@@ -2897,6 +2897,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pi_ads_settings: {
+        Row: {
+          enabled: boolean
+          id: boolean
+          interstitial_enabled: boolean
+          interstitial_interval_minutes: number
+          max_ads_per_day: number
+          max_ads_per_hour: number
+          rewarded_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          id?: boolean
+          interstitial_enabled?: boolean
+          interstitial_interval_minutes?: number
+          max_ads_per_day?: number
+          max_ads_per_hour?: number
+          rewarded_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          id?: boolean
+          interstitial_enabled?: boolean
+          interstitial_interval_minutes?: number
+          max_ads_per_day?: number
+          max_ads_per_hour?: number
+          rewarded_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       pi_payment_credits: {
         Row: {
           amount: number
@@ -5311,6 +5347,53 @@ export type Database = {
           p_receiver_id: string
         }
         Returns: string
+      }
+      pi_ads_get_settings: {
+        Args: never
+        Returns: {
+          enabled: boolean
+          id: boolean
+          interstitial_enabled: boolean
+          interstitial_interval_minutes: number
+          max_ads_per_day: number
+          max_ads_per_hour: number
+          rewarded_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pi_ads_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pi_ads_set_settings: {
+        Args: {
+          p_enabled: boolean
+          p_interstitial_enabled: boolean
+          p_interstitial_interval_minutes: number
+          p_max_ads_per_day: number
+          p_max_ads_per_hour: number
+          p_rewarded_enabled: boolean
+        }
+        Returns: {
+          enabled: boolean
+          id: boolean
+          interstitial_enabled: boolean
+          interstitial_interval_minutes: number
+          max_ads_per_day: number
+          max_ads_per_hour: number
+          rewarded_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pi_ads_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       process_app_payment: {
         Args: {
