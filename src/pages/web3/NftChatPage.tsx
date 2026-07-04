@@ -359,7 +359,7 @@ const NftChatPage = () => {
           </>
         );
       })()}
-    </div>
+    </NftPageShell>
   );
 };
 
