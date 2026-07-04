@@ -410,6 +410,7 @@ const MenuPage = () => {
 
       items: [
 
+        { icon: Trophy, label: "Feature Quest", subtitle: "Explore & earn a badge", action: () => navigate("/feature-quest") },
         { icon: Wallet, label: "Wallet", action: () => navigate("/dashboard") },
 
         { icon: TrendingUp, label: "Analytics", action: () => navigate("/dashboard?section=analytics") },
