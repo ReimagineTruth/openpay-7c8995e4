@@ -440,6 +440,12 @@ const NftStorePage = () => {
                         {it.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
                       </button>
                       <button
+                        onClick={(e) => { e.stopPropagation(); toggleHidden(it); }}
+                        title={it.hidden ? "Show in store" : "Hide from store"}
+                        className="h-8 w-8 rounded-full bg-black/80 backdrop-blur border border-white/20 flex items-center justify-center hover:bg-white/10">
+                        {it.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
                         onClick={(e) => { e.stopPropagation(); deleteItem(it); }}
                         title="Delete"
                         className="h-8 w-8 rounded-full bg-black/80 backdrop-blur border border-red-500/40 text-red-400 flex items-center justify-center hover:bg-red-500/20">
