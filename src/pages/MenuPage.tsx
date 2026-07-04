@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import BottomNav from "@/components/BottomNav";
 
-import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot, QrCode, Bell, Settings, ExternalLink, RefreshCw, Presentation } from "lucide-react";
+import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot, QrCode, Bell, Settings, ExternalLink, RefreshCw, Presentation, Trophy } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -410,6 +410,7 @@ const MenuPage = () => {
 
       items: [
 
+        { icon: Trophy, label: "Feature Quest", subtitle: "Explore & earn a badge", action: () => navigate("/feature-quest") },
         { icon: Wallet, label: "Wallet", action: () => navigate("/dashboard") },
 
         { icon: TrendingUp, label: "Analytics", action: () => navigate("/dashboard?section=analytics") },

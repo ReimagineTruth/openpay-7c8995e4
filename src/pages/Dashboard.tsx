@@ -39,6 +39,7 @@ import {
 } from "@/lib/dashboardSectionMeta";
 import Web3Dashboard from "@/components/web3/Web3Dashboard";
 import { setUiMode } from "@/lib/uiMode";
+import FeatureQuestIntroModal from "@/components/FeatureQuestIntroModal";
 
 interface Transaction {
   id: string;
@@ -4578,6 +4579,7 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <FeatureQuestIntroModal />
     </div>
   );
 };

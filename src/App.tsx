@@ -100,6 +100,7 @@ import OAuthConsentPage from "./pages/OAuthConsentPage";
 import SetupProfilePage from "./pages/SetupProfilePage";
 import PiAdsPage from "./pages/PiAdsPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import FeatureQuestPage from "./pages/FeatureQuestPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSwapWithdrawalsPage from "./pages/AdminSwapWithdrawalsPage";
 import AdminLoanApplicationsPage from "./pages/AdminLoanApplicationsPage";
@@ -255,6 +256,7 @@ const AppRoutes = () => {
         <Route path="/auth" element={<PiAuthPage />} />
         <Route path="/setup-profile" element={<SetupProfilePage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/feature-quest" element={<ProtectedRoute><FeatureQuestPage /></ProtectedRoute>} />
          <Route path="/pi-ads" element={<PiAdsPage />} />
          <Route path="/sign-in" element={<AdminMrwainAuth />} />
          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
