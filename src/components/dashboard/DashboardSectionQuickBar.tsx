@@ -29,10 +29,10 @@ const DashboardSectionQuickBar = ({ actions, className }: DashboardSectionQuickB
             disabled={action.disabled}
             onClick={action.onClick}
             className={cn(
-              "ios-active inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all disabled:opacity-50",
+              "dash-chip ios-active inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-bold disabled:opacity-50",
               action.variant === "primary"
-                ? "bg-paypal-blue text-white shadow-md shadow-paypal-blue/20 hover:bg-paypal-blue/90"
-                : "border border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/15",
+                ? "bg-gradient-to-r from-paypal-blue to-[#0073e6] text-white shadow-lg shadow-paypal-blue/30 hover:shadow-paypal-blue/50"
+                : "border border-white/25 bg-white/10 text-white backdrop-blur-md hover:bg-white/20",
             )}
           >
             <Icon className="h-3.5 w-3.5" />
