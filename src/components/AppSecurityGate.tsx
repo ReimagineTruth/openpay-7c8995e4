@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Check, Delete } from "lucide-react";
+import { Check, Delete, Fingerprint, KeyRound, Lock, ShieldCheck, LogOut, HelpCircle, KeySquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
