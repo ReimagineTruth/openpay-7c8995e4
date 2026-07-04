@@ -9,11 +9,12 @@ import {
   BadgeCheck, X, RefreshCw, MessageCircle, Menu, Gift, Image as ImageIcon,
   Settings, Trophy, Heart, Compass, LayoutGrid, Coins, ArrowLeftRight, Calendar,
   Activity as ActivityIcon, Anchor, Wrench, Palette, ChevronRight, ChevronLeft,
-  Bell, Wallet, TrendingUp, TrendingDown,
+  Bell, Wallet, TrendingUp, TrendingDown, Sun, Moon, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
 import { NFT_CATEGORIES, getCategoryMeta } from "@/lib/nftCategories";
 import NftPageShell from "@/components/web3/NftPageShell";
+import { persistAndApplyAppTheme, getStoredAppTheme } from "@/lib/appTheme";
 
 const ACCENT = "hsl(217 91% 60%)";
 
