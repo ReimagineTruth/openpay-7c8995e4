@@ -466,7 +466,7 @@ const NftMarketplacePage = () => {
                       <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 30% 30%, hsl(280 80% 30%), #0a0a0a)` }} />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 flex items-end justify-between gap-4">
+                    <div className="nft-on-media absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 flex items-end justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           {currentSlide?.avatar_url && (
