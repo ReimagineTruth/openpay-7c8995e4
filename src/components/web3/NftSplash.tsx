@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 
 /**
- * Sleek, quick NFT splash — 800ms total (in + hold + out).
+ * Sleek, fast NFT splash — ~500ms total (in + hold + out).
  * Renders a glowing orb with the OpenPay NFT wordmark.
  * Only renders when `show` is true; the parent controls session-guarding.
  */
@@ -18,24 +18,26 @@ const NftSplash = ({
   const [phase, setPhase] = useState<"in" | "out" | "gone">("in");
 
   useEffect(() => {
-    const outTimer = setTimeout(() => setPhase("out"), 550);
+    const outTimer = setTimeout(() => setPhase("out"), 320);
     const doneTimer = setTimeout(() => {
       setPhase("gone");
       onDone?.();
-    }, 900);
+    }, 520);
     return () => {
       clearTimeout(outTimer);
       clearTimeout(doneTimer);
     };
   }, [onDone]);
 
+
   if (phase === "gone") return null;
 
   return (
     <div
-      className={`fixed inset-0 z-[110] flex items-center justify-center bg-gradient-to-br from-black via-[#050a1a] to-black transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[110] flex items-center justify-center bg-gradient-to-br from-black via-[#050a1a] to-black transition-opacity duration-200 ${
         phase === "out" ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
+
       aria-hidden
     >
       {/* Ambient glow */}
@@ -44,7 +46,7 @@ const NftSplash = ({
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 h-56 w-56 rounded-full bg-indigo-600/20 blur-[70px]" />
       </div>
 
-      <div className="relative text-center" style={{ animation: "nft-splash-in 0.5s cubic-bezier(.22,1.36,.5,1) forwards" }}>
+      <div className="relative text-center" style={{ animation: "nft-splash-in 0.32s cubic-bezier(.22,1.36,.5,1) forwards" }}>
         <div className="relative inline-block">
           {/* Ring */}
           <span
@@ -63,7 +65,7 @@ const NftSplash = ({
         <div className="mt-5 mx-auto h-[3px] w-32 overflow-hidden rounded-full bg-white/10">
           <span
             className="block h-full bg-gradient-to-r from-blue-400 to-indigo-400"
-            style={{ animation: "nft-splash-bar 0.7s ease-out forwards" }}
+            style={{ animation: "nft-splash-bar 0.42s ease-out forwards" }}
           />
         </div>
       </div>

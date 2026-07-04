@@ -6,10 +6,11 @@ import { NftStatusBadge } from "@/lib/nftStatus";
 import { formatNftPrice } from "@/lib/nftPrice";
 import {
   ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send, Facebook, Youtube,
-  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart, X, MessageCircle,
+  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart, X, MessageCircle, Pin, PinOff, Trash2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
+
 
 
 const ACCENT = "hsl(217 91% 60%)";
@@ -86,11 +87,13 @@ const NftStorePage = () => {
         .gt("quantity", 0);
       setCollected((own || []).map((o: any) => ({ ...o.item, qty: o.quantity })).filter((x: any) => x.id));
 
-      // Items created
+      // Items created — pinned first, then newest
       const { data: cre } = await (supabase as any)
         .from("nft_items").select("*").eq("creator_id", targetUserId)
+        .order("pinned", { ascending: false })
         .order("created_at", { ascending: false });
       setCreated(cre || []);
+
       const createdIds = (cre || []).map((i: any) => i.id);
       if (createdIds.length) {
         const { data: tx } = await (supabase as any)
@@ -163,6 +166,25 @@ const NftStorePage = () => {
     await navigator.clipboard.writeText(owner?.id || "");
     toast({ title: "ID copied" });
   };
+
+  const togglePin = async (it: any) => {
+    const prev = created;
+    const optimistic = created.map((x) => x.id === it.id ? { ...x, pinned: !x.pinned } : x);
+    optimistic.sort((a, b) => (Number(b.pinned || 0) - Number(a.pinned || 0)) || (new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+    setCreated(optimistic);
+    const { error } = await (supabase as any).rpc("nft_toggle_pin", { p_item_id: it.id });
+    if (error) { setCreated(prev); toast({ title: "Pin failed", description: error.message, variant: "destructive" }); return; }
+    toast({ title: it.pinned ? "Unpinned" : "Pinned to store" });
+  };
+
+  const deleteItem = async (it: any) => {
+    if (!confirm(`Delete "${it.name}"? This can't be undone. Items already sold will be hidden instead.`)) return;
+    const { data, error } = await (supabase as any).rpc("nft_delete_item", { p_item_id: it.id });
+    if (error) { toast({ title: "Delete failed", description: error.message, variant: "destructive" }); return; }
+    setCreated((c) => c.filter((x) => x.id !== it.id));
+    toast({ title: data?.hidden ? "Item hidden" : "Item deleted", description: data?.hidden ? "Hidden from your store — buyer records preserved." : undefined });
+  };
+
 
   const openFollowList = async (kind: "followers" | "following") => {
     if (!owner) return;
@@ -372,40 +394,88 @@ const NftStorePage = () => {
             )}
           </div>
         ) : view === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {items.map((it) => (
-              <button key={it.id} onClick={() => nav(`/web3/nft/${it.id}`)}
-                className="text-left rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/5 hover:border-white/20 transition">
-                <div className="aspect-square bg-[#161616] overflow-hidden">
-                  {it.image_url && <img src={it.image_url} className="h-full w-full object-cover" alt={it.name} />}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {items.map((it) => {
+              const showOwnerCtrls = isOwner && tab === "created";
+              return (
+                <div key={it.id} className="relative group">
+                  <button onClick={() => nav(`/web3/nft/${it.id}`)}
+                    className="w-full text-left rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/5 hover:border-white/20 transition">
+                    <div className="aspect-square bg-[#161616] overflow-hidden relative">
+                      {it.image_url && <img src={it.image_url} className="h-full w-full object-cover" alt={it.name} />}
+                      {it.pinned && (
+                        <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/70 backdrop-blur border border-white/20">
+                          <Pin className="h-3 w-3" /> Pinned
+                        </span>
+                      )}
+                      {it.is_active === false && (
+                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/80">Hidden</span>
+                      )}
+                    </div>
+                    <div className="p-2.5">
+                      <p className="text-xs font-bold truncate">{it.name}</p>
+                      <p className="text-[10px] text-white/40 truncate">#{it.code}</p>
+                      <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} className="mt-1.5" />
+                      <p className="text-sm font-extrabold mt-1" style={{ color: ACCENT }}>{formatNftPrice(it.price, it.currency)}</p>
+                    </div>
+                  </button>
+                  {showOwnerCtrls && (
+                    <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 md:transition-opacity max-md:opacity-100">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); togglePin(it); }}
+                        title={it.pinned ? "Unpin" : "Pin to store"}
+                        className="h-8 w-8 rounded-full bg-black/80 backdrop-blur border border-white/20 flex items-center justify-center hover:bg-white/10">
+                        {it.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteItem(it); }}
+                        title="Delete"
+                        className="h-8 w-8 rounded-full bg-black/80 backdrop-blur border border-red-500/40 text-red-400 flex items-center justify-center hover:bg-red-500/20">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="p-2.5">
-                  <p className="text-xs font-bold truncate">{it.name}</p>
-                  <p className="text-[10px] text-white/40 truncate">#{it.code}</p>
-                  <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} className="mt-1.5" />
-                  <p className="text-sm font-extrabold mt-1" style={{ color: ACCENT }}>{formatNftPrice(it.price, it.currency)}</p>
-                </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-2">
-            {items.map((it) => (
-              <button key={it.id} onClick={() => nav(`/web3/nft/${it.id}`)}
-                className="w-full text-left flex items-center gap-3 bg-[#0f0f0f] border border-white/5 rounded-xl p-3">
-                <div className="h-12 w-12 rounded-lg overflow-hidden bg-white/5 shrink-0">
-                  {it.image_url && <img src={it.image_url} className="h-full w-full object-cover" alt="" />}
+            {items.map((it) => {
+              const showOwnerCtrls = isOwner && tab === "created";
+              return (
+                <div key={it.id} className="flex items-center gap-3 bg-[#0f0f0f] border border-white/5 rounded-xl p-3">
+                  <button onClick={() => nav(`/web3/nft/${it.id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-white/5 shrink-0 relative">
+                      {it.image_url && <img src={it.image_url} className="h-full w-full object-cover" alt="" />}
+                      {it.pinned && <Pin className="absolute -top-1 -left-1 h-3.5 w-3.5 text-white bg-black/70 rounded-full p-0.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold truncate">{it.name}</p>
+                        <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} />
+                        {it.is_active === false && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/80">Hidden</span>}
+                      </div>
+                      <p className="text-[11px] text-white/50">#{it.code}</p>
+                    </div>
+                    <p className="text-sm font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(it.price, it.currency)}</p>
+                  </button>
+                  {showOwnerCtrls && (
+                    <div className="flex gap-1.5 pl-2 border-l border-white/10">
+                      <button onClick={() => togglePin(it)} title={it.pinned ? "Unpin" : "Pin"}
+                        className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20">
+                        {it.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                      </button>
+                      <button onClick={() => deleteItem(it)} title="Delete"
+                        className="h-8 w-8 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center hover:bg-red-500/25">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-bold truncate">{it.name}</p>
-                    <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} />
-                  </div>
-                  <p className="text-[11px] text-white/50">#{it.code}</p>
-                </div>
-                <p className="text-sm font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(it.price, it.currency)}</p>
-              </button>
-            ))}
+              );
+            })}
+
           </div>
         )}
       </div>

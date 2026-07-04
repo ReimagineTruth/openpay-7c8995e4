@@ -461,6 +461,10 @@ const MenuPage = () => {
 
           { icon: Smartphone, label: "App Payments", subtitle: "Developer", action: () => navigate("/app-developer-dashboard") },
 
+          { icon: Store, label: "NFT Creator Dashboard", subtitle: "Sales, royalties & mint", action: () => navigate("/web3/nft/dashboard") },
+          { icon: Store, label: "My NFT Store", subtitle: "Manage your NFTs", action: () => navigate("/web3/nft/store") },
+
+
           ...(remittanceUiEnabled
 
             ? [{
