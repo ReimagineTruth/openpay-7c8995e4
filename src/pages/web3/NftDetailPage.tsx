@@ -889,7 +889,7 @@ const NftDetailPage = () => {
       )}
 
       <NftBurst show={!!burst} kind={burst?.kind} message={burst?.msg} onDone={() => setBurst(null)} />
-    </div>
+    </NftPageShell>
   );
 };
 
