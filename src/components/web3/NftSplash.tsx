@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 
 /**
- * Sleek, quick NFT splash — 800ms total (in + hold + out).
+ * Sleek, fast NFT splash — ~500ms total (in + hold + out).
  * Renders a glowing orb with the OpenPay NFT wordmark.
  * Only renders when `show` is true; the parent controls session-guarding.
  */
@@ -18,16 +18,17 @@ const NftSplash = ({
   const [phase, setPhase] = useState<"in" | "out" | "gone">("in");
 
   useEffect(() => {
-    const outTimer = setTimeout(() => setPhase("out"), 550);
+    const outTimer = setTimeout(() => setPhase("out"), 320);
     const doneTimer = setTimeout(() => {
       setPhase("gone");
       onDone?.();
-    }, 900);
+    }, 520);
     return () => {
       clearTimeout(outTimer);
       clearTimeout(doneTimer);
     };
   }, [onDone]);
+
 
   if (phase === "gone") return null;
 
