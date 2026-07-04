@@ -463,7 +463,7 @@ const NftStorePage = () => {
           </div>
         </>
       )}
-    </div>
+    </NftPageShell>
   );
 };
 
