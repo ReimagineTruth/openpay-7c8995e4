@@ -236,222 +236,209 @@ const AppSecurityGate = () => {
       <style>{`
         .openpay-lock-scroll::-webkit-scrollbar { display: none; }
       `}</style>
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 pb-7 pt-10">
-        <div className="mt-6 text-center">
-          <div className="flex items-center justify-center gap-3">
-            <BrandLogo className="h-10 w-10" />
-            <h1 className="text-4xl font-bold tracking-tight">OpenPay</h1>
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-6 pt-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BrandLogo className="h-8 w-8" />
+            <span className="text-lg font-bold tracking-tight">OpenPay</span>
           </div>
-          <p className="mt-6 text-4xl font-semibold">{timeGreeting}</p>
-          <div className="mx-auto mt-4 flex h-12 w-full max-w-xs items-center justify-center rounded-full border border-white/20 bg-paypal-dark/25 px-4 shadow-inner shadow-paypal-dark/35 dark:border-slate-700 dark:bg-slate-800/60">
-            <p className="truncate text-2xl font-semibold tracking-wide">{accountLabel}</p>
+          <button
+            onClick={() => void handleLogout()}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 backdrop-blur transition hover:bg-white/15"
+          >
+            <LogOut className="h-3.5 w-3.5" /> Log out
+          </button>
+        </div>
+
+        {/* Greeting */}
+        <div className="mt-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 shadow-inner shadow-black/25 backdrop-blur">
+            <ShieldCheck className="h-8 w-8 text-white" />
+          </div>
+          <p className="mt-4 text-2xl font-bold tracking-tight">{timeGreeting}</p>
+          <div className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/15 px-3.5 py-1 text-sm font-semibold text-white/95 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="truncate max-w-[16rem]">{accountLabel}</span>
           </div>
         </div>
 
-        <div className="mt-8 rounded-[2rem] border border-[#d9e7ff] bg-[#fdfefe] px-5 py-6 text-paypal-dark shadow-2xl shadow-paypal-dark/25 dark:border-border dark:bg-card dark:text-foreground dark:shadow-black/45">
-          <div className="mb-4 h-1.5 w-24 rounded-full bg-paypal-blue/80 dark:bg-paypal-blue" />
-          {hasPin && (
+        {/* Card */}
+        <div className="mt-7 rounded-3xl border border-white/60 bg-white/95 p-5 text-paypal-dark shadow-2xl shadow-black/25 backdrop-blur-xl dark:border-border dark:bg-card dark:text-foreground dark:shadow-black/50">
+          {/* Method tabs */}
+          {hasPin && hasPassword && (
+            <div className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-paypal-light-blue/30 p-1 dark:bg-secondary">
+              <button
+                type="button"
+                onClick={() => setMethod("pin")}
+                className={`flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition ${
+                  method === "pin"
+                    ? "bg-white text-paypal-blue shadow dark:bg-background dark:text-foreground"
+                    : "text-paypal-dark/60 dark:text-muted-foreground"
+                }`}
+              >
+                <KeySquare className="h-3.5 w-3.5" /> MPIN
+              </button>
+              <button
+                type="button"
+                onClick={() => setMethod("password")}
+                className={`flex items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition ${
+                  method === "password"
+                    ? "bg-white text-paypal-blue shadow dark:bg-background dark:text-foreground"
+                    : "text-paypal-dark/60 dark:text-muted-foreground"
+                }`}
+              >
+                <KeyRound className="h-3.5 w-3.5" /> Password
+              </button>
+            </div>
+          )}
+
+          {hasPin && (!hasPassword || method === "pin") && (
             <div>
-              <p className="text-center text-2xl font-semibold">Enter your MPIN</p>
+              <div className="text-center">
+                <p className="text-base font-bold tracking-tight">Enter your MPIN</p>
+                <p className="mt-0.5 text-[11px] text-paypal-dark/55 dark:text-muted-foreground">4–8 digit secure PIN</p>
+              </div>
+
+              {/* Hidden input for keyboard */}
               <Input
                 type="password"
                 inputMode="numeric"
-                placeholder="Enter PIN"
                 value={pin}
                 onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 8))}
                 autoFocus
                 maxLength={8}
                 autoComplete="off"
                 ref={pinInputRef}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    void handleUnlockWithPin();
-                  }
-                }}
-                className="mt-4 h-12 rounded-2xl border-paypal-light-blue/70 bg-[#edf3ff] text-center text-lg dark:border-border dark:bg-secondary dark:text-foreground"
+                onKeyDown={(event) => { if (event.key === "Enter") void handleUnlockWithPin(); }}
+                className="sr-only"
+                aria-label="MPIN"
               />
-              <div className="mt-3 flex justify-center gap-2">
+
+              {/* Dots */}
+              <div className="mt-4 flex justify-center gap-2.5">
                 {[0, 1, 2, 3, 4, 5, 6, 7].map((dot) => (
                   <span
                     key={dot}
-                    className={`h-2.5 w-2.5 rounded-full border ${pin.length > dot ? "border-paypal-blue bg-paypal-blue" : "border-paypal-light-blue bg-transparent"}`}
+                    className={`h-3 w-3 rounded-full transition-all ${
+                      pin.length > dot
+                        ? "scale-100 bg-paypal-blue shadow-[0_0_0_3px_rgba(0,112,243,0.15)]"
+                        : "scale-90 border border-paypal-light-blue bg-transparent dark:border-border"
+                    }`}
                   />
                 ))}
               </div>
-              <div className="mt-5 grid grid-cols-3 gap-3 text-paypal-dark dark:text-foreground">
+
+              {/* Keypad */}
+              <div className="mt-5 grid grid-cols-3 gap-2.5 text-paypal-dark dark:text-foreground">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
                   <button
                     key={n}
                     type="button"
-                    onClick={() => {
-                      if (shouldIgnoreClick()) return;
-                      handlePinDigitPress(String(n));
-                      focusPinInput();
-                    }}
-                    onPointerDown={(event) => {
-                      event.preventDefault();
-                      markPointerAction();
-                      handlePinDigitPress(String(n));
-                      focusPinInput();
-                    }}
-                    className="flex h-12 items-center justify-center rounded-2xl border border-paypal-light-blue/60 bg-white text-xl font-semibold transition active:scale-95 dark:border-border dark:bg-secondary"
+                    onClick={() => { if (shouldIgnoreClick()) return; handlePinDigitPress(String(n)); focusPinInput(); }}
+                    onPointerDown={(event) => { event.preventDefault(); markPointerAction(); handlePinDigitPress(String(n)); focusPinInput(); }}
+                    className="flex h-14 items-center justify-center rounded-2xl bg-[#f4f7ff] text-2xl font-semibold shadow-sm ring-1 ring-inset ring-paypal-light-blue/40 transition hover:bg-white hover:shadow-md active:scale-95 dark:bg-secondary dark:ring-border"
                   >
                     {n}
                   </button>
                 ))}
                 <button
                   type="button"
-                  onClick={() => {
-                    if (shouldIgnoreClick()) return;
-                    handlePinBackspace();
-                    focusPinInput();
-                  }}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    markPointerAction();
-                    handlePinBackspace();
-                    focusPinInput();
-                  }}
-                  className="flex h-12 items-center justify-center rounded-2xl border border-paypal-light-blue/60 bg-white transition active:scale-95 dark:border-border dark:bg-secondary"
+                  onClick={() => { if (shouldIgnoreClick()) return; handlePinBackspace(); focusPinInput(); }}
+                  onPointerDown={(event) => { event.preventDefault(); markPointerAction(); handlePinBackspace(); focusPinInput(); }}
+                  className="flex h-14 items-center justify-center rounded-2xl bg-transparent text-paypal-dark/70 transition hover:bg-[#f4f7ff] active:scale-95 dark:hover:bg-secondary"
                   aria-label="Backspace"
                 >
                   <Delete className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (shouldIgnoreClick()) return;
-                    handlePinDigitPress("0");
-                    focusPinInput();
-                  }}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    markPointerAction();
-                    handlePinDigitPress("0");
-                    focusPinInput();
-                  }}
-                  className="flex h-12 items-center justify-center rounded-2xl border border-paypal-light-blue/60 bg-white text-xl font-semibold transition active:scale-95 dark:border-border dark:bg-secondary"
+                  onClick={() => { if (shouldIgnoreClick()) return; handlePinDigitPress("0"); focusPinInput(); }}
+                  onPointerDown={(event) => { event.preventDefault(); markPointerAction(); handlePinDigitPress("0"); focusPinInput(); }}
+                  className="flex h-14 items-center justify-center rounded-2xl bg-[#f4f7ff] text-2xl font-semibold shadow-sm ring-1 ring-inset ring-paypal-light-blue/40 transition hover:bg-white hover:shadow-md active:scale-95 dark:bg-secondary dark:ring-border"
                 >
                   0
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (shouldIgnoreClick()) return;
-                    void handleUnlockWithPin();
-                    focusPinInput();
-                  }}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    markPointerAction();
-                    void handleUnlockWithPin();
-                    focusPinInput();
-                  }}
+                  onClick={() => { if (shouldIgnoreClick()) return; void handleUnlockWithPin(); focusPinInput(); }}
+                  onPointerDown={(event) => { event.preventDefault(); markPointerAction(); void handleUnlockWithPin(); focusPinInput(); }}
                   disabled={busy || pin.replace(/\D/g, "").length < 4}
-                  className="flex h-12 items-center justify-center rounded-2xl bg-paypal-blue text-white transition active:scale-95 disabled:bg-paypal-blue/45"
+                  className="flex h-14 items-center justify-center rounded-2xl bg-gradient-to-br from-paypal-blue to-[#0059d1] text-white shadow-lg shadow-paypal-blue/30 transition hover:shadow-xl active:scale-95 disabled:from-paypal-blue/45 disabled:to-paypal-blue/45 disabled:shadow-none"
                   aria-label="Unlock"
                 >
                   <Check className="h-6 w-6" />
                 </button>
               </div>
-              <Button
-                disabled={busy || pin.replace(/\D/g, "").length < 4}
-                onClick={() => {
-                  if (shouldIgnoreClick()) return;
-                  void handleUnlockWithPin();
-                  focusPinInput();
-                }}
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  markPointerAction();
-                  void handleUnlockWithPin();
-                  focusPinInput();
-                }}
-                className={`mt-4 ${primaryButtonClass}`}
-              >
-                {busy ? "Unlocking..." : "Unlock with MPIN"}
-              </Button>
+
+              {hasBiometric && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => { if (shouldIgnoreClick()) return; void handleUnlockWithBiometric(); }}
+                  onPointerDown={(event) => { event.preventDefault(); markPointerAction(); void handleUnlockWithBiometric(); }}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-paypal-light-blue/50 bg-white py-3 text-sm font-semibold text-paypal-blue transition hover:bg-[#f4f7ff] active:scale-[0.99] dark:border-border dark:bg-secondary dark:text-foreground"
+                >
+                  <Fingerprint className="h-4 w-4" /> Use Face ID / Fingerprint
+                </button>
+              )}
             </div>
           )}
 
-          {hasPassword && (
-            <div className={hasPin ? "mt-5" : ""}>
-              <p className="mb-1 text-sm font-medium text-paypal-dark/75 dark:text-muted-foreground">Security Password</p>
-              <Input
-                type="password"
-                placeholder="Enter security password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="h-12 rounded-2xl border-paypal-light-blue/70 bg-[#f8fbff] dark:border-border dark:bg-secondary dark:text-foreground"
-              />
+          {hasPassword && (!hasPin || method === "password") && (
+            <div>
+              <div className="text-center">
+                <p className="text-base font-bold tracking-tight">Security Password</p>
+                <p className="mt-0.5 text-[11px] text-paypal-dark/55 dark:text-muted-foreground">Unlock with your account password</p>
+              </div>
+              <div className="mt-4 relative">
+                <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-paypal-dark/40" />
+                <Input
+                  type="password"
+                  placeholder="Enter security password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === "Enter") void handleUnlockWithPassword(); }}
+                  className="h-12 rounded-2xl border-paypal-light-blue/70 bg-[#f8fbff] pl-10 text-sm dark:border-border dark:bg-secondary dark:text-foreground"
+                />
+              </div>
               <Button
                 disabled={busy || !password.trim()}
-                onClick={() => {
-                  if (shouldIgnoreClick()) return;
-                  void handleUnlockWithPassword();
-                }}
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  markPointerAction();
-                  void handleUnlockWithPassword();
-                }}
-                className={`mt-2 ${primaryButtonClass}`}
+                onClick={() => { if (shouldIgnoreClick()) return; void handleUnlockWithPassword(); }}
+                onPointerDown={(event) => { event.preventDefault(); markPointerAction(); void handleUnlockWithPassword(); }}
+                className={`mt-3 ${primaryButtonClass}`}
               >
                 {busy ? "Unlocking..." : "Unlock with Password"}
               </Button>
             </div>
           )}
 
-          {hasBiometric && (
-            <Button
-              disabled={busy}
-              onClick={() => {
-                if (shouldIgnoreClick()) return;
-                void handleUnlockWithBiometric();
-              }}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                markPointerAction();
-                void handleUnlockWithBiometric();
-              }}
-              className={`mt-4 ${darkButtonClass}`}
-            >
-              Use Face ID / Fingerprint
-            </Button>
+          {error && (
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-center text-xs font-semibold text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              {error}
+            </div>
           )}
-
-          {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
-
-          <Button
-            onClick={() => {
-              if (shouldIgnoreClick()) return;
-              void handleLogout();
-            }}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              markPointerAction();
-              void handleLogout();
-            }}
-            className={`mt-4 ${softButtonClass}`}
-          >
-            Log Out
-          </Button>
         </div>
 
-        <p className="mt-6 text-center text-sm text-white/85 dark:text-slate-300">Never share your MPIN, password, or OTP with anyone.</p>
+        {/* Trust bar */}
+        <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-medium text-white/70">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Never share your MPIN, password, or OTP with anyone.
+        </div>
 
-        <div className="mt-auto flex items-center justify-center gap-4 pt-8 text-base font-semibold">
+        {/* Footer actions */}
+        <div className="mt-auto flex items-center justify-center gap-2 pt-6 text-xs font-semibold">
           <button
             onClick={() => navigate("/help-center")}
-            className="rounded-full border border-white/25 bg-paypal-dark/20 px-4 py-2 text-white/95 hover:bg-paypal-dark/35 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-white/95 backdrop-blur transition hover:bg-white/15"
           >
-            Help Center
+            <HelpCircle className="h-3.5 w-3.5" /> Help Center
           </button>
           <button
             onClick={() => navigate("/help-center?topic=forgot-mpin")}
-            className="rounded-full border border-white/25 bg-paypal-dark/20 px-4 py-2 text-white/95 hover:bg-paypal-dark/35 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-white/95 backdrop-blur transition hover:bg-white/15"
           >
-            Forgot MPIN?
+            <KeyRound className="h-3.5 w-3.5" /> Forgot MPIN?
           </button>
         </div>
       </div>
