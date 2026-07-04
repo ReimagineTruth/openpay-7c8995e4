@@ -520,7 +520,7 @@ const NftMarketplacePage = () => {
           </span>
         </div>
       </div>
-    </div>
+    </NftPageShell>
   );
 };
 
