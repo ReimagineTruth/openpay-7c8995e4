@@ -236,7 +236,7 @@ const NftCreatePage = () => {
         </button>
       </div>
       <NftBurst show={!!minted} kind="mint" message={minted ? `${minted.name} minted!` : ""} />
-    </div>
+    </NftPageShell>
   );
 };
 
