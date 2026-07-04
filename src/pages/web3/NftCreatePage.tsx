@@ -6,6 +6,7 @@ import { ArrowLeft, Upload, Gavel } from "lucide-react";
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
 import { NFT_CATEGORIES } from "@/lib/nftCategories";
+import NftPageShell from "@/components/web3/NftPageShell";
 
 const ACCENT = "hsl(217 91% 60%)";
 
