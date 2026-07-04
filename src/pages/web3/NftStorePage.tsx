@@ -417,8 +417,11 @@ const NftStorePage = () => {
                           <Pin className="h-3 w-3" /> Pinned
                         </span>
                       )}
-                      {it.is_active === false && (
-                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/80">Hidden</span>
+                      {it.hidden && (
+                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/90 text-black flex items-center gap-1"><EyeOff className="h-3 w-3" />Hidden</span>
+                      )}
+                      {!it.hidden && it.is_active === false && (
+                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/80">Removed</span>
                       )}
                     </div>
                     <div className="p-2.5">
