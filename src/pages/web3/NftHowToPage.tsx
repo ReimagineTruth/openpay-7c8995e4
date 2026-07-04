@@ -61,7 +61,7 @@ const NftHowToPage = () => {
           </ul>
         </div>
       </div>
-    </div>
+    </NftPageShell>
   );
 };
 
