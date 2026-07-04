@@ -247,7 +247,8 @@ const NftStorePage = () => {
   const avatar = profile?.avatar_url || owner.avatar_url;
   const banner = profile?.banner_url;
 
-  const items = tab === "collected" ? collected : tab === "created" ? created : [];
+  const rawItems = tab === "collected" ? collected : tab === "created" ? created : [];
+  const items = isOwner ? rawItems : rawItems.filter((x: any) => !x.hidden);
 
   return (
     <NftPageShell className="pb-24">
