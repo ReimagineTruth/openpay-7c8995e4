@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Sparkles, ShoppingCart, Tag, Gavel, Gift, Share2, Wallet, TrendingUp } from "lucide-react";
+import NftPageShell from "@/components/web3/NftPageShell";
 
 const ACCENT = "hsl(217 91% 60%)";
 
