@@ -1419,3 +1419,13 @@ html:not(.dark) .nft-scope .nft-shimmer {
   background: linear-gradient(90deg, hsl(var(--foreground) / 0.04) 0%, hsl(var(--foreground) / 0.1) 50%, hsl(var(--foreground) / 0.04) 100%) !important;
   background-size: 200% 100% !important;
 }
+
+/* NFT light-mode: remap arbitrary dark hex backgrounds used across NFT pages */
+html:not(.dark) .nft-scope [class*="bg-[#0"],
+html:not(.dark) body.nft-scope [class*="bg-[#0"] { background-color: hsl(var(--card)) !important; }
+html:not(.dark) .nft-scope [class*="bg-[#1"],
+html:not(.dark) body.nft-scope [class*="bg-[#1"] { background-color: hsl(var(--muted)) !important; }
+html:not(.dark) .nft-scope [class*="ring-[#0"] { --tw-ring-color: hsl(var(--border)) !important; }
+html:not(.dark) .nft-scope [class*="border-[#"] { border-color: hsl(var(--border)) !important; }
+/* Ensure sidebar section dividers/labels remain readable */
+html:not(.dark) .nft-scope aside { color: hsl(var(--foreground)); }
