@@ -3832,22 +3832,32 @@ const Dashboard = () => {
       </div>
 
       <div className="fixed bottom-32 left-0 right-0 z-40 px-4">
-        <div className="mx-auto flex max-w-md items-center gap-3">
+        <div className="mx-auto flex max-w-md items-center gap-2.5">
           <button
             onClick={() => navigate("/contacts")}
-            className="flex h-[56px] w-[56px] flex-shrink-0 items-center justify-center rounded-full border-2 border-paypal-blue bg-white text-paypal-blue shadow-lg shadow-black/10 transition-transform active:scale-95"
+            className="dash-cta dash-cta-outline flex h-[56px] w-[56px] flex-shrink-0"
             aria-label="Open contacts"
           >
             <Users className="h-6 w-6" />
           </button>
           <button
             onClick={() => navigate("/send")}
-            className="min-w-0 flex-1 rounded-full border-2 border-white bg-paypal-blue py-4 text-center text-base font-bold text-white shadow-xl shadow-paypal-blue/40 transition-transform active:scale-95"
+            className="dash-cta dash-cta-primary min-w-0 flex-1 py-4 text-base"
           >
             Pay
           </button>
-          <button onClick={() => setShowReceiveOptions(true)} className="min-w-0 flex-1 rounded-full border-2 border-paypal-blue bg-white py-4 text-center text-base font-bold text-paypal-blue shadow-lg shadow-black/10 transition-transform active:scale-95">Receive</button>
-          <button onClick={openBuyOptions} className="min-w-0 flex-1 rounded-full border-2 border-paypal-blue bg-white py-4 text-center text-base font-bold text-paypal-blue shadow-lg shadow-black/10 transition-transform active:scale-95">Buy</button>
+          <button
+            onClick={() => setShowReceiveOptions(true)}
+            className="dash-cta dash-cta-outline min-w-0 flex-1 py-4 text-base"
+          >
+            Receive
+          </button>
+          <button
+            onClick={openBuyOptions}
+            className="dash-cta dash-cta-outline min-w-0 flex-1 py-4 text-base"
+          >
+            Buy
+          </button>
         </div>
       </div>
 
