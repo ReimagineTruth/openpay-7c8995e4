@@ -19,7 +19,7 @@ import {
   resetFeatureQuest,
 } from "@/lib/featureQuest";
 
-const CATEGORIES = ["Essentials", "Grow", "Earn", "Business", "Advanced"] as const;
+const CATEGORIES = ["Essentials", "Payments", "Grow", "Earn", "Merchant", "NFT & Web3", "Developer", "Account"] as const;
 
 const FeatureQuestPage = () => {
   const navigate = useNavigate();
