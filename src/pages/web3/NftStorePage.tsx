@@ -6,7 +6,7 @@ import { NftStatusBadge } from "@/lib/nftStatus";
 import { formatNftPrice } from "@/lib/nftPrice";
 import {
   ArrowLeft, Pencil, MoreHorizontal, Copy, Share2, Globe, Twitter, Instagram, Send, Facebook, Youtube,
-  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, Heart, X, MessageCircle, Pin, PinOff, Trash2,
+  BadgeCheck, Users, Package, TrendingUp, Grid3x3, List, Eye, EyeOff, Heart, X, MessageCircle, Pin, PinOff, Trash2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import NftPageShell, { DefaultNftSkeleton } from "@/components/web3/NftPageShell";
@@ -185,6 +185,14 @@ const NftStorePage = () => {
     toast({ title: data?.hidden ? "Item hidden" : "Item deleted", description: data?.hidden ? "Hidden from your store — buyer records preserved." : undefined });
   };
 
+  const toggleHidden = async (it: any) => {
+    const prev = created;
+    setCreated((c) => c.map((x) => x.id === it.id ? { ...x, hidden: !x.hidden } : x));
+    const { data, error } = await (supabase as any).rpc("nft_toggle_hidden", { p_item_id: it.id });
+    if (error) { setCreated(prev); toast({ title: "Update failed", description: error.message, variant: "destructive" }); return; }
+    toast({ title: data?.hidden ? "Hidden from store" : "Visible in store" });
+  };
+
 
   const openFollowList = async (kind: "followers" | "following") => {
     if (!owner) return;
@@ -239,7 +247,8 @@ const NftStorePage = () => {
   const avatar = profile?.avatar_url || owner.avatar_url;
   const banner = profile?.banner_url;
 
-  const items = tab === "collected" ? collected : tab === "created" ? created : [];
+  const rawItems = tab === "collected" ? collected : tab === "created" ? created : [];
+  const items = isOwner ? rawItems : rawItems.filter((x: any) => !x.hidden);
 
   return (
     <NftPageShell className="pb-24">
@@ -408,8 +417,11 @@ const NftStorePage = () => {
                           <Pin className="h-3 w-3" /> Pinned
                         </span>
                       )}
-                      {it.is_active === false && (
-                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/80">Hidden</span>
+                      {it.hidden && (
+                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/90 text-black flex items-center gap-1"><EyeOff className="h-3 w-3" />Hidden</span>
+                      )}
+                      {!it.hidden && it.is_active === false && (
+                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/80">Removed</span>
                       )}
                     </div>
                     <div className="p-2.5">
@@ -426,6 +438,12 @@ const NftStorePage = () => {
                         title={it.pinned ? "Unpin" : "Pin to store"}
                         className="h-8 w-8 rounded-full bg-black/80 backdrop-blur border border-white/20 flex items-center justify-center hover:bg-white/10">
                         {it.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleHidden(it); }}
+                        title={it.hidden ? "Show in store" : "Hide from store"}
+                        className="h-8 w-8 rounded-full bg-black/80 backdrop-blur border border-white/20 flex items-center justify-center hover:bg-white/10">
+                        {it.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteItem(it); }}
@@ -454,7 +472,8 @@ const NftStorePage = () => {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-bold truncate">{it.name}</p>
                         <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} />
-                        {it.is_active === false && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/80">Hidden</span>}
+                        {it.hidden && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/90 text-black inline-flex items-center gap-1"><EyeOff className="h-2.5 w-2.5" />Hidden</span>}
+                        {!it.hidden && it.is_active === false && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/80">Removed</span>}
                       </div>
                       <p className="text-[11px] text-white/50">#{it.code}</p>
                     </div>
@@ -465,6 +484,10 @@ const NftStorePage = () => {
                       <button onClick={() => togglePin(it)} title={it.pinned ? "Unpin" : "Pin"}
                         className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20">
                         {it.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                      </button>
+                      <button onClick={() => toggleHidden(it)} title={it.hidden ? "Show in store" : "Hide from store"}
+                        className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20">
+                        {it.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                       </button>
                       <button onClick={() => deleteItem(it)} title="Delete"
                         className="h-8 w-8 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center hover:bg-red-500/25">

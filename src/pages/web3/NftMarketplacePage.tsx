@@ -109,6 +109,7 @@ const NftMarketplacePage = () => {
         .from("nft_items")
         .select("id,name,code,description,image_url,media_url,media_type,quantity_total,price,currency,creator_id,category")
         .eq("is_active", true)
+        .eq("hidden", false)
         .order("created_at", { ascending: false })
         .limit(120),
       (supabase as any)

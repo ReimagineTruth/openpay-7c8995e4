@@ -47,6 +47,7 @@ const NftShowcase = ({ className = "", variant = "dark" }: Props) => {
         .from("nft_items")
         .select("id, name, code, image_url, media_url, price, creator_id, quantity_total, created_at")
         .eq("is_active", true)
+        .eq("hidden", false)
         .order("created_at", { ascending: false })
         .limit(10);
       const list = (data as NftCard[]) || [];

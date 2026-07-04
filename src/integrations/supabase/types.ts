@@ -2295,6 +2295,7 @@ export type Database = {
           creator_id: string
           currency: string
           description: string | null
+          hidden: boolean
           id: string
           image_url: string | null
           is_active: boolean
@@ -2316,6 +2317,7 @@ export type Database = {
           creator_id: string
           currency?: string
           description?: string | null
+          hidden?: boolean
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -2337,6 +2339,7 @@ export type Database = {
           creator_id?: string
           currency?: string
           description?: string | null
+          hidden?: boolean
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -5222,6 +5225,7 @@ export type Database = {
         Args: { p_links: string; p_reason: string }
         Returns: string
       }
+      nft_toggle_hidden: { Args: { p_item_id: string }; Returns: Json }
       nft_toggle_pin: { Args: { p_item_id: string }; Returns: boolean }
       nft_update_listing_price: {
         Args: { p_listing_id: string; p_new_price: number }
