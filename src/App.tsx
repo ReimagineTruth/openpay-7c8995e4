@@ -14,6 +14,7 @@ import PiOAuthCallbackPage from "./pages/PiOAuthCallbackPage";
 import PiVerifyKycPage from "./pages/PiVerifyKycPage";
 import DeveloperLedgerPage from "./pages/DeveloperLedgerPage";
 import { usePiOAuthAutoLink } from "./hooks/usePiOAuthAutoLink";
+import { usePiAdsAutoShow } from "./hooks/usePiAdsAutoShow";
 import TwoFactorAuthPage from "./pages/TwoFactorAuthPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ForgotMpinPage from "./pages/ForgotMpinPage";
