@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import BottomNav from "@/components/BottomNav";
 import QRCode from "qrcode";
-import * as authenticator from "otplib";
+import * as OTPAuth from "otpauth";
 
 const TwoFactorAuthPage = () => {
   const navigate = useNavigate();
@@ -44,72 +44,55 @@ const TwoFactorAuthPage = () => {
     }
   };
 
+  const buildTotp = (secret: string, accountName: string) => {
+    return new OTPAuth.TOTP({
+      issuer: "OpenPay",
+      label: accountName,
+      algorithm: "SHA1",
+      digits: 6,
+      period: 30,
+      secret: OTPAuth.Secret.fromBase32(secret),
+    });
+  };
+
   const generateSecretKey = async () => {
     setLoading(true);
     try {
-      // Generate a secret key for TOTP
-      const secret = generateTOTPSecret();
+      // Generate a proper base32-encoded random secret (20 bytes → 32 base32 chars)
+      const secret = new OTPAuth.Secret({ size: 20 }).base32;
       setSecretKey(secret);
-      
-      // Generate QR code
+
       const { data: { user } } = await supabase.auth.getUser();
-      const issuer = "OpenPay";
       const accountName = user?.email || "OpenPay User";
-      const qrCodeUrl = await generateQRCode(secret, issuer, accountName);
-      setQrCode(qrCodeUrl);
-      
-      setLoading(false);
+      const totp = buildTotp(secret, accountName);
+      const otpauthUrl = totp.toString();
+
+      const qrCodeDataURL = await QRCode.toDataURL(otpauthUrl, {
+        width: 240,
+        margin: 2,
+        color: { dark: "#000000", light: "#FFFFFF" },
+      });
+      setQrCode(qrCodeDataURL);
     } catch (error) {
       console.error("Error generating 2FA:", error);
       toast.error("Failed to generate 2FA setup");
+    } finally {
       setLoading(false);
     }
   };
 
-  const generateTOTPSecret = (): string => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    const bytes = crypto.getRandomValues(new Uint8Array(32));
-    return Array.from(bytes).map(b => chars[b % chars.length]).join('');
-  };
-
-  const generateQRCode = async (secret: string, issuer: string, accountName: string): Promise<string> => {
+  const verifyTOTP = (token: string, secret: string, accountName: string): boolean => {
     try {
-      const otpauth = `otpauth://totp/${issuer}:${accountName}?secret=${secret}&issuer=${issuer}&digits=6`;
-      const qrCodeDataURL = await QRCode.toDataURL(otpauth, {
-        width: 200,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
-      });
-      return qrCodeDataURL;
-    } catch (error) {
-      console.error("Error generating QR code:", error);
-      throw new Error("Failed to generate QR code");
-    }
-  };
-
-  const verifyTOTP = async (token: string, secret: string): Promise<boolean> => {
-    try {
-      // Use proper TOTP verification with otplib authenticator
-      const result = await authenticator.verify({ token, secret });
-      return result.valid;
+      const totp = buildTotp(secret, accountName);
+      // window=1 allows ±30s clock drift
+      const delta = totp.validate({ token: token.replace(/\s/g, ""), window: 1 });
+      return delta !== null;
     } catch (error) {
       console.error("Error verifying TOTP:", error);
       return false;
     }
   };
 
-  const generateTOTPToken = async (secret: string): Promise<string> => {
-    try {
-      // Generate proper TOTP token for testing
-      return await authenticator.generate({ secret });
-    } catch (error) {
-      console.error("Error generating TOTP token:", error);
-      return "";
-    }
-  };
 
   const setup2FA = async () => {
     if (!verificationCode) {
@@ -119,15 +102,15 @@ const TwoFactorAuthPage = () => {
 
     setLoading(true);
     try {
-      const isValid = await verifyTOTP(verificationCode, secretKey);
-      
+      const { data: { user } } = await supabase.auth.getUser();
+      const accountName = user?.email || "OpenPay User";
+      const isValid = verifyTOTP(verificationCode, secretKey, accountName);
+
       if (isValid) {
         // Generate backup codes first
         const codes = generateBackupCodes();
         setBackupCodes(codes);
-        
-        // Save 2FA setup to user metadata
-        const { data: { user } } = await supabase.auth.getUser();
+
         if (user) {
           console.log("Setting up 2FA for user:", user.id);
           console.log("User metadata before update:", user.user_metadata);
