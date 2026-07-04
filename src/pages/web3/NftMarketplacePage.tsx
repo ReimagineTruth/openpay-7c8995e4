@@ -84,6 +84,23 @@ const NftMarketplacePage = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [tab, setTab] = useState<"nfts" | "tokens">("nfts");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("openpay_nft_sidebar_collapsed") === "1";
+  });
+  const [theme, setThemeState] = useState<"light" | "dark" | "system">(() => getStoredAppTheme());
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setThemeState(next);
+    persistAndApplyAppTheme(next);
+  };
+  const toggleSidebar = () => {
+    setSidebarCollapsed((v) => {
+      const nv = !v;
+      try { localStorage.setItem("openpay_nft_sidebar_collapsed", nv ? "1" : "0"); } catch {}
+      return nv;
+    });
+  };
 
   const load = useCallback(async (mode: "initial" | "refresh" = "initial") => {
     if (mode === "refresh") setRefreshing(true);
