@@ -1064,5 +1064,20 @@ const Row = ({ k, v }: { k: string; v: any }) => (
   <div className="flex justify-between"><span className="text-white/50">{k}</span><span className="font-semibold">{v}</span></div>
 );
 
+const Details = ({ icon, title, children, defaultOpen = false }: any) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 overflow-hidden">
+      <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-white/[0.03]">
+        <span className="text-white/60">{icon}</span>
+        <span className="font-bold text-sm flex-1">{title}</span>
+        <ChevronDown className={`h-4 w-4 text-white/50 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="px-4 pb-4">{children}</div>}
+    </div>
+  );
+};
+
+
 export default NftDetailPage;
 
