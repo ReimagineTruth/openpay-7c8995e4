@@ -258,7 +258,7 @@ const AdminMrwainAuth = () => {
           </div>
         </div>
       </div>
-      </div>
+
 
       {/* Email Confirmation Modal */}
       <Dialog open={showEmailConfirmationModal} onOpenChange={setShowEmailConfirmationModal}>
