@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Send, Image as ImageIcon, X, Trash2, MessageCircle, BadgeCheck, Store as StoreIcon, ExternalLink } from "lucide-react";
+import NftPageShell from "@/components/web3/NftPageShell";
 
 const ACCENT = "hsl(217 91% 60%)";
 
