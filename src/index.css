@@ -1514,3 +1514,28 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,2
 .dark .theme-fixed :where(.bg-white) { background-color: #fff; color: inherit; }
 .dark .theme-fixed :where(.bg-black) { background-color: #000; color: inherit; }
 
+/* =========================================================
+   Classic Dashboard dark-mode override — match Web3 dark look
+   The dashboard root and section hero pills hardcode
+   bg-paypal-blue / bg-white / text-paypal-blue. In dark mode
+   we repaint them so the whole screen reads like the Web3
+   near-black surface with brand-blue accents.
+   ========================================================= */
+.dark :where(.dashboard-page-enter) { background-color: hsl(var(--background)) !important; color: hsl(var(--foreground)); }
+.dark :where(.bg-paypal-blue) { background-color: hsl(var(--card)) !important; color: hsl(var(--foreground)); }
+.dark :where(.from-paypal-blue) { --tw-gradient-from: hsl(var(--card)) !important; }
+.dark :where(.to-paypal-blue) { --tw-gradient-to: hsl(var(--card)) !important; }
+.dark :where(.via-paypal-blue) { --tw-gradient-via: hsl(var(--card)) !important; }
+.dark :where(.text-paypal-blue) { color: hsl(var(--primary)); }
+.dark :where(.bg-paypal-blue\/5) { background-color: hsl(var(--primary) / 0.08) !important; }
+.dark :where(.bg-paypal-blue\/10) { background-color: hsl(var(--primary) / 0.12) !important; }
+.dark :where(.bg-paypal-blue\/20) { background-color: hsl(var(--primary) / 0.18) !important; }
+.dark :where(.border-paypal-blue\/20, .border-paypal-blue\/30, .border-paypal-blue\/35, .border-paypal-blue\/40) { border-color: hsl(var(--primary) / 0.35) !important; }
+
+/* Primary CTA buttons keep the blue fill but on dark surface */
+.dark :where(button.bg-paypal-blue, a.bg-paypal-blue, .btn.bg-paypal-blue) {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+
