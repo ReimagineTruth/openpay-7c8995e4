@@ -54,50 +54,51 @@
   }
 
   .dark {
-    /* Professional Dark Mode */
-    --background: 220 25% 8%;
-    --foreground: 210 40% 95%;
+    /* Web3-matched Dark Mode — near-black with subtle blue tint */
+    --background: 0 0% 3%;
+    --foreground: 0 0% 98%;
 
-    --card: 220 25% 10%;
-    --card-foreground: 210 40% 95%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 220 25% 10%;
-    --popover-foreground: 210 40% 95%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 217 91% 70%;
-    --primary-foreground: 220 25% 8%;
+    --primary: 217 91% 65%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 25% 15%;
-    --secondary-foreground: 210 40% 95%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 25% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 217 91% 70%;
-    --accent-foreground: 220 25% 8%;
+    --accent: 217 91% 65%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 95%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 220 25% 20%;
-    --input: 220 25% 20%;
-    --ring: 217 91% 70%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 217 91% 65%;
 
-    /* Professional Dark Brand Colors */
-    --paypal-blue: 217 91% 70%;
+    /* Brand Colors */
+    --paypal-blue: 217 91% 65%;
     --paypal-light-blue: 200 100% 60%;
-    --paypal-dark: 210 40% 95%;
+    --paypal-dark: 0 0% 98%;
     --paypal-success: 142 76% 46%;
     --paypal-warning: 38 92% 60%;
     --paypal-error: 0 84% 70%;
 
-    --sidebar-background: 220 25% 8%;
-    --sidebar-foreground: 210 40% 95%;
-    --sidebar-primary: 217 91% 70%;
-    --sidebar-primary-foreground: 220 25% 8%;
-    --sidebar-accent: 220 25% 15%;
-    --sidebar-accent-foreground: 210 40% 95%;
-    --sidebar-border: 220 25% 20%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 217 91% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 14%;
+
     --sidebar-ring: 217 91% 70%;
   }
 }
