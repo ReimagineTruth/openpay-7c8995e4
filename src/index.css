@@ -1480,3 +1480,36 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,2
   40% { transform: rotate(18deg) scale(1.18); }
   60% { transform: rotate(-10deg) scale(0.95); }
 }
+
+/* =========================================================
+   Global dark-mode compatibility layer
+   Maps hardcoded Tailwind utilities used across legacy pages
+   to theme-aware colors so text stays visible when the user
+   toggles between light and dark modes.
+   Scoped with :where() so specificity stays at 0 — any
+   component that explicitly sets its own color still wins.
+   ========================================================= */
+.dark :where(.text-black) { color: hsl(var(--foreground)); }
+.dark :where(.text-white) { color: hsl(var(--foreground)); }
+.dark :where(.text-gray-900, .text-gray-800, .text-gray-700, .text-slate-900, .text-slate-800, .text-slate-700, .text-zinc-900, .text-zinc-800, .text-zinc-700, .text-neutral-900, .text-neutral-800, .text-neutral-700, .text-stone-900, .text-stone-800, .text-stone-700) { color: hsl(var(--foreground)); }
+.dark :where(.text-gray-600, .text-gray-500, .text-gray-400, .text-slate-600, .text-slate-500, .text-slate-400, .text-zinc-600, .text-zinc-500, .text-zinc-400, .text-neutral-600, .text-neutral-500, .text-neutral-400, .text-stone-600, .text-stone-500, .text-stone-400) { color: hsl(var(--muted-foreground)); }
+.dark :where(.text-gray-300, .text-gray-200, .text-gray-100, .text-slate-300, .text-slate-200, .text-slate-100, .text-zinc-300, .text-zinc-200, .text-zinc-100, .text-neutral-300, .text-neutral-200, .text-neutral-100, .text-stone-300, .text-stone-200, .text-stone-100) { color: hsl(var(--foreground) / 0.85); }
+
+.dark :where(.bg-white) { background-color: hsl(var(--card)); color: hsl(var(--card-foreground)); }
+.dark :where(.bg-gray-50, .bg-slate-50, .bg-zinc-50, .bg-neutral-50, .bg-stone-50, .bg-gray-100, .bg-slate-100, .bg-zinc-100, .bg-neutral-100, .bg-stone-100) { background-color: hsl(var(--muted)); color: hsl(var(--foreground)); }
+.dark :where(.bg-gray-200, .bg-slate-200, .bg-zinc-200, .bg-neutral-200, .bg-stone-200) { background-color: hsl(var(--muted)); color: hsl(var(--foreground)); }
+.dark :where(.bg-black) { background-color: hsl(var(--background)); color: hsl(var(--foreground)); }
+
+.dark :where(.border-gray-100, .border-gray-200, .border-gray-300, .border-slate-100, .border-slate-200, .border-slate-300, .border-zinc-100, .border-zinc-200, .border-zinc-300, .border-neutral-100, .border-neutral-200, .border-neutral-300) { border-color: hsl(var(--border)); }
+
+.dark :where(.divide-gray-100 > :not([hidden]) ~ :not([hidden]), .divide-gray-200 > :not([hidden]) ~ :not([hidden]), .divide-slate-100 > :not([hidden]) ~ :not([hidden]), .divide-slate-200 > :not([hidden]) ~ :not([hidden])) { border-color: hsl(var(--border)); }
+
+.dark :where(.placeholder\:text-gray-400::placeholder, .placeholder\:text-gray-500::placeholder, .placeholder\:text-slate-400::placeholder, .placeholder\:text-slate-500::placeholder) { color: hsl(var(--muted-foreground)); }
+
+/* Preserve intentionally-dark surfaces: any element that opts out
+   with .theme-fixed keeps its hardcoded colors untouched. */
+.dark .theme-fixed :where(.text-white) { color: #fff; }
+.dark .theme-fixed :where(.text-black) { color: #000; }
+.dark .theme-fixed :where(.bg-white) { background-color: #fff; color: inherit; }
+.dark .theme-fixed :where(.bg-black) { background-color: #000; color: inherit; }
+
