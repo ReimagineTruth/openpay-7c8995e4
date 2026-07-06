@@ -29,41 +29,15 @@ const NftPageShell = ({
   skeleton,
   className = "",
 }: Props) => {
-  const [showSplash, setShowSplash] = useState<boolean>(() => {
-    if (alwaysSplash) return true;
-    if (typeof window === "undefined") return false;
-    try {
-      return window.sessionStorage.getItem(SPLASH_SESSION_KEY) !== "1";
-    } catch {
-      return true;
-    }
-  });
-
-  useEffect(() => {
-    if (showSplash) {
-      try {
-        window.sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [showSplash]);
+  // Splash disabled — marketplace loads directly for a smooth, fast entry.
+  void alwaysSplash; void splashTitle; void splashSubtitle;
 
   return (
-    <>
-      {showSplash && (
-        <NftSplash
-          title={splashTitle}
-          subtitle={splashSubtitle}
-          onDone={() => setShowSplash(false)}
-        />
-      )}
-      <div
-        className={`nft-scope min-h-screen bg-background text-foreground animate-in fade-in duration-500 ${className}`}
-      >
-        {loading ? (skeleton ?? <DefaultNftSkeleton />) : children}
-      </div>
-    </>
+    <div
+      className={`nft-scope dark min-h-screen bg-background text-foreground ${className}`}
+    >
+      {loading ? (skeleton ?? <DefaultNftSkeleton />) : children}
+    </div>
   );
 };
 
