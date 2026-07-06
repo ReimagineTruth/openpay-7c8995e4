@@ -77,7 +77,7 @@ const NftMarketplacePage = () => {
   const [storeByUser, setStoreByUser] = useState<Record<string, StoreRow>>({});
   const [storeItemCounts, setStoreItemCounts] = useState<Record<string, number>>({});
   const [storeFloor, setStoreFloor] = useState<Record<string, { price: number; currency: string }>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
@@ -631,22 +631,12 @@ const NftMarketplacePage = () => {
                   </h3>
                   <span className="text-xs text-white/50">{filteredItems.length} result{filteredItems.length === 1 ? "" : "s"}</span>
                 </div>
-                {loading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="rounded-2xl overflow-hidden bg-white/5">
-                        <div className="aspect-square bg-gradient-to-br from-white/5 via-white/10 to-white/5 animate-pulse" />
-                        <div className="p-3 space-y-2">
-                          <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
-                          <div className="h-3 w-1/2 rounded bg-white/10 animate-pulse" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : filteredItems.length === 0 ? (
+                {filteredItems.length === 0 ? (
                   <div className="text-center py-12 rounded-2xl border border-dashed border-white/10">
-                    <p className="text-sm text-white/60">No NFTs match your search.</p>
-                    <button onClick={() => { setSearch(""); setCategory("all"); }} className="mt-3 text-xs font-bold" style={{ color: ACCENT }}>Clear filters</button>
+                    <p className="text-sm text-white/60">{loading ? "Loading NFTs…" : "No NFTs match your search."}</p>
+                    {!loading && (
+                      <button onClick={() => { setSearch(""); setCategory("all"); }} className="mt-3 text-xs font-bold" style={{ color: ACCENT }}>Clear filters</button>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
