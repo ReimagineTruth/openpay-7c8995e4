@@ -275,10 +275,7 @@ const NftMarketplacePage = () => {
   const Sidebar = ({ compact = false, onNav }: { compact?: boolean; onNav?: () => void }) => (
     <nav className="flex flex-col h-full">
       <div className={`px-4 pt-5 pb-4 flex items-center gap-2 ${compact ? "justify-center" : ""}`}>
-        <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 40%))` }}>
-          <Sparkles className="h-4 w-4" />
-        </div>
-        {!compact && <span className="font-extrabold text-[17px] tracking-tight whitespace-nowrap overflow-hidden">OpenPay NFT</span>}
+        {!compact && <span className="font-extrabold text-[17px] tracking-tight whitespace-nowrap overflow-hidden">Open NFT</span>}
       </div>
       <div className="px-2 space-y-0.5">
         {SIDEBAR_ITEMS.map((it, idx) => {
