@@ -1,7 +1,6 @@
-import { ReactNode, useEffect, useState } from "react";
-import NftSplash from "./NftSplash";
+import { ReactNode } from "react";
 
-const SPLASH_SESSION_KEY = "openpay:nft-splash-shown";
+
 
 /**
  * Unified wrapper for every NFT page.
