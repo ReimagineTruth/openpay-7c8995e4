@@ -358,7 +358,7 @@ const NftMarketplacePage = () => {
   );
 
   return (
-    <NftPageShell className="pb-24 md:pb-6" splashTitle={auctionsOnly ? "Live Auctions" : "OpenPay NFT"}>
+    <NftPageShell className="pb-24 md:pb-6" splashTitle={auctionsOnly ? "Live Auctions" : "Open NFT"}>
       <div className="md:flex md:min-h-screen">
         {/* Desktop sidebar */}
         <aside
@@ -391,7 +391,7 @@ const NftMarketplacePage = () => {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search OpenPay NFT"
+                placeholder="Search Open NFT"
                 className="w-full bg-[#0f0f10] border border-white/10 rounded-xl pl-9 pr-9 py-2.5 text-sm outline-none focus:border-white/30 transition"
               />
               {search && (
@@ -722,7 +722,7 @@ const NftMarketplacePage = () => {
                 <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 40%))` }}>
                   <Sparkles className="h-4 w-4" />
                 </div>
-                <span className="font-extrabold">OpenPay NFT</span>
+                <span className="font-extrabold">Open NFT</span>
               </div>
               <button onClick={() => setMenuOpen(false)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
                 <X className="h-5 w-5" />
