@@ -26,9 +26,10 @@ export const applyAppTheme = (theme: AppThemeMode) => {
   if (typeof document === "undefined") return;
   
   let actualTheme: "light" | "dark";
-  
+
   if (theme === "system") {
-    actualTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    // Classic UI defaults to light for readability; users can opt into dark explicitly.
+    actualTheme = "light";
   } else {
     actualTheme = theme;
   }
