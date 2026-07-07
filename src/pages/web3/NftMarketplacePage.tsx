@@ -77,7 +77,7 @@ const NftMarketplacePage = () => {
   const [storeByUser, setStoreByUser] = useState<Record<string, StoreRow>>({});
   const [storeItemCounts, setStoreItemCounts] = useState<Record<string, number>>({});
   const [storeFloor, setStoreFloor] = useState<Record<string, { price: number; currency: string }>>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
@@ -631,12 +631,23 @@ const NftMarketplacePage = () => {
                   </h3>
                   <span className="text-xs text-white/50">{filteredItems.length} result{filteredItems.length === 1 ? "" : "s"}</span>
                 </div>
-                {filteredItems.length === 0 ? (
+                {loading ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="rounded-2xl overflow-hidden bg-[#0f0f10] border border-white/5">
+                        <div className="aspect-square bg-white/[0.04] animate-pulse" />
+                        <div className="p-3 space-y-2">
+                          <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
+                          <div className="h-3 w-1/2 rounded bg-white/10 animate-pulse" />
+                          <div className="h-4 w-1/3 rounded bg-white/10 animate-pulse mt-2" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredItems.length === 0 ? (
                   <div className="text-center py-12 rounded-2xl border border-dashed border-white/10">
-                    <p className="text-sm text-white/60">{loading ? "Loading NFTs…" : "No NFTs match your search."}</p>
-                    {!loading && (
-                      <button onClick={() => { setSearch(""); setCategory("all"); }} className="mt-3 text-xs font-bold" style={{ color: ACCENT }}>Clear filters</button>
-                    )}
+                    <p className="text-sm text-white/60">No NFTs match your search.</p>
+                    <button onClick={() => { setSearch(""); setCategory("all"); }} className="mt-3 text-xs font-bold" style={{ color: ACCENT }}>Clear filters</button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -707,13 +718,7 @@ const NftMarketplacePage = () => {
         <>
           <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden animate-in fade-in" onClick={() => setMenuOpen(false)} />
           <div className="fixed top-0 left-0 bottom-0 z-50 w-[86%] max-w-sm bg-[#08080a] border-r border-white/10 flex flex-col animate-in slide-in-from-left duration-200 md:hidden">
-            <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 40%))` }}>
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <span className="font-extrabold">Open NFT</span>
-              </div>
+            <div className="flex items-center justify-end px-4 py-4 border-b border-white/10">
               <button onClick={() => setMenuOpen(false)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
                 <X className="h-5 w-5" />
               </button>

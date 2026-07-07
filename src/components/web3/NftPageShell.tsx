@@ -1,4 +1,6 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { getStoredAppTheme } from "@/lib/appTheme";
+
 
 
 
@@ -31,9 +33,19 @@ const NftPageShell = ({
   // Splash disabled — marketplace loads directly for a smooth, fast entry.
   void alwaysSplash; void splashTitle; void splashSubtitle;
 
+  const [isDark, setIsDark] = useState(() => getStoredAppTheme() === "dark");
+  useEffect(() => {
+    const el = document.documentElement;
+    const check = () => setIsDark(el.classList.contains("dark") || getStoredAppTheme() === "dark");
+    check();
+    const mo = new MutationObserver(check);
+    mo.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, []);
+
   return (
     <div
-      className={`nft-scope dark min-h-screen bg-background text-foreground ${className}`}
+      className={`nft-scope ${isDark ? "dark" : ""} min-h-screen bg-background text-foreground ${className}`}
     >
       {loading ? (skeleton ?? <DefaultNftSkeleton />) : children}
     </div>
