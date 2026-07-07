@@ -77,7 +77,7 @@ const NftMarketplacePage = () => {
   const [storeByUser, setStoreByUser] = useState<Record<string, StoreRow>>({});
   const [storeItemCounts, setStoreItemCounts] = useState<Record<string, number>>({});
   const [storeFloor, setStoreFloor] = useState<Record<string, { price: number; currency: string }>>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
