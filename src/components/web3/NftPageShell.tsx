@@ -33,7 +33,7 @@ const NftPageShell = ({
 
   return (
     <div
-      className={`nft-scope dark min-h-screen bg-background text-foreground ${className}`}
+      className={`nft-scope min-h-screen bg-background text-foreground ${className}`}
     >
       {loading ? (skeleton ?? <DefaultNftSkeleton />) : children}
     </div>
