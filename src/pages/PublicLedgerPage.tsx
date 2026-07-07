@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Search, Filter } from "lucide-react";
+import { ArrowLeft, RefreshCw, Search, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,31 @@ const PAGE_SIZE = 30;
 const PI_LOGO_URL = "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
 const USDT_FALLBACK_ICON_URL = "/icons/usdt.svg";
 const USDC_FALLBACK_ICON_URL = "/icons/usdc.svg";
+
+const categoryLabels: Record<string, string> = {
+  all: "All Transactions",
+  topup: "Top Up",
+  withdraw: "Withdraw",
+  swap: "Swap",
+  nft: "NFT",
+  staking: "Staking",
+  loan: "Loan",
+  affiliate: "Affiliate",
+  mining: "Mining",
+  other: "Other",
+};
+
+const categoryColors: Record<string, string> = {
+  topup: "bg-green-600",
+  withdraw: "bg-red-600",
+  swap: "bg-purple-600",
+  nft: "bg-pink-600",
+  staking: "bg-yellow-600",
+  loan: "bg-orange-600",
+  affiliate: "bg-teal-600",
+  mining: "bg-cyan-600",
+  other: "bg-gray-600",
+};
 const PROVIDER_LOGOS: Record<string, string> = {
   "Pi Payment": PI_LOGO_URL,
   "Pi Wallet": PI_LOGO_URL,
@@ -87,6 +112,7 @@ const PublicLedgerPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [filteredEntries, setFilteredEntries] = useState<PublicLedgerEntry[]>([]);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   const getInitials = (name: string) => (name || "U").split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase();
   const getPiCodeLabel = (code: string) => {
@@ -224,6 +250,22 @@ const PublicLedgerPage = () => {
     filterEntries();
   }, [entries, searchQuery, selectedCategory]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCategoryDropdown) {
+        const target = event.target as HTMLElement;
+        const dropdown = document.getElementById('category-dropdown');
+        if (dropdown && !dropdown.contains(target)) {
+          setShowCategoryDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showCategoryDropdown]);
+
   const loadTransaction = async (txId: string) => {
     setLoading(true);
     try {
@@ -325,108 +367,38 @@ const PublicLedgerPage = () => {
               />
             </div>
 
-            {/* Category Filter */}
-            <div className="flex flex-wrap gap-2">
+            {/* Category Filter Dropdown */}
+            <div className="relative" id="category-dropdown">
               <button
-                onClick={() => setSelectedCategory("all")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "all"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
+                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors"
               >
-                All
+                <span className="text-sm font-medium">
+                  {selectedCategory === "all" ? "All Transactions" : categoryLabels[selectedCategory]}
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showCategoryDropdown ? "rotate-180" : ""}`} />
               </button>
-              <button
-                onClick={() => setSelectedCategory("topup")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "topup"
-                    ? "bg-green-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                Top Up
-              </button>
-              <button
-                onClick={() => setSelectedCategory("withdraw")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "withdraw"
-                    ? "bg-red-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                Withdraw
-              </button>
-              <button
-                onClick={() => setSelectedCategory("swap")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "swap"
-                    ? "bg-purple-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                Swap
-              </button>
-              <button
-                onClick={() => setSelectedCategory("nft")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "nft"
-                    ? "bg-pink-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                NFT
-              </button>
-              <button
-                onClick={() => setSelectedCategory("staking")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "staking"
-                    ? "bg-yellow-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                Staking
-              </button>
-              <button
-                onClick={() => setSelectedCategory("loan")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "loan"
-                    ? "bg-orange-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                Loan
-              </button>
-              <button
-                onClick={() => setSelectedCategory("affiliate")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "affiliate"
-                    ? "bg-teal-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                Affiliate
-              </button>
-              <button
-                onClick={() => setSelectedCategory("mining")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "mining"
-                    ? "bg-cyan-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                Mining
-              </button>
-              <button
-                onClick={() => setSelectedCategory("other")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "other"
-                    ? "bg-gray-600 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                Other
-              </button>
+
+              {showCategoryDropdown && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                  {Object.entries(categoryLabels).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setSelectedCategory(key);
+                        setShowCategoryDropdown(false);
+                      }}
+                      className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                        selectedCategory === key
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -446,30 +418,6 @@ const PublicLedgerPage = () => {
             const isWithdraw = evt.includes("withdraw") || evt.includes("payout") || evt.includes("send") || evt.includes("outgoing") || evt.includes("payment");
             const paymentMethod = String(row.payload?.payment_method || row.payload?.provider || row.note || "").trim();
             const category = getTransactionCategory(row);
-            
-            const categoryColors: Record<string, string> = {
-              topup: "bg-green-600",
-              withdraw: "bg-red-600",
-              swap: "bg-purple-600",
-              nft: "bg-pink-600",
-              staking: "bg-yellow-600",
-              loan: "bg-orange-600",
-              affiliate: "bg-teal-600",
-              mining: "bg-cyan-600",
-              other: "bg-gray-600",
-            };
-            
-            const categoryLabels: Record<string, string> = {
-              topup: "Top Up",
-              withdraw: "Withdraw",
-              swap: "Swap",
-              nft: "NFT",
-              staking: "Staking",
-              loan: "Loan",
-              affiliate: "Affiliate",
-              mining: "Mining",
-              other: "Other",
-            };
             
             // Enhanced logo detection with multiple fallback strategies
             const getProviderLogo = (method: string): string => {
@@ -607,7 +555,7 @@ const PublicLedgerPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-foreground">{categoryLabels[category] || "Transaction"}</p>
-                      <span className={`rounded-md ${categoryColors[category]} px-1.5 py-0.5 text-[10px] font-bold text-white uppercase`}>
+                      <span className={`rounded-md ${categoryColors[category] || categoryColors.other} px-1.5 py-0.5 text-[10px] font-bold text-white uppercase`}>
                         {category}
                       </span>
                       {currencyCode && (
