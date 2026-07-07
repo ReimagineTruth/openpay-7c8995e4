@@ -292,21 +292,21 @@ const AppRoutes = () => {
             <DashboardSwitcher />
           </ProtectedRoute>
         } />
-        <Route path="/web3/nft" element={<ProtectedRoute><NftMarketplacePage /></ProtectedRoute>} />
+        <Route path="/web3/nft" element={<NftMarketplacePage />} />
         <Route path="/web3/nft/create" element={<ProtectedRoute><NftCreatePage /></ProtectedRoute>} />
        <Route path="/web3/nft/how-to" element={<ProtectedRoute><NftHowToPage /></ProtectedRoute>} />
        <Route path="/web3/nft/chat" element={<ProtectedRoute><NftChatPage /></ProtectedRoute>} />
         <Route path="/web3/nft/dashboard" element={<ProtectedRoute><NftCreatorDashboardPage /></ProtectedRoute>} />
         <Route path="/web3/nft/store/settings" element={<ProtectedRoute><NftStoreSettingsPage /></ProtectedRoute>} />
-        <Route path="/web3/nft/store" element={<ProtectedRoute><NftStorePage /></ProtectedRoute>} />
+        <Route path="/web3/nft/store" element={<NftStorePage />} />
         <Route path="/web3/nft/stores" element={<NftStoresPage />} />
         <Route path="/web3/nft/leaderboard" element={<NftStoresPage />} />
         <Route path="/web3/nft/following" element={<NftStoresPage />} />
-        <Route path="/web3/nft/auctions" element={<ProtectedRoute><NftMarketplacePage /></ProtectedRoute>} />
+        <Route path="/web3/nft/auctions" element={<NftMarketplacePage />} />
         <Route path="/web3/nft/my-nfts" element={<ProtectedRoute><NftStorePage /></ProtectedRoute>} />
         <Route path="/web3/nft/gifts" element={<ProtectedRoute><NftStorePage /></ProtectedRoute>} />
         <Route path="/web3/nft/store/:handle" element={<NftStorePage />} />
-        <Route path="/web3/nft/:id" element={<ProtectedRoute><NftDetailPage /></ProtectedRoute>} />
+        <Route path="/web3/nft/:id" element={<NftDetailPage />} />
         <Route path="/send" element={
           <ProtectedRoute>
             <SendMoney />

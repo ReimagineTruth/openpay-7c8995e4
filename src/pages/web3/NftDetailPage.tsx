@@ -407,13 +407,13 @@ const NftDetailPage = () => {
         {/* LEFT: hero image + collapsible detail cards */}
         <div className="lg:sticky lg:top-20 lg:self-start space-y-4">
           <div className="aspect-square bg-[#0f0f0f] lg:rounded-2xl border-y lg:border border-white/10 flex items-center justify-center overflow-hidden">
-            {img ? <img src={img} alt={item.name} className="w-full h-full object-contain" /> : <span className="text-white/30">No media</span>}
+            {img ? <img src={img} alt={item.name} className="w-full h-full object-contain" /> : <span className="text-foreground/30">No media</span>}
           </div>
 
           <div className="hidden lg:block space-y-3">
             {item.description && (
               <Details icon={<Info className="h-4 w-4" />} title="Description" defaultOpen>
-                <p className="text-sm text-white/85 whitespace-pre-wrap">{item.description}</p>
+                <p className="text-sm text-foreground/85 whitespace-pre-wrap">{item.description}</p>
               </Details>
             )}
             {properties.length > 0 && (
@@ -434,8 +434,8 @@ const NftDetailPage = () => {
                 <Row k="Standard" v="OP-721" />
                 <Row k="Token ID" v={`#${item.code}`} />
                 <div className="flex justify-between gap-2 items-center">
-                  <span className="text-white/50">Contract</span>
-                  <button onClick={() => copyRef(contractRef, "Contract")} className="font-mono text-xs text-white/80 flex items-center gap-1 hover:text-white">
+                  <span className="text-foreground/50">Contract</span>
+                  <button onClick={() => copyRef(contractRef, "Contract")} className="font-mono text-xs text-foreground/80 flex items-center gap-1 hover:text-foreground">
                     {contractRef} <Copy className="h-3 w-3" />
                   </button>
                 </div>
@@ -457,12 +457,12 @@ const NftDetailPage = () => {
                 {creatorStore.is_verified && <BadgeCheck className="h-3.5 w-3.5" />}
               </button>
             )}
-            <span className="text-white/40">·</span>
-            <span className="text-white/40">#{item.code}</span>
+            <span className="text-foreground/40">·</span>
+            <span className="text-foreground/40">#{item.code}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold mt-1">{item.name}</h2>
           {creator && (
-            <p className="text-sm text-white/60 mt-1">Owned by creator @{creator.username || creator.full_name || "creator"} · {owners.length} owner{owners.length===1?"":"s"}</p>
+            <p className="text-sm text-foreground/60 mt-1">Owned by creator @{creator.username || creator.full_name || "creator"} · {owners.length} owner{owners.length===1?"":"s"}</p>
           )}
         </div>
 
@@ -495,7 +495,7 @@ const NftDetailPage = () => {
                   <p className="font-bold truncate">{creatorStore.display_name || creatorStore.handle}</p>
                   {creatorStore.is_verified && <BadgeCheck className="h-4 w-4" style={{ color: ACCENT }} />}
                 </div>
-                <p className="text-[11px] text-white/50 truncate">@{creatorStore.handle} · Owner store</p>
+                <p className="text-[11px] text-foreground/50 truncate">@{creatorStore.handle} · Owner store</p>
               </div>
               <span className="text-xs font-bold pb-1 group-hover:translate-x-0.5 transition-transform" style={{ color: ACCENT }}>
                 Visit →
@@ -508,15 +508,15 @@ const NftDetailPage = () => {
         <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
           <div className="grid grid-cols-3 gap-3 text-xs">
             <div>
-              <p className="text-white/45 uppercase tracking-wide text-[10px]">{hasActiveAuction ? "Top bid" : "Price"}</p>
+              <p className="text-foreground/45 uppercase tracking-wide text-[10px]">{hasActiveAuction ? "Top bid" : "Price"}</p>
               <p className="text-lg font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(livePrice, item.currency)}</p>
             </div>
             <div>
-              <p className="text-white/45 uppercase tracking-wide text-[10px]">Floor</p>
+              <p className="text-foreground/45 uppercase tracking-wide text-[10px]">Floor</p>
               <p className="text-lg font-extrabold">{formatNftPrice(item.price, item.currency)}</p>
             </div>
             <div>
-              <p className="text-white/45 uppercase tracking-wide text-[10px]">Last sale</p>
+              <p className="text-foreground/45 uppercase tracking-wide text-[10px]">Last sale</p>
               <p className="text-lg font-extrabold">{txs[0]?.total ? formatNftPrice(txs[0].total, item.currency) : "—"}</p>
             </div>
           </div>
@@ -533,7 +533,7 @@ const NftDetailPage = () => {
           </div>
           <div className="mt-3 flex items-center justify-between">
             <NftStatusBadge sold={totalSold} total={item.quantity_total} hasAuction={hasActiveAuction} />
-            <button onClick={share} className="text-xs text-white/60 flex items-center gap-1 hover:text-white">
+            <button onClick={share} className="text-xs text-foreground/60 flex items-center gap-1 hover:text-foreground">
               <Share2 className="h-3 w-3" /> Share
             </button>
           </div>
@@ -541,16 +541,16 @@ const NftDetailPage = () => {
 
         {/* Description — mobile only (desktop shows in left column) */}
         {item.description && (
-          <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4 lg:hidden">
-            <p className="text-xs font-semibold text-white/50 mb-1">DESCRIPTION</p>
-            <p className="text-sm text-white/85 whitespace-pre-wrap">{item.description}</p>
+          <div className="rounded-2xl bg-[#0f0f0f] border border-border/10 p-4 lg:hidden">
+            <p className="text-xs font-semibold text-foreground/50 mb-1">DESCRIPTION</p>
+            <p className="text-sm text-foreground/85 whitespace-pre-wrap">{item.description}</p>
           </div>
         )}
 
         {/* Traits — mobile only */}
         {properties.length > 0 && (
-          <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4 lg:hidden">
-            <p className="text-xs font-semibold text-white/50 mb-2 flex items-center gap-1"><Sparkles className="h-3 w-3" /> TRAITS · {properties.length}</p>
+          <div className="rounded-2xl bg-[#0f0f0f] border border-border/10 p-4 lg:hidden">
+            <p className="text-xs font-semibold text-foreground/50 mb-2 flex items-center gap-1"><Sparkles className="h-3 w-3" /> TRAITS · {properties.length}</p>
             <div className="grid grid-cols-2 gap-2">
               {properties.map((p: any, i: number) => (
                 <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-center">
@@ -562,9 +562,9 @@ const NftDetailPage = () => {
           </div>
         )}
 
-        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
-          <p className="text-xs font-semibold text-white/50 mb-2 flex items-center gap-1"><Users className="h-3 w-3" /> OWNERS · {owners.length}</p>
-          {owners.length === 0 ? <p className="text-sm text-white/50">No owners yet</p> : (
+        <div className="rounded-2xl bg-[#0f0f0f] border border-border/10 p-4">
+          <p className="text-xs font-semibold text-foreground/50 mb-2 flex items-center gap-1"><Users className="h-3 w-3" /> OWNERS · {owners.length}</p>
+          {owners.length === 0 ? <p className="text-sm text-foreground/50">No owners yet</p> : (
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {owners.map((o) => (
                 <div key={o.owner_id} className="flex items-center gap-3">
@@ -572,7 +572,7 @@ const NftDetailPage = () => {
                     ? <img src={o.profile.avatar_url} className="h-8 w-8 rounded-full object-cover" alt="" />
                     : <div className="h-8 w-8 rounded-full bg-white/10" />}
                   <span className="flex-1 text-sm">@{o.profile?.username || o.owner_id.slice(0,8)}</span>
-                  <span className="text-sm text-white/70 font-bold">×{o.quantity}</span>
+                  <span className="text-sm text-foreground/70 font-bold">×{o.quantity}</span>
                 </div>
               ))}
             </div>
@@ -580,14 +580,14 @@ const NftDetailPage = () => {
         </div>
 
         {/* RESALE LISTINGS */}
-        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
+        <div className="rounded-2xl bg-[#0f0f0f] border border-border/10 p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-white/50 flex items-center gap-1"><Tag className="h-3 w-3" /> RESALE LISTINGS</p>
+            <p className="text-xs font-semibold text-foreground/50 flex items-center gap-1"><Tag className="h-3 w-3" /> RESALE LISTINGS</p>
             {myOwn > 0 && (
               <button onClick={() => { setListPrice(String(item.price)); setListOpen(true); }} className="text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: ACCENT }}>+ List</button>
             )}
           </div>
-          {listings.length === 0 ? <p className="text-sm text-white/50">No active listings</p> : (
+          {listings.length === 0 ? <p className="text-sm text-foreground/50">No active listings</p> : (
             <div className="space-y-2">
               {listings.map((l) => {
                 const mine = l.seller_id === me;
@@ -595,7 +595,7 @@ const NftDetailPage = () => {
                   <div key={l.id} className="flex items-center gap-2 border-b border-white/5 pb-2 last:border-0">
                     <div className="flex-1">
                       <p className="font-bold" style={{ color: ACCENT }}>{formatNftPrice(l.price, item.currency)}</p>
-                      <p className="text-xs text-white/40">×{l.quantity} available {mine && "· You"}</p>
+                      <p className="text-xs text-foreground/40">×{l.quantity} available {mine && "· You"}</p>
                     </div>
                     {mine ? (
                       <>
@@ -603,7 +603,7 @@ const NftDetailPage = () => {
                         <button onClick={() => handleCancelListing(l)} disabled={busy} className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Trash2 className="h-4 w-4" /></button>
                       </>
                     ) : hasActiveAuction ? (
-                      <span className="text-[10px] font-bold px-3 py-2 rounded-full bg-white/5 text-white/40">Locked · auction live</span>
+                      <span className="text-[10px] font-bold px-3 py-2 rounded-full bg-white/5 text-foreground/40">Locked · auction live</span>
                     ) : (
                       <button onClick={() => handleBuyListing(l)} disabled={busy} className="text-xs font-bold px-3 py-2 rounded-full" style={{ backgroundColor: ACCENT }}>Buy</button>
                     )}
@@ -615,14 +615,14 @@ const NftDetailPage = () => {
         </div>
 
         {/* AUCTIONS */}
-        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
+        <div className="rounded-2xl bg-[#0f0f0f] border border-border/10 p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-white/50 flex items-center gap-1"><Gavel className="h-3 w-3" /> AUCTIONS</p>
+            <p className="text-xs font-semibold text-foreground/50 flex items-center gap-1"><Gavel className="h-3 w-3" /> AUCTIONS</p>
             {myOwn > 0 && (
               <button onClick={() => { setAStart(String(item.price)); setAuctionOpen(true); }} className="text-xs font-bold px-3 py-1 rounded-full bg-white/10">+ Auction</button>
             )}
           </div>
-          {auctions.length === 0 ? <p className="text-sm text-white/50">No auctions running</p> : (
+          {auctions.length === 0 ? <p className="text-sm text-foreground/50">No auctions running</p> : (
             <div className="space-y-3">
               {auctions.map((a) => (
                 <LiveAuctionPanel
@@ -660,15 +660,15 @@ const NftDetailPage = () => {
         </div>
 
         {/* Blockchain — mobile only */}
-        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4 lg:hidden">
-          <p className="text-xs font-semibold text-white/50 mb-2 flex items-center gap-1"><Layers className="h-3 w-3" /> BLOCKCHAIN DETAILS</p>
+        <div className="rounded-2xl bg-[#0f0f0f] border border-border/10 p-4 lg:hidden">
+          <p className="text-xs font-semibold text-foreground/50 mb-2 flex items-center gap-1"><Layers className="h-3 w-3" /> BLOCKCHAIN DETAILS</p>
           <div className="text-sm space-y-1.5">
             <Row k="Chain" v="OpenPay Ledger" />
             <Row k="Standard" v="OP-721" />
             <Row k="Token ID" v={`#${item.code}`} />
             <div className="flex justify-between gap-2 items-center">
-              <span className="text-white/50">Contract</span>
-              <button onClick={() => copyRef(contractRef, "Contract")} className="font-mono text-xs text-white/80 flex items-center gap-1 hover:text-white">
+              <span className="text-foreground/50">Contract</span>
+              <button onClick={() => copyRef(contractRef, "Contract")} className="font-mono text-xs text-foreground/80 flex items-center gap-1 hover:text-foreground">
                 {contractRef} <Copy className="h-3 w-3" />
               </button>
             </div>
@@ -677,17 +677,17 @@ const NftDetailPage = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-4">
-          <p className="text-xs font-semibold text-white/50 mb-2">ITEM ACTIVITY</p>
-          {txs.length === 0 ? <p className="text-sm text-white/50">No activity yet</p> : (
+        <div className="rounded-2xl bg-[#0f0f0f] border border-border/10 p-4">
+          <p className="text-xs font-semibold text-foreground/50 mb-2">ITEM ACTIVITY</p>
+          {txs.length === 0 ? <p className="text-sm text-foreground/50">No activity yet</p> : (
             <div className="space-y-2 text-sm max-h-72 overflow-y-auto pr-1">
               {txs.map((t) => (
                 <div key={t.id} className="flex items-center justify-between border-b border-white/5 pb-2 last:border-0">
                   <div>
                     <p className="font-semibold capitalize">{t.tx_kind.replace(/_/g, " ")}</p>
-                    <p className="text-xs text-white/40">{new Date(t.created_at).toLocaleString()}</p>
+                    <p className="text-xs text-foreground/40">{new Date(t.created_at).toLocaleString()}</p>
                   </div>
-                  <p className="text-white/80">×{t.quantity} {t.total > 0 ? `· ${formatNftPrice(t.total, item.currency)}` : ""}</p>
+                  <p className="text-foreground/80">×{t.quantity} {t.total > 0 ? `· ${formatNftPrice(t.total, item.currency)}` : ""}</p>
                 </div>
               ))}
             </div>
@@ -732,7 +732,7 @@ const NftDetailPage = () => {
         <Modal onClose={() => setBuyOpen(false)} title="Buy NFT">
           <Field label="Quantity" value={qty} onChange={(v) => setQty(Math.max(1, Number(v)||1))} type="number" />
           <div className="space-y-2">
-            <p className="text-xs text-white/60 font-semibold">Payment</p>
+            <p className="text-xs text-foreground/60 font-semibold">Payment</p>
             <PayOpt active={method==="openpay_balance"} onClick={() => setMethod("openpay_balance")} icon={<Wallet className="h-4 w-4" />} label="OpenPay Balance" />
             <PayOpt active={method==="pi"} onClick={() => setMethod("pi")} icon={<img src="https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png" className="h-4 w-4 rounded-full" alt="Pi" />} label="Pi Network" />
             <PayOpt active={method==="virtual_card"} onClick={() => setMethod("virtual_card")} icon={<CreditCard className="h-4 w-4" />} label="Virtual Card" />
@@ -740,19 +740,19 @@ const NftDetailPage = () => {
 
           {method === "virtual_card" && (
             <div
-              className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10"
+              className="space-y-2 p-3 rounded-xl bg-white/5 border border-border/10"
               style={cardHidden ? { WebkitUserSelect: "none", userSelect: "none" } : undefined}
             >
               <div className="flex items-center justify-between">
                 {savedCards.length > 0 ? (
-                  <p className="text-[11px] text-white/50">
+                  <p className="text-[11px] text-foreground/50">
                     Using your saved OpenPay card · ending {cardHidden ? "••••" : String(card.number).slice(-4)}
                   </p>
                 ) : <span />}
                 <button
                   type="button"
                   onClick={() => setCardHidden((h) => !h)}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-white/70 hover:text-white px-2 py-1 rounded-full bg-white/5 border border-white/10"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-foreground/70 hover:text-foreground px-2 py-1 rounded-full bg-white/5 border border-white/10"
                   aria-label={cardHidden ? "Show card details" : "Hide card details"}
                 >
                   {cardHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
@@ -767,7 +767,7 @@ const NftDetailPage = () => {
                     <MaskedField label="YYYY" value="••••" />
                     <MaskedField label="CVC" value="•••" />
                   </div>
-                  <p className="text-[10px] text-white/40 flex items-center gap-1">
+                  <p className="text-[10px] text-foreground/40 flex items-center gap-1">
                     <EyeOff className="h-3 w-3" /> Hidden to protect your card from screenshots & screen recordings.
                   </p>
                 </>
@@ -787,13 +787,13 @@ const NftDetailPage = () => {
             </div>
           )}
           {method === "pi" && (
-            <p className="text-[11px] text-white/60 p-2 rounded-lg bg-white/5 border border-white/10">
+            <p className="text-[11px] text-foreground/60 p-2 rounded-lg bg-white/5 border border-white/10">
               You'll be charged {(Number(item.price)*qty).toFixed(2)} Pi via the Pi Browser payment flow.
             </p>
           )}
 
           <div className="flex justify-between text-sm pt-2 border-t border-white/10">
-            <span className="text-white/60">Total</span>
+            <span className="text-foreground/60">Total</span>
             <span className="font-bold">{method === "pi" ? `${(Number(item.price)*qty).toFixed(2)} Pi` : formatNftPrice(Number(item.price)*qty, item.currency)}</span>
           </div>
           <button onClick={() => {
@@ -818,7 +818,7 @@ const NftDetailPage = () => {
               <ShoppingCart className="h-6 w-6" />
             </div>
             <p className="font-extrabold text-lg">{receipt.item_name}</p>
-            <p className="text-xs text-white/50">x{receipt.qty}</p>
+            <p className="text-xs text-foreground/50">x{receipt.qty}</p>
           </div>
           <div className="space-y-1.5 text-sm bg-white/5 rounded-xl p-3 border border-white/10">
             <Row k="Amount" v={receipt.method === "pi" ? `${receipt.total.toFixed(2)} Pi` : formatNftPrice(receipt.total, item.currency)} />
@@ -851,7 +851,7 @@ const NftDetailPage = () => {
         <Modal onClose={() => setListOpen(false)} title="List for resale">
           <Field label={`Price per item (you own ×${myOwn})`} value={listPrice} onChange={setListPrice} type="number" />
           <Field label="Quantity" value={qty} onChange={(v: any) => setQty(Math.min(myOwn, Math.max(1, Number(v)||1)))} type="number" />
-          <p className="text-xs text-white/50">You can change the price or cancel any time.</p>
+          <p className="text-xs text-foreground/50">You can change the price or cancel any time.</p>
           <button onClick={handleList} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Listing…" : "List Now"}
           </button>
@@ -861,7 +861,7 @@ const NftDetailPage = () => {
       {editListing && (
         <Modal onClose={() => setEditListing(null)} title="Update price">
           <Field label="New price" value={listPrice} onChange={setListPrice} type="number" />
-          <p className="text-xs text-white/50">Increase or decrease the price freely.</p>
+          <p className="text-xs text-foreground/50">Increase or decrease the price freely.</p>
           <button onClick={handleEditPrice} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Saving…" : "Save Price"}
           </button>
@@ -874,7 +874,7 @@ const NftDetailPage = () => {
           <Field label="Start price" value={aStart} onChange={setAStart} type="number" />
           <Field label="Minimum bid increment" value={aInc} onChange={setAInc} type="number" />
           <Field label="Duration (hours)" value={aHours} onChange={setAHours} type="number" />
-          <p className="text-xs text-white/50">Bids escrow from OpenPay balance. Highest bid wins when the timer ends.</p>
+          <p className="text-xs text-foreground/50">Bids escrow from OpenPay balance. Highest bid wins when the timer ends.</p>
           <button onClick={handleCreateAuction} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
             {busy ? "Starting…" : "Start Auction"}
           </button>
@@ -883,12 +883,12 @@ const NftDetailPage = () => {
 
       {bidOpen && (
         <Modal onClose={() => setBidOpen(null)} title="Place a bid">
-          <p className="text-sm text-white/70">Current bid: <span className="font-bold text-white">{formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price), item.currency)}</span></p>
-          <p className="text-xs text-white/50">Minimum next bid: {formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price) + (bidOpen.current_bid ? Number(bidOpen.min_increment) : 0), item.currency)}</p>
+          <p className="text-sm text-foreground/70">Current bid: <span className="font-bold text-foreground">{formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price), item.currency)}</span></p>
+          <p className="text-xs text-foreground/50">Minimum next bid: {formatNftPrice(Number(bidOpen.current_bid ?? bidOpen.start_price) + (bidOpen.current_bid ? Number(bidOpen.min_increment) : 0), item.currency)}</p>
           <Field label="Your bid" value={bidAmt} onChange={setBidAmt} type="number" />
 
           <div className="space-y-2">
-            <p className="text-xs text-white/60 font-semibold">Payment</p>
+            <p className="text-xs text-foreground/60 font-semibold">Payment</p>
             <PayOpt active={bidMethod==="openpay_balance"} onClick={() => setBidMethod("openpay_balance")} icon={<Wallet className="h-4 w-4" />} label="OpenPay Balance" />
             <PayOpt active={bidMethod==="pi"} onClick={() => setBidMethod("pi")} icon={<img src="https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png" className="h-4 w-4 rounded-full" alt="Pi" />} label="Pi Network" />
             <PayOpt active={bidMethod==="virtual_card"} onClick={() => setBidMethod("virtual_card")} icon={<CreditCard className="h-4 w-4" />} label="Virtual Card" />
@@ -896,19 +896,19 @@ const NftDetailPage = () => {
 
           {bidMethod === "virtual_card" && (
             <div
-              className="space-y-2 p-3 rounded-xl bg-white/5 border border-white/10"
+              className="space-y-2 p-3 rounded-xl bg-white/5 border border-border/10"
               style={cardHidden ? { WebkitUserSelect: "none", userSelect: "none" } : undefined}
             >
               <div className="flex items-center justify-between">
                 {savedCards.length > 0 ? (
-                  <p className="text-[11px] text-white/50">
+                  <p className="text-[11px] text-foreground/50">
                     Using your saved OpenPay card · ending {cardHidden ? "••••" : String(card.number).slice(-4)}
                   </p>
                 ) : <span />}
                 <button
                   type="button"
                   onClick={() => setCardHidden((h) => !h)}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-white/70 hover:text-white px-2 py-1 rounded-full bg-white/5 border border-white/10"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-foreground/70 hover:text-foreground px-2 py-1 rounded-full bg-white/5 border border-white/10"
                   aria-label={cardHidden ? "Show card details" : "Hide card details"}
                 >
                   {cardHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
@@ -940,12 +940,12 @@ const NftDetailPage = () => {
             </div>
           )}
           {bidMethod === "pi" && (
-            <p className="text-[11px] text-white/60 p-2 rounded-lg bg-white/5 border border-white/10">
+            <p className="text-[11px] text-foreground/60 p-2 rounded-lg bg-white/5 border border-white/10">
               You'll be charged {Number(bidAmt || 0).toFixed(2)} Pi via the Pi Browser. Refunded automatically if outbid.
             </p>
           )}
 
-          <p className="text-xs text-white/50">Funds are escrowed. If outbid, you'll be refunded to your OpenPay balance.</p>
+          <p className="text-xs text-foreground/50">Funds are escrowed. If outbid, you'll be refunded to your OpenPay balance.</p>
           <button onClick={() => {
             const total = Number(bidAmt || 0);
             if (!total || total <= 0) { toast({ title: "Enter a bid amount", variant: "destructive" }); return; }
@@ -971,7 +971,7 @@ const NftDetailPage = () => {
                 {confirmPay.kind === "buy" ? <ShoppingCart className="h-6 w-6" /> : <Gavel className="h-6 w-6" />}
               </div>
               <h3 className="text-lg font-extrabold">Confirm {confirmPay.kind === "buy" ? "Purchase" : "Bid"}</h3>
-              <p className="text-xs text-white/50 mt-1">Review before we charge your account</p>
+              <p className="text-xs text-foreground/50 mt-1">Review before we charge your account</p>
             </div>
             <div className="space-y-2 bg-white/5 rounded-xl p-3 border border-white/10 text-sm">
               <Row k="Item" v={item?.name} />
@@ -986,7 +986,7 @@ const NftDetailPage = () => {
             )}
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setConfirmPay(null)} disabled={busy}
-                className="rounded-full py-3 font-bold bg-white/10 text-white disabled:opacity-50">
+                className="rounded-full py-3 font-bold bg-white/10 text-foreground disabled:opacity-50">
                 Cancel
               </button>
               <button
@@ -1012,7 +1012,7 @@ const NftDetailPage = () => {
 
 const Stat = ({ label, value }: any) => (
   <div className="rounded-xl bg-white/5 py-2">
-    <p className="text-xs text-white/50">{label}</p>
+    <p className="text-xs text-foreground/50">{label}</p>
     <p className="font-bold">{value}</p>
   </div>
 );
@@ -1032,7 +1032,7 @@ const Modal = ({ children, onClose, title }: any) => (
 
 const Field = ({ label, value, onChange, multiline, type = "text" }: any) => (
   <div>
-    <label className="text-xs text-white/60 font-semibold">{label}</label>
+    <label className="text-xs text-foreground/60 font-semibold">{label}</label>
     {multiline ? (
       <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3}
         className="mt-1 w-full rounded-xl bg-[#0f0f0f] border border-white/10 p-3 text-sm outline-none" />
@@ -1053,15 +1053,15 @@ const PayOpt = ({ active, onClick, icon, label }: any) => (
 
 const MaskedField = ({ label, value }: { label: string; value: string }) => (
   <label className="block">
-    <span className="text-[11px] text-white/60">{label}</span>
-    <div className="mt-1 px-3 py-2 rounded-lg bg-[#0f0f0f] border border-white/10 text-sm tracking-widest text-white/80 select-none">
+    <span className="text-[11px] text-foreground/60">{label}</span>
+    <div className="mt-1 px-3 py-2 rounded-lg bg-[#0f0f0f] border border-white/10 text-sm tracking-widest text-foreground/80 select-none">
       {value}
     </div>
   </label>
 );
 
 const Row = ({ k, v }: { k: string; v: any }) => (
-  <div className="flex justify-between"><span className="text-white/50">{k}</span><span className="font-semibold">{v}</span></div>
+  <div className="flex justify-between"><span className="text-foreground/50">{k}</span><span className="font-semibold">{v}</span></div>
 );
 
 const Details = ({ icon, title, children, defaultOpen = false }: any) => {
@@ -1069,9 +1069,9 @@ const Details = ({ icon, title, children, defaultOpen = false }: any) => {
   return (
     <div className="rounded-2xl bg-[#0f0f0f] border border-white/10 overflow-hidden">
       <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-white/[0.03]">
-        <span className="text-white/60">{icon}</span>
+        <span className="text-foreground/60">{icon}</span>
         <span className="font-bold text-sm flex-1">{title}</span>
-        <ChevronDown className={`h-4 w-4 text-white/50 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 text-foreground/50 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="px-4 pb-4">{children}</div>}
     </div>

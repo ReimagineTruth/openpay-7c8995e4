@@ -205,12 +205,12 @@ const NftStoresPage = () => {
 
   return (
     <NftPageShell className="pb-24" splashTitle="Top Stores">
-      <header className="sticky top-0 z-10 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-white/5">
+      <header className="sticky top-0 z-10 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-border/5">
         <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="text-lg font-extrabold flex-1">Stores Leaderboard</h1>
-        <div className="hidden sm:flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/10">
+        <div className="hidden sm:flex items-center gap-1 bg-white/5 rounded-full p-1 border border-border/10">
           <button
             onClick={() => setView("table")}
             className={`h-7 w-7 rounded-full flex items-center justify-center ${view === "table" ? "bg-white/15" : ""}`}
@@ -241,7 +241,7 @@ const NftStoresPage = () => {
               key={r.id}
               onClick={() => setRange(r.id)}
               className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition ${
-                range === r.id ? "text-black" : "text-white/60 hover:text-white"
+                range === r.id ? "text-black" : "text-foreground/60 hover:text-foreground"
               }`}
               style={range === r.id ? { background: ACCENT } : {}}
             >
@@ -261,7 +261,7 @@ const NftStoresPage = () => {
                 key={c.id}
                 onClick={() => setCategory(c.id)}
                 className={`shrink-0 snap-start px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                  active ? "border-transparent text-black" : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                  active ? "border-transparent text-black" : "border-border/10 bg-white/5 text-foreground/70 hover:bg-white/10"
                 }`}
                 style={active ? { background: ACCENT } : {}}
               >
@@ -281,10 +281,10 @@ const NftStoresPage = () => {
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-16 text-center">
-            <p className="text-white/70 font-semibold">
+            <p className="text-foreground/70 font-semibold">
               {tab === "watchlist" ? "Your watchlist is empty" : "No stores match"}
             </p>
-            <p className="text-white/50 text-sm mt-1">
+            <p className="text-foreground/50 text-sm mt-1">
               {tab === "watchlist" ? "Star a store to add it here." : "Try a different range or category."}
             </p>
           </div>
@@ -292,7 +292,7 @@ const NftStoresPage = () => {
           <div className="overflow-x-auto px-2">
             <table className="w-full min-w-[760px] text-sm">
               <thead>
-                <tr className="text-[10px] uppercase tracking-wider text-white/40">
+                <tr className="text-[10px] uppercase tracking-wider text-foreground/40">
                   <th className="text-left font-semibold px-2 py-2 w-8"></th>
                   <th className="text-left font-semibold px-2 py-2">Store</th>
                   <th className="text-right font-semibold px-2 py-2">Floor</th>
@@ -312,7 +312,7 @@ const NftStoresPage = () => {
                     <tr
                       key={s.store.user_id}
                       onClick={() => nav(`/web3/nft/store/${s.store.handle}`)}
-                      className="border-t border-white/5 hover:bg-white/5 cursor-pointer transition"
+                      className="border-t border-border/5 hover:bg-white/5 cursor-pointer transition"
                     >
                       <td className="px-2 py-3">
                         <button
@@ -320,12 +320,12 @@ const NftStoresPage = () => {
                           aria-label="Toggle watchlist"
                           className="h-7 w-7 rounded-full hover:bg-white/10 flex items-center justify-center"
                         >
-                          <Star className={`h-4 w-4 ${watched ? "fill-yellow-400 text-yellow-400" : "text-white/40"}`} />
+                          <Star className={`h-4 w-4 ${watched ? "fill-yellow-400 text-yellow-400" : "text-foreground/40"}`} />
                         </button>
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-xs text-white/40 w-5 text-right">{idx + 1}</span>
+                          <span className="text-xs text-foreground/40 w-5 text-right">{idx + 1}</span>
                           {s.store.avatar_url ? (
                             <img src={s.store.avatar_url} alt="" className="h-8 w-8 rounded-lg object-cover shrink-0" />
                           ) : (
@@ -336,14 +336,14 @@ const NftStoresPage = () => {
                               <p className="font-bold truncate">{s.store.display_name || s.store.handle}</p>
                               {s.store.is_verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} />}
                             </div>
-                            <p className="text-[11px] text-white/50 truncate">@{s.store.handle} · {cat.emoji} {cat.label}</p>
+                            <p className="text-[11px] text-foreground/50 truncate">@{s.store.handle} · {cat.emoji} {cat.label}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-2 py-3 text-right font-semibold">{s.floor > 0 ? format(s.floor) : "—"}</td>
                       <td className="px-2 py-3 text-right">
                         {change === null ? (
-                          <span className="text-white/40">—</span>
+                          <span className="text-foreground/40">—</span>
                         ) : (
                           <span className={`font-semibold inline-flex items-center gap-0.5 ${change >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                             {change >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
@@ -370,10 +370,10 @@ const NftStoresPage = () => {
                 <button
                   key={s.store.user_id}
                   onClick={() => nav(`/web3/nft/store/${s.store.handle}`)}
-                  className="rounded-2xl bg-[#0f0f0f] border border-white/10 p-3 text-left hover:border-white/30 transition"
+                  className="rounded-2xl bg-[#0f0f0f] border border-border/10 p-3 text-left hover:border-border/30 transition"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-white/40">#{idx + 1}</span>
+                    <span className="text-xs font-bold text-foreground/40">#{idx + 1}</span>
                     {s.store.avatar_url ? (
                       <img src={s.store.avatar_url} alt="" className="h-10 w-10 rounded-lg object-cover" />
                     ) : (
@@ -384,14 +384,14 @@ const NftStoresPage = () => {
                         <p className="font-bold text-sm truncate">{s.store.display_name || s.store.handle}</p>
                         {s.store.is_verified && <BadgeCheck className="h-3 w-3 shrink-0" style={{ color: ACCENT }} />}
                       </div>
-                      <p className="text-[10px] text-white/50 truncate">{cat.emoji} {cat.label}</p>
+                      <p className="text-[10px] text-foreground/50 truncate">{cat.emoji} {cat.label}</p>
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleWatch(s.store.user_id); }}
                       className="h-7 w-7 rounded-full hover:bg-white/10 flex items-center justify-center"
                       aria-label="Toggle watchlist"
                     >
-                      <Star className={`h-4 w-4 ${watched ? "fill-yellow-400 text-yellow-400" : "text-white/40"}`} />
+                      <Star className={`h-4 w-4 ${watched ? "fill-yellow-400 text-yellow-400" : "text-foreground/40"}`} />
                     </button>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
@@ -418,7 +418,7 @@ const TabBtn = ({ active, onClick, icon, label }: any) => (
   <button
     onClick={onClick}
     className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition ${
-      active ? "text-black" : "text-white/70 hover:text-white"
+      active ? "text-black" : "text-foreground/70 hover:text-foreground"
     }`}
     style={active ? { background: ACCENT } : {}}
   >
@@ -428,8 +428,8 @@ const TabBtn = ({ active, onClick, icon, label }: any) => (
 
 const Stat = ({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" }) => (
   <div>
-    <p className="text-white/40 uppercase text-[9px] font-bold">{label}</p>
-    <p className={`font-semibold ${tone === "up" ? "text-emerald-400" : tone === "down" ? "text-rose-400" : "text-white"}`}>{value}</p>
+    <p className="text-foreground/40 uppercase text-[9px] font-bold">{label}</p>
+    <p className={`font-semibold ${tone === "up" ? "text-emerald-400" : tone === "down" ? "text-rose-400" : "text-foreground"}`}>{value}</p>
   </div>
 );
 

@@ -69,7 +69,7 @@ export const DefaultNftSkeleton = () => (
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl overflow-hidden bg-white/[0.03] border border-white/5"
+          className="rounded-2xl overflow-hidden bg-card/50 border border-border/30"
           style={{ animationDelay: `${i * 60}ms` }}
         >
           <div className="aspect-square nft-shimmer" />
@@ -83,7 +83,10 @@ export const DefaultNftSkeleton = () => (
     </div>
     <style>{`
       .nft-shimmer {
-        background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.04) 100%);
+        background: linear-gradient(90deg, 
+          hsl(var(--muted)) 0%, 
+          hsl(var(--muted-foreground) / 0.3) 50%, 
+          hsl(var(--muted)) 100%);
         background-size: 200% 100%;
         animation: nft-shimmer-slide 1.4s ease-in-out infinite;
       }

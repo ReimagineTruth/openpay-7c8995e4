@@ -293,7 +293,7 @@ const NftStorePage = () => {
                 </button>
               )}
             </div>
-            <button onClick={onCopyAddr} className="text-xs text-white/55 flex items-center gap-1 mt-0.5">
+            <button onClick={onCopyAddr} className="text-xs text-foreground/55 flex items-center gap-1 mt-0.5">
               @{handleStr} <Copy className="h-3 w-3" />
             </button>
           </div>
@@ -306,7 +306,7 @@ const NftStorePage = () => {
           )}
         </div>
 
-        {profile?.bio && <p className="text-sm text-white/75 leading-relaxed">{profile.bio}</p>}
+        {profile?.bio && <p className="text-sm text-foreground/75 leading-relaxed">{profile.bio}</p>}
 
         {/* Socials */}
         {(profile?.website_url || profile?.twitter_url || profile?.instagram_url || profile?.telegram_url || profile?.discord_url || profile?.facebook_url || profile?.youtube_url) && (
@@ -346,7 +346,7 @@ const NftStorePage = () => {
       <div className="mt-5 border-b border-white/10 px-4 flex gap-5 overflow-x-auto">
         {(["collected", "created", "activity", "offers"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`pb-3 text-sm font-bold capitalize whitespace-nowrap border-b-2 ${tab === t ? "text-white" : "text-white/50 border-transparent"}`}
+            className={`pb-3 text-sm font-bold capitalize whitespace-nowrap border-b-2 ${tab === t ? "text-foreground" : "text-foreground/50 border-transparent"}`}
             style={tab === t ? { borderColor: ACCENT } : {}}>
             {t} {t === "collected" && `(${collected.length})`}{t === "created" && `(${created.length})`}
           </button>
@@ -356,7 +356,7 @@ const NftStorePage = () => {
       {/* Toolbar */}
       {(tab === "collected" || tab === "created") && (
         <div className="px-4 py-3 flex items-center justify-between">
-          <p className="text-xs text-white/60">{items.length} items</p>
+          <p className="text-xs text-foreground/60">{items.length} items</p>
           <div className="flex bg-white/10 rounded-full p-0.5">
             <button onClick={() => setView("grid")}
               className={`h-7 w-7 rounded-full flex items-center justify-center ${view === "grid" ? "bg-white/20" : ""}`}>
@@ -374,7 +374,7 @@ const NftStorePage = () => {
       <div className="px-4">
         {tab === "activity" ? (
           activity.length === 0 ? (
-            <p className="text-center text-white/50 mt-12">No activity yet.</p>
+            <p className="text-center text-foreground/50 mt-12">No activity yet.</p>
           ) : (
             <div className="space-y-2">
               {activity.map((a) => (
@@ -384,7 +384,7 @@ const NftStorePage = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate capitalize">{a.tx_kind} · {a.item?.name || "NFT"}</p>
-                    <p className="text-[11px] text-white/50">{new Date(a.created_at).toLocaleString()}</p>
+                    <p className="text-[11px] text-foreground/50">{new Date(a.created_at).toLocaleString()}</p>
                   </div>
                   <p className="text-sm font-bold" style={{ color: ACCENT }}>{formatNftPrice(a.total, a.currency || a.item?.currency)}</p>
                 </div>
@@ -392,10 +392,10 @@ const NftStorePage = () => {
             </div>
           )
         ) : tab === "offers" ? (
-          <p className="text-center text-white/50 mt-12">No offers.</p>
+          <p className="text-center text-foreground/50 mt-12">No offers.</p>
         ) : items.length === 0 ? (
           <div className="text-center mt-12">
-            <p className="text-white/60 mb-3">No items yet.</p>
+            <p className="text-foreground/60 mb-3">No items yet.</p>
             {isOwner && (
               <button onClick={() => nav("/web3/nft/create")} className="rounded-full px-5 py-2 font-bold" style={{ backgroundColor: ACCENT }}>
                 {tab === "created" ? "Mint your first NFT" : "Explore marketplace"}
@@ -426,7 +426,7 @@ const NftStorePage = () => {
                     </div>
                     <div className="p-2.5">
                       <p className="text-xs font-bold truncate">{it.name}</p>
-                      <p className="text-[10px] text-white/40 truncate">#{it.code}</p>
+                      <p className="text-[10px] text-foreground/40 truncate">#{it.code}</p>
                       <NftStatusBadge sold={sales[it.id] || 0} total={it.quantity_total} className="mt-1.5" />
                       <p className="text-sm font-extrabold mt-1" style={{ color: ACCENT }}>{formatNftPrice(it.price, it.currency)}</p>
                     </div>
@@ -475,7 +475,7 @@ const NftStorePage = () => {
                         {it.hidden && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/90 text-black inline-flex items-center gap-1"><EyeOff className="h-2.5 w-2.5" />Hidden</span>}
                         {!it.hidden && it.is_active === false && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/80">Removed</span>}
                       </div>
-                      <p className="text-[11px] text-white/50">#{it.code}</p>
+                      <p className="text-[11px] text-foreground/50">#{it.code}</p>
                     </div>
                     <p className="text-sm font-extrabold" style={{ color: ACCENT }}>{formatNftPrice(it.price, it.currency)}</p>
                   </button>
@@ -514,9 +514,9 @@ const NftStorePage = () => {
               </button>
             </div>
             {followListLoading ? (
-              <p className="text-center text-sm text-white/50 py-10">Loading…</p>
+              <p className="text-center text-sm text-foreground/50 py-10">Loading…</p>
             ) : followList.length === 0 ? (
-              <p className="text-center text-sm text-white/50 py-10">
+              <p className="text-center text-sm text-foreground/50 py-10">
                 {followModal === "followers" ? "No followers yet" : "Not following anyone yet"}
               </p>
             ) : (
@@ -542,8 +542,8 @@ const NftStorePage = () => {
                           <p className="font-bold truncate">{name}</p>
                           {u.store?.is_verified && <BadgeCheck className="h-3.5 w-3.5 flex-shrink-0" style={{ color: ACCENT }} />}
                         </div>
-                        {handle && <p className="text-xs text-white/50 truncate">@{handle}</p>}
-                        {u.store?.bio && <p className="text-[11px] text-white/40 truncate">{u.store.bio}</p>}
+                        {handle && <p className="text-xs text-foreground/50 truncate">@{handle}</p>}
+                        {u.store?.bio && <p className="text-[11px] text-foreground/40 truncate">{u.store.bio}</p>}
                       </div>
                       {u.store?.handle && (
                         <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-white/10">View store</span>
@@ -561,8 +561,8 @@ const NftStorePage = () => {
 };
 
 const Stat = ({ label, value, icon }: any) => (
-  <div className="rounded-xl bg-white/5 border border-white/10 p-2">
-    <div className="flex items-center gap-1 text-[10px] text-white/55 uppercase">{icon}{label}</div>
+  <div className="rounded-xl bg-card/5 border border-border/10 p-2">
+    <div className="flex items-center gap-1 text-[10px] text-foreground/55 uppercase">{icon}{label}</div>
     <p className="text-sm font-extrabold mt-0.5 truncate">{value}</p>
   </div>
 );
