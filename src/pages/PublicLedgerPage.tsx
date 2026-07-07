@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw, Search, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +84,9 @@ const PublicLedgerPage = () => {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [filteredEntries, setFilteredEntries] = useState<PublicLedgerEntry[]>([]);
 
   const getInitials = (name: string) => (name || "U").split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase();
   const getPiCodeLabel = (code: string) => {
@@ -155,6 +158,71 @@ const PublicLedgerPage = () => {
       setLoading(false);
     }
   };
+
+  const getTransactionCategory = (entry: PublicLedgerEntry): string => {
+    const evt = (entry.event_type || "").toLowerCase();
+    
+    if (evt.includes("topup") || evt.includes("deposit") || evt.includes("receive") || evt.includes("incoming")) {
+      return "topup";
+    }
+    if (evt.includes("withdraw") || evt.includes("payout") || evt.includes("send") || evt.includes("outgoing") || evt.includes("payment")) {
+      return "withdraw";
+    }
+    if (evt.includes("swap") || evt.includes("exchange") || evt.includes("convert")) {
+      return "swap";
+    }
+    if (evt.includes("nft") || evt.includes("mint") || evt.includes("auction") || evt.includes("sale")) {
+      return "nft";
+    }
+    if (evt.includes("stake") || evt.includes("staking")) {
+      return "staking";
+    }
+    if (evt.includes("loan") || evt.includes("borrow")) {
+      return "loan";
+    }
+    if (evt.includes("affiliate") || evt.includes("referral")) {
+      return "affiliate";
+    }
+    if (evt.includes("mining") || evt.includes("reward")) {
+      return "mining";
+    }
+    return "other";
+  };
+
+  const filterEntries = () => {
+    let filtered = [...entries];
+    
+    // Filter by category
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(entry => getTransactionCategory(entry) === selectedCategory);
+    }
+    
+    // Filter by search query (username search)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(entry => {
+        const senderUsername = entry.sender_username?.toLowerCase() || "";
+        const receiverUsername = entry.receiver_username?.toLowerCase() || "";
+        const senderName = entry.sender_name?.toLowerCase() || "";
+        const receiverName = entry.receiver_name?.toLowerCase() || "";
+        const note = entry.note?.toLowerCase() || "";
+        
+        return (
+          senderUsername.includes(query) ||
+          receiverUsername.includes(query) ||
+          senderName.includes(query) ||
+          receiverName.includes(query) ||
+          note.includes(query)
+        );
+      });
+    }
+    
+    setFilteredEntries(filtered);
+  };
+
+  useEffect(() => {
+    filterEntries();
+  }, [entries, searchQuery, selectedCategory]);
 
   const loadTransaction = async (txId: string) => {
     setLoading(true);
@@ -241,17 +309,167 @@ const PublicLedgerPage = () => {
             Refresh
           </button>
         </div>
+
+        {/* Search and Filter */}
+        {!transactionId && (
+          <div className="mb-6 space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+              <input
+                type="text"
+                placeholder="Search by username or transaction details..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedCategory("all")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "all"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setSelectedCategory("topup")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "topup"
+                    ? "bg-green-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                Top Up
+              </button>
+              <button
+                onClick={() => setSelectedCategory("withdraw")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "withdraw"
+                    ? "bg-red-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                Withdraw
+              </button>
+              <button
+                onClick={() => setSelectedCategory("swap")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "swap"
+                    ? "bg-purple-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                Swap
+              </button>
+              <button
+                onClick={() => setSelectedCategory("nft")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "nft"
+                    ? "bg-pink-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                NFT
+              </button>
+              <button
+                onClick={() => setSelectedCategory("staking")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "staking"
+                    ? "bg-yellow-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                Staking
+              </button>
+              <button
+                onClick={() => setSelectedCategory("loan")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "loan"
+                    ? "bg-orange-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                Loan
+              </button>
+              <button
+                onClick={() => setSelectedCategory("affiliate")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "affiliate"
+                    ? "bg-teal-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                Affiliate
+              </button>
+              <button
+                onClick={() => setSelectedCategory("mining")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "mining"
+                    ? "bg-cyan-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                Mining
+              </button>
+              <button
+                onClick={() => setSelectedCategory("other")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === "other"
+                    ? "bg-gray-600 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+              >
+                Other
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {entries.length === 0 && !loading ? (
-        <p className="py-12 text-center text-muted-foreground">No ledger transactions yet.</p>
+      {filteredEntries.length === 0 && !loading ? (
+        <p className="py-12 text-center text-muted-foreground">
+          {searchQuery || selectedCategory !== "all" 
+            ? "No transactions match your search or filter." 
+            : "No ledger transactions yet."}
+        </p>
       ) : (
         <div className="paypal-surface divide-y divide-border/70 rounded-3xl">
-          {entries.map((row, index) => {
+          {filteredEntries.map((row, index) => {
             const evt = (row.event_type || "").toLowerCase();
             const isTopup = evt.includes("topup") || evt.includes("deposit") || evt.includes("receive") || evt.includes("incoming");
             const isWithdraw = evt.includes("withdraw") || evt.includes("payout") || evt.includes("send") || evt.includes("outgoing") || evt.includes("payment");
             const paymentMethod = String(row.payload?.payment_method || row.payload?.provider || row.note || "").trim();
+            const category = getTransactionCategory(row);
+            
+            const categoryColors: Record<string, string> = {
+              topup: "bg-green-600",
+              withdraw: "bg-red-600",
+              swap: "bg-purple-600",
+              nft: "bg-pink-600",
+              staking: "bg-yellow-600",
+              loan: "bg-orange-600",
+              affiliate: "bg-teal-600",
+              mining: "bg-cyan-600",
+              other: "bg-gray-600",
+            };
+            
+            const categoryLabels: Record<string, string> = {
+              topup: "Top Up",
+              withdraw: "Withdraw",
+              swap: "Swap",
+              nft: "NFT",
+              staking: "Staking",
+              loan: "Loan",
+              affiliate: "Affiliate",
+              mining: "Mining",
+              other: "Other",
+            };
             
             // Enhanced logo detection with multiple fallback strategies
             const getProviderLogo = (method: string): string => {
@@ -388,7 +606,10 @@ const PublicLedgerPage = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-foreground">{isTopup ? "Top Up" : isWithdraw ? "Swap" : "Transaction"}</p>
+                      <p className="font-semibold text-foreground">{categoryLabels[category] || "Transaction"}</p>
+                      <span className={`rounded-md ${categoryColors[category]} px-1.5 py-0.5 text-[10px] font-bold text-white uppercase`}>
+                        {category}
+                      </span>
                       {currencyCode && (
                         <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground uppercase">
                           {currencyFlag} {currencyLabel}
@@ -450,7 +671,7 @@ const PublicLedgerPage = () => {
                   <p className={`font-bold ${amountClass}`}>
                     {displayCurrencySymbol}{displayAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">OpenLedger Record</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">{categoryLabels[category] || "Transaction"}</p>
                 </div>
               </div>
             );
