@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import { Shield, ArrowLeft } from "lucide-react";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
-import { lovable } from "@/integrations/lovable";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -87,16 +86,18 @@ const SignIn = () => {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/.lovable/oauth/callback`,
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
-      if (result.error) {
-        toast.error(result.error.message || "Google sign-in failed");
+      
+      if (error) {
+        toast.error(error.message || "Google sign-in failed");
         setLoading(false);
         return;
       }
-      if (result.redirected) return;
-      navigate("/dashboard");
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");
       setLoading(false);

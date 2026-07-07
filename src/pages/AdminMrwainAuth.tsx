@@ -10,7 +10,6 @@ import AuthMark from "@/components/AuthMark";
 import AuthFooter from "@/components/AuthFooter";
 import { ArrowLeft, Globe, BookOpen, Users, ChevronRight } from "lucide-react";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
-import { lovable } from "@/integrations/lovable";
 
 const AdminMrwainAuth = () => {
   const navigate = useNavigate();
@@ -99,16 +98,18 @@ const AdminMrwainAuth = () => {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/.lovable/oauth/callback`,
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
-      if (result.error) {
-        toast.error(result.error.message || "Google sign-in failed");
+      
+      if (error) {
+        toast.error(error.message || "Google sign-in failed");
         setLoading(false);
         return;
       }
-      if (result.redirected) return;
-      navigate(mode === "signup" ? "/onboarding" : "/dashboard");
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");
       setLoading(false);
