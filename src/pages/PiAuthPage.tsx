@@ -201,6 +201,14 @@ const PiAuthPage = () => {
 
   const showRewardedAdBeforeAuth = async () => {
     try {
+      // Check 5-minute interval to prevent spam
+      try {
+        const lastAd = window.localStorage.getItem("openpay:pi-ads:last-rewarded");
+        if (lastAd && Date.now() - Number(lastAd) < 5 * 60 * 1000) return;
+      } catch {
+        // ignore localStorage errors
+      }
+
       if (!window.Pi?.Ads || typeof window.Pi.nativeFeaturesList !== "function") return;
       const features = await window.Pi.nativeFeaturesList();
       if (!features.includes("ad_network")) return;
@@ -215,6 +223,11 @@ const PiAuthPage = () => {
       }
       if (shown?.result === "AD_REWARDED") {
         toast.success("Thanks for watching! Authenticating...");
+        try {
+          window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
+        } catch {
+          // ignore localStorage errors
+        }
       }
     } catch {
       // best-effort; never block auth

@@ -19,9 +19,12 @@ const PiAdsPage = () => {
   const [loading, setLoading] = useState(false);
   const [lastResult, setLastResult] = useState<string>("");
   const [sdkReady, setSdkReady] = useState(() => typeof window !== "undefined" && !!window.Pi);
+  const [timeUntilNextAd, setTimeUntilNextAd] = useState<string>("Ready to watch");
   const pendingAutoRef = useRef(false);
 
   const sandbox = String(import.meta.env.VITE_PI_SANDBOX || "false").toLowerCase() === "true";
+  const AD_INTERVAL_KEY = "openpay:pi-ads:last-rewarded";
+  const AD_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
   const initPi = () => {
     if (!window.Pi) {
@@ -48,6 +51,14 @@ const PiAdsPage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    setTimeUntilNextAd(getTimeUntilNextAd());
+    const interval = setInterval(() => {
+      setTimeUntilNextAd(getTimeUntilNextAd());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const verifyRewardedAd = async (adId: string) => {
     const { data, error } = await supabase.functions.invoke("pi-platform", {
       body: { action: "ad_verify", adId },
@@ -66,8 +77,42 @@ const PiAdsPage = () => {
     return { ...payload, rewarded };
   };
 
+  const canWatchAd = (): boolean => {
+    try {
+      const lastAd = window.localStorage.getItem(AD_INTERVAL_KEY);
+      if (!lastAd) return true;
+      const lastAdTime = Number(lastAd);
+      const now = Date.now();
+      return now - lastAdTime >= AD_INTERVAL_MS;
+    } catch {
+      return true;
+    }
+  };
+
+  const getTimeUntilNextAd = (): string => {
+    try {
+      const lastAd = window.localStorage.getItem(AD_INTERVAL_KEY);
+      if (!lastAd) return "Ready to watch";
+      const lastAdTime = Number(lastAd);
+      const now = Date.now();
+      const elapsed = now - lastAdTime;
+      const remaining = AD_INTERVAL_MS - elapsed;
+      if (remaining <= 0) return "Ready to watch";
+      const minutes = Math.ceil(remaining / (60 * 1000));
+      return `Wait ${minutes} minute${minutes > 1 ? 's' : ''}`;
+    } catch {
+      return "Ready to watch";
+    }
+  };
+
   const handleWatchRewardedAd = async () => {
     if (!initPi() || !window.Pi?.Ads?.showAd) return;
+    
+    if (!canWatchAd()) {
+      toast.error(`Please wait before watching another ad. ${getTimeUntilNextAd()}`);
+      return;
+    }
+    
     setLoading(true);
     setLastResult("");
 
@@ -117,6 +162,7 @@ const PiAdsPage = () => {
       if (typeof window !== "undefined") {
         window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
         window.localStorage.setItem("pi_ad_rewarded_id", String(adResult.adId));
+        window.localStorage.setItem(AD_INTERVAL_KEY, String(Date.now()));
         console.log('Ad reward stored in localStorage:', {
           rewardedAt: Date.now(),
           adId: adResult.adId
@@ -181,9 +227,18 @@ const PiAdsPage = () => {
           Watch a rewarded ad. When it finishes and verifies, you'll be returned to Mining automatically.
         </p>
 
+        <div className="mt-4 rounded-lg bg-muted p-3">
+          <p className="text-sm font-medium text-foreground">
+            Status: <span className={canWatchAd() ? "text-green-600" : "text-orange-600"}>{timeUntilNextAd}</span>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            You can watch one rewarded ad every 5 minutes to prevent spam.
+          </p>
+        </div>
+
         <Button
           onClick={handleWatchRewardedAd}
-          disabled={loading}
+          disabled={loading || !canWatchAd()}
           className="mt-6 h-12 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]"
         >
           {loading ? "Running rewarded ad flow..." : "Watch rewarded ad"}

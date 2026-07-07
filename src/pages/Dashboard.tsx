@@ -1417,7 +1417,14 @@ const Dashboard = () => {
       if (typeof window === "undefined" || typeof document === "undefined" || document.visibilityState !== "visible") return;
       if (!inPiBrowser) return;
       if (!window.Pi?.Ads?.showAd) return;
-      if (Date.now() - lastAdRunAt < 5 * 60 * 1000) return;
+      
+      // Check localStorage for consistent 5-minute interval across pages
+      try {
+        const lastAd = window.localStorage.getItem("openpay:pi-ads:last-rewarded");
+        if (lastAd && Date.now() - Number(lastAd) < 5 * 60 * 1000) return;
+      } catch {
+        // ignore localStorage errors
+      }
 
       try {
         window.Pi.init({ version: "2.0", sandbox });
@@ -1431,6 +1438,11 @@ const Dashboard = () => {
         const adResult = await window.Pi.Ads.showAd("rewarded");
         if (adResult.result !== "AD_REWARDED" || !adResult.adId) {
           setLastAdRunAt(Date.now());
+          try {
+            window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
+          } catch {
+            // ignore localStorage errors
+          }
           return;
         }
 
@@ -1438,6 +1450,11 @@ const Dashboard = () => {
           body: { action: "ad_verify", adId: adResult.adId },
         });
         setLastAdRunAt(Date.now());
+        try {
+          window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
+        } catch {
+          // ignore localStorage errors
+        }
       } catch {
         // Silent by design: auto ad trigger should not interrupt dashboard usage.
       }

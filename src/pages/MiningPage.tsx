@@ -54,6 +54,7 @@ const MiningPage = () => {
   const [loading, setLoading] = useState(false);
   const [adModalOpen, setAdModalOpen] = useState(false);
   const [adCountdown, setAdCountdown] = useState(5);
+  const [timeUntilNextAd, setTimeUntilNextAd] = useState<string>("Ready to watch");
   const adResolveRef = useRef<((v: boolean) => void) | null>(null);
   const [adImgError, setAdImgError] = useState(false);
   const [adLoading, setAdLoading] = useState(false);
@@ -225,6 +226,14 @@ const MiningPage = () => {
       window.removeEventListener("pi-sdk-ready", handleSdkReady);
       window.removeEventListener("pi-sdk-error", handleSdkError);
     };
+  }, []);
+
+  useEffect(() => {
+    setTimeUntilNextAd(getTimeUntilNextAd());
+    const interval = setInterval(() => {
+      setTimeUntilNextAd(getTimeUntilNextAd());
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -478,9 +487,41 @@ const MiningPage = () => {
     return { ...payload, rewarded };
   };
 
+  const canWatchAd = (): boolean => {
+    try {
+      const lastAd = window.localStorage.getItem("openpay:pi-ads:last-rewarded");
+      if (!lastAd) return true;
+      const lastAdTime = Number(lastAd);
+      const now = Date.now();
+      return now - lastAdTime >= 5 * 60 * 1000; // 5 minutes
+    } catch {
+      return true;
+    }
+  };
+
+  const getTimeUntilNextAd = (): string => {
+    try {
+      const lastAd = window.localStorage.getItem("openpay:pi-ads:last-rewarded");
+      if (!lastAd) return "Ready to watch";
+      const lastAdTime = Number(lastAd);
+      const now = Date.now();
+      const elapsed = now - lastAdTime;
+      const remaining = 5 * 60 * 1000 - elapsed;
+      if (remaining <= 0) return "Ready to watch";
+      const minutes = Math.ceil(remaining / (60 * 1000));
+      return `Wait ${minutes} minute${minutes > 1 ? 's' : ''}`;
+    } catch {
+      return "Ready to watch";
+    }
+  };
+
   const runRewardedAd = async () => {
     if (!initPi() || !window.Pi?.Ads?.showAd) {
       throw new Error("Pi Ad Network is not available. Please update Pi Browser or try again later.");
+    }
+
+    if (!canWatchAd()) {
+      throw new Error(`Please wait before watching another ad. ${getTimeUntilNextAd()}`);
     }
 
     await window.Pi.authenticate(["username"]);
@@ -524,6 +565,7 @@ const MiningPage = () => {
       try {
         window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
         window.localStorage.setItem("pi_ad_rewarded_id", fallbackAdId);
+        window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
       } catch {
         // ignore localStorage failures
       }
@@ -554,6 +596,7 @@ const MiningPage = () => {
     try {
       window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
       window.localStorage.setItem("pi_ad_rewarded_id", String(adResult.adId));
+      window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
     } catch {
       // ignore localStorage failures
     }
@@ -1308,7 +1351,11 @@ const MiningPage = () => {
             </p>
           </div>
           <div className="mt-2 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground text-sm">
-            {adLoading ? "Loading ad..." : `Ready to watch ad ${adsWatched + 1}/${requiredAds}`}
+            {adLoading ? "Loading ad..." : 
+             canWatchAd() ? 
+               `Ready to watch ad ${adsWatched + 1}/${requiredAds}` : 
+               `Wait before next ad: ${getTimeUntilNextAd()}`
+            }
           </div>
           <Button asChild variant="outline" className="mt-3 w-full rounded-2xl">
             <a
@@ -1322,7 +1369,7 @@ const MiningPage = () => {
           <div className="mt-4">
             <Button
               className="w-full rounded-2xl"
-              disabled={adCountdown > 0 || adLoading}
+              disabled={adCountdown > 0 || adLoading || !canWatchAd()}
               onClick={() => {
                 setAdModalOpen(false);
                 if (adResolveRef.current) {
@@ -1331,7 +1378,11 @@ const MiningPage = () => {
                 }
               }}
             >
-              {adLoading ? "Loading Ad..." : `Watch Ad ${adsWatched + 1}/${requiredAds}`}
+              {adLoading ? "Loading Ad..." : 
+               canWatchAd() ? 
+                 `Watch Ad ${adsWatched + 1}/${requiredAds}` : 
+                 `Wait: ${getTimeUntilNextAd()}`
+              }
             </Button>
           </div>
         </DialogContent>
