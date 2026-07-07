@@ -12,6 +12,8 @@ const AuthCallbackPage = () => {
     const handleAuthCallback = async () => {
       try {
         console.log("Processing auth callback...");
+        console.log("Current URL:", window.location.href);
+        console.log("Search params:", Object.fromEntries(searchParams.entries()));
         
         // Check if there's an error in the URL params
         const error = searchParams.get("error");
@@ -24,34 +26,90 @@ const AuthCallbackPage = () => {
           return;
         }
 
-        // Wait a moment for Supabase to process the auth state
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Check if we have a session now
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        // Check for Lovable OAuth response
+        const code = searchParams.get("code");
+        const state = searchParams.get("state");
         
-        if (sessionError) {
-          console.error("Session error:", sessionError);
-          toast.error("Failed to get session: " + sessionError.message);
-          navigate("/sign-in", { replace: true });
-          return;
-        }
-
-        if (sessionData.session) {
-          console.log("Successfully authenticated:", sessionData.session.user.email);
-          toast.success("Successfully signed in!");
+        if (code) {
+          console.log("OAuth code received, processing...");
+          // Let Supabase handle the OAuth exchange
+          const { data, error: sessionError } = await supabase.auth.getSession();
           
-          // Clear any URL hash fragments
-          if (window.location.hash) {
-            window.history.replaceState({}, document.title, window.location.pathname);
+          if (sessionError) {
+            console.error("Session error:", sessionError);
+            toast.error("Failed to get session: " + sessionError.message);
+            navigate("/sign-in", { replace: true });
+            return;
           }
-          
-          // Navigate to dashboard
-          navigate("/dashboard", { replace: true });
+
+          if (data.session) {
+            console.log("Successfully authenticated:", data.session.user.email);
+            toast.success("Successfully signed in!");
+            
+            // Clear any URL hash fragments
+            if (window.location.hash) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            // Navigate to dashboard
+            navigate("/dashboard", { replace: true });
+          } else {
+            // If no session yet, wait a bit and try again
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const { data: retryData, error: retryError } = await supabase.auth.getSession();
+            
+            if (retryError) {
+              console.error("Retry session error:", retryError);
+              toast.error("Failed to get session: " + retryError.message);
+              navigate("/sign-in", { replace: true });
+              return;
+            }
+
+            if (retryData.session) {
+              console.log("Successfully authenticated on retry:", retryData.session.user.email);
+              toast.success("Successfully signed in!");
+              
+              if (window.location.hash) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+              }
+              
+              navigate("/dashboard", { replace: true });
+            } else {
+              console.log("No session found after retry, redirecting to sign in");
+              toast.error("Authentication failed - no session found");
+              navigate("/sign-in", { replace: true });
+            }
+          }
         } else {
-          console.log("No session found, redirecting to sign in");
-          toast.error("Authentication failed - no session found");
-          navigate("/sign-in", { replace: true });
+          // Wait a moment for Supabase to process the auth state
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // Check if we have a session now
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.error("Session error:", sessionError);
+            toast.error("Failed to get session: " + sessionError.message);
+            navigate("/sign-in", { replace: true });
+            return;
+          }
+
+          if (sessionData.session) {
+            console.log("Successfully authenticated:", sessionData.session.user.email);
+            toast.success("Successfully signed in!");
+            
+            // Clear any URL hash fragments
+            if (window.location.hash) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            // Navigate to dashboard
+            navigate("/dashboard", { replace: true });
+          } else {
+            console.log("No session found, redirecting to sign in");
+            toast.error("Authentication failed - no session found");
+            navigate("/sign-in", { replace: true });
+          }
         }
       } catch (error) {
         console.error("Auth callback error:", error);
