@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Search, ChevronDown } from "lucide-react";
+import { ArrowLeft, RefreshCw, Search, ChevronDown, Settings, Globe, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,6 +113,10 @@ const PublicLedgerPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [filteredEntries, setFilteredEntries] = useState<PublicLedgerEntry[]>([]);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [useApi, setUseApi] = useState(false);
+  const [apiEndpoint, setApiEndpoint] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [showApiDocs, setShowApiDocs] = useState(false);
 
   const getInitials = (name: string) => (name || "U").split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase();
   const getPiCodeLabel = (code: string) => {
@@ -166,18 +170,43 @@ const PublicLedgerPage = () => {
   const loadPage = async (nextOffset = 0) => {
     setLoading(true);
     try {
-      // Always load the public ledger, regardless of authentication
-      const { data, error } = await supabase.rpc("get_public_ledger", {
-        p_limit: PAGE_SIZE,
-        p_offset: nextOffset,
-      });
+      if (useApi && apiEndpoint) {
+        // Load from public API
+        const url = new URL(apiEndpoint);
+        url.searchParams.set('limit', String(PAGE_SIZE));
+        if (nextOffset > 0) {
+          url.searchParams.set('cursor', entries[entries.length - 1]?.occurred_at || '');
+        }
+        if (selectedCategory !== 'all') {
+          url.searchParams.set('category', selectedCategory);
+        }
+        if (searchQuery.trim()) {
+          url.searchParams.set('search', searchQuery.trim());
+        }
+        
+        const response = await fetch(url.toString());
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+        const result = await response.json();
+        const rows = (result.data || []) as PublicLedgerEntry[];
+        setEntries(rows);
+        setOffset(nextOffset);
+        setHasMore(rows.length === PAGE_SIZE);
+      } else {
+        // Load from Supabase RPC
+        const { data, error } = await supabase.rpc("get_public_ledger", {
+          p_limit: PAGE_SIZE,
+          p_offset: nextOffset,
+        });
 
-      if (error) throw new Error(error.message || "Failed to load ledger.");
+        if (error) throw new Error(error.message || "Failed to load ledger.");
 
-      const rows = (data || []) as PublicLedgerEntry[];
-      setEntries(rows);
-      setOffset(nextOffset);
-      setHasMore(rows.length === PAGE_SIZE);
+        const rows = (data || []) as PublicLedgerEntry[];
+        setEntries(rows);
+        setOffset(nextOffset);
+        setHasMore(rows.length === PAGE_SIZE);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load ledger.");
     } finally {
@@ -349,6 +378,13 @@ const PublicLedgerPage = () => {
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
+          </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="bg-white/10 hover:bg-white/20 flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-white transition-colors"
+            title="API Settings"
+          >
+            <Settings className="h-4 w-4" />
           </button>
         </div>
 
@@ -643,6 +679,164 @@ const PublicLedgerPage = () => {
           Next
         </button>
       </div>
+
+      {/* API Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full text-gray-900">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                API Settings
+              </h2>
+              <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Use Public API</p>
+                  <p className="text-sm text-gray-500">Load data from external OpenLedger API</p>
+                </div>
+                <button
+                  onClick={() => setUseApi(!useApi)}
+                  className={`w-12 h-6 rounded-full transition-colors ${useApi ? 'bg-blue-600' : 'bg-gray-300'}`}
+                >
+                  <div className={`w-5 h-5 rounded-full bg-white transition-transform ${useApi ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+
+              {useApi && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">API Endpoint</label>
+                  <input
+                    type="text"
+                    value={apiEndpoint}
+                    onChange={(e) => setApiEndpoint(e.target.value)}
+                    placeholder="https://your-supabase-project.supabase.co/functions/v1/ledger-api/public"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter your OpenLedger API endpoint URL
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowApiDocs(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                <Globe className="h-4 w-4" />
+                View API Documentation
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowSettings(false);
+                  loadPage(0);
+                }}
+                className="w-full px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+              >
+                Save & Reload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* API Documentation Modal */}
+      {showApiDocs && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full text-gray-900 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                OpenLedger API Documentation
+              </h2>
+              <button onClick={() => setShowApiDocs(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-bold text-lg mb-2">Overview</h3>
+                <p className="text-sm text-gray-600">
+                  The OpenLedger API provides public access to transaction data without authentication, and authenticated access to user-specific data.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-lg mb-2">Base URL</h3>
+                <code className="block bg-gray-100 p-3 rounded-lg text-sm">
+                  https://your-project.supabase.co/functions/v1/ledger-api
+                </code>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-lg mb-2">Public Endpoints</h3>
+                <div className="space-y-3">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="font-mono text-sm font-medium">GET /public</p>
+                    <p className="text-sm text-gray-600 mt-1">Get public ledger data (no auth required)</p>
+                    <p className="text-xs text-gray-500 mt-2">Query params: limit, cursor, since, category, search</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-lg mb-2">Authenticated Endpoints</h3>
+                <p className="text-sm text-gray-600 mb-3">Requires API key via Authorization header</p>
+                <div className="space-y-3">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="font-mono text-sm font-medium">GET /transactions</p>
+                    <p className="text-sm text-gray-600 mt-1">Get user-specific transactions</p>
+                    <p className="text-xs text-gray-500 mt-2">Header: Authorization: Bearer &lt;api_key&gt;</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="font-mono text-sm font-medium">GET /transactions/:id</p>
+                    <p className="text-sm text-gray-600 mt-1">Get specific transaction by ID</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="font-mono text-sm font-medium">GET /events</p>
+                    <p className="text-sm text-gray-600 mt-1">Get user-specific ledger events</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-lg mb-2">Example Usage</h3>
+                <div className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto">
+                  <pre className="text-sm">
+{`// Public ledger data
+fetch('https://your-project.supabase.co/functions/v1/ledger-api/public?limit=50&category=topup')
+  .then(res => res.json())
+  .then(data => console.log(data));
+
+// User-specific data (requires API key)
+fetch('https://your-project.supabase.co/functions/v1/ledger-api/transactions', {
+  headers: {
+    'Authorization': 'Bearer opk_live_your_api_key_here'
+  }
+})
+  .then(res => res.json())
+  .then(data => console.log(data));`}
+                  </pre>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-lg mb-2">API Key Management</h3>
+                <p className="text-sm text-gray-600">
+                  API keys can be created through the ledger-api-keys function. Each key is issued to a specific user and can access their transaction data.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
