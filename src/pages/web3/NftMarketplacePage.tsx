@@ -707,13 +707,7 @@ const NftMarketplacePage = () => {
         <>
           <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden animate-in fade-in" onClick={() => setMenuOpen(false)} />
           <div className="fixed top-0 left-0 bottom-0 z-50 w-[86%] max-w-sm bg-[#08080a] border-r border-white/10 flex flex-col animate-in slide-in-from-left duration-200 md:hidden">
-            <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 40%))` }}>
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <span className="font-extrabold">Open NFT</span>
-              </div>
+            <div className="flex items-center justify-end px-4 py-4 border-b border-white/10">
               <button onClick={() => setMenuOpen(false)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
                 <X className="h-5 w-5" />
               </button>
