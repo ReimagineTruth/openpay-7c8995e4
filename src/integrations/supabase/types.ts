@@ -5032,6 +5032,7 @@ export type Database = {
           status: string
         }[]
       }
+      get_public_ledger_stats: { Args: never; Returns: Json }
       get_public_ledger_transaction: {
         Args: { p_transaction_id: string }
         Returns: {
@@ -5039,6 +5040,36 @@ export type Database = {
           event_type: string
           note: string
           occurred_at: string
+          status: string
+        }[]
+      }
+      get_public_ledger_v2: {
+        Args: {
+          p_category?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+        }
+        Returns: {
+          amount: number
+          category: string
+          currency_code: string
+          event_type: string
+          id: string
+          note: string
+          occurred_at: string
+          payload: Json
+          receiver_amount: number
+          receiver_avatar: string
+          receiver_currency_code: string
+          receiver_name: string
+          receiver_username: string
+          sender_amount: number
+          sender_avatar: string
+          sender_currency_code: string
+          sender_name: string
+          sender_username: string
+          source_table: string
           status: string
         }[]
       }
