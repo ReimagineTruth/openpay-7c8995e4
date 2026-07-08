@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Search, ChevronDown, Settings, Globe, Check, X } from "lucide-react";
+import { ArrowLeft, RefreshCw, Search, ChevronDown, Settings, Globe, Check, X, Copy } from "lucide-react";
+
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
