@@ -765,4 +765,220 @@ const PublicLedgerPage = () => {
   );
 };
 
+const SUPABASE_URL =
+  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
+  "https://your-project.supabase.co";
+const LEDGER_API_BASE = `${SUPABASE_URL}/functions/v1/ledger-api`;
+
+const CopyBlock = ({ code, language = "" }: { code: string; language?: string }) => {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* ignore */
+    }
+  };
+  return (
+    <div className="relative group">
+      <pre className="bg-gray-900 text-green-300 p-4 pr-12 rounded-lg overflow-x-auto text-xs leading-relaxed whitespace-pre-wrap break-all">
+        {code}
+      </pre>
+      <button
+        onClick={copy}
+        className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-[11px] font-semibold text-white hover:bg-white/20"
+        aria-label="Copy"
+      >
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+        {copied ? "Copied" : "Copy"}
+      </button>
+      {language && (
+        <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wider text-white/40">
+          {language}
+        </span>
+      )}
+    </div>
+  );
+};
+
+const ApiDocsModal = ({ onClose }: { onClose: () => void }) => {
+  const publicUrl = `${LEDGER_API_BASE}/public?limit=50&category=topup`;
+  const statsUrl = `${LEDGER_API_BASE}/stats`;
+  const txUrl = `${LEDGER_API_BASE}/transactions`;
+  const eventsUrl = `${LEDGER_API_BASE}/events`;
+
+  const jsSnippet = useMemo(
+    () => `// 1. Public ledger — no auth. Use this to mirror OpenPay activity into any external ledger.
+const res = await fetch("${LEDGER_API_BASE}/public?limit=100");
+const { data, next_cursor } = await res.json();
+
+// 2. Follow the cursor to keep syncing new events
+if (next_cursor) {
+  const more = await fetch(\`${LEDGER_API_BASE}/public?limit=100&cursor=\${encodeURIComponent(next_cursor)}\`);
+}
+
+// 3. Filter by category (topup | withdraw | swap | nft | staking | loan | affiliate | mining | other)
+await fetch("${LEDGER_API_BASE}/public?category=nft&limit=50");
+
+// 4. Free-text search across notes / event types / usernames
+await fetch("${LEDGER_API_BASE}/public?search=alice&limit=50");
+
+// 5. Incremental sync — only events after a given ISO timestamp
+await fetch(\`${LEDGER_API_BASE}/public?since=\${new Date(Date.now()-3600e3).toISOString()}\`);
+
+// 6. User-scoped transactions (needs an API key — create one at /developers/ledger)
+await fetch("${LEDGER_API_BASE}/transactions", {
+  headers: { Authorization: "Bearer opk_live_your_api_key_here" },
+});`,
+    [],
+  );
+
+  const curlSnippet = useMemo(
+    () => `# Mirror the entire OpenPay ledger into your system (public, no auth)
+curl -s "${LEDGER_API_BASE}/public?limit=100"
+
+# Aggregate stats (total events, per-category counts, total volume)
+curl -s "${LEDGER_API_BASE}/stats"
+
+# User-scoped stream (authenticated with an OpenLedger API key)
+curl -s "${LEDGER_API_BASE}/transactions" \\
+  -H "Authorization: Bearer opk_live_your_api_key_here"`,
+    [],
+  );
+
+  const pythonSnippet = useMemo(
+    () => `import requests
+
+BASE = "${LEDGER_API_BASE}"
+
+def sync_openpay_to_other_ledger(cursor=None):
+    params = {"limit": 100}
+    if cursor:
+        params["cursor"] = cursor
+    r = requests.get(f"{BASE}/public", params=params, timeout=30)
+    r.raise_for_status()
+    body = r.json()
+    for event in body["data"]:
+        # forward each event to your own ledger here
+        my_ledger.insert(event)
+    return body.get("next_cursor")`,
+    [],
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-3xl w-full text-gray-900 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            OpenLedger API — Integration Guide
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-6 text-sm">
+          <div>
+            <h3 className="font-bold text-base mb-1">Overview</h3>
+            <p className="text-gray-600">
+              A public, cursor-paginated feed of every OpenPay transaction (transfers, top-ups,
+              withdrawals, NFT sales, mining rewards, staking, loans, affiliate payouts, QR pay,
+              invoices, merchant payments). Use it to mirror OpenPay activity into your own ledger,
+              analytics stack, or compliance system.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Base URL</h3>
+            <CopyBlock code={LEDGER_API_BASE} />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Public endpoints (no auth)</h3>
+            <div className="space-y-2">
+              <EndpointRow method="GET" path="/public" desc="List ledger events, newest first." params="limit (max 200), cursor (ISO occurred_at), since (ISO), category, search, offset" />
+              <EndpointRow method="GET" path="/stats" desc="Total event count, total volume, per-category counts." />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Authenticated endpoints (Bearer API key)</h3>
+            <div className="space-y-2">
+              <EndpointRow method="GET" path="/transactions" desc="User-scoped transactions." />
+              <EndpointRow method="GET" path="/transactions/:id" desc="Fetch one transaction by id." />
+              <EndpointRow method="GET" path="/events" desc="User-scoped ledger events." />
+              <EndpointRow method="POST" path="/webhooks" desc="Register a URL to receive new ledger events." />
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Create API keys at <code className="bg-gray-100 px-1 rounded">/developers/ledger</code>.
+              Keys start with <code className="bg-gray-100 px-1 rounded">opk_live_</code>.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Copy & paste — JavaScript</h3>
+            <CopyBlock code={jsSnippet} language="javascript" />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Copy & paste — cURL</h3>
+            <CopyBlock code={curlSnippet} language="bash" />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Copy & paste — Python (sync every OpenPay event into your ledger)</h3>
+            <CopyBlock code={pythonSnippet} language="python" />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Live example URLs</h3>
+            <div className="space-y-2">
+              <CopyBlock code={publicUrl} />
+              <CopyBlock code={statsUrl} />
+              <CopyBlock code={txUrl} />
+              <CopyBlock code={eventsUrl} />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Event schema</h3>
+            <CopyBlock
+              code={`{
+  "id": "uuid",
+  "source_table": "transactions | nft_transactions | mining_rewards | ...",
+  "event_type": "transaction_created | nft_primary_sale | ...",
+  "category": "topup | withdraw | swap | nft | staking | loan | affiliate | mining | other",
+  "amount": 12.34,
+  "currency_code": "OUSD | PI | USDT | ...",
+  "status": "completed | pending | failed",
+  "note": "redacted string",
+  "sender": { "name": "...", "username": "...", "avatar": "..." },
+  "receiver": { "name": "...", "username": "...", "avatar": "..." },
+  "occurred_at": "2026-07-08T00:00:00Z"
+}`}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EndpointRow = ({ method, path, desc, params }: { method: string; path: string; desc: string; params?: string }) => (
+  <div className="bg-gray-50 p-3 rounded-lg">
+    <div className="flex items-center gap-2">
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${method === "GET" ? "bg-green-600 text-white" : "bg-blue-600 text-white"}`}>
+        {method}
+      </span>
+      <code className="font-mono text-sm font-semibold">{path}</code>
+    </div>
+    <p className="text-xs text-gray-600 mt-1">{desc}</p>
+    {params && <p className="text-[11px] text-gray-500 mt-1">Params: {params}</p>}
+  </div>
+);
+
 export default PublicLedgerPage;
+
