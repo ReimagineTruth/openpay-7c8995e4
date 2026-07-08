@@ -170,34 +170,31 @@ const PublicLedgerPage = () => {
   const loadPage = async (nextOffset = 0) => {
     setLoading(true);
     try {
+      const activeCategory = selectedCategory === "all" ? null : selectedCategory;
+      const activeSearch = searchQuery.trim() || null;
+
       if (useApi && apiEndpoint) {
-        // Load from public API
+        // Load from public API endpoint (external integration mode)
         const url = new URL(apiEndpoint);
-        url.searchParams.set('limit', String(PAGE_SIZE));
-        if (nextOffset > 0) {
-          url.searchParams.set('cursor', entries[entries.length - 1]?.occurred_at || '');
-        }
-        if (selectedCategory !== 'all') {
-          url.searchParams.set('category', selectedCategory);
-        }
-        if (searchQuery.trim()) {
-          url.searchParams.set('search', searchQuery.trim());
-        }
-        
+        url.searchParams.set("limit", String(PAGE_SIZE));
+        url.searchParams.set("offset", String(nextOffset));
+        if (activeCategory) url.searchParams.set("category", activeCategory);
+        if (activeSearch) url.searchParams.set("search", activeSearch);
+
         const response = await fetch(url.toString());
-        if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`API request failed: ${response.status}`);
         const result = await response.json();
         const rows = (result.data || []) as PublicLedgerEntry[];
         setEntries(rows);
         setOffset(nextOffset);
         setHasMore(rows.length === PAGE_SIZE);
       } else {
-        // Load from Supabase RPC
-        const { data, error } = await supabase.rpc("get_public_ledger", {
+        // Server-side filtering via v2 RPC so category/search work across the full history
+        const { data, error } = await supabase.rpc("get_public_ledger_v2" as any, {
           p_limit: PAGE_SIZE,
           p_offset: nextOffset,
+          p_category: activeCategory,
+          p_search: activeSearch,
         });
 
         if (error) throw new Error(error.message || "Failed to load ledger.");
@@ -213,6 +210,7 @@ const PublicLedgerPage = () => {
       setLoading(false);
     }
   };
+
 
   const getTransactionCategory = (entry: PublicLedgerEntry): string => {
     const evt = (entry.event_type || "").toLowerCase();
