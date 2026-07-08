@@ -1001,6 +1001,33 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_quest_progress: {
+        Row: {
+          claimed: boolean
+          claimed_at: string | null
+          completed_steps: string[]
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claimed?: boolean
+          claimed_at?: string | null
+          completed_steps?: string[]
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claimed?: boolean
+          claimed_at?: string | null
+          completed_steps?: string[]
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       help_articles: {
         Row: {
           category: string
