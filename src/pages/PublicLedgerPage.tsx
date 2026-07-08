@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Search, ChevronDown, Settings, Globe, Check, X } from "lucide-react";
+import { ArrowLeft, RefreshCw, Search, ChevronDown, Settings, Globe, Check, X, Copy } from "lucide-react";
+
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -170,34 +171,31 @@ const PublicLedgerPage = () => {
   const loadPage = async (nextOffset = 0) => {
     setLoading(true);
     try {
+      const activeCategory = selectedCategory === "all" ? null : selectedCategory;
+      const activeSearch = searchQuery.trim() || null;
+
       if (useApi && apiEndpoint) {
-        // Load from public API
+        // Load from public API endpoint (external integration mode)
         const url = new URL(apiEndpoint);
-        url.searchParams.set('limit', String(PAGE_SIZE));
-        if (nextOffset > 0) {
-          url.searchParams.set('cursor', entries[entries.length - 1]?.occurred_at || '');
-        }
-        if (selectedCategory !== 'all') {
-          url.searchParams.set('category', selectedCategory);
-        }
-        if (searchQuery.trim()) {
-          url.searchParams.set('search', searchQuery.trim());
-        }
-        
+        url.searchParams.set("limit", String(PAGE_SIZE));
+        url.searchParams.set("offset", String(nextOffset));
+        if (activeCategory) url.searchParams.set("category", activeCategory);
+        if (activeSearch) url.searchParams.set("search", activeSearch);
+
         const response = await fetch(url.toString());
-        if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`API request failed: ${response.status}`);
         const result = await response.json();
         const rows = (result.data || []) as PublicLedgerEntry[];
         setEntries(rows);
         setOffset(nextOffset);
         setHasMore(rows.length === PAGE_SIZE);
       } else {
-        // Load from Supabase RPC
-        const { data, error } = await supabase.rpc("get_public_ledger", {
+        // Server-side filtering via v2 RPC so category/search work across the full history
+        const { data, error } = await supabase.rpc("get_public_ledger_v2" as any, {
           p_limit: PAGE_SIZE,
           p_offset: nextOffset,
+          p_category: activeCategory,
+          p_search: activeSearch,
         });
 
         if (error) throw new Error(error.message || "Failed to load ledger.");
@@ -213,6 +211,7 @@ const PublicLedgerPage = () => {
       setLoading(false);
     }
   };
+
 
   const getTransactionCategory = (entry: PublicLedgerEntry): string => {
     const evt = (entry.event_type || "").toLowerCase();
@@ -275,9 +274,22 @@ const PublicLedgerPage = () => {
     setFilteredEntries(filtered);
   };
 
+  // Local filtered view (kept for note redaction / hidden fields) — server already filtered.
   useEffect(() => {
     filterEntries();
-  }, [entries, searchQuery, selectedCategory]);
+  }, [entries]);
+
+  // Reload from backend whenever the category or search filter changes so results
+  // apply to the full ledger history, not just the currently loaded page.
+  useEffect(() => {
+    if (transactionId) return;
+    const t = setTimeout(() => {
+      void loadPage(0);
+    }, searchQuery ? 300 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, searchQuery, useApi, apiEndpoint]);
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -715,14 +727,22 @@ const PublicLedgerPage = () => {
                     type="text"
                     value={apiEndpoint}
                     onChange={(e) => setApiEndpoint(e.target.value)}
-                    placeholder="https://your-supabase-project.supabase.co/functions/v1/ledger-api/public"
+                    placeholder={`${LEDGER_API_BASE}/public`}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter your OpenLedger API endpoint URL
-                  </p>
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Point at any OpenLedger-compatible /public endpoint.</span>
+                    <button
+                      type="button"
+                      onClick={() => setApiEndpoint(`${LEDGER_API_BASE}/public`)}
+                      className="font-semibold text-blue-600 hover:underline"
+                    >
+                      Use OpenPay
+                    </button>
+                  </div>
                 </div>
               )}
+
 
               <button
                 onClick={() => setShowApiDocs(true)}
@@ -747,98 +767,226 @@ const PublicLedgerPage = () => {
       )}
 
       {/* API Documentation Modal */}
-      {showApiDocs && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full text-gray-900 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                OpenLedger API Documentation
-              </h2>
-              <button onClick={() => setShowApiDocs(false)} className="text-gray-500 hover:text-gray-700">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      {showApiDocs && <ApiDocsModal onClose={() => setShowApiDocs(false)} />}
 
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-bold text-lg mb-2">Overview</h3>
-                <p className="text-sm text-gray-600">
-                  The OpenLedger API provides public access to transaction data without authentication, and authenticated access to user-specific data.
-                </p>
-              </div>
+    </div>
+  );
+};
 
-              <div>
-                <h3 className="font-bold text-lg mb-2">Base URL</h3>
-                <code className="block bg-gray-100 p-3 rounded-lg text-sm">
-                  https://your-project.supabase.co/functions/v1/ledger-api
-                </code>
-              </div>
+const SUPABASE_URL =
+  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
+  "https://your-project.supabase.co";
+const LEDGER_API_BASE = `${SUPABASE_URL}/functions/v1/ledger-api`;
 
-              <div>
-                <h3 className="font-bold text-lg mb-2">Public Endpoints</h3>
-                <div className="space-y-3">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="font-mono text-sm font-medium">GET /public</p>
-                    <p className="text-sm text-gray-600 mt-1">Get public ledger data (no auth required)</p>
-                    <p className="text-xs text-gray-500 mt-2">Query params: limit, cursor, since, category, search</p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-lg mb-2">Authenticated Endpoints</h3>
-                <p className="text-sm text-gray-600 mb-3">Requires API key via Authorization header</p>
-                <div className="space-y-3">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="font-mono text-sm font-medium">GET /transactions</p>
-                    <p className="text-sm text-gray-600 mt-1">Get user-specific transactions</p>
-                    <p className="text-xs text-gray-500 mt-2">Header: Authorization: Bearer &lt;api_key&gt;</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="font-mono text-sm font-medium">GET /transactions/:id</p>
-                    <p className="text-sm text-gray-600 mt-1">Get specific transaction by ID</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="font-mono text-sm font-medium">GET /events</p>
-                    <p className="text-sm text-gray-600 mt-1">Get user-specific ledger events</p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-lg mb-2">Example Usage</h3>
-                <div className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto">
-                  <pre className="text-sm">
-{`// Public ledger data
-fetch('https://your-project.supabase.co/functions/v1/ledger-api/public?limit=50&category=topup')
-  .then(res => res.json())
-  .then(data => console.log(data));
-
-// User-specific data (requires API key)
-fetch('https://your-project.supabase.co/functions/v1/ledger-api/transactions', {
-  headers: {
-    'Authorization': 'Bearer opk_live_your_api_key_here'
-  }
-})
-  .then(res => res.json())
-  .then(data => console.log(data));`}
-                  </pre>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-lg mb-2">API Key Management</h3>
-                <p className="text-sm text-gray-600">
-                  API keys can be created through the ledger-api-keys function. Each key is issued to a specific user and can access their transaction data.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+const CopyBlock = ({ code, language = "" }: { code: string; language?: string }) => {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* ignore */
+    }
+  };
+  return (
+    <div className="relative group">
+      <pre className="bg-gray-900 text-green-300 p-4 pr-12 rounded-lg overflow-x-auto text-xs leading-relaxed whitespace-pre-wrap break-all">
+        {code}
+      </pre>
+      <button
+        onClick={copy}
+        className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-[11px] font-semibold text-white hover:bg-white/20"
+        aria-label="Copy"
+      >
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+        {copied ? "Copied" : "Copy"}
+      </button>
+      {language && (
+        <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wider text-white/40">
+          {language}
+        </span>
       )}
     </div>
   );
 };
 
+const ApiDocsModal = ({ onClose }: { onClose: () => void }) => {
+  const publicUrl = `${LEDGER_API_BASE}/public?limit=50&category=topup`;
+  const statsUrl = `${LEDGER_API_BASE}/stats`;
+  const txUrl = `${LEDGER_API_BASE}/transactions`;
+  const eventsUrl = `${LEDGER_API_BASE}/events`;
+
+  const jsSnippet = useMemo(
+    () => `// 1. Public ledger — no auth. Use this to mirror OpenPay activity into any external ledger.
+const res = await fetch("${LEDGER_API_BASE}/public?limit=100");
+const { data, next_cursor } = await res.json();
+
+// 2. Follow the cursor to keep syncing new events
+if (next_cursor) {
+  const more = await fetch(\`${LEDGER_API_BASE}/public?limit=100&cursor=\${encodeURIComponent(next_cursor)}\`);
+}
+
+// 3. Filter by category (topup | withdraw | swap | nft | staking | loan | affiliate | mining | other)
+await fetch("${LEDGER_API_BASE}/public?category=nft&limit=50");
+
+// 4. Free-text search across notes / event types / usernames
+await fetch("${LEDGER_API_BASE}/public?search=alice&limit=50");
+
+// 5. Incremental sync — only events after a given ISO timestamp
+await fetch(\`${LEDGER_API_BASE}/public?since=\${new Date(Date.now()-3600e3).toISOString()}\`);
+
+// 6. User-scoped transactions (needs an API key — create one at /developers/ledger)
+await fetch("${LEDGER_API_BASE}/transactions", {
+  headers: { Authorization: "Bearer opk_live_your_api_key_here" },
+});`,
+    [],
+  );
+
+  const curlSnippet = useMemo(
+    () => `# Mirror the entire OpenPay ledger into your system (public, no auth)
+curl -s "${LEDGER_API_BASE}/public?limit=100"
+
+# Aggregate stats (total events, per-category counts, total volume)
+curl -s "${LEDGER_API_BASE}/stats"
+
+# User-scoped stream (authenticated with an OpenLedger API key)
+curl -s "${LEDGER_API_BASE}/transactions" \\
+  -H "Authorization: Bearer opk_live_your_api_key_here"`,
+    [],
+  );
+
+  const pythonSnippet = useMemo(
+    () => `import requests
+
+BASE = "${LEDGER_API_BASE}"
+
+def sync_openpay_to_other_ledger(cursor=None):
+    params = {"limit": 100}
+    if cursor:
+        params["cursor"] = cursor
+    r = requests.get(f"{BASE}/public", params=params, timeout=30)
+    r.raise_for_status()
+    body = r.json()
+    for event in body["data"]:
+        # forward each event to your own ledger here
+        my_ledger.insert(event)
+    return body.get("next_cursor")`,
+    [],
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-3xl w-full text-gray-900 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            OpenLedger API — Integration Guide
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-6 text-sm">
+          <div>
+            <h3 className="font-bold text-base mb-1">Overview</h3>
+            <p className="text-gray-600">
+              A public, cursor-paginated feed of every OpenPay transaction (transfers, top-ups,
+              withdrawals, NFT sales, mining rewards, staking, loans, affiliate payouts, QR pay,
+              invoices, merchant payments). Use it to mirror OpenPay activity into your own ledger,
+              analytics stack, or compliance system.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Base URL</h3>
+            <CopyBlock code={LEDGER_API_BASE} />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Public endpoints (no auth)</h3>
+            <div className="space-y-2">
+              <EndpointRow method="GET" path="/public" desc="List ledger events, newest first." params="limit (max 200), cursor (ISO occurred_at), since (ISO), category, search, offset" />
+              <EndpointRow method="GET" path="/stats" desc="Total event count, total volume, per-category counts." />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Authenticated endpoints (Bearer API key)</h3>
+            <div className="space-y-2">
+              <EndpointRow method="GET" path="/transactions" desc="User-scoped transactions." />
+              <EndpointRow method="GET" path="/transactions/:id" desc="Fetch one transaction by id." />
+              <EndpointRow method="GET" path="/events" desc="User-scoped ledger events." />
+              <EndpointRow method="POST" path="/webhooks" desc="Register a URL to receive new ledger events." />
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Create API keys at <code className="bg-gray-100 px-1 rounded">/developers/ledger</code>.
+              Keys start with <code className="bg-gray-100 px-1 rounded">opk_live_</code>.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Copy & paste — JavaScript</h3>
+            <CopyBlock code={jsSnippet} language="javascript" />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Copy & paste — cURL</h3>
+            <CopyBlock code={curlSnippet} language="bash" />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Copy & paste — Python (sync every OpenPay event into your ledger)</h3>
+            <CopyBlock code={pythonSnippet} language="python" />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Live example URLs</h3>
+            <div className="space-y-2">
+              <CopyBlock code={publicUrl} />
+              <CopyBlock code={statsUrl} />
+              <CopyBlock code={txUrl} />
+              <CopyBlock code={eventsUrl} />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-base mb-2">Event schema</h3>
+            <CopyBlock
+              code={`{
+  "id": "uuid",
+  "source_table": "transactions | nft_transactions | mining_rewards | ...",
+  "event_type": "transaction_created | nft_primary_sale | ...",
+  "category": "topup | withdraw | swap | nft | staking | loan | affiliate | mining | other",
+  "amount": 12.34,
+  "currency_code": "OUSD | PI | USDT | ...",
+  "status": "completed | pending | failed",
+  "note": "redacted string",
+  "sender": { "name": "...", "username": "...", "avatar": "..." },
+  "receiver": { "name": "...", "username": "...", "avatar": "..." },
+  "occurred_at": "2026-07-08T00:00:00Z"
+}`}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EndpointRow = ({ method, path, desc, params }: { method: string; path: string; desc: string; params?: string }) => (
+  <div className="bg-gray-50 p-3 rounded-lg">
+    <div className="flex items-center gap-2">
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${method === "GET" ? "bg-green-600 text-white" : "bg-blue-600 text-white"}`}>
+        {method}
+      </span>
+      <code className="font-mono text-sm font-semibold">{path}</code>
+    </div>
+    <p className="text-xs text-gray-600 mt-1">{desc}</p>
+    {params && <p className="text-[11px] text-gray-500 mt-1">Params: {params}</p>}
+  </div>
+);
+
 export default PublicLedgerPage;
+
