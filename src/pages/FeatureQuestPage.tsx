@@ -12,29 +12,34 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
-  FEATURE_QUEST_CLAIMED_KEY,
   FEATURE_QUEST_STEPS,
   getCompletedSteps,
+  loadFeatureQuestProgress,
   markStepCompleted,
   resetFeatureQuest,
+  setFeatureQuestClaimed,
 } from "@/lib/featureQuest";
 
 const CATEGORIES = ["Essentials", "Payments", "Grow", "Earn", "Merchant", "NFT & Web3", "Developer", "Account"] as const;
 
 const FeatureQuestPage = () => {
   const navigate = useNavigate();
-  const [completed, setCompleted] = useState<string[]>([]);
+  const [completed, setCompleted] = useState<string[]>(() => getCompletedSteps());
   const [claimed, setClaimed] = useState(false);
   const [showClaim, setShowClaim] = useState(false);
 
   useEffect(() => {
-    setCompleted(getCompletedSteps());
-    try {
-      setClaimed(window.localStorage.getItem(FEATURE_QUEST_CLAIMED_KEY) === "1");
-    } catch {
-      /* ignore */
-    }
+    let cancelled = false;
+    loadFeatureQuestProgress().then((res) => {
+      if (cancelled) return;
+      setCompleted(res.completed);
+      setClaimed(res.claimed);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
 
   const total = FEATURE_QUEST_STEPS.length;
   const doneCount = completed.length;
