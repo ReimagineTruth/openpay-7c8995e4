@@ -8,7 +8,7 @@ import {
   Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search,
   BadgeCheck, X, RefreshCw, MessageCircle, Menu, Gift, Image as ImageIcon,
   Settings, Trophy, Heart, Compass, LayoutGrid, Coins, ArrowLeftRight, Calendar,
-  Activity as ActivityIcon, Anchor, Wrench, Palette, ChevronRight, ChevronLeft,
+  Activity as ActivityIcon, Anchor, Wrench, Palette, ChevronRight, ChevronLeft, ChevronDown,
   Bell, Wallet, TrendingUp, TrendingDown, Sun, Moon, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
@@ -84,6 +84,9 @@ const NftMarketplacePage = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [tab, setTab] = useState<"nfts" | "tokens">("nfts");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("openpay_nft_sidebar_collapsed") === "1";
@@ -102,63 +105,99 @@ const NftMarketplacePage = () => {
     });
   };
 
-  const load = useCallback(async (mode: "initial" | "refresh" = "initial") => {
-    if (mode === "refresh") setRefreshing(true);
-    const [{ data: itemData }, { data: storeData }] = await Promise.all([
-      (supabase as any)
-        .from("nft_items")
-        .select("id,name,code,description,image_url,media_url,media_type,quantity_total,price,currency,creator_id,category")
-        .eq("is_active", true)
-        .eq("hidden", false)
-        .order("created_at", { ascending: false })
-        .limit(120),
-      (supabase as any)
-        .from("nft_store_profiles")
-        .select("user_id, handle, display_name, avatar_url, banner_url, category, is_verified")
-        .order("view_count", { ascending: false })
-        .limit(40),
-    ]);
-    const list = (itemData as NftRow[]) || [];
-    const sList = (storeData as StoreRow[]) || [];
-    setItems(list);
-    setStores(sList);
-    const sMap: Record<string, StoreRow> = {};
-    sList.forEach((s) => { sMap[s.user_id] = s; });
-    setStoreByUser(sMap);
+  const load = useCallback(async (mode: "initial" | "refresh" | "load-more" = "initial") => {
+    try {
+      if (mode === "refresh") setRefreshing(true);
+      if (mode === "load-more") setLoadingMore(true);
+      
+      const ITEMS_PER_PAGE = 30;
+      const offset = mode === "load-more" ? page * ITEMS_PER_PAGE : 0;
+      
+      // Use public queries that work for both authenticated and non-authenticated users
+      const [{ data: itemData }, { data: storeData }] = await Promise.all([
+        (supabase as any)
+          .from("nft_items")
+          .select("id,name,code,description,image_url,media_url,media_type,quantity_total,price,currency,creator_id,category")
+          .eq("is_active", true)
+          .eq("hidden", false)
+          .order("created_at", { ascending: false })
+          .range(offset, offset + ITEMS_PER_PAGE - 1),
+        (supabase as any)
+          .from("nft_store_profiles")
+          .select("user_id, handle, display_name, avatar_url, banner_url, category, is_verified")
+          .order("view_count", { ascending: false })
+          .limit(40),
+      ]);
+      
+      const newList = (itemData as NftRow[]) || [];
+      const sList = (storeData as StoreRow[]) || [];
+      
+      if (mode === "load-more") {
+        setItems(prev => [...prev, ...newList]);
+        setPage(prev => prev + 1);
+        setHasMore(newList.length === ITEMS_PER_PAGE);
+      } else {
+        setItems(newList);
+        setStores(sList);
+        setPage(1);
+        setHasMore(newList.length === ITEMS_PER_PAGE);
+      }
+      
+      const sMap: Record<string, StoreRow> = {};
+      sList.forEach((s) => { sMap[s.user_id] = s; });
+      setStoreByUser(sMap);
+      
+      setLoading(false);
+
+      // Only fetch secondary data for the new items to reduce load
+      if (newList.length) {
+        const ids = newList.map((i) => i.id);
+        Promise.all([
+          (supabase as any).from("nft_ownership").select("item_id, owner_id, quantity").in("item_id", ids),
+          (supabase as any).from("nft_transactions").select("item_id, quantity, tx_kind").in("item_id", ids).in("tx_kind", ["sale","primary_sale","resale","auction_settle"]),
+          (supabase as any).from("nft_auctions").select("item_id, current_bid, start_price, ends_at").in("item_id", ids).eq("status", "active"),
+        ]).then(([{ data: own }, { data: tx }, { data: au }]) => {
+          const ownerCount: Record<string, number> = {};
+          (own || []).forEach((o: any) => { if (Number(o.quantity) > 0) ownerCount[o.item_id] = (ownerCount[o.item_id] || 0) + 1; });
+          setOwners(prev => ({ ...prev, ...ownerCount }));
+          const soldMap: Record<string, number> = {};
+          (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
+          setSales(prev => ({ ...prev, ...soldMap }));
+          const auMap: Record<string, any> = {};
+          (au || []).forEach((a: any) => { auMap[a.item_id] = a; });
+          setAuctions(prev => ({ ...prev, ...auMap }));
+        }).catch((error) => {
+          console.error("Error loading secondary data:", error);
+        }).finally(() => {
+          setRefreshing(false);
+          setLoadingMore(false);
+        });
+      } else {
+        setRefreshing(false);
+        setLoadingMore(false);
+      }
+    } catch (error) {
+      console.error("Error loading NFT marketplace:", error);
+      setLoading(false);
+      setRefreshing(false);
+      setLoadingMore(false);
+    }
+  }, [page]);
+
+  useEffect(() => { load("initial"); }, [load]);
+
+  // Recalculate store item counts and floors when items change
+  useEffect(() => {
     const counts: Record<string, number> = {};
     const floors: Record<string, { price: number; currency: string }> = {};
-    list.forEach((it) => {
+    items.forEach((it) => {
       counts[it.creator_id] = (counts[it.creator_id] || 0) + 1;
       const cur = floors[it.creator_id];
       if (!cur || it.price < cur.price) floors[it.creator_id] = { price: it.price, currency: it.currency };
     });
     setStoreItemCounts(counts);
     setStoreFloor(floors);
-    setLoading(false);
-
-    if (list.length) {
-      const ids = list.map((i) => i.id);
-      Promise.all([
-        (supabase as any).from("nft_ownership").select("item_id, owner_id, quantity").in("item_id", ids),
-        (supabase as any).from("nft_transactions").select("item_id, quantity, tx_kind").in("item_id", ids).in("tx_kind", ["sale","primary_sale","resale","auction_settle"]),
-        (supabase as any).from("nft_auctions").select("item_id, current_bid, start_price, ends_at").in("item_id", ids).eq("status", "active"),
-      ]).then(([{ data: own }, { data: tx }, { data: au }]) => {
-        const ownerCount: Record<string, number> = {};
-        (own || []).forEach((o: any) => { if (Number(o.quantity) > 0) ownerCount[o.item_id] = (ownerCount[o.item_id] || 0) + 1; });
-        setOwners(ownerCount);
-        const soldMap: Record<string, number> = {};
-        (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
-        setSales(soldMap);
-        const auMap: Record<string, any> = {};
-        (au || []).forEach((a: any) => { auMap[a.item_id] = a; });
-        setAuctions(auMap);
-      }).finally(() => setRefreshing(false));
-    } else {
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => { load("initial"); }, [load]);
+  }, [items]);
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -650,9 +689,33 @@ const NftMarketplacePage = () => {
                     <button onClick={() => { setSearch(""); setCategory("all"); }} className="mt-3 text-xs font-bold" style={{ color: ACCENT }}>Clear filters</button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {filteredItems.map(renderCard)}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {filteredItems.map(renderCard)}
+                    </div>
+                    {hasMore && (
+                      <div className="flex justify-center mt-6">
+                        <button
+                          onClick={() => load("load-more")}
+                          disabled={loadingMore}
+                          className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
+                          style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 45%))` }}
+                        >
+                          {loadingMore ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4" />
+                              Load More
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
