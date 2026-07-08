@@ -62,6 +62,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { action, paymentId, txid, accessToken, adId, referralCode } = await req.json();
@@ -84,9 +85,9 @@ serve(async (req) => {
       }
     }
 
-    // Verifies Pi auth and creates/confirms the matching OpenPay auth user.
-    // This keeps Pi Auth working even when public email sign-ups require confirmation.
-    if (action === "auth_prepare_user") {
+    // Ensures the Pi-backed Supabase user exists (creates/updates as admin).
+    // Kept for backwards compatibility; new client flow uses `auth_signin` below.
+    if (action === "auth_prepare_user" || action === "auth_signin") {
       if (!accessToken || typeof accessToken !== "string") {
         return jsonResponse({ error: "Missing accessToken" }, 400);
       }
@@ -122,6 +123,8 @@ serve(async (req) => {
         const listed = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
         userId = listed.data?.users?.find((u: { email?: string; id?: string }) => String(u.email || "").toLowerCase() === email.toLowerCase())?.id || null;
         if (userId) {
+          // Reset password on every login to a value only the server knows, so a
+          // leaked historical password cannot be replayed from the client.
           await supabase.auth.admin.updateUserById(userId, {
             password,
             email_confirm: true,
@@ -142,8 +145,39 @@ serve(async (req) => {
         }).catch(() => null);
       }
 
+      if (action === "auth_signin") {
+        // Perform the password sign-in server-side using the anon client so
+        // credentials never leave the edge function. Return only the session
+        // tokens for the client to hydrate via supabase.auth.setSession().
+        const anon = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const signIn = await anon.auth.signInWithPassword({ email, password });
+        if (signIn.error || !signIn.data.session) {
+          return jsonResponse(
+            { error: signIn.error?.message || "Failed to sign in Pi account" },
+            400,
+          );
+        }
+        return jsonResponse({
+          success: true,
+          data: {
+            uid: verified.uid,
+            username,
+            session: {
+              access_token: signIn.data.session.access_token,
+              refresh_token: signIn.data.session.refresh_token,
+              expires_in: signIn.data.session.expires_in,
+              expires_at: signIn.data.session.expires_at,
+              token_type: signIn.data.session.token_type,
+            },
+          },
+        });
+      }
+
       return jsonResponse({ success: true, data: { uid: verified.uid, username, email } });
     }
+
 
     // All other actions require a valid Supabase session
     const authHeader = req.headers.get("Authorization");
