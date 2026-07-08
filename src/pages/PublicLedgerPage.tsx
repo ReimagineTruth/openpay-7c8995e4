@@ -273,9 +273,22 @@ const PublicLedgerPage = () => {
     setFilteredEntries(filtered);
   };
 
+  // Local filtered view (kept for note redaction / hidden fields) — server already filtered.
   useEffect(() => {
     filterEntries();
-  }, [entries, searchQuery, selectedCategory]);
+  }, [entries]);
+
+  // Reload from backend whenever the category or search filter changes so results
+  // apply to the full ledger history, not just the currently loaded page.
+  useEffect(() => {
+    if (transactionId) return;
+    const t = setTimeout(() => {
+      void loadPage(0);
+    }, searchQuery ? 300 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, searchQuery, useApi, apiEndpoint]);
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
