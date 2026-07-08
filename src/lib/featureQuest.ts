@@ -110,11 +110,13 @@ export const FEATURE_QUEST_STEPS: FeatureQuestStep[] = [
   { id: "help", title: "Browse the Help Center", description: "Read guides for every OpenPay feature.", cta: "Open help", route: "/help-center", icon: HelpCircle, category: "Account" },
 ];
 
+import { supabase } from "@/integrations/supabase/client";
+
 export const FEATURE_QUEST_STORAGE_KEY = "openpay:feature-quest:completed:v2";
 export const FEATURE_QUEST_INTRO_KEY = "openpay:feature-quest:intro-dismissed:v2";
 export const FEATURE_QUEST_CLAIMED_KEY = "openpay:feature-quest:claimed:v2";
 
-export function getCompletedSteps(): string[] {
+function readLocalCompleted(): string[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(FEATURE_QUEST_STORAGE_KEY);
@@ -126,16 +128,132 @@ export function getCompletedSteps(): string[] {
   }
 }
 
-export function markStepCompleted(id: string): string[] {
-  const list = new Set(getCompletedSteps());
-  list.add(id);
-  const arr = Array.from(list);
+function writeLocalCompleted(arr: string[]) {
   try {
     window.localStorage.setItem(FEATURE_QUEST_STORAGE_KEY, JSON.stringify(arr));
   } catch {
     /* ignore */
   }
+}
+
+function readLocalClaimed(): boolean {
+  try {
+    return window.localStorage.getItem(FEATURE_QUEST_CLAIMED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeLocalClaimed(claimed: boolean) {
+  try {
+    if (claimed) window.localStorage.setItem(FEATURE_QUEST_CLAIMED_KEY, "1");
+    else window.localStorage.removeItem(FEATURE_QUEST_CLAIMED_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+// Backwards compatible sync read (local cache only)
+export function getCompletedSteps(): string[] {
+  return readLocalCompleted();
+}
+
+async function getUserId(): Promise<string | null> {
+  try {
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadFeatureQuestProgress(): Promise<{ completed: string[]; claimed: boolean }> {
+  const localCompleted = readLocalCompleted();
+  const localClaimed = readLocalClaimed();
+  const uid = await getUserId();
+  if (!uid) return { completed: localCompleted, claimed: localClaimed };
+
+  try {
+    const { data, error } = await supabase
+      .from("feature_quest_progress" as any)
+      .select("completed_steps, claimed")
+      .eq("user_id", uid)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const remoteCompleted: string[] = Array.isArray((data as any)?.completed_steps)
+      ? (data as any).completed_steps
+      : [];
+    const remoteClaimed: boolean = Boolean((data as any)?.claimed);
+
+    // Merge local + remote so nothing is lost across devices
+    const merged = Array.from(new Set([...remoteCompleted, ...localCompleted]));
+    const claimed = remoteClaimed || localClaimed;
+
+    writeLocalCompleted(merged);
+    writeLocalClaimed(claimed);
+
+    // Push merged state back if it differs from remote
+    if (
+      merged.length !== remoteCompleted.length ||
+      claimed !== remoteClaimed ||
+      !data
+    ) {
+      await supabase.from("feature_quest_progress" as any).upsert(
+        {
+          user_id: uid,
+          completed_steps: merged,
+          claimed,
+          claimed_at: claimed ? new Date().toISOString() : null,
+        },
+        { onConflict: "user_id" },
+      );
+    }
+
+    return { completed: merged, claimed };
+  } catch {
+    return { completed: localCompleted, claimed: localClaimed };
+  }
+}
+
+export function markStepCompleted(id: string): string[] {
+  const list = new Set(readLocalCompleted());
+  list.add(id);
+  const arr = Array.from(list);
+  writeLocalCompleted(arr);
+  // Fire-and-forget backend sync
+  void (async () => {
+    const uid = await getUserId();
+    if (!uid) return;
+    try {
+      await supabase.from("feature_quest_progress" as any).upsert(
+        { user_id: uid, completed_steps: arr },
+        { onConflict: "user_id" },
+      );
+    } catch {
+      /* ignore */
+    }
+  })();
   return arr;
+}
+
+export async function setFeatureQuestClaimed(claimed: boolean): Promise<void> {
+  writeLocalClaimed(claimed);
+  const uid = await getUserId();
+  if (!uid) return;
+  try {
+    await supabase.from("feature_quest_progress" as any).upsert(
+      {
+        user_id: uid,
+        claimed,
+        claimed_at: claimed ? new Date().toISOString() : null,
+      },
+      { onConflict: "user_id" },
+    );
+  } catch {
+    /* ignore */
+  }
 }
 
 export function resetFeatureQuest() {
@@ -145,4 +263,17 @@ export function resetFeatureQuest() {
   } catch {
     /* ignore */
   }
+  void (async () => {
+    const uid = await getUserId();
+    if (!uid) return;
+    try {
+      await supabase.from("feature_quest_progress" as any).upsert(
+        { user_id: uid, completed_steps: [], claimed: false, claimed_at: null },
+        { onConflict: "user_id" },
+      );
+    } catch {
+      /* ignore */
+    }
+  })();
 }
+
