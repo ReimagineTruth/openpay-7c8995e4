@@ -82,97 +82,60 @@ const PiAuthPage = () => {
     if (incomingCode) setAuthorizationCode(incomingCode);
   }, [searchParams]);
 
-  const signInPiBackedAccount = async (piUid: string, piUsername: string, referralCode?: string, accessToken?: string) => {
-    const piEmail = `pi_${piUid}@openpay.local`;
-    const piPassword = `OpenPay-Pi-${piUid}-v1!`;
-    // Prefer Pi username when creating OpenPay account; fallback to uid-derived handle if missing
-    const cleanPiUsername = (piUsername || "")
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9_]/g, "_")
-      .replace(/_+/g, "_")
-      .replace(/^_+|_+$/g, "");
-    const piSignupUsername =
-      cleanPiUsername && cleanPiUsername.length >= 3
-        ? cleanPiUsername
-        : `pi_${piUid.replace(/-/g, "").slice(0, 16)}`;
-    const resolvedPiUsername = piUsername || piSignupUsername;
-    let created = false;
-
-    const doSignIn = async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: piEmail,
-        password: piPassword,
-      });
-      return { session: data.session, error };
-    };
-
-    const firstSignIn = await doSignIn();
-    if (!firstSignIn.error && firstSignIn.session) return;
-
-    const firstSignInMessage = firstSignIn.error?.message?.toLowerCase() || "";
-    const accountMissing =
-      firstSignInMessage.includes("invalid login credentials") ||
-      firstSignInMessage.includes("email not confirmed") ||
-      firstSignInMessage.includes("user not found");
-
-    if (accountMissing) {
-      if (accessToken) {
-        try {
-          const { error } = await supabase.functions.invoke("pi-platform", {
-            body: { action: "auth_prepare_user", accessToken, referralCode },
-          });
-          if (error) throw new Error(await getFunctionErrorMessage(error, "Failed to prepare Pi account"));
-
-          const preparedSignIn = await doSignIn();
-          if (!preparedSignIn.error && preparedSignIn.session) {
-            try {
-              await callRpc("upsert_my_user_account");
-            } catch {
-              // ignore best-effort
-            }
-            return { created: false };
-          }
-        } catch {
-          // Fall back to client sign-up below for older backend deployments.
-        }
-      }
-
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: piEmail,
-        password: piPassword,
-        options: {
-          data: {
-            full_name: piUsername,
-            username: piSignupUsername,
-            referral_code: referralCode,
-            pi_uid: piUid,
-            pi_username: resolvedPiUsername,
-            pi_connected_at: new Date().toISOString(),
-          },
-        },
-      });
-
-      if (signUpError && !signUpError.message.toLowerCase().includes("already registered")) {
-        throw new Error(signUpError.message || "Failed to create Pi account");
-      }
-      if (!signUpError) created = true;
-
-      const secondSignIn = await doSignIn();
-      if (secondSignIn.error || !secondSignIn.session) {
-        throw new Error(secondSignIn.error?.message || "Failed to sign in Pi account");
-      }
-      // Ensure profile/account records exist and reflect latest metadata
-      try {
-        await callRpc("upsert_my_user_account");
-      } catch {
-        // ignore best-effort
-      }
-      return { created };
+  const signInPiBackedAccount = async (
+    piUid: string,
+    _piUsername: string,
+    referralCode?: string,
+    accessToken?: string,
+  ) => {
+    if (!accessToken) {
+      throw new Error("Missing Pi access token");
     }
 
-    throw new Error(firstSignIn.error?.message || "Failed to sign in Pi account");
+    // All credential handling happens server-side in the `pi-platform` edge
+    // function. The client only receives a short-lived Supabase session and
+    // hydrates it — the Pi UID → password formula is never exposed to the
+    // browser bundle.
+    const { data, error } = await supabase.functions.invoke("pi-platform", {
+      body: { action: "auth_signin", accessToken, referralCode },
+    });
+    if (error) throw new Error(await getFunctionErrorMessage(error, "Failed to sign in Pi account"));
+
+    const payload = data as
+      | {
+          success?: boolean;
+          error?: string;
+          data?: {
+            uid?: string;
+            username?: string;
+            session?: { access_token?: string; refresh_token?: string };
+          };
+        }
+      | null;
+
+    const session = payload?.data?.session;
+    if (!payload?.success || !session?.access_token || !session?.refresh_token) {
+      throw new Error(payload?.error || "Failed to sign in Pi account");
+    }
+
+    const { error: setSessionError } = await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    });
+    if (setSessionError) {
+      throw new Error(setSessionError.message || "Failed to establish Pi session");
+    }
+
+    try {
+      await callRpc("upsert_my_user_account");
+    } catch {
+      // best-effort
+    }
+    // piUid is validated server-side; return marker to keep call signature stable.
+    void piUid;
+    return { created: false };
   };
+
 
   const verifyPiAccessToken = async (accessToken: string) => {
     const { data, error } = await supabase.functions.invoke("pi-platform", {
