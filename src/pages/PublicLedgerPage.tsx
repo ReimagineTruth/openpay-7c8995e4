@@ -727,14 +727,22 @@ const PublicLedgerPage = () => {
                     type="text"
                     value={apiEndpoint}
                     onChange={(e) => setApiEndpoint(e.target.value)}
-                    placeholder="https://your-supabase-project.supabase.co/functions/v1/ledger-api/public"
+                    placeholder={`${LEDGER_API_BASE}/public`}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter your OpenLedger API endpoint URL
-                  </p>
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Point at any OpenLedger-compatible /public endpoint.</span>
+                    <button
+                      type="button"
+                      onClick={() => setApiEndpoint(`${LEDGER_API_BASE}/public`)}
+                      className="font-semibold text-blue-600 hover:underline"
+                    >
+                      Use OpenPay
+                    </button>
+                  </div>
                 </div>
               )}
+
 
               <button
                 onClick={() => setShowApiDocs(true)}
