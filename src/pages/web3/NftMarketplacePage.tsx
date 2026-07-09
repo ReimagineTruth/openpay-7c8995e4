@@ -109,63 +109,64 @@ const NftMarketplacePage = () => {
     try {
       if (mode === "refresh") setRefreshing(true);
       if (mode === "load-more") setLoadingMore(true);
-      
-      const ITEMS_PER_PAGE = 30;
+
+      const ITEMS_PER_PAGE = 24;
       const offset = mode === "load-more" ? page * ITEMS_PER_PAGE : 0;
-      
-      // Use public queries that work for both authenticated and non-authenticated users
-      const [{ data: itemData }, { data: storeData }] = await Promise.all([
-        (supabase as any)
-          .from("nft_items")
-          .select("id,name,code,description,image_url,media_url,media_type,quantity_total,price,currency,creator_id,category")
-          .eq("is_active", true)
-          .eq("hidden", false)
-          .order("created_at", { ascending: false })
-          .range(offset, offset + ITEMS_PER_PAGE - 1),
+
+      // 1) Fetch items FIRST so cards render immediately.
+      const { data: itemData } = await (supabase as any)
+        .from("nft_items")
+        .select("id,name,code,description,image_url,media_url,media_type,quantity_total,price,currency,creator_id,category")
+        .eq("is_active", true)
+        .eq("hidden", false)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + ITEMS_PER_PAGE - 1);
+
+      const newList = (itemData as NftRow[]) || [];
+
+      if (mode === "load-more") {
+        setItems((prev) => [...prev, ...newList]);
+        setPage((prev) => prev + 1);
+        setHasMore(newList.length === ITEMS_PER_PAGE);
+      } else {
+        setItems(newList);
+        setPage(1);
+        setHasMore(newList.length === ITEMS_PER_PAGE);
+      }
+      setLoading(false);
+
+      // 2) Fire secondary fetches in parallel (non-blocking).
+      if (mode !== "load-more") {
         (supabase as any)
           .from("nft_store_profiles")
           .select("user_id, handle, display_name, avatar_url, banner_url, category, is_verified")
           .order("view_count", { ascending: false })
-          .limit(40),
-      ]);
-      
-      const newList = (itemData as NftRow[]) || [];
-      const sList = (storeData as StoreRow[]) || [];
-      
-      if (mode === "load-more") {
-        setItems(prev => [...prev, ...newList]);
-        setPage(prev => prev + 1);
-        setHasMore(newList.length === ITEMS_PER_PAGE);
-      } else {
-        setItems(newList);
-        setStores(sList);
-        setPage(1);
-        setHasMore(newList.length === ITEMS_PER_PAGE);
+          .limit(40)
+          .then(({ data }: any) => {
+            const sList = (data as StoreRow[]) || [];
+            setStores(sList);
+            const sMap: Record<string, StoreRow> = {};
+            sList.forEach((s) => { sMap[s.user_id] = s; });
+            setStoreByUser(sMap);
+          });
       }
-      
-      const sMap: Record<string, StoreRow> = {};
-      sList.forEach((s) => { sMap[s.user_id] = s; });
-      setStoreByUser(sMap);
-      
-      setLoading(false);
 
-      // Only fetch secondary data for the new items to reduce load
       if (newList.length) {
         const ids = newList.map((i) => i.id);
         Promise.all([
-          (supabase as any).from("nft_ownership").select("item_id, owner_id, quantity").in("item_id", ids),
+          (supabase as any).from("nft_ownership").select("item_id, owner_id, quantity").in("item_id", ids).gt("quantity", 0),
           (supabase as any).from("nft_transactions").select("item_id, quantity, tx_kind").in("item_id", ids).in("tx_kind", ["sale","primary_sale","resale","auction_settle"]),
           (supabase as any).from("nft_auctions").select("item_id, current_bid, start_price, ends_at").in("item_id", ids).eq("status", "active"),
-        ]).then(([{ data: own }, { data: tx }, { data: au }]) => {
+        ]).then(([{ data: own }, { data: tx }, { data: au }]: any) => {
           const ownerCount: Record<string, number> = {};
-          (own || []).forEach((o: any) => { if (Number(o.quantity) > 0) ownerCount[o.item_id] = (ownerCount[o.item_id] || 0) + 1; });
-          setOwners(prev => ({ ...prev, ...ownerCount }));
+          (own || []).forEach((o: any) => { ownerCount[o.item_id] = (ownerCount[o.item_id] || 0) + 1; });
+          setOwners((prev) => ({ ...prev, ...ownerCount }));
           const soldMap: Record<string, number> = {};
           (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
-          setSales(prev => ({ ...prev, ...soldMap }));
+          setSales((prev) => ({ ...prev, ...soldMap }));
           const auMap: Record<string, any> = {};
           (au || []).forEach((a: any) => { auMap[a.item_id] = a; });
-          setAuctions(prev => ({ ...prev, ...auMap }));
+          setAuctions((prev) => ({ ...prev, ...auMap }));
         }).catch((error) => {
           console.error("Error loading secondary data:", error);
         }).finally(() => {
