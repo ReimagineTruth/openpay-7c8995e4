@@ -296,7 +296,7 @@ const PiAuthPage = () => {
             )}
           </Button>
 
-          {!inPiBrowser && (
+          {false && !inPiBrowser && (
             <Button
               asChild
               variant="outline"
