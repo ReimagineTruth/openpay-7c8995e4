@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload, Gavel } from "lucide-react";
+import { ArrowLeft, Upload, Gavel, Wallet, CreditCard } from "lucide-react";
 import { celebrate, playNftSound } from "@/lib/nftFx";
 import NftBurst from "@/components/web3/NftBurst";
 import { NFT_CATEGORIES } from "@/lib/nftCategories";
 import NftPageShell from "@/components/web3/NftPageShell";
 
 const ACCENT = "hsl(217 91% 60%)";
+const PI_ICON = "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
+
+type PayMethod = "openpay_balance" | "pi" | "virtual_card";
 
 const NftCreatePage = () => {
   const nav = useNavigate();
@@ -30,8 +33,32 @@ const NftCreatePage = () => {
     auction_duration_hours: 24,
   });
   const [loading, setLoading] = useState(false);
-
   const [minted, setMinted] = useState<{ id: string; name: string } | null>(null);
+
+  // Payment state
+  const [mintFee, setMintFee] = useState<{ enabled: boolean; flat_amount: number; rate: number; currency: string }>({
+    enabled: true, flat_amount: 1, rate: 0, currency: "OUSD",
+  });
+  const [payOpen, setPayOpen] = useState(false);
+  const [method, setMethod] = useState<PayMethod>("openpay_balance");
+  const [card, setCard] = useState({ number: "", cvc: "", exp_month: "", exp_year: "" });
+  const [savedCards, setSavedCards] = useState<any[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await (supabase as any).rpc("nft_get_mint_fee");
+        if (data) {
+          setMintFee({
+            enabled: !!data.enabled,
+            flat_amount: Number(data.flat_amount || 0),
+            rate: Number(data.rate || 0),
+            currency: data.currency || "OUSD",
+          });
+        }
+      } catch {}
+    })();
+  }, []);
 
   const upd = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -42,28 +69,57 @@ const NftCreatePage = () => {
     reader.readAsDataURL(file);
   };
 
-  const submit = async () => {
+  const computeFee = () => {
+    if (!mintFee.enabled) return 0;
+    let f = mintFee.flat_amount;
+    if (mintFee.rate > 0) {
+      const base = Math.max(Number(form.price) * Number(form.quantity), Number(form.quantity));
+      f += Math.round((base * mintFee.rate) / 100 * 100) / 100;
+    }
+    return f;
+  };
+  const totalFee = computeFee();
+
+  const openPay = async () => {
     if (!form.name || !form.code) {
       toast({ title: "Name and code required", variant: "destructive" });
       return;
     }
+    if (!totalFee) {
+      // free mint (fee disabled) — skip modal
+      return doMint();
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { nav("/auth"); return; }
+    // Preload virtual card if exists
+    const { data: cards } = await (supabase as any)
+      .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year")
+      .eq("user_id", user.id).eq("is_active", true).limit(1);
+    setSavedCards(cards || []);
+    if (cards && cards[0]) {
+      setCard({
+        number: cards[0].card_number,
+        cvc: cards[0].cvc,
+        exp_month: String(cards[0].expiry_month),
+        exp_year: String(cards[0].expiry_year),
+      });
+    }
+    setPayOpen(true);
+  };
+
+  const doMint = async (extra: Record<string, any> = {}) => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sign in required");
 
-      // Ensure unique item code by appending a short suffix if taken
       const baseCode = form.code;
       let itemCode = baseCode;
       const { data: existingItem } = await (supabase as any)
         .from("nft_items").select("id").eq("code", itemCode).maybeSingle();
-      if (existingItem) {
-        itemCode = `${baseCode}-${Date.now().toString(36).slice(-5)}`;
-      }
+      if (existingItem) itemCode = `${baseCode}-${Date.now().toString(36).slice(-5)}`;
 
-      // Create or reuse collection by code prefix
       const colCode = `${baseCode}-col`;
-
       const { data: existingCol } = await (supabase as any)
         .from("nft_collections").select("id").eq("code", colCode).maybeSingle();
       let collectionId = existingCol?.id as string | undefined;
@@ -71,12 +127,8 @@ const NftCreatePage = () => {
         const { data: newCol, error: colErr } = await (supabase as any)
           .from("nft_collections")
           .insert({
-            creator_id: user.id,
-            name: form.name,
-            code: colCode,
-            description: form.description,
-            cover_url: form.image_url,
-            royalty_pct: form.royalty_pct,
+            creator_id: user.id, name: form.name, code: colCode,
+            description: form.description, cover_url: form.image_url, royalty_pct: form.royalty_pct,
           })
           .select("id").single();
         if (colErr) throw colErr;
@@ -102,14 +154,14 @@ const NftCreatePage = () => {
         p_price: Number(form.price),
         p_currency: form.currency,
         p_properties: properties,
+        p_payment_method: method,
+        ...extra,
       });
       if (error) throw error;
-      // Attach category to the newly minted item (column added via migration)
       try {
         await (supabase as any).from("nft_items").update({ category: form.category }).eq("id", data);
       } catch {}
 
-      // If sale_type is auction, immediately start an auction for the full supply
       if (form.sale_type === "auction") {
         try {
           const startPrice = Number(form.auction_start_price) > 0
@@ -132,12 +184,71 @@ const NftCreatePage = () => {
       celebrate("mint");
       toast({ title: "NFT minted!" });
       setMinted({ id: data, name: form.name });
-      setTimeout(() => nav(`/web3/nft/${data}`), 1800);
+      setPayOpen(false);
+      setTimeout(() => nav(`/web3/nft/${data}`), 1600);
     } catch (e: any) {
       playNftSound("error");
       toast({ title: "Mint failed", description: e.message, variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePay = async () => {
+    if (method === "openpay_balance") {
+      await doMint();
+    } else if (method === "virtual_card") {
+      if (!card.number || !card.cvc || !card.exp_month || !card.exp_year) {
+        toast({ title: "Card details required", variant: "destructive" }); return;
+      }
+      await doMint({
+        p_card_number: card.number.replace(/\s+/g, ""),
+        p_card_cvc: card.cvc,
+        p_card_exp_month: Number(card.exp_month),
+        p_card_exp_year: Number(card.exp_year),
+      });
+    } else if (method === "pi") {
+      const Pi = (window as any).Pi;
+      if (!Pi || typeof Pi.createPayment !== "function") {
+        toast({ title: "Pi SDK not available", description: "Open in Pi Browser to pay with Pi.", variant: "destructive" });
+        return;
+      }
+      setLoading(true);
+      try {
+        try {
+          await Pi.authenticate(["username", "payments"], async (incomplete: any) => {
+            if (incomplete?.identifier && incomplete?.transaction?.txid) {
+              await supabase.functions.invoke("pi-platform", {
+                body: { action: "complete", paymentId: incomplete.identifier, txid: incomplete.transaction.txid },
+              });
+            }
+          });
+        } catch (e: any) { throw new Error(e?.message || "Pi sign-in required"); }
+
+        await new Promise<void>((resolve, reject) => {
+          Pi.createPayment(
+            { amount: totalFee, memo: `Mint NFT ${form.name}`.slice(0, 64),
+              metadata: { kind: "nft_mint", name: form.name } },
+            {
+              onReadyForServerApproval: async (paymentId: string) => {
+                await supabase.functions.invoke("pi-platform", { body: { action: "approve", paymentId } });
+              },
+              onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+                try {
+                  await supabase.functions.invoke("pi-platform", { body: { action: "complete", paymentId, txid } });
+                  await doMint({ p_pi_payment_id: paymentId, p_pi_txid: txid });
+                  resolve();
+                } catch (err: any) { reject(err); }
+              },
+              onCancel: () => reject(new Error("Pi payment cancelled")),
+              onError: (e: any) => reject(new Error(e?.message || "Pi payment failed")),
+            },
+          );
+        });
+      } catch (e: any) {
+        playNftSound("error");
+        toast({ title: "Pi payment failed", description: e.message, variant: "destructive" });
+      } finally { setLoading(false); }
     }
   };
 
@@ -148,6 +259,11 @@ const NftCreatePage = () => {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="text-xl font-extrabold">Mint NFT</h1>
+        {mintFee.enabled && totalFee > 0 && (
+          <span className="ml-auto text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: `${ACCENT}20`, color: ACCENT }}>
+            Fee {totalFee} {mintFee.currency}
+          </span>
+        )}
       </header>
 
       <div className="p-4 space-y-4 max-w-lg mx-auto">
@@ -227,14 +343,92 @@ const NftCreatePage = () => {
         </div>
 
         <button
-          onClick={submit}
+          onClick={openPay}
           disabled={loading}
-          className="w-full rounded-full py-3 font-bold disabled:opacity-50"
+          className="w-full rounded-full py-3 font-bold text-white disabled:opacity-50"
           style={{ backgroundColor: ACCENT }}
         >
-          {loading ? "Minting…" : form.sale_type === "auction" ? "🔥 Mint & Start Auction" : "Mint NFT"}
+          {loading
+            ? "Processing…"
+            : mintFee.enabled && totalFee > 0
+              ? `Pay ${totalFee} ${mintFee.currency} & Mint`
+              : (form.sale_type === "auction" ? "🔥 Mint & Start Auction" : "Mint NFT")}
         </button>
       </div>
+
+      {/* Payment modal */}
+      {payOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" onClick={() => !loading && setPayOpen(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-white/10 rounded-t-3xl p-4 pb-6 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+            <div className="mx-auto max-w-md space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-extrabold">Mint Payment</h3>
+                <button onClick={() => !loading && setPayOpen(false)} className="text-sm text-foreground/60">Close</button>
+              </div>
+
+              <div className="rounded-xl bg-white/5 p-3 space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-foreground/60">NFT</span>
+                  <span className="font-semibold truncate">{form.name || "Untitled"}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-foreground/60">Quantity</span>
+                  <span className="font-semibold">{form.quantity}</span>
+                </div>
+                <div className="flex items-center justify-between text-base pt-1 border-t border-white/10 mt-1">
+                  <span className="font-bold">Mint Fee</span>
+                  <span className="font-extrabold" style={{ color: ACCENT }}>{totalFee} {mintFee.currency}</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold text-foreground/60 uppercase tracking-wide mb-2">Payment method</p>
+                <div className="space-y-2">
+                  <PayOpt active={method === "openpay_balance"} onClick={() => setMethod("openpay_balance")}
+                    icon={<Wallet className="h-4 w-4" />} label="OpenPay Balance" />
+                  <PayOpt active={method === "pi"} onClick={() => setMethod("pi")}
+                    icon={<img src={PI_ICON} className="h-4 w-4 rounded-full" alt="Pi" />} label="Pi Network" />
+                  <PayOpt active={method === "virtual_card"} onClick={() => setMethod("virtual_card")}
+                    icon={<CreditCard className="h-4 w-4" />} label="Virtual Card" />
+                </div>
+              </div>
+
+              {method === "virtual_card" && (
+                <div className="space-y-2">
+                  {savedCards.length > 0 && (
+                    <p className="text-[11px] text-foreground/60">Using saved card ending •••• {String(savedCards[0].card_number).slice(-4)}</p>
+                  )}
+                  <input placeholder="Card number" value={card.number}
+                    onChange={(e) => setCard({ ...card, number: e.target.value })}
+                    className="w-full rounded-xl bg-white/5 border border-white/10 p-3 text-sm outline-none" />
+                  <div className="grid grid-cols-3 gap-2">
+                    <input placeholder="MM" value={card.exp_month}
+                      onChange={(e) => setCard({ ...card, exp_month: e.target.value })}
+                      className="rounded-xl bg-white/5 border border-white/10 p-3 text-sm outline-none" />
+                    <input placeholder="YYYY" value={card.exp_year}
+                      onChange={(e) => setCard({ ...card, exp_year: e.target.value })}
+                      className="rounded-xl bg-white/5 border border-white/10 p-3 text-sm outline-none" />
+                    <input placeholder="CVC" value={card.cvc}
+                      onChange={(e) => setCard({ ...card, cvc: e.target.value })}
+                      className="rounded-xl bg-white/5 border border-white/10 p-3 text-sm outline-none" />
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={handlePay}
+                disabled={loading}
+                className="w-full rounded-full py-3 font-bold text-white disabled:opacity-50"
+                style={{ backgroundColor: ACCENT }}
+              >
+                {loading ? "Processing…" : `Pay ${totalFee} ${mintFee.currency} & Mint`}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       <NftBurst show={!!minted} kind="mint" message={minted ? `${minted.name} minted!` : ""} />
     </NftPageShell>
   );
@@ -261,6 +455,19 @@ const Select = ({ label, value, onChange, options }: any) => (
       {options.map((o: string) => <option key={o} value={o}>{o}</option>)}
     </select>
   </div>
+);
+
+const PayOpt = ({ active, onClick, icon, label }: any) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-sm font-semibold transition ${
+      active ? "border-transparent" : "border-white/10 hover:border-white/20"
+    }`}
+    style={active ? { background: `${ACCENT}20`, color: ACCENT } : {}}
+  >
+    {icon}
+    {label}
+  </button>
 );
 
 export default NftCreatePage;
