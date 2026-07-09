@@ -140,6 +140,43 @@ const NftStorePage = () => {
     })();
   }, [handle]);
 
+  // Update document title + social meta for shareable store pages
+  useEffect(() => {
+    if (!owner) return;
+    const name = profile?.display_name || owner.full_name || owner.username || "NFT Store";
+    const hdl = profile?.handle || owner.username || "";
+    const desc = profile?.bio || `Explore ${name}'s NFT collection on OpenPay Open NFT — floor prices, drops, and exclusive items.`;
+    const img = profile?.banner_url || profile?.avatar_url || owner.avatar_url || "";
+    const url = window.location.href;
+
+    const prevTitle = document.title;
+    document.title = `${name} (@${hdl}) · Open NFT on OpenPay`;
+
+    const setMeta = (selector: string, attr: string, value: string) => {
+      let el = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!el) {
+        el = document.createElement("meta");
+        const [k, v] = selector.replace("meta[", "").replace("]", "").split("=");
+        el.setAttribute(k, v.replace(/"/g, ""));
+        document.head.appendChild(el);
+      }
+      el.setAttribute(attr, value);
+    };
+
+    setMeta('meta[name="description"]', "content", desc);
+    setMeta('meta[property="og:type"]', "content", "profile");
+    setMeta('meta[property="og:title"]', "content", `${name} · Open NFT`);
+    setMeta('meta[property="og:description"]', "content", desc);
+    setMeta('meta[property="og:url"]', "content", url);
+    if (img) setMeta('meta[property="og:image"]', "content", img);
+    setMeta('meta[name="twitter:card"]', "content", img ? "summary_large_image" : "summary");
+    setMeta('meta[name="twitter:title"]', "content", `${name} · Open NFT`);
+    setMeta('meta[name="twitter:description"]', "content", desc);
+    if (img) setMeta('meta[name="twitter:image"]', "content", img);
+
+    return () => { document.title = prevTitle; };
+  }, [owner, profile]);
+
   const totalValue = collected.reduce((s, i) => s + Number(i.price || 0) * Number(i.qty || 1), 0);
 
   const onFollow = async () => {
