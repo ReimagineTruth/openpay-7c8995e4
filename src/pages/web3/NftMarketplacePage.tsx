@@ -662,6 +662,51 @@ const NftMarketplacePage = () => {
                 </div>
               )}
 
+              {/* Verified Creators */}
+              {!loading && stores.some((s) => s.is_verified) && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-extrabold text-base flex items-center gap-2">
+                        Verified Creators
+                        <BadgeCheck className="h-4 w-4" style={{ color: ACCENT }} />
+                      </h3>
+                      <p className="text-[11px] text-foreground/50">Trusted stores authenticated by OpenPay</p>
+                    </div>
+                    <button onClick={() => nav("/web3/nft/stores")} className="text-xs font-bold" style={{ color: ACCENT }}>View all →</button>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 md:mx-0 px-4 md:px-0 snap-x">
+                    {stores.filter((s) => s.is_verified).slice(0, 12).map((s) => (
+                      <button
+                        key={s.user_id}
+                        onClick={() => nav(`/web3/nft/store/${s.handle}`)}
+                        className="snap-start shrink-0 w-[168px] rounded-2xl overflow-hidden bg-[#0f0f10] border border-white/5 hover:border-white/25 hover:-translate-y-0.5 transition-all text-left"
+                      >
+                        <div
+                          className="h-16 w-full"
+                          style={s.banner_url
+                            ? { backgroundImage: `url(${s.banner_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+                            : { background: `linear-gradient(135deg, hsl(217 91% 55%), hsl(280 80% 45%))` }}
+                        />
+                        <div className="px-3 pb-3 -mt-6 relative">
+                          {s.avatar_url
+                            ? <img src={s.avatar_url} alt="" className="h-11 w-11 rounded-full ring-2 ring-[#0f0f10] object-cover" />
+                            : <div className="h-11 w-11 rounded-full ring-2 ring-[#0f0f10] bg-gradient-to-br from-pink-500 to-blue-500" />}
+                          <div className="mt-2 flex items-center gap-1">
+                            <p className="font-bold text-sm truncate">{s.display_name || s.handle}</p>
+                            <BadgeCheck className="h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} />
+                          </div>
+                          <p className="text-[11px] text-foreground/50 truncate">@{s.handle}</p>
+                          <p className="mt-1.5 text-[10.5px] text-foreground/60">
+                            {storeItemCounts[s.user_id] || 0} item{(storeItemCounts[s.user_id] || 0) === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* All NFTs grid */}
               <div>
                 <div className="flex items-center justify-between mb-3">
