@@ -195,7 +195,10 @@ const NftStorePage = () => {
 
   const onShare = async () => {
     const url = window.location.href;
-    try { await navigator.share?.({ title: "NFT Store", url }); }
+    const name = profile?.display_name || owner?.full_name || owner?.username || "this store";
+    const title = `${name} · Open NFT on OpenPay`;
+    const text = `Check out ${name}'s NFT collection on OpenPay Open NFT.`;
+    try { await navigator.share?.({ title, text, url }); }
     catch { await navigator.clipboard.writeText(url); toast({ title: "Link copied" }); }
   };
 
