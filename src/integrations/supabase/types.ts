@@ -5283,6 +5283,10 @@ export type Database = {
       }
       nft_mint_item: {
         Args: {
+          p_card_cvc?: string
+          p_card_exp_month?: number
+          p_card_exp_year?: number
+          p_card_number?: string
           p_code: string
           p_collection_id: string
           p_currency: string
@@ -5291,6 +5295,9 @@ export type Database = {
           p_media_type: string
           p_media_url: string
           p_name: string
+          p_payment_method?: string
+          p_pi_payment_id?: string
+          p_pi_txid?: string
           p_price: number
           p_properties: Json
           p_quantity: number
