@@ -110,10 +110,15 @@ const NftMarketplacePage = () => {
   const load = useCallback(async (mode: "initial" | "refresh" | "load-more" = "initial") => {
     try {
       if (mode === "refresh") setRefreshing(true);
-      if (mode === "load-more") setLoadingMore(true);
+      if (mode === "load-more") {
+        if (loadingMoreRef.current || !hasMore) return;
+        loadingMoreRef.current = true;
+        setLoadingMore(true);
+      }
 
       const ITEMS_PER_PAGE = 24;
-      const offset = mode === "load-more" ? page * ITEMS_PER_PAGE : 0;
+      const currentPage = mode === "load-more" ? pageRef.current : 0;
+      const offset = currentPage * ITEMS_PER_PAGE;
 
       // 1) Fetch items FIRST so cards render immediately.
       const { data: itemData } = await (supabase as any)
@@ -128,11 +133,11 @@ const NftMarketplacePage = () => {
 
       if (mode === "load-more") {
         setItems((prev) => [...prev, ...newList]);
-        setPage((prev) => prev + 1);
+        pageRef.current = currentPage + 1;
         setHasMore(newList.length === ITEMS_PER_PAGE);
       } else {
         setItems(newList);
-        setPage(1);
+        pageRef.current = 1;
         setHasMore(newList.length === ITEMS_PER_PAGE);
       }
       setLoading(false);
@@ -150,6 +155,25 @@ const NftMarketplacePage = () => {
             const sMap: Record<string, StoreRow> = {};
             sList.forEach((s) => { sMap[s.user_id] = s; });
             setStoreByUser(sMap);
+          });
+
+        // Fetch ALL active items (lightweight) to compute real per-creator counts + floors.
+        (supabase as any)
+          .from("nft_items")
+          .select("creator_id, price, currency")
+          .eq("is_active", true)
+          .eq("hidden", false)
+          .then(({ data }: any) => {
+            const counts: Record<string, number> = {};
+            const floors: Record<string, { price: number; currency: string }> = {};
+            (data || []).forEach((r: any) => {
+              counts[r.creator_id] = (counts[r.creator_id] || 0) + 1;
+              const cur = floors[r.creator_id];
+              const p = Number(r.price || 0);
+              if (!cur || p < cur.price) floors[r.creator_id] = { price: p, currency: r.currency };
+            });
+            setStoreItemCounts(counts);
+            setStoreFloor(floors);
           });
       }
 
@@ -174,20 +198,37 @@ const NftMarketplacePage = () => {
         }).finally(() => {
           setRefreshing(false);
           setLoadingMore(false);
+          loadingMoreRef.current = false;
         });
       } else {
         setRefreshing(false);
         setLoadingMore(false);
+        loadingMoreRef.current = false;
       }
     } catch (error) {
       console.error("Error loading NFT marketplace:", error);
       setLoading(false);
       setRefreshing(false);
       setLoadingMore(false);
+      loadingMoreRef.current = false;
     }
-  }, [page]);
+  }, [hasMore]);
 
-  useEffect(() => { load("initial"); }, [load]);
+  useEffect(() => { load("initial"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  // Infinite scroll — auto-load when sentinel enters viewport.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !loadingMoreRef.current && !loading) {
+        load("load-more");
+      }
+    }, { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [load, hasMore, loading]);
+
 
   // Recalculate store item counts and floors when items change
   useEffect(() => {
