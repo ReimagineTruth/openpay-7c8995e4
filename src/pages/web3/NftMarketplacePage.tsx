@@ -84,9 +84,11 @@ const NftMarketplacePage = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [tab, setTab] = useState<"nfts" | "tokens">("nfts");
-  const [page, setPage] = useState(1);
+  const pageRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("openpay_nft_sidebar_collapsed") === "1";
@@ -108,10 +110,15 @@ const NftMarketplacePage = () => {
   const load = useCallback(async (mode: "initial" | "refresh" | "load-more" = "initial") => {
     try {
       if (mode === "refresh") setRefreshing(true);
-      if (mode === "load-more") setLoadingMore(true);
+      if (mode === "load-more") {
+        if (loadingMoreRef.current || !hasMore) return;
+        loadingMoreRef.current = true;
+        setLoadingMore(true);
+      }
 
       const ITEMS_PER_PAGE = 24;
-      const offset = mode === "load-more" ? page * ITEMS_PER_PAGE : 0;
+      const currentPage = mode === "load-more" ? pageRef.current : 0;
+      const offset = currentPage * ITEMS_PER_PAGE;
 
       // 1) Fetch items FIRST so cards render immediately.
       const { data: itemData } = await (supabase as any)
@@ -126,11 +133,11 @@ const NftMarketplacePage = () => {
 
       if (mode === "load-more") {
         setItems((prev) => [...prev, ...newList]);
-        setPage((prev) => prev + 1);
+        pageRef.current = currentPage + 1;
         setHasMore(newList.length === ITEMS_PER_PAGE);
       } else {
         setItems(newList);
-        setPage(1);
+        pageRef.current = 1;
         setHasMore(newList.length === ITEMS_PER_PAGE);
       }
       setLoading(false);
@@ -148,6 +155,25 @@ const NftMarketplacePage = () => {
             const sMap: Record<string, StoreRow> = {};
             sList.forEach((s) => { sMap[s.user_id] = s; });
             setStoreByUser(sMap);
+          });
+
+        // Fetch ALL active items (lightweight) to compute real per-creator counts + floors.
+        (supabase as any)
+          .from("nft_items")
+          .select("creator_id, price, currency")
+          .eq("is_active", true)
+          .eq("hidden", false)
+          .then(({ data }: any) => {
+            const counts: Record<string, number> = {};
+            const floors: Record<string, { price: number; currency: string }> = {};
+            (data || []).forEach((r: any) => {
+              counts[r.creator_id] = (counts[r.creator_id] || 0) + 1;
+              const cur = floors[r.creator_id];
+              const p = Number(r.price || 0);
+              if (!cur || p < cur.price) floors[r.creator_id] = { price: p, currency: r.currency };
+            });
+            setStoreItemCounts(counts);
+            setStoreFloor(floors);
           });
       }
 
@@ -172,33 +198,41 @@ const NftMarketplacePage = () => {
         }).finally(() => {
           setRefreshing(false);
           setLoadingMore(false);
+          loadingMoreRef.current = false;
         });
       } else {
         setRefreshing(false);
         setLoadingMore(false);
+        loadingMoreRef.current = false;
       }
     } catch (error) {
       console.error("Error loading NFT marketplace:", error);
       setLoading(false);
       setRefreshing(false);
       setLoadingMore(false);
+      loadingMoreRef.current = false;
     }
-  }, [page]);
+  }, [hasMore]);
 
-  useEffect(() => { load("initial"); }, [load]);
+  useEffect(() => { load("initial"); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
-  // Recalculate store item counts and floors when items change
+  // Infinite scroll — auto-load when sentinel enters viewport.
   useEffect(() => {
-    const counts: Record<string, number> = {};
-    const floors: Record<string, { price: number; currency: string }> = {};
-    items.forEach((it) => {
-      counts[it.creator_id] = (counts[it.creator_id] || 0) + 1;
-      const cur = floors[it.creator_id];
-      if (!cur || it.price < cur.price) floors[it.creator_id] = { price: it.price, currency: it.currency };
-    });
-    setStoreItemCounts(counts);
-    setStoreFloor(floors);
-  }, [items]);
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !loadingMoreRef.current && !loading) {
+        load("load-more");
+      }
+    }, { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [load, hasMore, loading]);
+
+
+  // Store item counts + floors are computed globally in `load()` so they show real totals
+  // across all creator inventory (not just currently paginated items).
+
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -739,27 +773,18 @@ const NftMarketplacePage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                       {filteredItems.map(renderCard)}
                     </div>
-                    {hasMore && (
-                      <div className="flex justify-center mt-6">
-                        <button
-                          onClick={() => load("load-more")}
-                          disabled={loadingMore}
-                          className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
-                          style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 45%))` }}
-                        >
-                          {loadingMore ? (
-                            <>
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                              Loading...
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="h-4 w-4" />
-                              Load More
-                            </>
-                          )}
-                        </button>
+                    {/* Infinite scroll sentinel */}
+                    <div ref={sentinelRef} className="h-10 w-full" aria-hidden />
+                    {loadingMore && (
+                      <div className="flex justify-center mt-4">
+                        <div className="flex items-center gap-2 text-xs text-foreground/60">
+                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          Loading more…
+                        </div>
                       </div>
+                    )}
+                    {!hasMore && filteredItems.length >= 24 && (
+                      <p className="text-center text-[11px] text-foreground/40 mt-6">You've reached the end</p>
                     )}
                   </>
                 )}
