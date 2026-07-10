@@ -230,18 +230,9 @@ const NftMarketplacePage = () => {
   }, [load, hasMore, loading]);
 
 
-  // Recalculate store item counts and floors when items change
-  useEffect(() => {
-    const counts: Record<string, number> = {};
-    const floors: Record<string, { price: number; currency: string }> = {};
-    items.forEach((it) => {
-      counts[it.creator_id] = (counts[it.creator_id] || 0) + 1;
-      const cur = floors[it.creator_id];
-      if (!cur || it.price < cur.price) floors[it.creator_id] = { price: it.price, currency: it.currency };
-    });
-    setStoreItemCounts(counts);
-    setStoreFloor(floors);
-  }, [items]);
+  // Store item counts + floors are computed globally in `load()` so they show real totals
+  // across all creator inventory (not just currently paginated items).
+
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
