@@ -409,6 +409,14 @@ const NftCreatePage = () => {
                   <span className="font-bold">Mint Fee</span>
                   <span className="font-extrabold" style={{ color: ACCENT }}>{totalFee} {mintFee.currency}</span>
                 </div>
+                {(method === "openpay_balance" || method === "virtual_card") && (
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-foreground/60">Your OpenPay balance</span>
+                    <span className={`font-semibold ${balance < totalFee ? "text-red-500" : "text-foreground"}`}>
+                      {balance.toFixed(2)} {mintFee.currency}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>
