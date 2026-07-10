@@ -54,12 +54,48 @@ Deno.serve(async (req) => {
       return json({ error: "Account lookup failed" }, 500);
     }
 
-    if (!linkRow?.user_id) {
+    let userId: string | undefined = linkRow?.user_id;
+
+    // Fallback: the Pi Browser sign-in path (pi-platform auth_signin) creates
+    // Supabase users with the deterministic email `pi_<uid>@openpay.local` but
+    // does not always write a pi_accounts link row. If the OAuth user has an
+    // existing OpenPay account created that way, adopt it and backfill the
+    // link so future sign-ins are fast.
+    if (!userId) {
+      const derivedEmail = `pi_${uid}@openpay.local`;
+      try {
+        const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const match = list?.users?.find(
+          (u: { email?: string | null }) =>
+            String(u.email || "").toLowerCase() === derivedEmail.toLowerCase(),
+        );
+        if (match?.id) {
+          userId = match.id;
+          await admin
+            .from("pi_accounts")
+            .upsert(
+              {
+                user_id: match.id,
+                pi_uid: uid,
+                pi_username: username,
+                linked_via: "oauth_adopted",
+                last_authenticated_at: new Date().toISOString(),
+              } as never,
+              { onConflict: "user_id" },
+            );
+        }
+      } catch (adoptErr) {
+        console.warn("pi_accounts adoption lookup failed", adoptErr);
+      }
+    }
+
+    if (!userId) {
       return json({ linked: false, profile: { uid, username } }, 200);
     }
 
     // Fetch the linked user's email from auth.users.
-    const { data: userRes, error: userErr } = await admin.auth.admin.getUserById(linkRow.user_id);
+    const { data: userRes, error: userErr } = await admin.auth.admin.getUserById(userId);
+
     if (userErr || !userRes?.user?.email) {
       console.error("getUserById failed", userErr);
       return json({ error: "Linked account is missing an email" }, 500);
