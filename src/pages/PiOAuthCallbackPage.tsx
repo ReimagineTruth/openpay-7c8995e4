@@ -174,25 +174,31 @@ const PiOAuthCallbackPage = () => {
         {status.kind === "needs_login" && (
           <div className="space-y-4">
             <h1 className="text-xl font-bold text-foreground">
-              Almost there — sign in to link
+              No OpenPay account found
             </h1>
             <p className="text-sm text-muted-foreground">
-              Pi verified <strong>@{status.profile.username}</strong>. Sign in
-              with your existing OpenPay email/password (or create one), and we
-              will link this Pi account automatically.
+              Pi verified <strong>@{status.profile.username}</strong>, but there
+              is no OpenPay account linked to this Pi identity yet. Please
+              create your OpenPay account first inside the{" "}
+              <strong>Pi Browser</strong>, then return here to sign in with Pi.
             </p>
-            <Button
-              className="h-11 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]"
-              onClick={() => navigate("/sign-in?mode=signin")}
-            >
-              Continue with email
-            </Button>
+            <div className="rounded-2xl border border-border/60 bg-muted/40 p-3 text-xs">
+              <p className="font-semibold text-foreground">Open in Pi Browser</p>
+              <a
+                href="https://openpy.space"
+                className="mt-1 block break-all font-mono text-paypal-blue hover:underline"
+                target="_blank"
+                rel="noreferrer"
+              >
+                https://openpy.space
+              </a>
+            </div>
             <Button
               variant="outline"
               className="h-11 w-full rounded-2xl"
-              onClick={() => navigate("/sign-in?mode=signup")}
+              onClick={() => navigate("/auth")}
             >
-              Create an OpenPay account
+              Back to sign-in
             </Button>
           </div>
         )}
