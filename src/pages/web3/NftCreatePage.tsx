@@ -101,6 +101,7 @@ const NftCreatePage = () => {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { nav("/auth"); return; }
+    await refreshBalance();
     // Preload virtual card if exists
     const { data: cards } = await (supabase as any)
       .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year")
