@@ -193,9 +193,11 @@ const NftCreatePage = () => {
       }
 
       celebrate("mint");
-      toast({ title: "NFT minted!" });
+      toast({ title: "NFT minted!", description: totalFee > 0 ? `${totalFee} ${mintFee.currency} deducted from your balance.` : undefined });
       setMinted({ id: data, name: form.name });
       setPayOpen(false);
+      await refreshBalance();
+      window.dispatchEvent(new Event("wallet:refresh"));
       setTimeout(() => nav(`/web3/nft/${data}`), 1600);
     } catch (e: any) {
       playNftSound("error");
@@ -207,10 +209,26 @@ const NftCreatePage = () => {
 
   const handlePay = async () => {
     if (method === "openpay_balance") {
+      if (totalFee > 0 && balance < totalFee) {
+        toast({
+          title: "Insufficient OpenPay balance",
+          description: `You need ${totalFee} ${mintFee.currency} but have ${balance.toFixed(2)}. Top up your wallet.`,
+          variant: "destructive",
+        });
+        return;
+      }
       await doMint();
     } else if (method === "virtual_card") {
       if (!card.number || !card.cvc || !card.exp_month || !card.exp_year) {
         toast({ title: "Card details required", variant: "destructive" }); return;
+      }
+      if (totalFee > 0 && balance < totalFee) {
+        toast({
+          title: "Insufficient card balance",
+          description: `Top up your OpenPay wallet to cover ${totalFee} ${mintFee.currency}.`,
+          variant: "destructive",
+        });
+        return;
       }
       await doMint({
         p_card_number: card.number.replace(/\s+/g, ""),
