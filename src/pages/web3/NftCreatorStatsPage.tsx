@@ -96,15 +96,15 @@ const NftCreatorStatsPage = () => {
       <div className="p-4 space-y-4 max-w-6xl mx-auto">
         {/* Hero KPI */}
         <div
-          className="rounded-3xl p-6 text-white relative overflow-hidden"
+          className="rounded-3xl p-6 text-white relative overflow-hidden [&_*]:text-white"
           style={{ background: `linear-gradient(135deg, ${ACCENT}, hsl(217 91% 40%))` }}
         >
           <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-          <p className="text-xs uppercase tracking-wider opacity-90">Net Revenue</p>
-          <p className="text-4xl font-black mt-2">{loading ? "…" : format(netRevenue)}</p>
-          <div className="flex items-center gap-1 text-sm mt-1 opacity-90">
-            <ArrowUpRight className="h-4 w-4" />
-            <span>Last {range} days</span>
+          <p className="text-xs uppercase tracking-wider opacity-90 text-white">Net Revenue</p>
+          <p className="text-4xl font-black mt-2 text-white">{loading ? "…" : format(netRevenue)}</p>
+          <div className="flex items-center gap-1 text-sm mt-1 opacity-90 text-white">
+            <ArrowUpRight className="h-4 w-4 text-white" />
+            <span className="text-white">Last {range} days</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 relative">
             <MiniKpi icon={<Coins className="h-4 w-4" />} label="Earnings" value={format(t?.total_earnings || 0)} />
