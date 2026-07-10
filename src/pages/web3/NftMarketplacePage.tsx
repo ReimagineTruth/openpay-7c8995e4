@@ -84,9 +84,11 @@ const NftMarketplacePage = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [tab, setTab] = useState<"nfts" | "tokens">("nfts");
-  const [page, setPage] = useState(1);
+  const pageRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("openpay_nft_sidebar_collapsed") === "1";
