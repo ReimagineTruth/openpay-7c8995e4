@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
         pi_username: username,
         last_authenticated_at: new Date().toISOString(),
       })
-      .eq("user_id", linkRow.user_id);
+      .eq("user_id", userId);
 
     // Mint a magic-link token the client can exchange for a session.
     const { data: linkData, error: genErr } = await admin.auth.admin.generateLink({
