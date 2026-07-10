@@ -43,6 +43,15 @@ const NftCreatePage = () => {
   const [method, setMethod] = useState<PayMethod>("openpay_balance");
   const [card, setCard] = useState({ number: "", cvc: "", exp_month: "", exp_year: "" });
   const [savedCards, setSavedCards] = useState<any[]>([]);
+  const [balance, setBalance] = useState<number>(0);
+
+  const refreshBalance = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await (supabase as any)
+      .from("wallets").select("balance").eq("user_id", user.id).maybeSingle();
+    setBalance(Number(data?.balance || 0));
+  };
 
   useEffect(() => {
     (async () => {
@@ -57,6 +66,7 @@ const NftCreatePage = () => {
           });
         }
       } catch {}
+      await refreshBalance();
     })();
   }, []);
 
