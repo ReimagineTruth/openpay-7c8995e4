@@ -5266,6 +5266,7 @@ export type Database = {
         Args: { p_item_id: string; p_price: number; p_quantity: number }
         Returns: string
       }
+      nft_creator_stats: { Args: { p_days?: number }; Returns: Json }
       nft_default_fee_json: { Args: never; Returns: Json }
       nft_delete_item: { Args: { p_item_id: string }; Returns: Json }
       nft_finalize_auction: { Args: { p_auction_id: string }; Returns: string }
