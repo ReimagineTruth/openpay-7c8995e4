@@ -308,7 +308,7 @@ const PiAuthPage = () => {
             </Button>
           )}
 
-          {isPiOAuthEnabled() && (
+          {false && isPiOAuthEnabled() && (
             <Button
               type="button"
               variant="ghost"
