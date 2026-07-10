@@ -773,27 +773,18 @@ const NftMarketplacePage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                       {filteredItems.map(renderCard)}
                     </div>
-                    {hasMore && (
-                      <div className="flex justify-center mt-6">
-                        <button
-                          onClick={() => load("load-more")}
-                          disabled={loadingMore}
-                          className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
-                          style={{ background: `linear-gradient(135deg,${ACCENT},hsl(217 91% 45%))` }}
-                        >
-                          {loadingMore ? (
-                            <>
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                              Loading...
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="h-4 w-4" />
-                              Load More
-                            </>
-                          )}
-                        </button>
+                    {/* Infinite scroll sentinel */}
+                    <div ref={sentinelRef} className="h-10 w-full" aria-hidden />
+                    {loadingMore && (
+                      <div className="flex justify-center mt-4">
+                        <div className="flex items-center gap-2 text-xs text-foreground/60">
+                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          Loading more…
+                        </div>
                       </div>
+                    )}
+                    {!hasMore && filteredItems.length >= 24 && (
+                      <p className="text-center text-[11px] text-foreground/40 mt-6">You've reached the end</p>
                     )}
                   </>
                 )}
