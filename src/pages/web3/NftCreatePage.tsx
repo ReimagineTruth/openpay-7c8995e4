@@ -478,6 +478,7 @@ const NftCreatePage = () => {
               )}
 
               <button
+                type="button"
                 onClick={handlePay}
                 disabled={loading}
                 className="w-full rounded-full py-3 font-bold text-white disabled:opacity-50"
