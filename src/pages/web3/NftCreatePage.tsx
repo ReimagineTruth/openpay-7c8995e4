@@ -197,8 +197,8 @@ const NftCreatePage = () => {
       setMinted({ id: data, name: form.name });
       setPayOpen(false);
       await refreshBalance();
-      window.dispatchEvent(new Event("wallet:refresh"));
-      setTimeout(() => nav(`/web3/nft/${data}`), 1600);
+      try { window.dispatchEvent(new Event("wallet:refresh")); } catch {}
+      // Do NOT auto-navigate — avoids session-hydration race that could bounce user to sign-in.
     } catch (e: any) {
       playNftSound("error");
       toast({ title: "Mint failed", description: e.message, variant: "destructive" });
@@ -284,7 +284,7 @@ const NftCreatePage = () => {
   return (
     <NftPageShell className="pb-32" splashTitle="Mint NFT">
       <header className="sticky top-0 z-10 bg-black/85 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-white/5">
-        <button onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
+        <button type="button" onClick={() => nav(-1)} className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="text-xl font-extrabold">Mint NFT</h1>
@@ -372,6 +372,7 @@ const NftCreatePage = () => {
         </div>
 
         <button
+          type="button"
           onClick={openPay}
           disabled={loading}
           className="w-full rounded-full py-3 font-bold text-white disabled:opacity-50"
@@ -383,6 +384,29 @@ const NftCreatePage = () => {
               ? `Pay ${totalFee} ${mintFee.currency} & Mint`
               : (form.sale_type === "auction" ? "🔥 Mint & Start Auction" : "Mint NFT")}
         </button>
+
+        {minted && (
+          <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-center space-y-3">
+            <p className="text-sm font-bold text-emerald-300">🎉 {minted.name} minted successfully</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => nav(`/web3/nft/${minted.id}`)}
+                className="flex-1 rounded-full py-2.5 font-bold text-white text-sm"
+                style={{ backgroundColor: ACCENT }}
+              >
+                View NFT
+              </button>
+              <button
+                type="button"
+                onClick={() => setMinted(null)}
+                className="flex-1 rounded-full py-2.5 font-bold text-white text-sm bg-white/10"
+              >
+                Mint another
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Payment modal */}
@@ -393,7 +417,7 @@ const NftCreatePage = () => {
             <div className="mx-auto max-w-md space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-extrabold">Mint Payment</h3>
-                <button onClick={() => !loading && setPayOpen(false)} className="text-sm text-foreground/60">Close</button>
+                <button type="button" onClick={() => !loading && setPayOpen(false)} className="text-sm text-foreground/60">Close</button>
               </div>
 
               <div className="rounded-xl bg-white/5 p-3 space-y-1">
@@ -454,6 +478,7 @@ const NftCreatePage = () => {
               )}
 
               <button
+                type="button"
                 onClick={handlePay}
                 disabled={loading}
                 className="w-full rounded-full py-3 font-bold text-white disabled:opacity-50"
@@ -496,6 +521,7 @@ const Select = ({ label, value, onChange, options }: any) => (
 
 const PayOpt = ({ active, onClick, icon, label }: any) => (
   <button
+    type="button"
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-sm font-semibold transition ${
       active ? "border-transparent" : "border-white/10 hover:border-white/20"
