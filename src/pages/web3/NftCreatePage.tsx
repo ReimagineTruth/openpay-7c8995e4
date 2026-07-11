@@ -372,6 +372,7 @@ const NftCreatePage = () => {
         </div>
 
         <button
+          type="button"
           onClick={openPay}
           disabled={loading}
           className="w-full rounded-full py-3 font-bold text-white disabled:opacity-50"
@@ -383,6 +384,29 @@ const NftCreatePage = () => {
               ? `Pay ${totalFee} ${mintFee.currency} & Mint`
               : (form.sale_type === "auction" ? "🔥 Mint & Start Auction" : "Mint NFT")}
         </button>
+
+        {minted && (
+          <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-center space-y-3">
+            <p className="text-sm font-bold text-emerald-300">🎉 {minted.name} minted successfully</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => nav(`/web3/nft/${minted.id}`)}
+                className="flex-1 rounded-full py-2.5 font-bold text-white text-sm"
+                style={{ backgroundColor: ACCENT }}
+              >
+                View NFT
+              </button>
+              <button
+                type="button"
+                onClick={() => setMinted(null)}
+                className="flex-1 rounded-full py-2.5 font-bold text-white text-sm bg-white/10"
+              >
+                Mint another
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Payment modal */}
