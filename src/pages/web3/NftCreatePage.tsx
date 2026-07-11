@@ -521,6 +521,7 @@ const Select = ({ label, value, onChange, options }: any) => (
 
 const PayOpt = ({ active, onClick, icon, label }: any) => (
   <button
+    type="button"
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-sm font-semibold transition ${
       active ? "border-transparent" : "border-white/10 hover:border-white/20"
