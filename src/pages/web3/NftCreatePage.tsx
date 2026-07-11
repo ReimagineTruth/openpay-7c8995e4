@@ -417,7 +417,7 @@ const NftCreatePage = () => {
             <div className="mx-auto max-w-md space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-extrabold">Mint Payment</h3>
-                <button onClick={() => !loading && setPayOpen(false)} className="text-sm text-foreground/60">Close</button>
+                <button type="button" onClick={() => !loading && setPayOpen(false)} className="text-sm text-foreground/60">Close</button>
               </div>
 
               <div className="rounded-xl bg-white/5 p-3 space-y-1">
