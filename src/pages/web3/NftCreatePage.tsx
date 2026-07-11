@@ -197,8 +197,8 @@ const NftCreatePage = () => {
       setMinted({ id: data, name: form.name });
       setPayOpen(false);
       await refreshBalance();
-      window.dispatchEvent(new Event("wallet:refresh"));
-      setTimeout(() => nav(`/web3/nft/${data}`), 1600);
+      try { window.dispatchEvent(new Event("wallet:refresh")); } catch {}
+      // Do NOT auto-navigate — avoids session-hydration race that could bounce user to sign-in.
     } catch (e: any) {
       playNftSound("error");
       toast({ title: "Mint failed", description: e.message, variant: "destructive" });
