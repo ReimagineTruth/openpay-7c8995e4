@@ -146,7 +146,12 @@ const NftMarketplacePage = () => {
         pageRef.current = currentPage + 1;
         setHasMore(newList.length === ITEMS_PER_PAGE);
       } else {
-        setItems(newList);
+        // Only replace items when we actually got data — avoid flashing "0 results"
+        // if a transient network/RLS hiccup returns empty.
+        if (newList.length > 0 || mode === "refresh") {
+          setItems(newList);
+          try { sessionStorage.setItem("nft_items_cache_v1", JSON.stringify(newList)); } catch {}
+        }
         pageRef.current = 1;
         setHasMore(newList.length === ITEMS_PER_PAGE);
       }
