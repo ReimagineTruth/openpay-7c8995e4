@@ -1580,8 +1580,10 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,2
 /* Category chip's black-on-blue active label stays legible */
 .nft-scope:not(.dark) :where(.text-black) { color: #ffffff !important; }
 
-/* Text over media (banners, gradient overlays) should stay white regardless of theme */
-.nft-scope :where(.nft-on-media, .nft-on-media *) { color: #ffffff !important; }
+/* Preserve white text explicitly over dark media overlays (hero banners) */
+.nft-scope:not(.dark) .nft-on-media :where(.text-white, h1, h2, h3, p, span) { color: #ffffff !important; }
+.nft-scope:not(.dark) .nft-on-media :where(.text-white\/80, .text-white\/70, .text-white\/60) { color: rgba(255,255,255,0.85) !important; }
+
 
 
 
