@@ -198,6 +198,14 @@ const Web3Dashboard = () => {
         </button>
         <div className="shrink-0 flex items-center gap-2">
           <button
+            onClick={() => setUiMode("original")}
+            aria-label="Switch to Classic mode"
+            className="h-9 px-3 rounded-full bg-white text-black text-xs font-bold flex items-center gap-1.5 hover:bg-white/90 active:scale-95 transition"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Classic
+          </button>
+          <button
             onClick={() => navigate("/notifications")}
             aria-label="Notifications"
             className="relative h-9 w-9 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center hover:bg-[#222] transition"
@@ -211,6 +219,7 @@ const Web3Dashboard = () => {
           </button>
           <CurrencySelector />
         </div>
+
       </div>
 
 

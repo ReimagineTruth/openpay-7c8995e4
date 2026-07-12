@@ -487,42 +487,16 @@ const MiningPage = () => {
     return { ...payload, rewarded };
   };
 
-  const canWatchAd = (): boolean => {
-    try {
-      const lastAd = window.localStorage.getItem("openpay:pi-ads:last-rewarded");
-      if (!lastAd) return true;
-      const lastAdTime = Number(lastAd);
-      const now = Date.now();
-      return now - lastAdTime >= 5 * 60 * 1000; // 5 minutes
-    } catch {
-      return true;
-    }
-  };
+  const canWatchAd = (): boolean => true;
 
-  const getTimeUntilNextAd = (): string => {
-    try {
-      const lastAd = window.localStorage.getItem("openpay:pi-ads:last-rewarded");
-      if (!lastAd) return "Ready to watch";
-      const lastAdTime = Number(lastAd);
-      const now = Date.now();
-      const elapsed = now - lastAdTime;
-      const remaining = 5 * 60 * 1000 - elapsed;
-      if (remaining <= 0) return "Ready to watch";
-      const minutes = Math.ceil(remaining / (60 * 1000));
-      return `Wait ${minutes} minute${minutes > 1 ? 's' : ''}`;
-    } catch {
-      return "Ready to watch";
-    }
-  };
+  const getTimeUntilNextAd = (): string => "Ready to watch";
 
   const runRewardedAd = async () => {
     if (!initPi() || !window.Pi?.Ads?.showAd) {
       throw new Error("Pi Ad Network is not available. Please update Pi Browser or try again later.");
     }
 
-    if (!canWatchAd()) {
-      throw new Error(`Please wait before watching another ad. ${getTimeUntilNextAd()}`);
-    }
+
 
     await window.Pi.authenticate(["username"]);
 
