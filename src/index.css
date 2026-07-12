@@ -1538,4 +1538,52 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,2
   color: hsl(var(--primary-foreground)) !important;
 }
 
+/* ==========================================================================
+   NFT scope — light mode adaptations.
+   The marketplace/detail/store pages were designed dark-first with lots of
+   hard-coded arbitrary color values (bg-[#0f0f10], bg-white/5, border-white/10,
+   text-white, etc). In light mode those become invisible / low-contrast.
+   These scoped overrides restore contrast without rewriting every component.
+   ========================================================================== */
+.nft-scope:not(.dark) :where(
+  .bg-\[\#08080a\], .bg-\[\#0a0a0b\], .bg-\[\#0f0f0f\], .bg-\[\#0f0f10\],
+  .bg-\[\#111\], .bg-\[\#161616\], .bg-\[\#1a1a1a\]
+) { background-color: hsl(var(--card)) !important; }
+
+.nft-scope:not(.dark) :where(.bg-black\/85, .bg-black\/70, .bg-black\/60, .bg-black\/40) {
+  background-color: hsl(var(--background) / 0.92) !important;
+  backdrop-filter: saturate(180%) blur(10px);
+}
+
+.nft-scope:not(.dark) :where(.bg-white\/\[0\.04\], .bg-white\/5) {
+  background-color: hsl(var(--muted) / 0.6) !important;
+}
+.nft-scope:not(.dark) :where(.bg-white\/10, .bg-white\/15, .bg-white\/20) {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.nft-scope:not(.dark) :where(
+  .border-white\/5, .border-white\/10, .border-white\/20, .border-white\/25, .border-white\/30
+) { border-color: hsl(var(--border)) !important; }
+
+.nft-scope:not(.dark) :where(.ring-\[\#0f0f10\]) {
+  --tw-ring-color: hsl(var(--card)) !important;
+}
+
+/* Text colors — force readable dark text in light mode where components hard-coded white */
+.nft-scope:not(.dark) :where(.text-white) { color: hsl(var(--foreground)) !important; }
+.nft-scope:not(.dark) :where(.text-white\/80) { color: hsl(var(--foreground) / 0.8) !important; }
+.nft-scope:not(.dark) :where(.text-white\/70) { color: hsl(var(--foreground) / 0.7) !important; }
+.nft-scope:not(.dark) :where(.text-white\/60, .text-white\/55) { color: hsl(var(--foreground) / 0.62) !important; }
+.nft-scope:not(.dark) :where(.text-white\/40, .text-white\/30) { color: hsl(var(--foreground) / 0.5) !important; }
+
+/* Category chip's black-on-blue active label stays legible */
+.nft-scope:not(.dark) :where(.text-black) { color: #ffffff !important; }
+
+/* Preserve white text explicitly over dark media overlays (hero banners) */
+.nft-scope:not(.dark) .nft-on-media :where(.text-white, h1, h2, h3, p, span) { color: #ffffff !important; }
+.nft-scope:not(.dark) .nft-on-media :where(.text-white\/80, .text-white\/70, .text-white\/60) { color: rgba(255,255,255,0.85) !important; }
+
+
+
 

@@ -69,7 +69,14 @@ const NftMarketplacePage = () => {
   const auctionsOnly = location.pathname === "/web3/nft/auctions";
   const { format } = useCurrency();
 
-  const [items, setItems] = useState<NftRow[]>([]);
+  const [items, setItems] = useState<NftRow[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = sessionStorage.getItem("nft_items_cache_v1");
+      if (raw) return JSON.parse(raw) as NftRow[];
+    } catch {}
+    return [];
+  });
   const [owners, setOwners] = useState<Record<string, number>>({});
   const [sales, setSales] = useState<Record<string, number>>({});
   const [auctions, setAuctions] = useState<Record<string, any>>({});
@@ -77,7 +84,10 @@ const NftMarketplacePage = () => {
   const [storeByUser, setStoreByUser] = useState<Record<string, StoreRow>>({});
   const [storeItemCounts, setStoreItemCounts] = useState<Record<string, number>>({});
   const [storeFloor, setStoreFloor] = useState<Record<string, { price: number; currency: string }>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    try { return !sessionStorage.getItem("nft_items_cache_v1"); } catch { return true; }
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
@@ -136,7 +146,12 @@ const NftMarketplacePage = () => {
         pageRef.current = currentPage + 1;
         setHasMore(newList.length === ITEMS_PER_PAGE);
       } else {
-        setItems(newList);
+        // Only replace items when we actually got data — avoid flashing "0 results"
+        // if a transient network/RLS hiccup returns empty.
+        if (newList.length > 0 || mode === "refresh") {
+          setItems(newList);
+          try { sessionStorage.setItem("nft_items_cache_v1", JSON.stringify(newList)); } catch {}
+        }
         pageRef.current = 1;
         setHasMore(newList.length === ITEMS_PER_PAGE);
       }
