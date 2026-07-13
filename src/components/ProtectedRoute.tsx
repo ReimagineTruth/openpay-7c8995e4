@@ -48,7 +48,7 @@ const ProtectedRoute = ({ children, redirectTo = "/sign-in" }: ProtectedRoutePro
   // Show loading screen while checking authentication
   if (isLoading) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-b from-paypal-blue to-[#072a7a]">
+      <div className="nft-on-media theme-fixed fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-b from-paypal-blue to-[#072a7a]">
         <div className="text-center">
           <img src="/openpay-o-white.svg" alt="OpenPay" className="mx-auto mb-6 h-16 w-16" />
           <p className="text-3xl font-bold tracking-tight text-white">OpenPay</p>
