@@ -96,7 +96,7 @@ const NftCreatorStatsPage = () => {
       <div className="p-4 space-y-4 max-w-6xl mx-auto">
         {/* Hero KPI */}
         <div
-          className="rounded-3xl p-6 text-white relative overflow-hidden [&_*]:text-white"
+          className="nft-on-media rounded-3xl p-6 text-white relative overflow-hidden [&_*]:text-white"
           style={{ background: `linear-gradient(135deg, ${ACCENT}, hsl(217 91% 40%))` }}
         >
           <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
