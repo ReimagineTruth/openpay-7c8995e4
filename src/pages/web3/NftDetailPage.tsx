@@ -715,7 +715,7 @@ const NftDetailPage = () => {
               <Gavel className="h-4 w-4" /> Place bid · {formatNftPrice(livePrice, item.currency)}
             </button>
           ) : (
-            <button onClick={openBuy} className="flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2"
+            <button onClick={openBuy} className="nft-on-media flex-1 rounded-full py-3 font-bold flex items-center justify-center gap-2 text-white"
               style={{ backgroundColor: ACCENT }}>
               <ShoppingCart className="h-4 w-4" /> Buy
             </button>

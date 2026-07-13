@@ -56,7 +56,7 @@ const NftCreatorDashboardPage = () => {
       <div className="p-4 space-y-4 max-w-5xl mx-auto">
         {/* Hero */}
         <div
-          className="rounded-3xl p-6 text-white relative overflow-hidden"
+          className="nft-on-media rounded-3xl p-6 text-white relative overflow-hidden"
           style={{ background: `linear-gradient(135deg, ${ACCENT}, hsl(217 91% 40%))` }}
         >
           <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
@@ -138,7 +138,7 @@ const NftCreatorDashboardPage = () => {
 };
 
 const Mini = ({ icon, label, value }: any) => (
-  <div className="rounded-xl bg-white/15 backdrop-blur p-3 border border-white/10">
+  <div className="nft-on-media rounded-xl bg-white/15 backdrop-blur p-3 border border-white/10">
     <div className="flex items-center gap-1 text-xs opacity-90 text-white">{icon}{label}</div>
     <p className="font-bold mt-1 text-white truncate">{value}</p>
   </div>

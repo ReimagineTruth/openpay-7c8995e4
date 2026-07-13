@@ -96,7 +96,7 @@ const NftCreatorStatsPage = () => {
       <div className="p-4 space-y-4 max-w-6xl mx-auto">
         {/* Hero KPI */}
         <div
-          className="rounded-3xl p-6 text-white relative overflow-hidden [&_*]:text-white"
+          className="nft-on-media rounded-3xl p-6 text-white relative overflow-hidden [&_*]:text-white"
           style={{ background: `linear-gradient(135deg, ${ACCENT}, hsl(217 91% 40%))` }}
         >
           <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
@@ -294,7 +294,7 @@ const NftCreatorStatsPage = () => {
 };
 
 const MiniKpi = ({ icon, label, value }: any) => (
-  <div className="rounded-2xl bg-white/15 backdrop-blur p-3 border border-white/10 text-white">
+  <div className="nft-on-media rounded-2xl bg-white/15 backdrop-blur p-3 border border-white/10 text-white">
     <div className="flex items-center gap-1.5 text-xs opacity-90 text-white">{icon}<span className="text-white">{label}</span></div>
     <p className="font-black mt-1 text-lg truncate text-white">{value}</p>
   </div>
