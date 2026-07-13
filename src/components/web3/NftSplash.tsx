@@ -34,7 +34,7 @@ const NftSplash = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[110] flex items-center justify-center bg-gradient-to-b from-paypal-blue to-[#072a7a] transition-opacity duration-200 ${
+      className={`nft-on-media theme-fixed fixed inset-0 z-[110] flex items-center justify-center bg-gradient-to-b from-paypal-blue to-[#072a7a] transition-opacity duration-200 ${
         phase === "out" ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
       aria-hidden
