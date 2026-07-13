@@ -44,6 +44,7 @@ interface StoreRow {
 }
 
 const SIDEBAR_ITEMS = [
+  { icon: Wallet, label: "Wallet", to: "/dashboard" },
   { icon: Compass, label: "Discover", to: "/web3/nft" },
   { icon: LayoutGrid, label: "Collections", to: "/web3/nft/stores" },
   { icon: Coins, label: "My Collection", to: "/web3/nft/my-nfts" },
