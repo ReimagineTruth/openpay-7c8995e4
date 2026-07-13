@@ -481,7 +481,7 @@ const NftCreatePage = () => {
                 type="button"
                 onClick={handlePay}
                 disabled={loading}
-                className="w-full rounded-full py-3 font-bold text-white disabled:opacity-50"
+                className="nft-on-media w-full rounded-full py-3 font-bold text-white disabled:opacity-50"
                 style={{ backgroundColor: ACCENT }}
               >
                 {loading ? "Processing…" : `Pay ${totalFee} ${mintFee.currency} & Mint`}
