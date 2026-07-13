@@ -138,7 +138,7 @@ const NftCreatorDashboardPage = () => {
 };
 
 const Mini = ({ icon, label, value }: any) => (
-  <div className="rounded-xl bg-white/15 backdrop-blur p-3 border border-white/10">
+  <div className="nft-on-media rounded-xl bg-white/15 backdrop-blur p-3 border border-white/10">
     <div className="flex items-center gap-1 text-xs opacity-90 text-white">{icon}{label}</div>
     <p className="font-bold mt-1 text-white truncate">{value}</p>
   </div>
