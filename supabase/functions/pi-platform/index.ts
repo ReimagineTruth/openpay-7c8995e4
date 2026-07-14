@@ -134,16 +134,21 @@ serve(async (req) => {
       }
 
       if (userId) {
-        await supabase.rpc("create_complete_user_profile", {
-          p_user_id: userId,
-          p_full_name: fullName,
-          p_username: username,
-          p_email: email,
-          p_referral_code: typeof referralCode === "string" ? referralCode : null,
-          p_pi_uid: verified.uid,
-          p_pi_username: fullName,
-        }).catch(() => null);
+        try {
+          await supabase.rpc("create_complete_user_profile", {
+            p_user_id: userId,
+            p_full_name: fullName,
+            p_username: username,
+            p_email: email,
+            p_referral_code: typeof referralCode === "string" ? referralCode : null,
+            p_pi_uid: verified.uid,
+            p_pi_username: fullName,
+          });
+        } catch (profileErr) {
+          console.warn("create_complete_user_profile failed", profileErr);
+        }
       }
+
 
       if (action === "auth_signin") {
         // Perform the password sign-in server-side using the anon client so
