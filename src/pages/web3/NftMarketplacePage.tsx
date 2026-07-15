@@ -78,13 +78,25 @@ const NftMarketplacePage = () => {
     } catch {}
     return [];
   });
-  const [owners, setOwners] = useState<Record<string, number>>({});
-  const [sales, setSales] = useState<Record<string, number>>({});
-  const [auctions, setAuctions] = useState<Record<string, any>>({});
-  const [stores, setStores] = useState<StoreRow[]>([]);
-  const [storeByUser, setStoreByUser] = useState<Record<string, StoreRow>>({});
-  const [storeItemCounts, setStoreItemCounts] = useState<Record<string, number>>({});
-  const [storeFloor, setStoreFloor] = useState<Record<string, { price: number; currency: string }>>({});
+  const readCache = <T,>(key: string, fallback: T): T => {
+    if (typeof window === "undefined") return fallback;
+    try {
+      const raw = sessionStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T) : fallback;
+    } catch { return fallback; }
+  };
+  const [owners, setOwners] = useState<Record<string, number>>(() => readCache("nft_owners_cache_v1", {}));
+  const [sales, setSales] = useState<Record<string, number>>(() => readCache("nft_sales_cache_v1", {}));
+  const [auctions, setAuctions] = useState<Record<string, any>>(() => readCache("nft_auctions_cache_v1", {}));
+  const [stores, setStores] = useState<StoreRow[]>(() => readCache("nft_stores_cache_v1", []));
+  const [storeByUser, setStoreByUser] = useState<Record<string, StoreRow>>(() => {
+    const arr = readCache<StoreRow[]>("nft_stores_cache_v1", []);
+    const m: Record<string, StoreRow> = {};
+    arr.forEach((s) => { m[s.user_id] = s; });
+    return m;
+  });
+  const [storeItemCounts, setStoreItemCounts] = useState<Record<string, number>>(() => readCache("nft_store_counts_cache_v1", {}));
+  const [storeFloor, setStoreFloor] = useState<Record<string, { price: number; currency: string }>>(() => readCache("nft_store_floors_cache_v1", {}));
   const [loading, setLoading] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     try { return !sessionStorage.getItem("nft_items_cache_v1"); } catch { return true; }
@@ -171,6 +183,7 @@ const NftMarketplacePage = () => {
             const sMap: Record<string, StoreRow> = {};
             sList.forEach((s) => { sMap[s.user_id] = s; });
             setStoreByUser(sMap);
+            try { sessionStorage.setItem("nft_stores_cache_v1", JSON.stringify(sList)); } catch {}
           });
 
         // Fetch ALL active items (lightweight) to compute real per-creator counts + floors.
@@ -190,6 +203,10 @@ const NftMarketplacePage = () => {
             });
             setStoreItemCounts(counts);
             setStoreFloor(floors);
+            try {
+              sessionStorage.setItem("nft_store_counts_cache_v1", JSON.stringify(counts));
+              sessionStorage.setItem("nft_store_floors_cache_v1", JSON.stringify(floors));
+            } catch {}
           });
       }
 
@@ -202,13 +219,25 @@ const NftMarketplacePage = () => {
         ]).then(([{ data: own }, { data: tx }, { data: au }]: any) => {
           const ownerCount: Record<string, number> = {};
           (own || []).forEach((o: any) => { ownerCount[o.item_id] = (ownerCount[o.item_id] || 0) + 1; });
-          setOwners((prev) => ({ ...prev, ...ownerCount }));
+          setOwners((prev) => {
+            const next = { ...prev, ...ownerCount };
+            try { sessionStorage.setItem("nft_owners_cache_v1", JSON.stringify(next)); } catch {}
+            return next;
+          });
           const soldMap: Record<string, number> = {};
           (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
-          setSales((prev) => ({ ...prev, ...soldMap }));
+          setSales((prev) => {
+            const next = { ...prev, ...soldMap };
+            try { sessionStorage.setItem("nft_sales_cache_v1", JSON.stringify(next)); } catch {}
+            return next;
+          });
           const auMap: Record<string, any> = {};
           (au || []).forEach((a: any) => { auMap[a.item_id] = a; });
-          setAuctions((prev) => ({ ...prev, ...auMap }));
+          setAuctions((prev) => {
+            const next = { ...prev, ...auMap };
+            try { sessionStorage.setItem("nft_auctions_cache_v1", JSON.stringify(next)); } catch {}
+            return next;
+          });
         }).catch((error) => {
           console.error("Error loading secondary data:", error);
         }).finally(() => {
