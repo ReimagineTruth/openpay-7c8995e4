@@ -219,13 +219,25 @@ const NftMarketplacePage = () => {
         ]).then(([{ data: own }, { data: tx }, { data: au }]: any) => {
           const ownerCount: Record<string, number> = {};
           (own || []).forEach((o: any) => { ownerCount[o.item_id] = (ownerCount[o.item_id] || 0) + 1; });
-          setOwners((prev) => ({ ...prev, ...ownerCount }));
+          setOwners((prev) => {
+            const next = { ...prev, ...ownerCount };
+            try { sessionStorage.setItem("nft_owners_cache_v1", JSON.stringify(next)); } catch {}
+            return next;
+          });
           const soldMap: Record<string, number> = {};
           (tx || []).forEach((t: any) => { soldMap[t.item_id] = (soldMap[t.item_id] || 0) + Number(t.quantity || 0); });
-          setSales((prev) => ({ ...prev, ...soldMap }));
+          setSales((prev) => {
+            const next = { ...prev, ...soldMap };
+            try { sessionStorage.setItem("nft_sales_cache_v1", JSON.stringify(next)); } catch {}
+            return next;
+          });
           const auMap: Record<string, any> = {};
           (au || []).forEach((a: any) => { auMap[a.item_id] = a; });
-          setAuctions((prev) => ({ ...prev, ...auMap }));
+          setAuctions((prev) => {
+            const next = { ...prev, ...auMap };
+            try { sessionStorage.setItem("nft_auctions_cache_v1", JSON.stringify(next)); } catch {}
+            return next;
+          });
         }).catch((error) => {
           console.error("Error loading secondary data:", error);
         }).finally(() => {
