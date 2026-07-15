@@ -183,6 +183,7 @@ const NftMarketplacePage = () => {
             const sMap: Record<string, StoreRow> = {};
             sList.forEach((s) => { sMap[s.user_id] = s; });
             setStoreByUser(sMap);
+            try { sessionStorage.setItem("nft_stores_cache_v1", JSON.stringify(sList)); } catch {}
           });
 
         // Fetch ALL active items (lightweight) to compute real per-creator counts + floors.
@@ -202,6 +203,10 @@ const NftMarketplacePage = () => {
             });
             setStoreItemCounts(counts);
             setStoreFloor(floors);
+            try {
+              sessionStorage.setItem("nft_store_counts_cache_v1", JSON.stringify(counts));
+              sessionStorage.setItem("nft_store_floors_cache_v1", JSON.stringify(floors));
+            } catch {}
           });
       }
 
