@@ -78,13 +78,25 @@ const NftMarketplacePage = () => {
     } catch {}
     return [];
   });
-  const [owners, setOwners] = useState<Record<string, number>>({});
-  const [sales, setSales] = useState<Record<string, number>>({});
-  const [auctions, setAuctions] = useState<Record<string, any>>({});
-  const [stores, setStores] = useState<StoreRow[]>([]);
-  const [storeByUser, setStoreByUser] = useState<Record<string, StoreRow>>({});
-  const [storeItemCounts, setStoreItemCounts] = useState<Record<string, number>>({});
-  const [storeFloor, setStoreFloor] = useState<Record<string, { price: number; currency: string }>>({});
+  const readCache = <T,>(key: string, fallback: T): T => {
+    if (typeof window === "undefined") return fallback;
+    try {
+      const raw = sessionStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T) : fallback;
+    } catch { return fallback; }
+  };
+  const [owners, setOwners] = useState<Record<string, number>>(() => readCache("nft_owners_cache_v1", {}));
+  const [sales, setSales] = useState<Record<string, number>>(() => readCache("nft_sales_cache_v1", {}));
+  const [auctions, setAuctions] = useState<Record<string, any>>(() => readCache("nft_auctions_cache_v1", {}));
+  const [stores, setStores] = useState<StoreRow[]>(() => readCache("nft_stores_cache_v1", []));
+  const [storeByUser, setStoreByUser] = useState<Record<string, StoreRow>>(() => {
+    const arr = readCache<StoreRow[]>("nft_stores_cache_v1", []);
+    const m: Record<string, StoreRow> = {};
+    arr.forEach((s) => { m[s.user_id] = s; });
+    return m;
+  });
+  const [storeItemCounts, setStoreItemCounts] = useState<Record<string, number>>(() => readCache("nft_store_counts_cache_v1", {}));
+  const [storeFloor, setStoreFloor] = useState<Record<string, { price: number; currency: string }>>(() => readCache("nft_store_floors_cache_v1", {}));
   const [loading, setLoading] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     try { return !sessionStorage.getItem("nft_items_cache_v1"); } catch { return true; }
