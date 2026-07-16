@@ -4599,6 +4599,7 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
       <FeatureQuestIntroModal />
+      <FeedbackPromptModal />
     </div>
   );
 };
