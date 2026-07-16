@@ -555,6 +555,8 @@ const MenuPage = () => {
 
         { icon: HelpCircle, label: "Help Center", action: () => navigate("/help-center") },
 
+        { icon: MessageSquare, label: "Send Feedback", subtitle: "Help us improve OpenPay", action: () => navigate("/feedback") },
+
         { icon: MessageSquare, label: "Telegram Support", action: () => window.open("https://t.me/openpayofficial", "_blank", "noopener,noreferrer") },
 
         { icon: Megaphone, label: "Announcements", action: () => navigate("/announcements") },
