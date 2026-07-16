@@ -285,6 +285,8 @@ const AppRoutes = () => {
         <Route path="/admin-loan-applications" element={<AdminLoanApplicationsPage />} />
         <Route path="/admin-topup-requests" element={<AdminTopUpRequestsPage />} />
         <Route path="/master-topup" element={<AdminMasterTopUp />} />
+        <Route path="/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
+        <Route path="/admin-feedback" element={<AdminFeedbackPage />} />
         <Route path="/signin" element={<Navigate to="/sign-in?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-in?mode=signup" replace />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
