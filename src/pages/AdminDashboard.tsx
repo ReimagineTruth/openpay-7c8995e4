@@ -337,6 +337,9 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground">Transparent OpenPay transaction ledger</p>
             </div>
           </div>
+          <Button variant="outline" onClick={() => navigate("/admin-feedback")}>
+            Review Feedback
+          </Button>
           <Button variant="outline" onClick={() => loadPage(offset)} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
