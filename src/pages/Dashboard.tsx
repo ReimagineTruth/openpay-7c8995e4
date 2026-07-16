@@ -40,6 +40,7 @@ import {
 import Web3Dashboard from "@/components/web3/Web3Dashboard";
 import { setUiMode } from "@/lib/uiMode";
 import FeatureQuestIntroModal from "@/components/FeatureQuestIntroModal";
+import FeedbackPromptModal from "@/components/FeedbackPromptModal";
 
 interface Transaction {
   id: string;
