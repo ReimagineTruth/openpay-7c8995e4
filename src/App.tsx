@@ -108,6 +108,8 @@ import AdminSwapWithdrawalsPage from "./pages/AdminSwapWithdrawalsPage";
 import AdminLoanApplicationsPage from "./pages/AdminLoanApplicationsPage";
 import AdminTopUpRequestsPage from "./pages/AdminTopUpRequestsPage";
 import AdminMasterTopUp from "./pages/AdminMasterTopUp";
+import FeedbackPage from "./pages/FeedbackPage";
+import AdminFeedbackPage from "./pages/AdminFeedbackPage";
 import MerchantOnboardingPage from "./pages/MerchantOnboardingPage";
 import OpenPayOfficialPage from "./pages/OpenPayOfficialPage";
 import PitchDeckPage from "./pages/PitchDeckPage";
