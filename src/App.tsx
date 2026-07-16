@@ -108,6 +108,8 @@ import AdminSwapWithdrawalsPage from "./pages/AdminSwapWithdrawalsPage";
 import AdminLoanApplicationsPage from "./pages/AdminLoanApplicationsPage";
 import AdminTopUpRequestsPage from "./pages/AdminTopUpRequestsPage";
 import AdminMasterTopUp from "./pages/AdminMasterTopUp";
+import FeedbackPage from "./pages/FeedbackPage";
+import AdminFeedbackPage from "./pages/AdminFeedbackPage";
 import MerchantOnboardingPage from "./pages/MerchantOnboardingPage";
 import OpenPayOfficialPage from "./pages/OpenPayOfficialPage";
 import PitchDeckPage from "./pages/PitchDeckPage";
@@ -283,6 +285,8 @@ const AppRoutes = () => {
         <Route path="/admin-loan-applications" element={<AdminLoanApplicationsPage />} />
         <Route path="/admin-topup-requests" element={<AdminTopUpRequestsPage />} />
         <Route path="/master-topup" element={<AdminMasterTopUp />} />
+        <Route path="/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
+        <Route path="/admin-feedback" element={<AdminFeedbackPage />} />
         <Route path="/signin" element={<Navigate to="/sign-in?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-in?mode=signup" replace />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />

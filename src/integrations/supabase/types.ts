@@ -2840,6 +2840,54 @@ export type Database = {
         }
         Relationships: []
       }
+      openpay_feedback: {
+        Row: {
+          admin_note: string
+          category: string
+          contact_email: string | null
+          created_at: string
+          feature: string | null
+          id: string
+          message: string
+          rating: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_note?: string
+          category?: string
+          contact_email?: string | null
+          created_at?: string
+          feature?: string | null
+          id?: string
+          message: string
+          rating?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_note?: string
+          category?: string
+          contact_email?: string | null
+          created_at?: string
+          feature?: string | null
+          id?: string
+          message?: string
+          rating?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       openpay_runtime_settings: {
         Row: {
           setting_key: string
