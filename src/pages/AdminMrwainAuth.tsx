@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import AuthFooter from "@/components/AuthFooter";
-import { ArrowLeft, Globe, BookOpen, Users, ChevronRight } from "lucide-react";
+import { ArrowLeft, Globe, BookOpen, Users, ChevronRight, KeyRound } from "lucide-react";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
+import { lovable } from "@/integrations/lovable/index";
+import { isPiOAuthEnabled } from "@/lib/piOAuth";
 
 const AdminMrwainAuth = () => {
   const navigate = useNavigate();
