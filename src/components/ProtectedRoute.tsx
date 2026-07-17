@@ -18,22 +18,42 @@ const ProtectedRoute = ({ children, redirectTo = "/sign-in" }: ProtectedRoutePro
     const checkAuth = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
-        
+
         if (error || !user) {
-          // User is not authenticated, redirect to sign-in
           console.log('User not authenticated, redirecting to:', redirectTo);
-          navigate(redirectTo, { 
+          navigate(redirectTo, {
             replace: true,
             state: { from: location.pathname }
           });
           return;
         }
 
-        // User is authenticated
+        // Require onboarding: real full_name + username before app access.
+        if (location.pathname !== "/setup-profile") {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, username")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          const fullName = (profile?.full_name || "").trim();
+          const username = (profile?.username || "").trim();
+          const needsSetup =
+            !fullName ||
+            !username ||
+            username.toLowerCase().startsWith("pi_") ||
+            !/^[a-z0-9_]{3,20}$/i.test(username);
+
+          if (needsSetup) {
+            navigate("/setup-profile", { replace: true });
+            return;
+          }
+        }
+
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Auth check error:', error);
-        navigate(redirectTo, { 
+        navigate(redirectTo, {
           replace: true,
           state: { from: location.pathname }
         });
