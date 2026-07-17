@@ -100,18 +100,17 @@ const AdminMrwainAuth = () => {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}/auth/callback`,
       });
-      
-      if (error) {
-        toast.error(error.message || "Google sign-in failed");
+
+      if (result.error) {
+        toast.error((result.error as any)?.message || "Google sign-in failed");
         setLoading(false);
         return;
       }
+      if (result.redirected) return;
+      navigate("/dashboard");
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");
       setLoading(false);
