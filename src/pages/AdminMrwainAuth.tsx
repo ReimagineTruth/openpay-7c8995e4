@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import AuthFooter from "@/components/AuthFooter";
-import { ArrowLeft, Globe, BookOpen, Users, ChevronRight } from "lucide-react";
+import { ArrowLeft, Globe, BookOpen, Users, ChevronRight, KeyRound } from "lucide-react";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
+import { lovable } from "@/integrations/lovable/index";
+import { isPiOAuthEnabled } from "@/lib/piOAuth";
 
 const AdminMrwainAuth = () => {
   const navigate = useNavigate();
@@ -98,18 +100,17 @@ const AdminMrwainAuth = () => {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}/auth/callback`,
       });
-      
-      if (error) {
-        toast.error(error.message || "Google sign-in failed");
+
+      if (result.error) {
+        toast.error((result.error as any)?.message || "Google sign-in failed");
         setLoading(false);
         return;
       }
+      if (result.redirected) return;
+      navigate("/dashboard");
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");
       setLoading(false);
@@ -170,6 +171,19 @@ const AdminMrwainAuth = () => {
             </svg>
             Continue with Google
           </Button>
+
+          {isPiOAuthEnabled() && (
+            <Button
+              type="button"
+              onClick={() => navigate("/auth/pi/login")}
+              disabled={loading}
+              variant="outline"
+              className="mb-4 h-12 w-full rounded-2xl border-border/60 bg-white text-base font-semibold gap-2 dark:bg-white/5"
+            >
+              <KeyRound className="h-5 w-5 text-paypal-blue" />
+              Continue with Pi
+            </Button>
+          )}
 
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/60" /></div>
