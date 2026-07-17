@@ -172,6 +172,19 @@ const AdminMrwainAuth = () => {
             Continue with Google
           </Button>
 
+          {isPiOAuthEnabled() && (
+            <Button
+              type="button"
+              onClick={() => navigate("/auth/pi/login")}
+              disabled={loading}
+              variant="outline"
+              className="mb-4 h-12 w-full rounded-2xl border-border/60 bg-white text-base font-semibold gap-2 dark:bg-white/5"
+            >
+              <KeyRound className="h-5 w-5 text-paypal-blue" />
+              Continue with Pi
+            </Button>
+          )}
+
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/60" /></div>
             <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground dark:bg-[#0f172a]">or continue with email</span></div>
