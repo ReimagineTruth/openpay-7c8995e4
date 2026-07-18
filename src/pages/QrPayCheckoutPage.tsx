@@ -224,17 +224,18 @@ export default function QrPayCheckoutPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <div className="bg-gradient-to-r from-paypal-blue to-[#0073e6] text-primary-foreground p-4">
+      <div className="qrp-hero p-4 pb-8">
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <img src="/openpay-logo.jpg" alt="OpenPay" className="h-9 w-9 rounded-lg"/>
+          <img src="/openpay-logo.jpg" alt="OpenPay" className="h-10 w-10 rounded-xl ring-2 ring-white/40"/>
           <div className="flex-1">
-            <div className="text-sm opacity-90">OpenPay Checkout</div>
-            <div className="font-bold flex items-center gap-1"><ShieldCheck className="h-4 w-4"/>Secure QR Payment</div>
+            <div className="text-[12px] opacity-90 uppercase tracking-wider">OpenPay Checkout</div>
+            <div className="font-bold flex items-center gap-1.5 text-[17px]"><ShieldCheck className="h-4 w-4"/>Secure QR Payment</div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-md mx-auto p-4 space-y-4">
+      <div className="max-w-md mx-auto p-4 space-y-3 -mt-4 qrp-pop">
+
         {data.cover_image_url && (
           <Card><CardContent className="p-0"><img src={data.cover_image_url} className="w-full h-44 object-cover rounded-lg"/></CardContent></Card>
         )}
