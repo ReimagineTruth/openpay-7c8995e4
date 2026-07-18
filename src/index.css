@@ -230,6 +230,136 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
+  /* ============ QR Pay — iOS-style design system ============ */
+  .qrp-hero {
+    background: linear-gradient(135deg, hsl(210 100% 40%) 0%, hsl(212 100% 45%) 45%, hsl(216 100% 55%) 100%);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+    box-shadow: 0 12px 32px -18px rgba(0, 112, 186, 0.6);
+  }
+  .qrp-hero::before {
+    content: "";
+    position: absolute;
+    inset: -30% -20% auto auto;
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(255,255,255,0.28), transparent 60%);
+    pointer-events: none;
+  }
+  .qrp-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto auto -40% -10%;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(255,255,255,0.16), transparent 60%);
+    pointer-events: none;
+  }
+  .qrp-hero * { position: relative; z-index: 1; }
+  .qrp-hero-btn {
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.28);
+    color: #fff;
+    transition: transform .15s ease, background .15s ease;
+  }
+  .qrp-hero-btn:hover { background: rgba(255,255,255,0.28); }
+  .qrp-hero-btn:active { transform: scale(0.96); }
+  .qrp-hero-cta {
+    background: #fff;
+    color: hsl(210 100% 40%);
+    font-weight: 600;
+    box-shadow: 0 6px 20px -6px rgba(0,0,0,0.25);
+    transition: transform .15s ease;
+  }
+  .qrp-hero-cta:hover { background: #fff; transform: translateY(-1px); }
+  .qrp-hero-cta:active { transform: scale(0.97); }
+
+  .qrp-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border) / 0.6);
+    border-radius: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px -18px rgba(0,0,0,0.12);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .qrp-card:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 16px 40px -22px rgba(0,0,0,0.18); }
+  .dark .qrp-card { border-color: hsl(0 0% 16%); box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px -20px rgba(0,0,0,0.6); }
+
+  .qrp-card-blue {
+    background: linear-gradient(135deg, hsl(210 100% 40%) 0%, hsl(214 100% 50%) 100%);
+    color: #fff;
+    border: 0;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px -12px rgba(0, 112, 186, 0.55);
+    position: relative;
+    overflow: hidden;
+  }
+  .qrp-card-blue::after {
+    content: "";
+    position: absolute; right: -30px; top: -30px;
+    width: 140px; height: 140px;
+    background: radial-gradient(circle, rgba(255,255,255,0.22), transparent 65%);
+  }
+
+  .qrp-kpi {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border) / 0.5);
+    border-radius: 16px;
+    padding: 12px;
+    text-align: center;
+    transition: transform .15s ease, background .15s ease;
+  }
+  .qrp-kpi:hover { transform: translateY(-1px); background: hsl(var(--muted) / 0.4); }
+
+  .qrp-pay-tab {
+    border-radius: 14px !important;
+    font-weight: 600;
+    transition: all .18s ease;
+  }
+  .qrp-pay-tab[data-state="active"] {
+    background: linear-gradient(135deg, hsl(210 100% 40%), hsl(214 100% 50%)) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px -4px rgba(0,112,186,0.5);
+  }
+
+  .qrp-primary-btn {
+    background: linear-gradient(135deg, hsl(210 100% 40%), hsl(214 100% 48%)) !important;
+    color: #fff !important;
+    border-radius: 14px !important;
+    font-weight: 600;
+    height: 48px;
+    box-shadow: 0 8px 20px -8px rgba(0,112,186,0.55);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .qrp-primary-btn:hover { box-shadow: 0 12px 24px -8px rgba(0,112,186,0.65); }
+  .qrp-primary-btn:active { transform: scale(0.98); }
+
+  .qrp-pi-btn {
+    background: linear-gradient(135deg, #7d3cff, #a855f7) !important;
+    color: #fff !important;
+    border-radius: 14px !important;
+    font-weight: 600;
+    height: 48px;
+    box-shadow: 0 8px 20px -8px rgba(125,60,255,0.55);
+  }
+  .qrp-pi-btn:active { transform: scale(0.98); }
+
+  .qrp-input {
+    border-radius: 12px !important;
+    border: 1px solid hsl(var(--border)) !important;
+    background: hsl(var(--background)) !important;
+    height: 44px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .qrp-input:focus-visible { border-color: hsl(210 100% 50%) !important; box-shadow: 0 0 0 3px hsla(210,100%,50%,0.15) !important; }
+
+  @keyframes qrp-pop { 0% { transform: scale(0.9); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
+  .qrp-pop { animation: qrp-pop .4s cubic-bezier(0.22, 1, 0.36, 1); }
+
+
+
   .animate-in-up {
     animation: slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
