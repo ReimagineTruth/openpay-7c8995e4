@@ -57,13 +57,16 @@ export default function QrPaySuccessPage() {
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
-      <div className="bg-gradient-to-r from-paypal-blue to-[#0073e6] text-primary-foreground p-6 text-center">
-        <CheckCircle2 className="h-14 w-14 mx-auto mb-2"/>
-        <h1 className="text-2xl font-bold">Payment Successful</h1>
-        {data && <p className="opacity-90 mt-1">{data.currency} {Number(data.amount).toFixed(2)} paid to {data.merchant.full_name || "merchant"}</p>}
+      <div className="qrp-hero p-8 text-center">
+        <div className="qrp-pop inline-flex items-center justify-center h-20 w-20 rounded-full bg-white/20 backdrop-blur-md ring-4 ring-white/30 mb-3">
+          <CheckCircle2 className="h-12 w-12"/>
+        </div>
+        <h1 className="text-[26px] font-bold tracking-tight">Payment Successful</h1>
+        {data && <p className="opacity-90 mt-1 text-[15px]">{data.currency} {Number(data.amount).toFixed(2)} paid to {data.merchant.full_name || "merchant"}</p>}
       </div>
 
-      <div className="max-w-md mx-auto p-4 w-full space-y-4">
+      <div className="max-w-md mx-auto p-4 w-full space-y-3 -mt-4 qrp-pop">
+
         <Card><CardContent className="p-4 space-y-2">
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">Transaction ID</span><span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{ref}</span></div>
           {data && <>

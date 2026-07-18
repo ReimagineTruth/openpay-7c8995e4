@@ -167,49 +167,48 @@ export default function QrPayDashboardPage() {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="bg-gradient-to-r from-paypal-blue to-[#0073e6] text-primary-foreground">
-        <div className="flex items-center gap-3 p-4">
-          <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-5 w-5" /></Button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold">QR Pay</h1>
-            <p className="text-sm opacity-90">Accept payments with sharable QR codes</p>
+      <div className="qrp-hero">
+        <div className="flex items-center gap-2 p-4 pb-6">
+          <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-5 w-5" /></Button>
+          <div className="flex-1 pl-1">
+            <h1 className="text-[22px] font-bold tracking-tight">QR Pay</h1>
+            <p className="text-[13px] opacity-90">Accept payments with sharable QR codes</p>
           </div>
-          <Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/20" onClick={refresh} title="Refresh">
+          <Button size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={refresh} title="Refresh">
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
-          <Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/20" onClick={() => navigate("/qr-pay/api")} title="QR Pay API">
+          <Button size="sm" className="qrp-hero-btn rounded-full h-9 px-3 text-xs" onClick={() => navigate("/qr-pay/api")} title="QR Pay API">
             API
           </Button>
-          <Button size="sm" className="bg-white text-paypal-blue hover:bg-white/90" onClick={() => navigate("/qr-pay/new")}>
+          <Button size="sm" className="qrp-hero-cta rounded-full h-9 px-4" onClick={() => navigate("/qr-pay/new")}>
             <Plus className="h-4 w-4 mr-1" /> New
           </Button>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 -mt-4">
         {/* Top KPI cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="bg-gradient-to-br from-paypal-blue to-[#0073e6] text-white border-0">
-            <CardContent className="p-4">
-              <div className="text-xs opacity-90 flex items-center gap-1"><Wallet className="h-3 w-3"/>Available balance</div>
-              <div className="text-2xl font-bold mt-1">{format(stats?.available_balance || 0)}</div>
-              <div className="text-[11px] opacity-80 mt-1">Updates in realtime</div>
-            </CardContent>
-          </Card>
-          <Card><CardContent className="p-4">
-            <div className="text-xs text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3"/>Total revenue</div>
-            <div className="text-2xl font-bold mt-1 text-foreground">{format(stats?.total || 0)}</div>
-            <div className="text-xs text-muted-foreground mt-1">{stats?.count || 0} payments</div>
-          </CardContent></Card>
+        <div className="grid grid-cols-2 gap-3 qrp-pop">
+          <div className="qrp-card-blue p-4">
+            <div className="text-[11px] uppercase tracking-wide opacity-90 flex items-center gap-1"><Wallet className="h-3 w-3"/>Available balance</div>
+            <div className="text-[28px] font-bold mt-1 leading-none">{format(stats?.available_balance || 0)}</div>
+            <div className="text-[11px] opacity-80 mt-2">Updates in realtime</div>
+          </div>
+          <div className="qrp-card p-4">
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3"/>Total revenue</div>
+            <div className="text-[28px] font-bold mt-1 leading-none text-foreground">{format(stats?.total || 0)}</div>
+            <div className="text-xs text-muted-foreground mt-2">{stats?.count || 0} payments</div>
+          </div>
         </div>
         <div className="grid grid-cols-4 gap-2">
           {([["today","Today",stats?.today],["week","Week",stats?.week],["month","Month",stats?.month],["year","Year",stats?.year]] as const).map(([k,label,val]) => (
-            <Card key={k}><CardContent className="p-2 text-center">
-              <div className="text-[10px] text-muted-foreground">{label}</div>
-              <div className="text-sm font-semibold text-foreground">{format(Number(val) || 0)}</div>
-            </CardContent></Card>
+            <div key={k} className="qrp-kpi">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+              <div className="text-sm font-semibold text-foreground mt-0.5">{format(Number(val) || 0)}</div>
+            </div>
           ))}
         </div>
+
 
         {/* Method breakdown */}
         <Card><CardContent className="p-4">

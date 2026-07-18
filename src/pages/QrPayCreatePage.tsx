@@ -145,42 +145,49 @@ export default function QrPayCreatePage() {
   if (created) {
     const url = `${window.location.origin}/qr-pay/${created.token}`;
     return (
-      <div className="min-h-screen bg-background">
-        <div className="bg-gradient-to-r from-paypal-blue to-[#0073e6] text-primary-foreground p-4 flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => navigate("/qr-pay")}><ArrowLeft className="h-5 w-5"/></Button>
-          <h1 className="text-xl font-bold">Share QR Payment</h1>
+      <div className="min-h-screen bg-muted/30">
+        <div className="qrp-hero p-4 pb-8 flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={() => navigate("/qr-pay")}><ArrowLeft className="h-5 w-5"/></Button>
+          <div>
+            <h1 className="text-[22px] font-bold tracking-tight">Share QR Payment</h1>
+            <p className="text-[13px] opacity-90">Your payment link is ready</p>
+          </div>
         </div>
-        <div className="p-4 max-w-md mx-auto space-y-4">
-          <Card><CardContent className="p-6 flex flex-col items-center">
-            <div className="bg-white p-4 rounded-xl"><QRCodeSVG value={url} size={220}/></div>
+        <div className="p-4 max-w-md mx-auto space-y-4 -mt-4 qrp-pop">
+          <div className="qrp-card p-6 flex flex-col items-center">
+            <div className="bg-white p-4 rounded-2xl shadow-inner ring-1 ring-black/5"><QRCodeSVG value={url} size={220}/></div>
             <div className="mt-4 text-center">
-              <div className="text-3xl font-bold">{cur} {created.total.toFixed(2)}</div>
+              <div className="text-3xl font-bold text-foreground tracking-tight">{cur} {created.total.toFixed(2)}</div>
               <p className="text-sm text-muted-foreground mt-1">Customers scan with OpenPay scanner or any QR app</p>
             </div>
-            <div className="w-full mt-4 bg-muted rounded-lg p-2 text-xs break-all text-center">{url}</div>
+            <div className="w-full mt-4 bg-muted rounded-xl p-2.5 text-xs break-all text-center font-mono">{url}</div>
             <div className="flex gap-2 w-full mt-3">
-              <Button variant="outline" className="flex-1" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copied"); }}><Copy className="h-4 w-4 mr-1"/>Copy</Button>
-              <Button className="flex-1" onClick={async () => {
+              <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copied"); }}><Copy className="h-4 w-4 mr-1"/>Copy</Button>
+              <Button className="flex-1 qrp-primary-btn" onClick={async () => {
                 try { if ((navigator as any).share) await (navigator as any).share({ title: "Pay with OpenPay", url }); else { navigator.clipboard.writeText(url); toast.success("Link copied"); } } catch {}
               }}><Share2 className="h-4 w-4 mr-1"/>Share</Button>
             </div>
-            <Button variant="ghost" className="mt-2 w-full" onClick={() => window.open(url, "_blank")}>Open checkout preview</Button>
-          </CardContent></Card>
+            <Button variant="ghost" className="mt-2 w-full rounded-xl" onClick={() => window.open(url, "_blank")}>Open checkout preview</Button>
+          </div>
           <QrPayIntegrations url={url} amount={created.total} currency={cur} title={title || "OpenPay Checkout"} />
-          <Button variant="outline" className="w-full" onClick={() => navigate("/qr-pay")}>Back to dashboard</Button>
-          <Button variant="ghost" className="w-full" onClick={() => { setCreated(null); setItems([{ name: "", quantity: 1, unit_price: 0 }]); setTitle(""); setDescription(""); setCoverImage(""); }}>Create another</Button>
+          <Button variant="outline" className="w-full rounded-xl h-11" onClick={() => navigate("/qr-pay")}>Back to dashboard</Button>
+          <Button variant="ghost" className="w-full rounded-xl" onClick={() => { setCreated(null); setItems([{ name: "", quantity: 1, unit_price: 0 }]); setTitle(""); setDescription(""); setCoverImage(""); }}>Create another</Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="bg-gradient-to-r from-paypal-blue to-[#0073e6] text-primary-foreground p-4 flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => navigate("/qr-pay")}><ArrowLeft className="h-5 w-5"/></Button>
-        <h1 className="text-xl font-bold">New QR Payment</h1>
+    <div className="min-h-screen bg-muted/30 pb-24">
+      <div className="qrp-hero p-4 pb-8 flex items-center gap-3">
+        <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={() => navigate("/qr-pay")}><ArrowLeft className="h-5 w-5"/></Button>
+        <div>
+          <h1 className="text-[22px] font-bold tracking-tight">New QR Payment</h1>
+          <p className="text-[13px] opacity-90">Set up a shareable checkout</p>
+        </div>
       </div>
-      <div className="p-4 max-w-xl mx-auto space-y-4">
+      <div className="p-4 max-w-xl mx-auto space-y-4 -mt-4">
+
         <Card><CardContent className="p-4 space-y-3">
           <div>
             <Label>Payment type</Label>
@@ -345,9 +352,10 @@ export default function QrPayCreatePage() {
         </CardContent></Card>
 
 
-        <Button className="w-full bg-paypal-blue hover:bg-paypal-blue/90 text-primary-foreground" disabled={loading || (!isFlexible && total <= 0)} onClick={submit}>
+        <Button className="w-full qrp-primary-btn" disabled={loading || (!isFlexible && total <= 0)} onClick={submit}>
           {loading ? "Creating…" : isFlexible ? `Create ${paymentType === "tip" ? "tip" : "donation"} link` : `Create QR Payment · ${cur} ${total.toFixed(2)}`}
         </Button>
+
       </div>
     </div>
   );
