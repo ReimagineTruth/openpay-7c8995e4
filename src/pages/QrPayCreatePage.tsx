@@ -352,9 +352,10 @@ export default function QrPayCreatePage() {
         </CardContent></Card>
 
 
-        <Button className="w-full bg-paypal-blue hover:bg-paypal-blue/90 text-primary-foreground" disabled={loading || (!isFlexible && total <= 0)} onClick={submit}>
+        <Button className="w-full qrp-primary-btn" disabled={loading || (!isFlexible && total <= 0)} onClick={submit}>
           {loading ? "Creating…" : isFlexible ? `Create ${paymentType === "tip" ? "tip" : "donation"} link` : `Create QR Payment · ${cur} ${total.toFixed(2)}`}
         </Button>
+
       </div>
     </div>
   );
