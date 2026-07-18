@@ -331,24 +331,25 @@ export default function QrPayCheckoutPage() {
         {/* Methods */}
         <Card><CardContent className="p-4">
           <Tabs defaultValue={defaultTab}>
-            <TabsList className="w-full grid" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
-              {tabs.includes("pi") && <TabsTrigger value="pi">Pi</TabsTrigger>}
-              {tabs.includes("wallet") && <TabsTrigger value="wallet"><Wallet className="h-4 w-4 mr-1"/>Wallet</TabsTrigger>}
-              {tabs.includes("card") && <TabsTrigger value="card"><CreditCard className="h-4 w-4 mr-1"/>Card</TabsTrigger>}
+            <TabsList className="w-full grid bg-muted/50 rounded-2xl p-1 h-auto" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+              {tabs.includes("pi") && <TabsTrigger value="pi" className="qrp-pay-tab h-10">Pi</TabsTrigger>}
+              {tabs.includes("wallet") && <TabsTrigger value="wallet" className="qrp-pay-tab h-10"><Wallet className="h-4 w-4 mr-1"/>Wallet</TabsTrigger>}
+              {tabs.includes("card") && <TabsTrigger value="card" className="qrp-pay-tab h-10"><CreditCard className="h-4 w-4 mr-1"/>Card</TabsTrigger>}
             </TabsList>
             {tabs.includes("pi") && <TabsContent value="pi" className="pt-3">
               <p className="text-xs text-muted-foreground mb-2">Pay with your Pi balance via Pi Browser. {data.allow_guest ? "Guest checkout allowed." : "Sign-in required."}</p>
-              <Button className="w-full bg-[#7d3cff] hover:bg-[#6a2fe0] text-white" disabled={paying} onClick={payPi}>{paying ? "Processing…" : `Pay ${chargeAmount.toFixed(2)} π`}</Button>
+              <Button className="w-full qrp-pi-btn" disabled={paying} onClick={payPi}>{paying ? "Processing…" : `Pay ${chargeAmount.toFixed(2)} π`}</Button>
             </TabsContent>}
             {tabs.includes("wallet") && <TabsContent value="wallet" className="pt-3">
               <p className="text-xs text-muted-foreground mb-2">Pay from your OpenPay wallet balance.</p>
-              <Button className="w-full bg-paypal-blue hover:bg-paypal-blue/90 text-primary-foreground" disabled={paying} onClick={payWallet}>{paying ? "Processing…" : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`}</Button>
+              <Button className="w-full qrp-primary-btn" disabled={paying} onClick={payWallet}>{paying ? "Processing…" : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`}</Button>
               {!session && <p className="text-xs text-center mt-2 text-muted-foreground">You'll be asked to sign in.</p>}
             </TabsContent>}
             {tabs.includes("card") && <TabsContent value="card" className="pt-3 space-y-2">
-              <Input placeholder="Card number" value={cardNum} onChange={e => setCardNum(e.target.value)}/>
-              <Input placeholder="CVC" maxLength={4} value={cardCvc} onChange={e => setCardCvc(e.target.value)}/>
-              <Button className="w-full bg-paypal-blue hover:bg-paypal-blue/90 text-primary-foreground" disabled={paying} onClick={payCard}>{paying ? "Processing…" : `Pay with virtual card`}</Button>
+              <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)}/>
+              <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)}/>
+              <Button className="w-full qrp-primary-btn" disabled={paying} onClick={payCard}>{paying ? "Processing…" : `Pay with virtual card`}</Button>
+
             </TabsContent>}
           </Tabs>
         </CardContent></Card>
