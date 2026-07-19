@@ -31,6 +31,7 @@ import NftStorePage from "./pages/web3/NftStorePage";
 import NftStoresPage from "./pages/web3/NftStoresPage";
 import NftStoreSettingsPage from "./pages/web3/NftStoreSettingsPage";
 import NftChatPage from "./pages/web3/NftChatPage";
+import NftApiPage from "./pages/web3/NftApiPage";
 import SendMoney from "./pages/SendMoney";
 import QrScannerPage from "./pages/QrScannerPage";
 import TopUp from "./pages/TopUp";
