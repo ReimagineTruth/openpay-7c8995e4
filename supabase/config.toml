@@ -13,3 +13,5 @@ project_id = "araojncyittkahvvpdrn"
     verify_jwt = false
   [functions.piverify-webhook]
     verify_jwt = false
+  [functions.nft-public-api]
+    verify_jwt = false
