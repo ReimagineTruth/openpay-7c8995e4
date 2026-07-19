@@ -163,8 +163,8 @@ const NftApiPage = () => {
   }, []);
 
   return (
-    <NftPageShell title="NFT Public API" subtitle="Integrate OpenPay NFT activity into OpenLedger and any external app.">
-      <div className="max-w-6xl mx-auto px-4 pb-24 space-y-8">
+    <NftPageShell>
+      <div className="max-w-6xl mx-auto px-4 pt-6 pb-24 space-y-8">
         {/* Hero */}
         <div className="theme-fixed rounded-3xl p-6 md:p-10 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #003087 0%, #0070BA 100%)" }}>
           <div className="relative z-10">
