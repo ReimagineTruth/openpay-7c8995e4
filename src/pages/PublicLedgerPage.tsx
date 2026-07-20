@@ -400,7 +400,6 @@ const PublicLedgerPage = () => {
             <Blocks className="h-4 w-4" />
             Blockchain
           </a>
-          </button>
           <button
             onClick={() => setShowSettings(true)}
             className="bg-white/10 hover:bg-white/20 flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-white transition-colors"
