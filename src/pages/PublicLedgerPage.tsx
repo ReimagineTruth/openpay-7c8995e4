@@ -399,6 +399,7 @@ const PublicLedgerPage = () => {
           >
             <Blocks className="h-4 w-4" />
             Blockchain
+          </a>
           </button>
           <button
             onClick={() => setShowSettings(true)}
