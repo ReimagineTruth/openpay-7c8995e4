@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import BottomNav from "@/components/BottomNav";
 
-import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot, QrCode, Bell, Settings, ExternalLink, RefreshCw, Presentation, Trophy } from "lucide-react";
+import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot, QrCode, Bell, Settings, ExternalLink, RefreshCw, Presentation, Trophy, Blocks } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -550,6 +550,7 @@ const MenuPage = () => {
         { icon: Activity, label: "Activity", action: () => navigate("/activity") },
 
         { icon: BookOpen, label: "OpenLedger", action: () => navigate("/ledger") },
+        { icon: Blocks, label: "Blockchain", subtitle: "OpenPy Ledger explorer", action: () => window.open("https://www.openpyledger.space/", "_blank", "noopener,noreferrer") },
 
         { icon: ShieldAlert, label: "Disputes", action: () => navigate("/disputes") },
 
