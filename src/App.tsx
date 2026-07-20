@@ -170,7 +170,10 @@ const AppRoutes = () => {
   const location = useLocation();
   const navigate = useNavigate();
   usePiOAuthAutoLink();
-  usePiAdsAutoShow();
+  // Disable Pi Ad Network ads on auth pages — no ads while authenticating.
+  const isAuthRoute =
+    location.pathname === "/auth" || location.pathname.startsWith("/auth/");
+  usePiAdsAutoShow(!isAuthRoute);
   const routeLoaderReady = useRef(false);
   const [showRouteSplash, setShowRouteSplash] = useState(true);
   const navigateRef = useRef(navigate);
