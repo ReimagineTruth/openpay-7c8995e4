@@ -550,6 +550,7 @@ const MenuPage = () => {
         { icon: Activity, label: "Activity", action: () => navigate("/activity") },
 
         { icon: BookOpen, label: "OpenLedger", action: () => navigate("/ledger") },
+        { icon: Blocks, label: "Blockchain", subtitle: "OpenPy Ledger explorer", action: () => window.open("https://www.openpyledger.space/", "_blank", "noopener,noreferrer") },
 
         { icon: ShieldAlert, label: "Disputes", action: () => navigate("/disputes") },
 
