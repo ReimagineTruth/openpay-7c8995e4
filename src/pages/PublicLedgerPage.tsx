@@ -391,6 +391,15 @@ const PublicLedgerPage = () => {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
+          <a
+            href="https://www.openpyledger.space/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-9 items-center gap-2 rounded-full bg-white/15 hover:bg-white/25 px-3 text-sm font-semibold text-white transition-colors border border-white/30 backdrop-blur"
+          >
+            <Blocks className="h-4 w-4" />
+            Blockchain
+          </button>
           <button
             onClick={() => setShowSettings(true)}
             className="bg-white/10 hover:bg-white/20 flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-white transition-colors"
