@@ -63,6 +63,19 @@ const ReceivePage = () => {
       if (data?.username) setStoreMerchantUsername(data.username);
 
       try {
+        const { data: acct } = await supabase
+          .from("user_accounts")
+          .select("account_number")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const rawAcct = String((acct as any)?.account_number || "").trim().toUpperCase();
+        setAccountNumber(rawAcct || generateOpenPayAccountNumber(user.id));
+      } catch {
+        setAccountNumber(generateOpenPayAccountNumber(user.id));
+      }
+
+
+      try {
         const prefs = await loadUserPreferences(user.id);
         const qr = prefs.qr_print_settings;
         if (typeof qr.name === "string" && qr.name.trim()) setStoreQrName(qr.name);
