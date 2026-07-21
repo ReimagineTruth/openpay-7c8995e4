@@ -104,6 +104,8 @@ const extractQrPayload = (rawValue: string) => {
     // Fallback for non-URL QR codes
     const maybeUid = value.split("uid=")[1]?.split("&")[0] || value.split("to=")[1]?.split("&")[0];
     const maybeUsername = value.split("username=")[1]?.split("&")[0]?.toLowerCase().trim();
+    const maybeAccount = (value.split("account=")[1]?.split("&")[0] || "").toUpperCase().trim();
+
     const maybeAmount = value.split("amount=")[1]?.split("&")[0] || "";
     const maybeCurrency = (value.split("currency=")[1]?.split("&")[0] || "").toUpperCase();
     const maybeNote = value.split("note=")[1]?.split("&")[0] || "";
