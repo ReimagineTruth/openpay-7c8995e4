@@ -22,6 +22,8 @@ const extractQrPayload = (rawValue: string) => {
 	    const parsed = new URL(value);
 	    const uidOrTo = parsed.searchParams.get("uid") || parsed.searchParams.get("to");
 	    const usernameParam = parsed.searchParams.get("username");
+	    const accountParam = (parsed.searchParams.get("account") || "").trim().toUpperCase();
+
 	    const amount = parsed.searchParams.get("amount") || "";
 	    const currencyCode = (parsed.searchParams.get("currency") || "").toUpperCase();
 	    const note = parsed.searchParams.get("note") || "";
