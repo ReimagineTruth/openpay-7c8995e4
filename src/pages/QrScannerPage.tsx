@@ -90,8 +90,10 @@ const extractQrPayload = (rawValue: string) => {
     return {
       uid: uidOrTo && uuidRegex.test(uidOrTo) ? uidOrTo : null,
       username: normalizeUsername(usernameParam),
+      account: accountParam,
       amount,
       currency: currencyCode,
+
       note,
       checkoutSession,
       publicPayment: isPublicPayment,
