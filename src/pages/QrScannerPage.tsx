@@ -151,7 +151,9 @@ const extractQrPayload = (rawValue: string) => {
     return {
       uid: maybeUid && uuidRegex.test(maybeUid) ? maybeUid : null,
       username: maybeUsername,
+      account: maybeAccount,
       amount: maybeAmount,
+
       currency: maybeCurrency,
       note: maybeNote,
       checkoutSession,
