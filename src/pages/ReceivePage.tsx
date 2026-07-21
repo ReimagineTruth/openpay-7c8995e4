@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { loadUserPreferences, upsertUserPreferences } from "@/lib/userPreferences";
+import { generateOpenPayAccountNumber } from "@/lib/openpayIdentity";
+
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 const OPENPAY_ICON_URL = "/openpay-logo.jpg";
@@ -34,9 +36,11 @@ const ReceivePage = () => {
   const [storeQrDesign, setStoreQrDesign] = useState<"clean" | "gradient" | "badge">("clean");
   const [printSize, setPrintSize] = useState<"small" | "medium" | "large">("large");
   const [userId, setUserId] = useState<string | null>(null);
+  const [accountNumber, setAccountNumber] = useState<string>("");
   const [qrPrefsLoaded, setQrPrefsLoaded] = useState(false);
   const [downloadLink, setDownloadLink] = useState("");
   const [showQrModal, setShowQrModal] = useState(false);
+
 
   useEffect(() => {
     const load = async () => {
@@ -57,6 +61,19 @@ const ReceivePage = () => {
 
       setProfile(data || null);
       if (data?.username) setStoreMerchantUsername(data.username);
+
+      try {
+        const { data: acct } = await supabase
+          .from("user_accounts")
+          .select("account_number")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const rawAcct = String((acct as any)?.account_number || "").trim().toUpperCase();
+        setAccountNumber(rawAcct || generateOpenPayAccountNumber(user.id));
+      } catch {
+        setAccountNumber(generateOpenPayAccountNumber(user.id));
+      }
+
 
       try {
         const prefs = await loadUserPreferences(user.id);
@@ -96,12 +113,13 @@ const ReceivePage = () => {
     const params = new URLSearchParams({
       uid: profile.id,
       name: profile.full_name || "",
-      username: profile.username || "",
+      account: accountNumber || "",
       currency: currencyCode,
     });
     if (normalizedAmount) params.set("amount", normalizedAmount);
     return `openpay://pay?${params.toString()}`;
-  }, [currencyCode, normalizedAmount, profile?.full_name, profile?.id, profile?.username]);
+  }, [accountNumber, currencyCode, normalizedAmount, profile?.full_name, profile?.id]);
+
 
   const webPayLink = useMemo(() => {
     if (!profile?.id || typeof window === "undefined") return "";

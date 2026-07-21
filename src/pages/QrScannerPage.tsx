@@ -10,10 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 const extractQrPayload = (rawValue: string) => {
   const value = rawValue.trim();
-  if (!value) return { uid: null as string | null, username: "", amount: "", currency: "", note: "", checkoutSession: "", publicPayment: false };
+  if (!value) return { uid: null as string | null, username: "", account: "", amount: "", currency: "", note: "", checkoutSession: "", publicPayment: false };
 
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (uuidRegex.test(value)) return { uid: value, username: "", amount: "", currency: "", note: "", checkoutSession: "", publicPayment: false };
+  if (uuidRegex.test(value)) return { uid: value, username: "", account: "", amount: "", currency: "", note: "", checkoutSession: "", publicPayment: false };
 
   const normalizeUsername = (input: string | null | undefined) =>
     (input || "").trim().replace(/^@+/, "").toLowerCase();
@@ -22,6 +22,8 @@ const extractQrPayload = (rawValue: string) => {
 	    const parsed = new URL(value);
 	    const uidOrTo = parsed.searchParams.get("uid") || parsed.searchParams.get("to");
 	    const usernameParam = parsed.searchParams.get("username");
+	    const accountParam = (parsed.searchParams.get("account") || "").trim().toUpperCase();
+
 	    const amount = parsed.searchParams.get("amount") || "";
 	    const currencyCode = (parsed.searchParams.get("currency") || "").toUpperCase();
 	    const note = parsed.searchParams.get("note") || "";
@@ -88,8 +90,10 @@ const extractQrPayload = (rawValue: string) => {
     return {
       uid: uidOrTo && uuidRegex.test(uidOrTo) ? uidOrTo : null,
       username: normalizeUsername(usernameParam),
+      account: accountParam,
       amount,
       currency: currencyCode,
+
       note,
       checkoutSession,
       publicPayment: isPublicPayment,
@@ -100,6 +104,8 @@ const extractQrPayload = (rawValue: string) => {
     // Fallback for non-URL QR codes
     const maybeUid = value.split("uid=")[1]?.split("&")[0] || value.split("to=")[1]?.split("&")[0];
     const maybeUsername = value.split("username=")[1]?.split("&")[0]?.toLowerCase().trim();
+    const maybeAccount = (value.split("account=")[1]?.split("&")[0] || "").toUpperCase().trim();
+
     const maybeAmount = value.split("amount=")[1]?.split("&")[0] || "";
     const maybeCurrency = (value.split("currency=")[1]?.split("&")[0] || "").toUpperCase();
     const maybeNote = value.split("note=")[1]?.split("&")[0] || "";
@@ -145,7 +151,9 @@ const extractQrPayload = (rawValue: string) => {
     return {
       uid: maybeUid && uuidRegex.test(maybeUid) ? maybeUid : null,
       username: maybeUsername,
+      account: maybeAccount,
       amount: maybeAmount,
+
       currency: maybeCurrency,
       note: maybeNote,
       checkoutSession,
@@ -175,7 +183,7 @@ const isOpenPayQrCode = (rawValue: string) => {
     const protocol = parsed.protocol.toLowerCase();
     const host = parsed.hostname.toLowerCase();
     const path = parsed.pathname.toLowerCase();
-    const hasRecipient = Boolean(parsed.searchParams.get("uid") || parsed.searchParams.get("to") || parsed.searchParams.get("username"));
+    const hasRecipient = Boolean(parsed.searchParams.get("uid") || parsed.searchParams.get("to") || parsed.searchParams.get("username") || parsed.searchParams.get("account"));
     const hasSession = Boolean(parsed.searchParams.get("session") || parsed.searchParams.get("checkout_session"));
     const hasAmount = Boolean(parsed.searchParams.get("amount"));
     const hasNote = Boolean(parsed.searchParams.get("note"));
@@ -585,6 +593,19 @@ const QrScannerPage = () => {
         }
       }
 
+      // Try to find user by OpenPay account number (OP...) if still no recipient
+      if (!recipientId && (payload as any).account) {
+        try {
+          const { data } = await (supabase as any).rpc("find_user_by_account_number", {
+            p_account_number: String((payload as any).account).toUpperCase(),
+          });
+          const row = Array.isArray(data) ? data[0] : data;
+          if (row?.id) recipientId = String(row.id);
+        } catch (error) {
+          console.error("Failed to find user by account number:", error);
+        }
+      }
+
       // Try to find user by username if no recipient ID
       if (!recipientId && payload.username) {
         try {
@@ -599,6 +620,7 @@ const QrScannerPage = () => {
           console.error("Failed to find user by username:", error);
         }
       }
+
 
       // Validate that we have a valid recipient
       if (!recipientId) {
