@@ -36,9 +36,11 @@ const ReceivePage = () => {
   const [storeQrDesign, setStoreQrDesign] = useState<"clean" | "gradient" | "badge">("clean");
   const [printSize, setPrintSize] = useState<"small" | "medium" | "large">("large");
   const [userId, setUserId] = useState<string | null>(null);
+  const [accountNumber, setAccountNumber] = useState<string>("");
   const [qrPrefsLoaded, setQrPrefsLoaded] = useState(false);
   const [downloadLink, setDownloadLink] = useState("");
   const [showQrModal, setShowQrModal] = useState(false);
+
 
   useEffect(() => {
     const load = async () => {
