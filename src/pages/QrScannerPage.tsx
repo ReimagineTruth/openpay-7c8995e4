@@ -593,6 +593,19 @@ const QrScannerPage = () => {
         }
       }
 
+      // Try to find user by OpenPay account number (OP...) if still no recipient
+      if (!recipientId && (payload as any).account) {
+        try {
+          const { data } = await (supabase as any).rpc("find_user_by_account_number", {
+            p_account_number: String((payload as any).account).toUpperCase(),
+          });
+          const row = Array.isArray(data) ? data[0] : data;
+          if (row?.id) recipientId = String(row.id);
+        } catch (error) {
+          console.error("Failed to find user by account number:", error);
+        }
+      }
+
       // Try to find user by username if no recipient ID
       if (!recipientId && payload.username) {
         try {
@@ -607,6 +620,7 @@ const QrScannerPage = () => {
           console.error("Failed to find user by username:", error);
         }
       }
+
 
       // Validate that we have a valid recipient
       if (!recipientId) {
