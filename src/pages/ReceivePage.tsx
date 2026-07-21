@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { loadUserPreferences, upsertUserPreferences } from "@/lib/userPreferences";
+import { generateOpenPayAccountNumber } from "@/lib/openpayIdentity";
+
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 const OPENPAY_ICON_URL = "/openpay-logo.jpg";
