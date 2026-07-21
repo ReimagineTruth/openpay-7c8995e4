@@ -113,12 +113,13 @@ const ReceivePage = () => {
     const params = new URLSearchParams({
       uid: profile.id,
       name: profile.full_name || "",
-      username: profile.username || "",
+      account: accountNumber || "",
       currency: currencyCode,
     });
     if (normalizedAmount) params.set("amount", normalizedAmount);
     return `openpay://pay?${params.toString()}`;
-  }, [currencyCode, normalizedAmount, profile?.full_name, profile?.id, profile?.username]);
+  }, [accountNumber, currencyCode, normalizedAmount, profile?.full_name, profile?.id]);
+
 
   const webPayLink = useMemo(() => {
     if (!profile?.id || typeof window === "undefined") return "";
