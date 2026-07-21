@@ -183,7 +183,7 @@ const isOpenPayQrCode = (rawValue: string) => {
     const protocol = parsed.protocol.toLowerCase();
     const host = parsed.hostname.toLowerCase();
     const path = parsed.pathname.toLowerCase();
-    const hasRecipient = Boolean(parsed.searchParams.get("uid") || parsed.searchParams.get("to") || parsed.searchParams.get("username"));
+    const hasRecipient = Boolean(parsed.searchParams.get("uid") || parsed.searchParams.get("to") || parsed.searchParams.get("username") || parsed.searchParams.get("account"));
     const hasSession = Boolean(parsed.searchParams.get("session") || parsed.searchParams.get("checkout_session"));
     const hasAmount = Boolean(parsed.searchParams.get("amount"));
     const hasNote = Boolean(parsed.searchParams.get("note"));
