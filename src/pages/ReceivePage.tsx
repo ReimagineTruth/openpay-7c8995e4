@@ -29,7 +29,6 @@ const ReceivePage = () => {
   const [amount, setAmount] = useState("");
   const [currencyCode, setCurrencyCode] = useState(currency.code);
   const [storeQrName, setStoreQrName] = useState("OpenPay Store");
-  const [storeMerchantUsername, setStoreMerchantUsername] = useState("");
   const [storeQrTagline, setStoreQrTagline] = useState("SCAN TO PAY");
   const [storeQrAccent, setStoreQrAccent] = useState("#2148ff");
   const [storeQrBackground, setStoreQrBackground] = useState("#ffffff");
@@ -60,7 +59,6 @@ const ReceivePage = () => {
         .single();
 
       setProfile(data || null);
-      if (data?.username) setStoreMerchantUsername(data.username);
 
       try {
         const { data: acct } = await supabase
@@ -79,7 +77,6 @@ const ReceivePage = () => {
         const prefs = await loadUserPreferences(user.id);
         const qr = prefs.qr_print_settings;
         if (typeof qr.name === "string" && qr.name.trim()) setStoreQrName(qr.name);
-        if (typeof qr.merchantUsername === "string") setStoreMerchantUsername(qr.merchantUsername);
         if (typeof qr.tagline === "string" && qr.tagline.trim()) setStoreQrTagline(qr.tagline);
         if (typeof qr.accent === "string" && qr.accent.trim()) setStoreQrAccent(qr.accent);
         if (typeof qr.background === "string" && qr.background.trim()) setStoreQrBackground(qr.background);
@@ -226,7 +223,6 @@ const ReceivePage = () => {
         .toUpperCase()
     : "OP";
   const getPiCodeLabel = (code: string) => (code === "PI" ? "PI" : code === "OUSD" ? "OPEN USD" : `PI ${code}`);
-  const normalizedMerchantUsername = storeMerchantUsername.trim().replace(/^@+/, "");
 
   const printSizeConfig = useMemo(() => {
     if (printSize === "small") {
@@ -248,7 +244,7 @@ const ReceivePage = () => {
       upsertUserPreferences(userId, {
         qr_print_settings: {
           name: storeQrName,
-          merchantUsername: normalizedMerchantUsername,
+          accountNumber: effectiveAccountNumber,
           tagline: storeQrTagline,
           accent: storeQrAccent,
           background: storeQrBackground,
@@ -262,7 +258,7 @@ const ReceivePage = () => {
     userId,
     qrPrefsLoaded,
     storeQrName,
-    normalizedMerchantUsername,
+    effectiveAccountNumber,
     storeQrTagline,
     storeQrAccent,
     storeQrBackground,
