@@ -707,6 +707,7 @@ const SendMoney = () => {
       setSearchQuery(initialSearch);
     }
 
+    let resolvedInitialRecipient = false;
     if (accountParam) {
       const { data: accountData } = await supabase.rpc("find_user_by_account_number", {
         p_account_number: accountParam,
@@ -725,8 +726,11 @@ const SendMoney = () => {
           if (foundCurrency) setCurrency(foundCurrency);
         }
         setStep("amount");
+        resolvedInitialRecipient = true;
       }
-    } else if (toId && profiles) {
+    }
+
+    if (!resolvedInitialRecipient && toId && profiles) {
       const found = profiles.find(p => p.id === toId);
       if (found) {
         setSelectedUser(found);
