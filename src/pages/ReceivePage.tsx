@@ -29,7 +29,6 @@ const ReceivePage = () => {
   const [amount, setAmount] = useState("");
   const [currencyCode, setCurrencyCode] = useState(currency.code);
   const [storeQrName, setStoreQrName] = useState("OpenPay Store");
-  const [storeMerchantUsername, setStoreMerchantUsername] = useState("");
   const [storeQrTagline, setStoreQrTagline] = useState("SCAN TO PAY");
   const [storeQrAccent, setStoreQrAccent] = useState("#2148ff");
   const [storeQrBackground, setStoreQrBackground] = useState("#ffffff");
@@ -60,7 +59,6 @@ const ReceivePage = () => {
         .single();
 
       setProfile(data || null);
-      if (data?.username) setStoreMerchantUsername(data.username);
 
       try {
         const { data: acct } = await supabase
@@ -79,7 +77,6 @@ const ReceivePage = () => {
         const prefs = await loadUserPreferences(user.id);
         const qr = prefs.qr_print_settings;
         if (typeof qr.name === "string" && qr.name.trim()) setStoreQrName(qr.name);
-        if (typeof qr.merchantUsername === "string") setStoreMerchantUsername(qr.merchantUsername);
         if (typeof qr.tagline === "string" && qr.tagline.trim()) setStoreQrTagline(qr.tagline);
         if (typeof qr.accent === "string" && qr.accent.trim()) setStoreQrAccent(qr.accent);
         if (typeof qr.background === "string" && qr.background.trim()) setStoreQrBackground(qr.background);
@@ -107,56 +104,53 @@ const ReceivePage = () => {
 
   const parsedAmount = Number(amount);
   const normalizedAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount.toFixed(2) : "";
+  const effectiveAccountNumber = useMemo(() => {
+    if (accountNumber) return accountNumber;
+    if (profile?.id) return generateOpenPayAccountNumber(profile.id);
+    return "";
+  }, [accountNumber, profile?.id]);
 
   const receiveQrValue = useMemo(() => {
-    if (!profile?.id) return "";
+    if (!profile?.id || !effectiveAccountNumber) return "";
     const params = new URLSearchParams({
-      uid: profile.id,
       name: profile.full_name || "",
-      account: accountNumber || "",
+      account: effectiveAccountNumber,
       currency: currencyCode,
     });
     if (normalizedAmount) params.set("amount", normalizedAmount);
     return `openpay://pay?${params.toString()}`;
-  }, [accountNumber, currencyCode, normalizedAmount, profile?.full_name, profile?.id]);
+  }, [currencyCode, effectiveAccountNumber, normalizedAmount, profile?.full_name, profile?.id]);
 
 
   const webPayLink = useMemo(() => {
-    if (!profile?.id || typeof window === "undefined") return "";
+    if (!effectiveAccountNumber || typeof window === "undefined") return "";
     const params = new URLSearchParams({
-      to: profile.id,
+      account: effectiveAccountNumber,
       currency: currencyCode,
     });
     if (normalizedAmount) params.set("amount", normalizedAmount);
     return `${window.location.origin}/send?${params.toString()}`;
-  }, [currencyCode, normalizedAmount, profile?.id]);
+  }, [currencyCode, effectiveAccountNumber, normalizedAmount]);
 
-  const usernamePayLink = useMemo(() => {
-    if (!profile?.username || typeof window === "undefined") return "";
-    const params = new URLSearchParams({
-      currency: currencyCode,
-    });
-    if (normalizedAmount) params.set("amount", normalizedAmount);
-    return `${window.location.origin}/pay/${encodeURIComponent(profile.username)}?${params.toString()}`;
-  }, [currencyCode, normalizedAmount, profile?.username]);
+  const accountPayLink = webPayLink;
 
   const shortDisplayLink = useMemo(() => {
     if (!webPayLink) return "";
     try {
       const url = new URL(webPayLink);
-      const to = url.searchParams.get("to") || "";
-      const safeTo = to.length > 10 ? `${to.slice(0, 6)}...${to.slice(-4)}` : to;
+      const account = url.searchParams.get("account") || "";
+      const safeAccount = account.length > 18 ? `${account.slice(0, 10)}...${account.slice(-6)}` : account;
       const hasAmount = Boolean(url.searchParams.get("amount"));
-      return `${url.origin}/send?to=${safeTo}${hasAmount ? "&amount=..." : ""}&currency=${currencyCode}`;
+      return `${url.origin}/send?account=${safeAccount}${hasAmount ? "&amount=..." : ""}&currency=${currencyCode}`;
     } catch {
       return webPayLink.length > 48 ? `${webPayLink.slice(0, 48)}...` : webPayLink;
     }
   }, [webPayLink, currencyCode]);
 
-  const shortUsernamePayLink = useMemo(() => {
-    if (!usernamePayLink) return "";
-    return usernamePayLink.length > 52 ? `${usernamePayLink.slice(0, 52)}...` : usernamePayLink;
-  }, [usernamePayLink]);
+  const shortAccountPayLink = useMemo(() => {
+    if (!accountPayLink) return "";
+    return accountPayLink.length > 52 ? `${accountPayLink.slice(0, 52)}...` : accountPayLink;
+  }, [accountPayLink]);
 
   const shortReceiveQrDisplay = useMemo(() => {
     if (!receiveQrValue) return "";
@@ -229,7 +223,6 @@ const ReceivePage = () => {
         .toUpperCase()
     : "OP";
   const getPiCodeLabel = (code: string) => (code === "PI" ? "PI" : code === "OUSD" ? "OPEN USD" : `PI ${code}`);
-  const normalizedMerchantUsername = storeMerchantUsername.trim().replace(/^@+/, "");
 
   const printSizeConfig = useMemo(() => {
     if (printSize === "small") {
@@ -251,7 +244,7 @@ const ReceivePage = () => {
       upsertUserPreferences(userId, {
         qr_print_settings: {
           name: storeQrName,
-          merchantUsername: normalizedMerchantUsername,
+          accountNumber: effectiveAccountNumber,
           tagline: storeQrTagline,
           accent: storeQrAccent,
           background: storeQrBackground,
@@ -265,7 +258,7 @@ const ReceivePage = () => {
     userId,
     qrPrefsLoaded,
     storeQrName,
-    normalizedMerchantUsername,
+    effectiveAccountNumber,
     storeQrTagline,
     storeQrAccent,
     storeQrBackground,
@@ -356,7 +349,7 @@ const ReceivePage = () => {
     ctx.fillStyle = "#6b7280";
     ctx.font = `500 ${Math.round(exportWidth * 0.022)}px "Segoe UI", Arial, sans-serif`;
     ctx.fillText(
-      normalizedMerchantUsername ? `Manual pay: @${normalizedMerchantUsername}` : "Manual pay in OpenPay app",
+      effectiveAccountNumber ? `Account: ${effectiveAccountNumber}` : "Manual pay in OpenPay app",
       centerX,
       margin + cardH - Math.round(exportHeight * 0.08),
     );
@@ -454,7 +447,7 @@ const ReceivePage = () => {
           )}
           <div>
             <p className="text-lg font-bold text-white leading-tight">{profile?.full_name || "OpenPay User"}</p>
-            {profile?.username && <p className="text-sm font-medium text-white/80">@{profile.username}</p>}
+            {effectiveAccountNumber && <p className="text-sm font-medium text-white/80">{effectiveAccountNumber}</p>}
           </div>
         </div>
 
@@ -532,24 +525,24 @@ const ReceivePage = () => {
           </div>
 
         <div className="mt-6 space-y-4">
-          {profile?.username && (
+          {effectiveAccountNumber && (
             <div className="animate-in-up rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm">
               <p className="inline-flex rounded-md bg-emerald-600/80 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
-                OpenPay tag link
+                OpenPay account link
               </p>
               <p className="mt-2 text-sm text-white/80">
-                Cash App style username link for <span className="font-bold text-white">@{profile.username}</span>
+                Reliable payment link for account <span className="font-bold text-white">{effectiveAccountNumber}</span>
               </p>
               <div className="mt-3 rounded-2xl bg-white/12 px-3 py-3">
-                <p className="break-all text-sm font-medium leading-relaxed text-white/95">{shortUsernamePayLink || "Loading link..."}</p>
+                <p className="break-all text-sm font-medium leading-relaxed text-white/95">{shortAccountPayLink || "Loading link..."}</p>
               </div>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <Button
                   type="button"
                   variant="outline"
                   className="ios-active h-12 flex-1 rounded-2xl border-white/10 bg-white/50 dark:bg-white/5 font-bold text-gray-800 shadow-sm"
-                  onClick={() => handleCopy(usernamePayLink, "OpenPay tag link")}
-                  disabled={!usernamePayLink}
+                  onClick={() => handleCopy(accountPayLink, "OpenPay account link")}
+                  disabled={!accountPayLink}
                 >
                   <Copy className="mr-2 h-4 w-4" />
                   Copy
@@ -557,8 +550,8 @@ const ReceivePage = () => {
                 <Button
                   type="button"
                   className="ios-active h-12 flex-1 rounded-2xl bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-700"
-                  onClick={() => handleShare(usernamePayLink)}
-                  disabled={!usernamePayLink}
+                  onClick={() => handleShare(accountPayLink)}
+                  disabled={!accountPayLink}
                 >
                   <Share2 className="mr-2 h-4 w-4" />
                   Share
@@ -666,11 +659,11 @@ const ReceivePage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <p className="inline-flex rounded-sm bg-blue-700/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Merchant username</p>
+                  <p className="inline-flex rounded-sm bg-blue-700/60 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Account number</p>
                 <Input
-                  value={storeMerchantUsername}
-                  onChange={(e) => setStoreMerchantUsername(e.target.value)}
-                  placeholder="Merchant username"
+                  value={effectiveAccountNumber}
+                  readOnly
+                  placeholder="OpenPay account number"
                   className="h-11 rounded-xl border-none bg-white dark:bg-white/5 font-bold text-gray-800 shadow-sm"
                 />
               </div>
@@ -797,7 +790,7 @@ const ReceivePage = () => {
                 {storeQrTagline || "SCAN TO PAY"}
               </p>
               <p className="mt-1 text-center text-[11px] font-medium" style={{ color: storeQrMutedTextColor }}>
-                {normalizedMerchantUsername ? `Manual pay: @${normalizedMerchantUsername}` : "Manual payment available in OpenPay app"}
+                {effectiveAccountNumber ? `Account: ${effectiveAccountNumber}` : "Manual payment available in OpenPay app"}
               </p>
               <p className="mt-2 text-center text-[10px]" style={{ color: storeQrMutedTextColor }}>
                 Powered by OpenPay
@@ -860,9 +853,7 @@ const ReceivePage = () => {
             <p className="mt-4 text-center text-sm font-semibold text-gray-900">
               {profile?.full_name || "OpenPay User"}
             </p>
-            {profile?.username && (
-              <p className="mt-1 text-center text-sm text-gray-500">@{profile.username}</p>
-            )}
+            {effectiveAccountNumber && <p className="mt-1 text-center text-sm text-gray-500">{effectiveAccountNumber}</p>}
             <p className="mt-3 text-center text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
               Scan to pay
             </p>

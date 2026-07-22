@@ -695,15 +695,42 @@ const SendMoney = () => {
       setRecentRecipients(recent);
     }
 
+    const accountParam = (searchParams.get("account") || searchParams.get("account_number") || "").trim().toUpperCase();
     const toId = searchParams.get("to");
     const initialSearch = searchParams.get("search") || "";
     const qrAmount = searchParams.get("amount");
     const qrCurrency = (searchParams.get("currency") || "").toUpperCase();
     const qrNote = searchParams.get("note");
-    if (initialSearch) {
+    if (accountParam) {
+      setSearchQuery(accountParam);
+    } else if (initialSearch) {
       setSearchQuery(initialSearch);
     }
-    if (toId && profiles) {
+
+    let resolvedInitialRecipient = false;
+    if (accountParam) {
+      const { data: accountData } = await supabase.rpc("find_user_by_account_number", {
+        p_account_number: accountParam,
+      });
+      const accountRecipient = (accountData as UserProfile[] | null)?.[0] || null;
+      if (accountRecipient) {
+        setSelectedUser(accountRecipient);
+        if (qrAmount && Number.isFinite(Number(qrAmount)) && Number(qrAmount) > 0) {
+          setAmount(Number(qrAmount).toFixed(2));
+        }
+        if (qrNote) {
+          setNote(qrNote);
+        }
+        if (qrCurrency) {
+          const foundCurrency = currencies.find((c) => c.code === qrCurrency);
+          if (foundCurrency) setCurrency(foundCurrency);
+        }
+        setStep("amount");
+        resolvedInitialRecipient = true;
+      }
+    }
+
+    if (!resolvedInitialRecipient && toId && profiles) {
       const found = profiles.find(p => p.id === toId);
       if (found) {
         setSelectedUser(found);
