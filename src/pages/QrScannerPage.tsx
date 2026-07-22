@@ -15,14 +15,18 @@ const extractQrPayload = (rawValue: string) => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   if (uuidRegex.test(value)) return { uid: value, username: "", account: "", amount: "", currency: "", note: "", checkoutSession: "", publicPayment: false };
 
-  const normalizeUsername = (input: string | null | undefined) =>
+    const normalizeUsername = (input: string | null | undefined) =>
     (input || "").trim().replace(/^@+/, "").toLowerCase();
+  const normalizeAccount = (input: string | null | undefined) =>
+    (input || "").trim().replace(/\s+/g, "").toUpperCase();
+  const accountNumberRegex = /^OP[A-Z0-9]{8,}$/i;
+  if (accountNumberRegex.test(value)) return { uid: null, username: "", account: normalizeAccount(value), amount: "", currency: "", note: "", checkoutSession: "", publicPayment: false };
 
 	  try {
 	    const parsed = new URL(value);
 	    const uidOrTo = parsed.searchParams.get("uid") || parsed.searchParams.get("to");
 	    const usernameParam = parsed.searchParams.get("username");
-	    const accountParam = (parsed.searchParams.get("account") || "").trim().toUpperCase();
+	    const accountParam = normalizeAccount(parsed.searchParams.get("account") || parsed.searchParams.get("account_number") || parsed.searchParams.get("acct"));
 
 	    const amount = parsed.searchParams.get("amount") || "";
 	    const currencyCode = (parsed.searchParams.get("currency") || "").toUpperCase();
@@ -104,7 +108,12 @@ const extractQrPayload = (rawValue: string) => {
     // Fallback for non-URL QR codes
     const maybeUid = value.split("uid=")[1]?.split("&")[0] || value.split("to=")[1]?.split("&")[0];
     const maybeUsername = value.split("username=")[1]?.split("&")[0]?.toLowerCase().trim();
-    const maybeAccount = (value.split("account=")[1]?.split("&")[0] || "").toUpperCase().trim();
+    const maybeAccount = normalizeAccount(
+      value.split("account=")[1]?.split("&")[0] ||
+      value.split("account_number=")[1]?.split("&")[0] ||
+      value.split("acct=")[1]?.split("&")[0] ||
+      (accountNumberRegex.test(value) ? value : ""),
+    );
 
     const maybeAmount = value.split("amount=")[1]?.split("&")[0] || "";
     const maybeCurrency = (value.split("currency=")[1]?.split("&")[0] || "").toUpperCase();
@@ -171,6 +180,8 @@ const isOpenPayQrCode = (rawValue: string) => {
   // Check for direct UUID
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   if (uuidRegex.test(value)) return true;
+  const accountNumberRegex = /^OP[A-Z0-9]{8,}$/i;
+  if (accountNumberRegex.test(value.replace(/\s+/g, ""))) return true;
 
   // Check for base64 encoded data (PDF QR codes, images)
   if (value.startsWith('data:image/') || value.startsWith('data:application/pdf') || value.startsWith('data:')) {
@@ -183,7 +194,7 @@ const isOpenPayQrCode = (rawValue: string) => {
     const protocol = parsed.protocol.toLowerCase();
     const host = parsed.hostname.toLowerCase();
     const path = parsed.pathname.toLowerCase();
-    const hasRecipient = Boolean(parsed.searchParams.get("uid") || parsed.searchParams.get("to") || parsed.searchParams.get("username") || parsed.searchParams.get("account"));
+    const hasRecipient = Boolean(parsed.searchParams.get("uid") || parsed.searchParams.get("to") || parsed.searchParams.get("username") || parsed.searchParams.get("account") || parsed.searchParams.get("account_number") || parsed.searchParams.get("acct"));
     const hasSession = Boolean(parsed.searchParams.get("session") || parsed.searchParams.get("checkout_session"));
     const hasAmount = Boolean(parsed.searchParams.get("amount"));
     const hasNote = Boolean(parsed.searchParams.get("note"));
@@ -265,7 +276,7 @@ const isOpenPayQrCode = (rawValue: string) => {
     if (lowerValue.includes('receipt=') || lowerValue.includes('confirm=')) return true;
     
     // Check for account numbers (receive)
-    if (lowerValue.includes('account=') || lowerValue.includes('wallet=')) return true;
+    if (lowerValue.includes('account=') || lowerValue.includes('account_number=') || lowerValue.includes('acct=') || lowerValue.includes('wallet=')) return true;
     
     return false;
   }
@@ -565,7 +576,7 @@ const QrScannerPage = () => {
         return;
       }
       
-      let recipientId = payload.uid;
+      let recipientId: string | null = null;
       let resolvedAmount = payload.amount;
       let resolvedCurrency = payload.currency;
       let resolvedNote = payload.note;
@@ -593,8 +604,8 @@ const QrScannerPage = () => {
         }
       }
 
-      // Try to find user by OpenPay account number (OP...) if still no recipient
-      if (!recipientId && (payload as any).account) {
+      // Prefer OpenPay account number (OP...) over usernames/legacy IDs for receive QR codes.
+      if ((payload as any).account) {
         try {
           const { data } = await (supabase as any).rpc("find_user_by_account_number", {
             p_account_number: String((payload as any).account).toUpperCase(),
@@ -604,6 +615,10 @@ const QrScannerPage = () => {
         } catch (error) {
           console.error("Failed to find user by account number:", error);
         }
+      }
+
+      if (!recipientId && payload.uid) {
+        recipientId = payload.uid;
       }
 
       // Try to find user by username if no recipient ID
@@ -636,6 +651,9 @@ const QrScannerPage = () => {
 
       // Build payment parameters
       const params = new URLSearchParams({ to: recipientId });
+      if ((payload as any).account) {
+        params.set("account", String((payload as any).account).toUpperCase());
+      }
       if (resolvedAmount && Number.isFinite(Number(resolvedAmount)) && Number(resolvedAmount) > 0) {
         params.set("amount", Number(resolvedAmount).toFixed(2));
       }
