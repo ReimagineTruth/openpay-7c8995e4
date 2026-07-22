@@ -1144,15 +1144,15 @@ const QrScannerPage = () => {
           <div className="rounded-2xl border border-border p-3 text-sm text-foreground">
             <p>1. Only scan OpenPay QR codes.</p>
             <p>2. Do not scan QR codes from other wallets or unknown apps.</p>
-            <p>3. Verify the merchant username before you confirm payment.</p>
+            <p>3. Verify the OpenPay account number before you confirm payment.</p>
             <p>4. Only pay merchants or users you directly interacted with.</p>
             <p>5. Use Scan to Pay only for trusted payment requests.</p>
           </div>
           <div className="rounded-2xl border border-border bg-secondary/40 p-3 text-xs text-foreground">
             <p className="font-semibold">Allowed paste formats:</p>
-            <p className="mt-1 break-all">openpay://pay?username=&lt;recipient_username&gt;&amp;amount=10.00&amp;currency=USD</p>
-            <p className="mt-1 break-all">https://your-openpay-domain/send?username=&lt;recipient_username&gt;&amp;amount=10.00&amp;currency=USD</p>
-            <p className="mt-1">You can also paste `@username`, OpenPay link, or use Express Search.</p>
+            <p className="mt-1 break-all">openpay://pay?account=&lt;OP_ACCOUNT_NUMBER&gt;&amp;amount=10.00&amp;currency=USD</p>
+            <p className="mt-1 break-all">https://your-openpay-domain/send?account=&lt;OP_ACCOUNT_NUMBER&gt;&amp;amount=10.00&amp;currency=USD</p>
+            <p className="mt-1">You can also paste an OP account number, OpenPay link, or use Express Search.</p>
           </div>
 
           <div className="flex gap-2">
