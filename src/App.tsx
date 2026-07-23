@@ -170,10 +170,9 @@ const AppRoutes = () => {
   const location = useLocation();
   const navigate = useNavigate();
   usePiOAuthAutoLink();
-  // Disable Pi Ad Network ads on auth pages — no ads while authenticating.
-  const isAuthRoute =
-    location.pathname === "/auth" || location.pathname.startsWith("/auth/");
-  usePiAdsAutoShow(!isAuthRoute);
+  // Pi Ad Network is disabled globally. Ads are only shown on-demand in the
+  // Mining flow (rewarded ads via PiAdsPage / MiningPage).
+  usePiAdsAutoShow(false);
   const routeLoaderReady = useRef(false);
   const [showRouteSplash, setShowRouteSplash] = useState(true);
   const navigateRef = useRef(navigate);
