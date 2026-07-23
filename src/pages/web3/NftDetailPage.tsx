@@ -476,7 +476,7 @@ const NftDetailPage = () => {
         {creatorStore && (
           <button
             onClick={() => nav(`/web3/nft/store/${creatorStore.handle}`)}
-            className="w-full rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/10 hover:border-white/30 transition-all text-left group"
+            className="nft-on-media w-full rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/10 hover:border-white/30 transition-all text-left group"
           >
             <div
               className="h-20 w-full"
@@ -492,11 +492,12 @@ const NftDetailPage = () => {
               )}
               <div className="flex-1 min-w-0 pb-1">
                 <div className="flex items-center gap-1">
-                  <p className="font-bold truncate">{creatorStore.display_name || creatorStore.handle}</p>
+                  <p className="font-bold truncate text-white">{creatorStore.display_name || creatorStore.handle}</p>
                   {creatorStore.is_verified && <BadgeCheck className="h-4 w-4" style={{ color: ACCENT }} />}
                 </div>
-                <p className="text-[11px] text-foreground/50 truncate">@{creatorStore.handle} · Owner store</p>
+                <p className="text-[11px] text-white/60 truncate">@{creatorStore.handle} · Owner store</p>
               </div>
+
               <span className="text-xs font-bold pb-1 group-hover:translate-x-0.5 transition-transform" style={{ color: ACCENT }}>
                 Visit →
               </span>
