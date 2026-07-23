@@ -3783,37 +3783,7 @@ const Dashboard = () => {
       <NftShowcase variant="light" className="mx-4 mt-4" />
 
 
-      <div className="mx-4 mt-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-white" />
-            <h2 className="text-lg font-bold text-white">OpenPay Dashboard</h2>
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/70">All sections</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {dashboardFeatureCards.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={item.onClick}
-              className="paypal-surface rounded-[2rem] p-4 text-left text-foreground transition hover:-translate-y-0.5 hover:bg-secondary/50"
-            >
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-paypal-blue/10 text-paypal-blue shadow-inner">
-                  <item.icon className="h-6 w-6" />
-                </div>
-                <span className="rounded-full bg-paypal-blue/10 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-paypal-blue">
-                  {item.badge}
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-foreground">{item.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
-              <p className="mt-4 text-sm font-semibold text-paypal-blue">{item.stat}</p>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Feature grid moved to horizontal "Explore the App" scroll above */}
 
       {/* Analytics and Mining Cards */}
       <Collapsible 
