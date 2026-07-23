@@ -237,12 +237,15 @@ serve(async (req: Request) => {
 
     // GET /items/:id
     if (parts[0] === "items" && parts.length === 2) {
+      const key = parts[1];
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key);
       const { data, error } = await supabase
         .from("nft_items")
         .select("id, collection_id, creator_id, name, code, description, image_url, media_url, media_type, price, currency, quantity_total, quantity_minted, category, properties, created_at")
-        .or(`id.eq.${parts[1]},code.eq.${parts[1]}`)
+        .eq(isUuid ? "id" : "code", key)
         .maybeSingle();
       if (error) throw error;
+
       if (!data) return json({ error: "Item not found" }, 404);
       const stores = await fetchStores(supabase, [data.creator_id as string]);
       return json({ item: enrichItem(data as Record<string, unknown>, stores) });
