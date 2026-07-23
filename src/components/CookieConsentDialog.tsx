@@ -44,12 +44,12 @@ const CookieConsentDialog = ({ open, onOpenChange }: CookieConsentDialogProps) =
     };
     setConsent(allAccepted);
     saveCookieConsent(allAccepted);
-    onOpenChange(false);
+    handleOpenChange(false);
   };
 
   const handleAcceptSelected = () => {
     saveCookieConsent(consent);
-    onOpenChange(false);
+    handleOpenChange(false);
   };
 
   const handleRejectAll = () => {
@@ -61,7 +61,7 @@ const CookieConsentDialog = ({ open, onOpenChange }: CookieConsentDialogProps) =
     };
     setConsent(minimalConsent);
     saveCookieConsent(minimalConsent);
-    onOpenChange(false);
+    handleOpenChange(false);
   };
 
   const updateConsentOption = (key: keyof CookieConsentOptions, value: boolean) => {

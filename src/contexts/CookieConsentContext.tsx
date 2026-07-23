@@ -44,24 +44,21 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
     canUseMarketingCookies: false,
   });
 
-  useEffect(() => {
-    // Check if user has already made consent decision
+  const refreshConsentState = () => {
     const hasConsent = hasAcceptedCookies();
-    const canUseFunctional = canUseFunctionalCookies();
-    const canUseAnalytics = canUseAnalyticsCookies();
-    const canUseMarketing = canUseMarketingCookies();
-
     setCookieConsent({
       hasAcceptedCookies: hasConsent,
-      canUseFunctionalCookies: canUseFunctional,
-      canUseAnalyticsCookies: canUseAnalytics,
-      canUseMarketingCookies: canUseMarketing,
+      canUseFunctionalCookies: canUseFunctionalCookies(),
+      canUseAnalyticsCookies: canUseAnalyticsCookies(),
+      canUseMarketingCookies: canUseMarketingCookies(),
     });
+    return hasConsent;
+  };
 
-    // Show cookie dialog only if no consent has been given at all
-    // Don't show again if user has already made a decision
+  useEffect(() => {
+    const hasConsent = refreshConsentState();
+
     if (!hasConsent) {
-      // Delay showing the dialog to allow page to load
       const timer = setTimeout(() => {
         setShowCookieDialog(true);
       }, 2000);
@@ -69,6 +66,13 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
       return () => clearTimeout(timer);
     }
   }, []);
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      refreshConsentState();
+    }
+    setShowCookieDialog(open);
+  };
 
   const acceptAllCookies = () => {
     // Save cookie consent with timestamp to prevent banner from reappearing
@@ -93,7 +97,6 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
       canUseMarketingCookies: true,
     });
 
-    // Hide the dialog after accepting
     setShowCookieDialog(false);
   };
 
@@ -118,7 +121,7 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
       {children}
       <CookieConsentDialog
         open={showCookieDialog}
-        onOpenChange={setShowCookieDialog}
+        onOpenChange={handleDialogOpenChange}
       />
     </CookieConsentContext.Provider>
   );

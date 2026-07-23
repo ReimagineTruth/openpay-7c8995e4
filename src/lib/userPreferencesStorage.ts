@@ -1,6 +1,8 @@
 // Comprehensive User Preferences Storage System
 // Handles all user preferences with localStorage and cookie management
 
+import { deleteAppCookie, getAppCookie, setAppCookie } from "@/lib/userPreferences";
+
 export interface UserPreferences {
   // Security preferences
   pinSetupCompleted?: boolean;
@@ -59,27 +61,78 @@ export interface CookieConsentOptions {
 const PREFERENCES_KEY = 'openpay_user_preferences';
 const COOKIE_CONSENT_KEY = 'openpay_cookie_consent';
 const CONSENT_TIMESTAMP_KEY = 'openpay_consent_timestamp';
+const CONSENT_DECISION_KEY = 'openpay_cookie_consent_decided';
 const CONSENT_COOKIE_NAME = 'openpay_consent';
 const CONSENT_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year — remember the user across sessions
 
-const setBrowserCookie = (name: string, value: string, maxAgeSeconds: number) => {
-  if (typeof document === "undefined") return;
-  try {
-    const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${maxAgeSeconds}; Path=/; SameSite=Lax${secure}`;
-  } catch {
-    // ignore cookie write failures
-  }
+const DEFAULT_CONSENT: CookieConsentOptions = {
+  necessary: true,
+  functional: false,
+  analytics: false,
+  marketing: false,
 };
 
-const readBrowserCookie = (name: string): string | null => {
-  if (typeof document === "undefined") return null;
+type ConsentStoragePayload = CookieConsentOptions & { ts?: string };
+
+const readConsentPayload = (raw: string | null): ConsentStoragePayload | null => {
+  if (!raw) return null;
   try {
-    const match = document.cookie.split("; ").find((row) => row.startsWith(`${name}=`));
-    return match ? decodeURIComponent(match.split("=").slice(1).join("=")) : null;
+    const parsed = JSON.parse(raw) as ConsentStoragePayload;
+    return { ...DEFAULT_CONSENT, ...parsed };
   } catch {
     return null;
   }
+};
+
+const persistConsentToUserStorage = (consent: CookieConsentOptions, timestamp: string): void => {
+  const consentJson = JSON.stringify(consent);
+  const cookiePayload = JSON.stringify({ ...consent, ts: timestamp });
+
+  try {
+    localStorage.setItem(COOKIE_CONSENT_KEY, consentJson);
+    localStorage.setItem(CONSENT_TIMESTAMP_KEY, timestamp);
+    localStorage.setItem(CONSENT_DECISION_KEY, "1");
+  } catch {
+    // ignore localStorage failures (private mode, quota)
+  }
+
+  try {
+    sessionStorage.setItem(COOKIE_CONSENT_KEY, consentJson);
+    sessionStorage.setItem(CONSENT_TIMESTAMP_KEY, timestamp);
+    sessionStorage.setItem(CONSENT_DECISION_KEY, "1");
+  } catch {
+    // ignore sessionStorage failures
+  }
+
+  setAppCookie(CONSENT_COOKIE_NAME, cookiePayload, CONSENT_COOKIE_MAX_AGE);
+};
+
+const hydrateConsentFromPersistentStorage = (): CookieConsentOptions | null => {
+  if (typeof window === "undefined") return null;
+
+  const sources = [
+    localStorage.getItem(COOKIE_CONSENT_KEY),
+    sessionStorage.getItem(COOKIE_CONSENT_KEY),
+    getAppCookie(CONSENT_COOKIE_NAME),
+  ];
+
+  for (const raw of sources) {
+    const payload = readConsentPayload(raw);
+    if (!payload) continue;
+
+    const { ts, ...consentFields } = payload;
+    const consent = { ...DEFAULT_CONSENT, ...consentFields };
+    const timestamp =
+      ts ||
+      localStorage.getItem(CONSENT_TIMESTAMP_KEY) ||
+      sessionStorage.getItem(CONSENT_TIMESTAMP_KEY) ||
+      new Date().toISOString();
+
+    persistConsentToUserStorage(consent, timestamp);
+    return consent;
+  }
+
+  return null;
 };
 
 // Default preferences
@@ -116,14 +169,6 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   disableContactCollection: false,
   customerPaysFee: true, // By default, customer pays fee
   openPayFeeAccount: 'OPEA68BB7A9F964994A199A15786D680FA',
-};
-
-// Default cookie consent
-const DEFAULT_CONSENT: CookieConsentOptions = {
-  necessary: true, // Essential cookies are always enabled
-  functional: false,
-  analytics: false,
-  marketing: false,
 };
 
 // Storage functions
@@ -169,13 +214,11 @@ export const updateUserPreference = <K extends keyof UserPreferences>(
 // Cookie consent management
 export const loadCookieConsent = (): CookieConsentOptions => {
   if (typeof window === "undefined") return DEFAULT_CONSENT;
-  
+
   try {
-    const stored = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (!stored) return DEFAULT_CONSENT;
-    
-    const parsed = JSON.parse(stored);
-    return { ...DEFAULT_CONSENT, ...parsed };
+    const hydrated = hydrateConsentFromPersistentStorage();
+    if (hydrated) return hydrated;
+    return DEFAULT_CONSENT;
   } catch (error) {
     console.error('Failed to load cookie consent:', error);
     return DEFAULT_CONSENT;
@@ -186,20 +229,11 @@ export const saveCookieConsent = (consent: Partial<CookieConsentOptions>): void 
   if (typeof window === "undefined") return;
 
   try {
-    const current = loadCookieConsent();
-    const updated = { ...current, ...consent };
+    const current = hydrateConsentFromPersistentStorage() ?? DEFAULT_CONSENT;
+    const updated = { ...current, ...consent, necessary: true };
     const timestamp = new Date().toISOString();
 
-    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(updated));
-    localStorage.setItem(CONSENT_TIMESTAMP_KEY, timestamp);
-
-    // Also persist to a real browser cookie so the choice survives even when
-    // localStorage is cleared (Pi Browser, private mode, PWA reinstalls, etc.).
-    setBrowserCookie(
-      CONSENT_COOKIE_NAME,
-      JSON.stringify({ ...updated, ts: timestamp }),
-      CONSENT_COOKIE_MAX_AGE,
-    );
+    persistConsentToUserStorage(updated, timestamp);
 
     // Update user preferences to reflect consent
     saveUserPreferences({
@@ -215,22 +249,15 @@ export const saveCookieConsent = (consent: Partial<CookieConsentOptions>): void 
 export const hasAcceptedCookies = (): boolean => {
   if (typeof window === "undefined") return false;
 
-  // Check if user has ever made a consent decision — look in localStorage
-  // first, then fall back to the persistent browser cookie.
-  const timestamp = localStorage.getItem(CONSENT_TIMESTAMP_KEY);
-  if (timestamp !== null) return true;
-
-  const cookieValue = readBrowserCookie(CONSENT_COOKIE_NAME);
-  if (cookieValue) {
-    // Re-hydrate localStorage from cookie so subsequent reads are fast.
-    try {
-      const parsed = JSON.parse(cookieValue) as CookieConsentOptions & { ts?: string };
-      const { ts, ...rest } = parsed;
-      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(rest));
-      localStorage.setItem(CONSENT_TIMESTAMP_KEY, ts || new Date().toISOString());
-    } catch {
-      // ignore parse failure — treat presence as consent given
-    }
+  if (localStorage.getItem(CONSENT_DECISION_KEY) === "1") return true;
+  if (localStorage.getItem(CONSENT_TIMESTAMP_KEY)) return true;
+  if (sessionStorage.getItem(CONSENT_DECISION_KEY) === "1") return true;
+  if (sessionStorage.getItem(CONSENT_TIMESTAMP_KEY)) return true;
+  if (getAppCookie(CONSENT_COOKIE_NAME)) {
+    hydrateConsentFromPersistentStorage();
+    return true;
+  }
+  if (loadUserPreferences().cookiesAccepted) {
     return true;
   }
 
@@ -260,6 +287,11 @@ export const clearAllUserPreferences = (): void => {
     localStorage.removeItem(PREFERENCES_KEY);
     localStorage.removeItem(COOKIE_CONSENT_KEY);
     localStorage.removeItem(CONSENT_TIMESTAMP_KEY);
+    localStorage.removeItem(CONSENT_DECISION_KEY);
+    sessionStorage.removeItem(COOKIE_CONSENT_KEY);
+    sessionStorage.removeItem(CONSENT_TIMESTAMP_KEY);
+    sessionStorage.removeItem(CONSENT_DECISION_KEY);
+    deleteAppCookie(CONSENT_COOKIE_NAME);
   } catch (error) {
     console.error('Failed to clear user preferences:', error);
   }
