@@ -3605,7 +3605,38 @@ const Dashboard = () => {
         </div>
 
 
+        {userAccount && (
+          <div className="mx-4 mt-4 paypal-surface rounded-3xl p-4">
+            <div className="flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">OpenPay Account</p>
+                <p className="mt-1 text-base font-bold text-foreground">{userAccount.account_name}</p>
+                <p className="text-sm text-muted-foreground">@{userAccount.account_username}</p>
+                <p className="mt-2 break-all text-sm font-mono text-foreground">{userAccount.account_number}</p>
+              </div>
+              <button
+                type="button"
+                onClick={copyAccountNumber}
+                className="w-full rounded-xl border border-border/70 bg-white px-3 py-2 text-sm font-medium text-foreground transition hover:bg-secondary sm:w-auto"
+              >
+                <Copy className="mr-1 inline h-4 w-4" />
+                Copy
+              </button>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => navigate("/virtual-card")}
+                className="w-full rounded-xl bg-paypal-blue px-3 py-2 text-sm font-semibold text-white hover:bg-[#004dc5] sm:w-auto"
+              >
+                Open Virtual Card
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Transaction History — MariBank style */}
+
         <div className="paypal-surface mx-4 mt-4 rounded-3xl p-4 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-black text-foreground">Transaction History</h3>
