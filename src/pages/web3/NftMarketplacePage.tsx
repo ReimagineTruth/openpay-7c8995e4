@@ -302,7 +302,7 @@ const NftMarketplacePage = () => {
     const withBanner = verified.filter((s) => s.banner_url).slice(0, 6);
     if (withBanner.length) return withBanner;
     if (verified.length) return verified.slice(0, 6);
-    return stores.slice(0, 6);
+    return [];
   }, [stores]);
 
   useEffect(() => {
