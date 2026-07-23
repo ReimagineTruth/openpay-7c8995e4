@@ -8,6 +8,7 @@ interface BottomNavProps {
 
 const BottomNav = ({ active }: BottomNavProps) => {
   const navigate = useNavigate();
+  const hidden = useHideOnScroll();
 
   const items = [
     { key: "home" as const, label: "Home", icon: Home, path: "/dashboard" },
