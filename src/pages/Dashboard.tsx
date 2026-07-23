@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getAppCookie, loadUserPreferences, setAppCookie, upsertUserPreferences } from "@/lib/userPreferences";
 import { DigitalRateDisplay } from "@/components/ui/DigitalRateDisplay";
+import RegulatoryStatusModal from "@/components/RegulatoryStatusModal";
+
 import { isRemittanceUiEnabled } from "@/lib/remittanceAccess";
 import { isSolanaPayEnabled } from "@/lib/solanaPayAccess";
 import { playUiSound } from "@/lib/appSounds";
