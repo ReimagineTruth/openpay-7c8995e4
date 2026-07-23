@@ -250,6 +250,9 @@ const AdminKycMetricsPage = () => {
                 </div>
               </div>
             </section>
+
+            <ApiDocsSection />
+
           </>
         )}
       </main>
