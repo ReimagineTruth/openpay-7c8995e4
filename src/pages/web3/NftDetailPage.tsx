@@ -48,6 +48,8 @@ const NftDetailPage = () => {
 
   const [bidAmt, setBidAmt] = useState("");
   const [bidMethod, setBidMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
+  const [auctionMethod, setAuctionMethod] = useState<"openpay_balance" | "pi" | "virtual_card">("openpay_balance");
+  const [mintFeeCfg, setMintFeeCfg] = useState<{ enabled: boolean; flat_amount: number; rate: number; currency: string } | null>(null);
   const [burst, setBurst] = useState<{ kind: "buy"|"gift"|"list"|"bid"|"auction"; msg: string } | null>(null);
   const [confirmPay, setConfirmPay] = useState<null | { kind: "buy" | "bid"; total: number; method: string; label: string; run: () => Promise<void> }>(null);
 
@@ -88,6 +90,29 @@ const NftDetailPage = () => {
   };
 
   useEffect(() => { load(); }, [id]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any).rpc("nft_get_mint_fee");
+      if (data) setMintFeeCfg({
+        enabled: !!data.enabled,
+        flat_amount: Number(data.flat_amount || 0),
+        rate: Number(data.rate || 0),
+        currency: data.currency || "OUSD",
+      });
+    })();
+  }, []);
+
+  const auctionFee = useMemo(() => {
+    if (!mintFeeCfg?.enabled) return 0;
+    let f = mintFeeCfg.flat_amount || 0;
+    if (mintFeeCfg.rate > 0) {
+      let base = Number(aStart || 0) * (Number(qty) || 1);
+      if (base <= 0) base = Number(qty) || 1;
+      f += Math.round((base * mintFeeCfg.rate) ) / 100;
+    }
+    return f;
+  }, [mintFeeCfg, aStart, qty]);
 
   const myOwn = useMemo(() => owners.find((o) => o.owner_id === me)?.quantity || 0, [owners, me]);
   const isCreator = me && item && me === item.creator_id;
@@ -266,12 +291,73 @@ const NftDetailPage = () => {
   const handleBuyListing = async (l: any) => {
     await callRpc("nft_buy_item", { p_item_id: id, p_quantity: 1, p_payment_method: "openpay_balance", p_listing_id: l.id }, "Purchased", { kind: "buy", sound: "buy" });
   };
-  const handleCreateAuction = async () => {
-    const ok = await callRpc("nft_create_auction", {
+  const runCreateAuctionRpc = async (extra: Record<string, any> = {}) => {
+    const { data, error } = await (supabase as any).rpc("nft_create_auction", {
       p_item_id: id, p_quantity: qty,
       p_start_price: Number(aStart || 0), p_min_increment: Number(aInc || 1), p_duration_hours: Number(aHours || 24),
-    }, "Auction started", { kind: "auction", sound: "auction" });
-    if (ok) { setAuctionOpen(false); setAStart(""); }
+      p_payment_method: auctionMethod,
+      ...extra,
+    });
+    if (error) throw error;
+    playNftSound("auction");
+    setBurst({ kind: "auction", msg: "Auction started" });
+    toast({ title: "Auction started" });
+    await load();
+    return data;
+  };
+
+  const handleCreateAuction = async () => {
+    setBusy(true);
+    try {
+      if (auctionMethod === "openpay_balance") {
+        await runCreateAuctionRpc();
+      } else if (auctionMethod === "virtual_card") {
+        if (!card.number || !card.cvc || !card.exp_month || !card.exp_year) throw new Error("Card details required");
+        await runCreateAuctionRpc({
+          p_card_number: card.number.replace(/\s+/g, ""),
+          p_card_cvc: card.cvc,
+          p_card_exp_month: Number(card.exp_month),
+          p_card_exp_year: Number(card.exp_year),
+        });
+      } else if (auctionMethod === "pi") {
+        const Pi = (window as any).Pi;
+        if (!Pi || typeof Pi.createPayment !== "function") throw new Error("Pi SDK not available — open in Pi Browser");
+        if (auctionFee <= 0) { await runCreateAuctionRpc(); }
+        else {
+          try {
+            await Pi.authenticate(["username", "payments"], async (incomplete: any) => {
+              if (incomplete?.identifier && incomplete?.transaction?.txid) {
+                await supabase.functions.invoke("pi-platform", { body: { action: "complete", paymentId: incomplete.identifier, txid: incomplete.transaction.txid } });
+              }
+            });
+          } catch (e: any) { throw new Error(e?.message || "Pi sign-in required"); }
+          await new Promise<void>((resolve, reject) => {
+            Pi.createPayment(
+              { amount: auctionFee, memo: `Auction fee ${item.name}`.slice(0, 64),
+                metadata: { kind: "nft_auction_start", item_id: id, qty } },
+              {
+                onReadyForServerApproval: async (paymentId: string) => {
+                  await supabase.functions.invoke("pi-platform", { body: { action: "approve", paymentId } });
+                },
+                onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+                  try {
+                    await supabase.functions.invoke("pi-platform", { body: { action: "complete", paymentId, txid } });
+                    await runCreateAuctionRpc({ p_pi_payment_id: paymentId, p_pi_txid: txid });
+                    resolve();
+                  } catch (err: any) { reject(err); }
+                },
+                onCancel: () => reject(new Error("Pi payment cancelled")),
+                onError: (e: any) => reject(new Error(e?.message || "Pi payment failed")),
+              },
+            );
+          });
+        }
+      }
+      setAuctionOpen(false); setAStart("");
+    } catch (e: any) {
+      playNftSound("error");
+      toast({ title: "Failed to start auction", description: e.message, variant: "destructive" });
+    } finally { setBusy(false); }
   };
   const runBidRpc = async (extra: Record<string, any> = {}) => {
     const { error } = await (supabase as any).rpc("nft_place_bid_with_payment", {
@@ -875,12 +961,45 @@ const NftDetailPage = () => {
           <Field label="Start price" value={aStart} onChange={setAStart} type="number" />
           <Field label="Minimum bid increment" value={aInc} onChange={setAInc} type="number" />
           <Field label="Duration (hours)" value={aHours} onChange={setAHours} type="number" />
-          <p className="text-xs text-foreground/50">Bids escrow from OpenPay balance. Highest bid wins when the timer ends.</p>
-          <button onClick={handleCreateAuction} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT }}>
-            {busy ? "Starting…" : "Start Auction"}
+
+          {mintFeeCfg?.enabled && auctionFee > 0 && (
+            <div className="rounded-xl p-3 bg-primary/5 border border-primary/20 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-foreground/70">Auction start fee</span>
+                <span className="font-bold text-foreground">{auctionFee.toFixed(2)} {mintFeeCfg.currency}</span>
+              </div>
+              <p className="text-[11px] text-foreground/50 mt-1">
+                {mintFeeCfg.rate > 0 ? `${mintFeeCfg.rate}% of start price × quantity` : "Flat platform fee"}
+                {mintFeeCfg.flat_amount > 0 && mintFeeCfg.rate > 0 ? ` + ${mintFeeCfg.flat_amount} flat` : ""}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <p className="text-xs text-foreground/60 font-semibold">Pay auction fee with</p>
+            <PayOpt active={auctionMethod==="openpay_balance"} onClick={() => setAuctionMethod("openpay_balance")} icon={<Wallet className="h-4 w-4" />} label="OpenPay Balance" />
+            <PayOpt active={auctionMethod==="pi"} onClick={() => setAuctionMethod("pi")} icon={<img src="https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png" className="h-4 w-4 rounded-full" alt="Pi" />} label="Pi Network" />
+            <PayOpt active={auctionMethod==="virtual_card"} onClick={() => setAuctionMethod("virtual_card")} icon={<CreditCard className="h-4 w-4" />} label="Virtual Card" />
+          </div>
+
+          {auctionMethod === "virtual_card" && (
+            <div className="space-y-2 p-3 rounded-xl bg-white/5 border border-border/10">
+              <Field label="Card number" value={card.number} onChange={(v: any) => setCard({ ...card, number: v })} />
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="MM" value={card.exp_month} onChange={(v: any) => setCard({ ...card, exp_month: v })} />
+                <Field label="YYYY" value={card.exp_year} onChange={(v: any) => setCard({ ...card, exp_year: v })} />
+                <Field label="CVC" value={card.cvc} onChange={(v: any) => setCard({ ...card, cvc: v })} />
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-foreground/50">Bids escrow from the bidder's chosen payment. Highest bid wins when the timer ends.</p>
+          <button onClick={handleCreateAuction} disabled={busy} className="w-full rounded-full py-3 font-bold disabled:opacity-50" style={{ backgroundColor: ACCENT, color: "#fff" }}>
+            {busy ? "Starting…" : auctionFee > 0 ? `Pay ${auctionFee.toFixed(2)} ${mintFeeCfg?.currency || "OUSD"} & Start` : "Start Auction"}
           </button>
         </Modal>
       )}
+
 
       {bidOpen && (
         <Modal onClose={() => setBidOpen(null)} title="Place a bid">
