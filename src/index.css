@@ -1710,9 +1710,21 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,2
 /* Category chip's black-on-blue active label stays legible */
 .nft-scope:not(.dark) :where(.text-black) { color: #ffffff !important; }
 
-/* Preserve white text explicitly over dark media overlays (hero banners) */
-.nft-scope:not(.dark) .nft-on-media :where(.text-white, h1, h2, h3, p, span) { color: #ffffff !important; }
+/* Preserve white text explicitly over dark media overlays (hero banners, splash, buttons) */
+.nft-scope:not(.dark) .nft-on-media :where(.text-white, h1, h2, h3, p, span, button, a, svg) { color: #ffffff !important; }
 .nft-scope:not(.dark) .nft-on-media :where(.text-white\/80, .text-white\/70, .text-white\/60) { color: rgba(255,255,255,0.85) !important; }
+
+/* Global (scope-agnostic): NFT splash + any .nft-on-media surface always shows white text/icons in light mode */
+html:not(.dark) .nft-on-media,
+html:not(.dark) .nft-on-media * { color: #ffffff !important; }
+html:not(.dark) .nft-on-media :where(svg) { color: #ffffff !important; stroke: currentColor; }
+html:not(.dark) .nft-on-media :where(.text-white\/80, .text-white\/70) { color: rgba(255,255,255,0.85) !important; }
+html:not(.dark) .nft-on-media :where(.text-white\/60, .text-white\/50, .text-white\/40) { color: rgba(255,255,255,0.7) !important; }
+
+/* Store name / owner labels on NFT detail + store cards — force white when placed over the blue store banner */
+html:not(.dark) .nft-store-banner :where(h1, h2, h3, h4, p, span, a, button) { color: #ffffff !important; }
+html:not(.dark) .nft-store-banner :where(svg) { color: #ffffff !important; }
+
 
 
 
