@@ -296,10 +296,12 @@ const NftMarketplacePage = () => {
     });
   }, [items, search, category, storeByUser, auctionsOnly, auctions]);
 
-  // Hero carousel (top 6 stores that have banner or featured NFTs)
+  // Hero carousel — verified stores only (with banner preferred)
   const heroSlides = useMemo(() => {
-    const withBanner = stores.filter((s) => s.banner_url).slice(0, 6);
+    const verified = stores.filter((s) => s.is_verified);
+    const withBanner = verified.filter((s) => s.banner_url).slice(0, 6);
     if (withBanner.length) return withBanner;
+    if (verified.length) return verified.slice(0, 6);
     return stores.slice(0, 6);
   }, [stores]);
 
