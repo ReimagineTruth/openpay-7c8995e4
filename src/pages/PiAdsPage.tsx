@@ -106,6 +106,8 @@ const PiAdsPage = () => {
   };
 
   const handleWatchRewardedAd = async () => {
+    toast.info("Pi Ad Network is temporarily disabled.");
+    return;
     if (!initPi() || !window.Pi?.Ads?.showAd) return;
     
     if (!canWatchAd()) {
