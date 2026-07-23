@@ -34,10 +34,10 @@ const DashboardRecommendations = ({ items, className }: DashboardRecommendations
             key={item.id}
             type="button"
             onClick={item.onClick}
-            className="paypal-surface group rounded-[2rem] p-4 text-left text-foreground transition hover:-translate-y-0.5 hover:bg-secondary/50 hover:shadow-lg"
+            className="dash-panel group p-4 text-left transition hover:-translate-y-0.5 hover:bg-secondary/40"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-paypal-blue/10 text-paypal-blue shadow-inner transition group-hover:scale-105">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-paypal-blue/10 text-paypal-blue transition group-hover:scale-105">
                 <item.icon className="h-6 w-6" />
               </div>
               <span className="rounded-full bg-paypal-blue/10 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-paypal-blue">

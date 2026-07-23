@@ -67,14 +67,14 @@ function SwapRateChip({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-1 flex-col rounded-2xl border border-zinc-200/90 bg-zinc-50/90 px-3 py-2.5 dark:border-zinc-700/80 dark:bg-zinc-800/60",
+        "dash-tile flex min-w-0 flex-1 flex-col !p-2.5",
         className,
       )}
     >
-      <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+      <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {from} – {to}
       </p>
-      <p className="mt-0.5 truncate text-sm font-bold text-zinc-900 dark:text-zinc-50">
+      <p className="mt-0.5 truncate text-sm font-bold text-foreground">
         1 {from} = {rate} {to}
       </p>
     </div>
@@ -108,14 +108,14 @@ export default function DashboardSwapPanel({
         <SwapRateChip from="USD" to="OUSD" rate={usdToOusd.toFixed(4)} />
       </div>
 
-      <div className="overflow-hidden rounded-[28px] border border-zinc-200/90 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:border-zinc-700/80 dark:bg-zinc-900 dark:shadow-black/30">
-        <div className="border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-          <p className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Swap Withdrawal</p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">Convert OUSD to mainnet payout</p>
+      <div className="dash-panel overflow-hidden p-0">
+        <div className="border-b border-border/40 px-4 py-3">
+          <p className="text-sm font-bold text-foreground">Swap Withdrawal</p>
+          <p className="text-xs text-muted-foreground">Convert OUSD to mainnet payout</p>
         </div>
 
         <div className="px-3 pt-3">
-          <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Payout asset</p>
+          <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Payout asset</p>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
             {WITHDRAWAL_OPTIONS.map((opt) => {
               const active = withdrawalType === opt.id;
@@ -125,26 +125,19 @@ export default function DashboardSwapPanel({
                   type="button"
                   onClick={() => onWithdrawalTypeChange(opt.id)}
                   className={cn(
-                    "flex min-w-[104px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border px-3 py-2.5 transition-all duration-200",
+                    "flex min-w-[104px] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all duration-200",
                     active
-                      ? cn(
-                          "border-transparent bg-gradient-to-b shadow-md ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900",
-                          opt.accent,
-                          opt.ring,
-                        )
-                      : "border-zinc-200/80 bg-zinc-50/80 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:border-zinc-600",
+                      ? "bg-paypal-blue text-white shadow-md shadow-paypal-blue/30"
+                      : "bg-secondary/50 text-foreground hover:bg-secondary dark:bg-white/5",
                   )}
                 >
                   <img src={opt.iconUrl} alt="" className="h-7 w-7 rounded-full object-contain" />
-                  <span
-                    className={cn(
-                      "text-xs font-bold",
-                      active ? "text-zinc-900 dark:text-white" : "text-zinc-600 dark:text-zinc-300",
-                    )}
-                  >
+                  <span className={cn("text-xs font-bold", active ? "text-white" : "text-foreground")}>
                     {opt.label}
                   </span>
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400">{opt.sublabel}</span>
+                  <span className={cn("text-[10px]", active ? "text-white/75" : "text-muted-foreground")}>
+                    {opt.sublabel}
+                  </span>
                 </button>
               );
             })}
@@ -152,10 +145,10 @@ export default function DashboardSwapPanel({
         </div>
 
         <div className="relative space-y-0 px-3 pb-3 pt-2">
-          <div className="rounded-2xl bg-zinc-100/90 p-3 dark:bg-zinc-800/70">
+          <div className="dash-tile">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-medium text-zinc-500">You pay</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-xs font-semibold shadow-sm dark:bg-zinc-900">
+              <span className="text-xs font-medium text-muted-foreground">You pay</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-xs font-semibold shadow-sm dark:bg-[#0f172a]">
                 <img src="/openpay-o.svg" alt="" className="h-4 w-4 shrink-0 object-contain" />
                 OUSD
               </span>
@@ -166,48 +159,48 @@ export default function DashboardSwapPanel({
               type="text"
               inputMode="decimal"
               placeholder="0"
-              className="w-full border-0 bg-transparent p-0 text-3xl font-semibold tracking-tight text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-0 dark:text-white dark:placeholder:text-zinc-600"
+              className="w-full border-0 bg-transparent p-0 text-3xl font-semibold tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-0"
             />
-            <p className="mt-1 text-[11px] text-zinc-500">Min 10 OUSD</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Min 10 OUSD</p>
           </div>
 
           <div className="relative z-10 -my-3 flex justify-center">
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-full border-4 border-white bg-paypal-blue text-white shadow-lg shadow-blue-500/30 dark:border-zinc-900"
+              className="flex h-10 w-10 items-center justify-center rounded-full border-4 border-white bg-paypal-blue text-white shadow-lg shadow-blue-500/30 dark:border-[#0f172a]"
               aria-hidden
             >
               <ArrowDownUp className="h-4 w-4" />
             </div>
           </div>
 
-          <div className="rounded-2xl bg-zinc-100/90 p-3 dark:bg-zinc-800/70">
+          <div className="dash-tile">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-medium text-zinc-500">You receive</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-xs font-semibold shadow-sm dark:bg-zinc-900">
+              <span className="text-xs font-medium text-muted-foreground">You receive</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-xs font-semibold shadow-sm dark:bg-[#0f172a]">
                 <img src={selected.iconUrl} alt="" className="h-4 w-4 object-contain" />
                 {withdrawalType === "OUSD_SOL" ? OUSD_SOL_LABEL : withdrawalType}
               </span>
             </div>
-            <p className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">
+            <p className="text-3xl font-semibold tracking-tight text-foreground">
               {showPrice ? payoutLabel : "—"}
             </p>
-            <p className="mt-1 text-[11px] text-zinc-500">
+            <p className="mt-1 text-[11px] text-muted-foreground">
               After 2% fee · {safeAmount > 0 ? `${(safeAmount - feeAmount).toFixed(2)} OUSD net` : "Enter amount"}
             </p>
           </div>
         </div>
 
-        <div className="mx-3 mb-3 space-y-1.5 rounded-xl border border-zinc-100 bg-zinc-50/80 px-3 py-2.5 text-sm dark:border-zinc-800 dark:bg-zinc-800/40">
-          <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
+        <div className="dash-tile mx-3 mb-3 space-y-1.5 text-sm">
+          <div className="flex items-center justify-between text-muted-foreground">
             <span>Amount</span>
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">{safeAmount.toFixed(2)} OUSD</span>
+            <span className="font-medium text-foreground">{safeAmount.toFixed(2)} OUSD</span>
           </div>
-          <div className="flex items-center justify-between text-xs text-zinc-500">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Fee (2%)</span>
             <span>-{feeAmount.toFixed(2)} OUSD</span>
           </div>
-          <div className="flex items-center justify-between border-t border-zinc-200/80 pt-1.5 dark:border-zinc-700">
-            <span className="font-semibold text-zinc-800 dark:text-zinc-100">You will receive</span>
+          <div className="flex items-center justify-between border-t border-border/40 pt-1.5">
+            <span className="font-semibold text-foreground">You will receive</span>
             <span className="inline-flex items-center gap-1.5 font-semibold text-paypal-blue">
               <img src={selected.iconUrl} alt="" className="h-4 w-4" />
               {payoutLabel}
@@ -215,18 +208,16 @@ export default function DashboardSwapPanel({
           </div>
         </div>
 
-        <p className="px-4 pb-2 text-center text-[11px] text-zinc-500">{rateLine}</p>
+        <p className="px-4 pb-2 text-center text-[11px] text-muted-foreground">{rateLine}</p>
 
-        <div className="space-y-2 border-t border-zinc-100 px-3 py-3 dark:border-zinc-800">
+        <div className="space-y-2 border-t border-border/40 px-3 py-3">
           <button
             type="button"
             onClick={onContinue}
             disabled={!meetsMinimum}
             className={cn(
-              "flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white transition-all",
-              meetsMinimum
-                ? "bg-paypal-blue shadow-md shadow-blue-500/25 hover:bg-[#004dc5] active:scale-[0.99]"
-                : "cursor-not-allowed bg-zinc-300 dark:bg-zinc-700",
+              "dash-btn-primary",
+              !meetsMinimum && "cursor-not-allowed bg-muted text-muted-foreground shadow-none hover:bg-muted",
             )}
           >
             Continue
@@ -235,13 +226,13 @@ export default function DashboardSwapPanel({
           <button
             type="button"
             onClick={onViewWithdrawals}
-            className="h-11 w-full rounded-2xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue transition-colors hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+            className="dash-btn-secondary"
           >
             View Withdrawals
           </button>
         </div>
 
-        <p className="border-t border-zinc-100 px-4 py-3 text-center text-[11px] leading-relaxed text-zinc-500 dark:border-zinc-800">
+        <p className="border-t border-border/40 px-4 py-3 text-center text-[11px] leading-relaxed text-muted-foreground">
           {footerNote}
         </p>
       </div>

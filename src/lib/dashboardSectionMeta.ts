@@ -7,6 +7,7 @@ import {
   Pickaxe,
   PiggyBank,
   Scale,
+  Sparkles,
   TrendingUp,
   Wallet,
 } from "lucide-react";
@@ -22,11 +23,15 @@ export type DashboardSection =
   | "mining"
   | "analytics";
 
+export type DashboardNavKey = DashboardSection | "opennft";
+
 export type DashboardSectionNavItem = {
-  key: DashboardSection;
+  key: DashboardNavKey;
   label: string;
   icon: LucideIcon;
   description: string;
+  /** When set, tab navigates to this route instead of switching a dashboard section. */
+  href?: string;
 };
 
 export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
@@ -39,6 +44,7 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
   { key: "swap", label: "Swap", icon: ArrowLeftRight, description: "Withdraw OUSD" },
   { key: "mining", label: "Mining", icon: Pickaxe, description: "Earn OUSD rewards" },
   { key: "analytics", label: "Analytics", icon: TrendingUp, description: "Insights & trends" },
+  { key: "opennft", label: "OpenNFT", icon: Sparkles, description: "NFT marketplace", href: "/web3/nft" },
 ];
 
 export const DASHBOARD_SECTION_TITLES: Record<DashboardSection, string> = {

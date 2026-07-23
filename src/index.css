@@ -220,6 +220,53 @@
     @apply min-w-0 max-w-full overflow-x-hidden;
   }
 
+  /* Latest simple dashboard cards */
+  .dash-panel {
+    @apply rounded-[1.75rem] border border-white/80 bg-white/95 p-4 text-foreground backdrop-blur-md;
+    box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.35);
+  }
+
+  .dark .dash-panel {
+    @apply border-white/10 bg-[#0f172a]/95;
+    box-shadow: 0 12px 28px -18px rgba(0, 0, 0, 0.55);
+  }
+
+  .dash-tile {
+    @apply rounded-2xl bg-secondary/45 p-3.5;
+  }
+
+  .dark .dash-tile {
+    @apply bg-white/5;
+  }
+
+  .dash-list {
+    @apply divide-y divide-border/40 overflow-hidden rounded-2xl bg-secondary/30;
+  }
+
+  .dark .dash-list {
+    @apply bg-white/[0.04] divide-white/10;
+  }
+
+  .dash-input {
+    @apply mb-2 h-11 w-full rounded-2xl border-0 bg-white px-3.5 text-sm font-medium text-foreground shadow-sm outline-none ring-1 ring-border/60 placeholder:text-muted-foreground focus:ring-2 focus:ring-paypal-blue/40 dark:bg-white/5 dark:ring-white/10;
+  }
+
+  .dash-btn-primary {
+    @apply inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-paypal-blue text-sm font-bold text-white shadow-md shadow-paypal-blue/25 transition hover:bg-[#004dc5] disabled:opacity-60;
+  }
+
+  .dash-btn-secondary {
+    @apply inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-bold text-paypal-blue shadow-sm ring-1 ring-paypal-blue/20 transition hover:bg-paypal-blue/5 disabled:opacity-60 dark:bg-white/5 dark:text-white dark:ring-white/15;
+  }
+
+  .dash-meta {
+    @apply inline-flex items-center rounded-full bg-secondary/70 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground;
+  }
+
+  .dash-icon-btn {
+    @apply flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-foreground shadow-md ring-1 ring-black/5 transition hover:scale-105 hover:bg-white dark:bg-white/10 dark:ring-white/10;
+  }
+
   /* Professional Card Styles */
   .paypal-surface {
     @apply bg-card/95 backdrop-blur-md border border-border shadow-lg transition-all duration-300;

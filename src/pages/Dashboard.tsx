@@ -2338,7 +2338,7 @@ const Dashboard = () => {
           <button
             onClick={loadDashboard}
             aria-label="Refresh dashboard"
-            className={`paypal-surface flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 hover:scale-110 hover-lift ${refreshing ? "animate-spin" : "hover-glow"}`}
+            className={`dash-icon-btn ${refreshing ? "animate-spin" : ""}`}
             disabled={refreshing}
           >
             <RefreshCw className={`h-5 w-5 text-foreground transition-transform duration-300 ${refreshing ? "animate-spin" : "hover:rotate-180"}`} />
@@ -2346,7 +2346,7 @@ const Dashboard = () => {
           <button 
             onClick={() => navigate("/notifications")} 
             aria-label="Open notifications" 
-            className="paypal-surface relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 hover:scale-110 hover-lift hover-glow"
+            className="dash-icon-btn relative"
           >
             <Bell className="h-5 w-5 text-foreground transition-transform duration-300 hover:animate-bounce" />
             {unreadNotifications > 0 && (
@@ -2358,7 +2358,7 @@ const Dashboard = () => {
           <button 
             onClick={() => navigate("/settings")} 
             aria-label="Open settings" 
-            className="paypal-surface flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 hover:scale-110 hover-lift hover-glow"
+            className="dash-icon-btn"
           >
             <Settings className="h-5 w-5 text-foreground transition-transform duration-300 hover:rotate-90" />
           </button>
@@ -2500,9 +2500,336 @@ const Dashboard = () => {
       </div>
       )}
 
+      {/* Top balance card (Wallet style) for every section */}
+      {activeSection === "savings" && (
+        <div className="mx-4 mt-4">
+          <DashboardSectionHero
+            badge="Savings wallet"
+            badgeIcon={PiggyBank}
+            metricLabel="Savings balance"
+            metricValue={balanceHidden ? "••••••" : <AnimatedCounter value={savings?.savings_balance ?? 0} />}
+            metricSubtitle={currency.code === "PI" ? "PI" : piCurrencyLabel}
+            icon={PiggyBank}
+            balanceHidden={balanceHidden}
+            onToggleHidden={toggleBalanceHidden}
+            trailing={
+              <button
+                type="button"
+                onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+              >
+                {amountFormat === "compact" ? "Compact" : "Comma"}
+              </button>
+            }
+            action={{ label: "+ Move funds", onClick: () => document.getElementById("savings-move-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }) }}
+            stats={[
+              {
+                label: "Wallet balance",
+                value: balanceHidden ? "****" : <AnimatedCounter value={savings?.wallet_balance ?? balance} />,
+              },
+              {
+                label: "Estimated APY",
+                value: `${(savings?.apy ?? 0).toFixed(2)}%`,
+                tone: "text-emerald-200",
+              },
+            ]}
+          />
+        </div>
+      )}
+
+      {activeSection === "credit" && (
+        <div className="mx-4 mt-4">
+          <DashboardSectionHero
+            badge="Credit profile"
+            badgeIcon={TrendingUp}
+            metricLabel="Credit score"
+            metricValue={creditScoreDisplay}
+            metricSubtitle={creditScoreDisplay >= 120 ? "Loan-ready profile" : "Building profile"}
+            icon={TrendingUp}
+            trailing={
+              <>
+                <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
+                  {currencyTag}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                  className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                >
+                  {amountFormat === "compact" ? "Compact" : "Comma"}
+                </button>
+              </>
+            }
+            action={{ label: "+ Build credit", onClick: () => navigate("/send") }}
+            stats={[
+              { label: "Status", value: creditScoreDisplay >= 120 ? "Ready" : "Building" },
+              { label: "Range", value: "0 - 900" },
+              { label: "Unlock", value: `${creditScoreDisplay} / 120` },
+            ]}
+          >
+            <div className="mt-5 px-1">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-emerald-400 transition-all duration-1000"
+                  style={{ width: `${creditProgressPercent}%` }}
+                />
+              </div>
+            </div>
+          </DashboardSectionHero>
+        </div>
+      )}
+
+      {activeSection === "loans" && (
+        <div className="mx-4 mt-4">
+          <DashboardSectionHero
+            badge="Loan center"
+            badgeIcon={HandCoins}
+            metricLabel="Available to borrow"
+            metricValue={balanceHidden ? "••••••" : <AnimatedCounter value={availableToBorrow} />}
+            metricSubtitle={`${previewApr.toFixed(1)}% APR · ${previewTermDays} days`}
+            icon={HandCoins}
+            balanceHidden={balanceHidden}
+            onToggleHidden={toggleBalanceHidden}
+            trailing={
+              <>
+                <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
+                  {currencyTag}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                  className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                >
+                  {amountFormat === "compact" ? "Compact" : "Comma"}
+                </button>
+              </>
+            }
+            action={{
+              label: loanView === "overview" ? "+ Apply now" : "Preview",
+              onClick: () => setLoanView(loanView === "overview" ? "form" : "overview"),
+            }}
+            stats={[
+              { label: "Interest rate", value: `${previewApr.toFixed(1)}% APR`, tone: "text-emerald-200" },
+              { label: "Term", value: `${previewTermDays} days` },
+            ]}
+          />
+        </div>
+      )}
+
+      {activeSection === "cards" && (
+        <div className="mx-4 mt-4">
+          <DashboardSectionHero
+            badge="Virtual card"
+            badgeIcon={CreditCard}
+            metricLabel={hideCardPreviewDetails ? "Card details hidden" : "Card number"}
+            metricValue={hideCardPreviewDetails ? "•••• •••• •••• ••••" : virtualCardNumber}
+            metricSubtitle={hideCardPreviewDetails ? cardCurrencyLabel : `Linked · ${virtualCardActive ? "Active" : "Inactive"}`}
+            icon={CreditCard}
+            trailing={
+              <>
+                <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
+                  {cardCurrencyLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                  className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                >
+                  {amountFormat === "compact" ? "Compact" : "Comma"}
+                </button>
+              </>
+            }
+            action={{ label: "Manage", onClick: () => navigate("/virtual-card") }}
+            secondaryAction={{
+              label: hideCardPreviewDetails ? "View details" : "Hide details",
+              onClick: () => setHideCardPreviewDetails((prev) => !prev),
+              icon: hideCardPreviewDetails ? Eye : EyeOff,
+            }}
+          />
+        </div>
+      )}
+
+      {activeSection === "buy" && (
+        <div className="mx-4 mt-4">
+          <DashboardSectionHero
+            badge="Buy OpenUSD"
+            badgeIcon={CircleDollarSign}
+            metricLabel="You get (OPEN USD)"
+            metricValue={buyOpenUsdDisplay}
+            metricSubtitle={buyOnrampProvider}
+            showBrandLogo
+            trailing={
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowOnrampPicker(true)}
+                  className="ios-active inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25"
+                >
+                  Onramper <ChevronDown className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                  className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                >
+                  {amountFormat === "compact" ? "Compact" : "Comma"}
+                </button>
+              </>
+            }
+            action={{
+              label: "+ Confirm",
+              onClick: () => {
+                if (!buyOpenUsdMeetsMinimum) return;
+                handleBuyOpenUsd();
+              },
+              disabled: !buyOpenUsdMeetsMinimum,
+            }}
+            stats={[
+              { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
+              { label: "Provider", value: buyOnrampProvider },
+            ]}
+          />
+        </div>
+      )}
+
+      {activeSection === "swap" && (
+        <div className="mx-4 mt-4">
+          <DashboardSectionHero
+            badge="Swap & withdraw"
+            badgeIcon={ArrowLeftRight}
+            metricLabel="Withdrawal amount"
+            metricValue={balanceHidden ? "••••••" : formatCompactCurrency(safeSwapAmount)}
+            metricSubtitle={`${swapWithdrawalType} · fee ${formatCompactCurrency(swapFeeAmount)}`}
+            icon={ArrowLeftRight}
+            balanceHidden={balanceHidden}
+            onToggleHidden={toggleBalanceHidden}
+            trailing={
+              <button
+                type="button"
+                onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+              >
+                {amountFormat === "compact" ? "Compact" : "Comma"}
+              </button>
+            }
+            action={{
+              label: "+ Continue",
+              onClick: () => navigate(`/swap-withdrawal?amount=${safeSwapAmount.toFixed(2)}&type=${swapWithdrawalType}`),
+            }}
+            stats={[
+              {
+                label: "You receive",
+                value:
+                  swapWithdrawalType === "PI"
+                    ? `${swapPayoutPiAmount.toFixed(4)} PI`
+                    : swapWithdrawalType === "OUSD"
+                      ? `${swapPayoutOusdAmount.toFixed(2)} OUSD`
+                      : swapWithdrawalType === "OUSD_SOL"
+                        ? `${swapPayoutOusdSolAmount.toFixed(2)} ${OUSD_SOL_LABEL}`
+                        : `${swapPayoutMrwnAmount.toFixed(4)} MRWN`,
+              },
+              {
+                label: "Minimum",
+                value: swapMeetsMinimum ? "Met" : "Below min",
+                tone: swapMeetsMinimum ? "text-emerald-200" : "text-amber-200",
+              },
+            ]}
+          />
+        </div>
+      )}
+
+      {activeSection === "mining" && (
+        <div className="mx-4 mt-4">
+          <DashboardSectionHero
+            badge="Mining hub"
+            badgeIcon={Pickaxe}
+            metricLabel="Mining balance (OUSD)"
+            metricValue={<AnimatedCounter value={miningBalance} codeOverride="OUSD" />}
+            metricSubtitle={activeMiningSession ? "Session active" : "Ready to mine"}
+            icon={Pickaxe}
+            trailing={
+              <>
+                <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
+                  {activeMiningSession ? "Active" : "Idle"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                  className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                >
+                  {amountFormat === "compact" ? "Compact" : "Comma"}
+                </button>
+              </>
+            }
+            action={{
+              label: activeMiningSession ? "Open session" : "+ Start session",
+              onClick: () => navigate("/mining"),
+            }}
+            stats={[
+              { label: "Daily rate", value: "0.10 OUSD", tone: "text-emerald-200" },
+              { label: "Status", value: activeMiningSession ? "Mining" : "Stopped" },
+            ]}
+          />
+        </div>
+      )}
+
+      {activeSection === "analytics" && (
+        <div className="mx-4 mt-4">
+          <DashboardSectionHero
+            badge="Personal Analytics"
+            badgeIcon={TrendingUp}
+            metricLabel="Net balance"
+            metricValue={
+              personalAnalyticsLoading
+                ? "…"
+                : personalAnalytics
+                  ? (balanceHidden ? "••••••" : <AnimatedCounter value={personalAnalytics.summary.net_balance} />)
+                  : "—"
+            }
+            metricSubtitle={personalAnalyticsLoading ? "Loading…" : "Wallet activity"}
+            icon={TrendingUp}
+            balanceHidden={balanceHidden}
+            onToggleHidden={toggleBalanceHidden}
+            trailing={
+              <>
+                <button
+                  type="button"
+                  onClick={() => void loadPersonalAnalytics()}
+                  disabled={personalAnalyticsLoading}
+                  className="ios-active inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25 disabled:opacity-60"
+                >
+                  {personalAnalyticsLoading ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Refresh"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                  className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                >
+                  {amountFormat === "compact" ? "Compact" : "Comma"}
+                </button>
+              </>
+            }
+            stats={
+              personalAnalytics && !personalAnalyticsLoading
+                ? [
+                    { label: "Total sent", value: balanceHidden ? "****" : <AnimatedCounter value={personalAnalytics.summary.total_sent} />, tone: "text-rose-200" },
+                    { label: "Total received", value: balanceHidden ? "****" : <AnimatedCounter value={personalAnalytics.summary.total_received} />, tone: "text-emerald-200" },
+                    { label: "Transactions", value: String(personalAnalytics.summary.transaction_count) },
+                    { label: "Top-ups", value: String(personalAnalytics.summary.topup_count) },
+                  ]
+                : undefined
+            }
+          />
+        </div>
+      )}
+
       <div className="dashboard-controls-enter mt-4 px-4">
         <div className="relative">
-          <DashboardSectionTabs activeSection={activeSection} onChange={setActiveSection} />
+          <DashboardSectionTabs
+            activeSection={activeSection}
+            onChange={setActiveSection}
+            onNavigate={(href) => navigate(href)}
+          />
           <button
             type="button"
             onClick={() => setShowRegulatory(true)}
@@ -2528,39 +2855,9 @@ const Dashboard = () => {
       <div key={activeSection} className="dashboard-section-enter">
       {activeSection === "savings" && (
         <div className="mx-4 mt-4">
-          <DashboardSectionHero
-            badge="Savings wallet"
-            metricLabel="Savings balance"
-            metricValue={balanceHidden ? "••••••" : <AnimatedCounter value={savings?.savings_balance ?? 0} />}
-            metricSubtitle={currency.code === "PI" ? "PI" : piCurrencyLabel}
-            icon={PiggyBank}
-            balanceHidden={balanceHidden}
-            onToggleHidden={toggleBalanceHidden}
-            trailing={
-              <button
-                type="button"
-                onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-                className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-              >
-                {amountFormat === "compact" ? "Compact" : "Comma"}
-              </button>
-            }
-            stats={[
-              {
-                label: "Wallet balance",
-                value: balanceHidden ? "****" : <AnimatedCounter value={savings?.wallet_balance ?? balance} />,
-              },
-              {
-                label: "Estimated APY",
-                value: `${(savings?.apy ?? 0).toFixed(2)}%`,
-                tone: "text-emerald-200",
-              },
-            ]}
-          />
-
-          <div className="mt-4 paypal-surface rounded-3xl p-4 text-foreground">
+          <div id="savings-move-panel" className="dash-panel text-foreground">
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-border/70 p-3">
+              <div className="dash-tile">
                 <p className="mb-2 text-sm font-semibold text-foreground">Move wallet to savings</p>
                 <input
                   value={formatAmountInput(savingsAmount)}
@@ -2568,13 +2865,13 @@ const Dashboard = () => {
                   type="text"
                   inputMode="decimal"
                   placeholder={`Amount (${currencyLabel})`}
-                  className="mb-2 h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground"
+                  className="dash-input"
                 />
                 <button 
                   disabled={movingToSavings} 
                   onClick={() => handleProtectedAction(handleMoveWalletToSavings, "handleMoveWalletToSavings")} 
-                  className={`h-10 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white relative overflow-hidden transition-all duration-300 ${
-                    savingsAnimation ? 'scale-105 shadow-lg' : ''
+                  className={`dash-btn-primary relative overflow-hidden ${
+                    savingsAnimation ? "scale-[1.02]" : ""
                   }`}
                 >
                   <span className="flex items-center justify-center gap-2">
@@ -2595,7 +2892,7 @@ const Dashboard = () => {
                   )}
                 </button>
               </div>
-              <div className="rounded-2xl border border-border/70 p-3">
+              <div className="dash-tile">
                 <p className="mb-2 text-sm font-semibold text-foreground">Move savings to wallet</p>
                 <input
                   value={formatAmountInput(withdrawAmount)}
@@ -2603,13 +2900,13 @@ const Dashboard = () => {
                   type="text"
                   inputMode="decimal"
                   placeholder={`Amount (${currencyLabel})`}
-                  className="mb-2 h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground"
+                  className="dash-input"
                 />
                 <button 
                   disabled={movingToWallet} 
                   onClick={() => handleProtectedAction(handleMoveSavingsToWallet, "handleMoveSavingsToWallet")} 
-                  className={`h-10 w-full rounded-xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue relative overflow-hidden transition-all duration-300 ${
-                    walletAnimation ? 'scale-105 shadow-lg' : ''
+                  className={`dash-btn-secondary relative overflow-hidden ${
+                    walletAnimation ? "scale-[1.02]" : ""
                   }`}
                 >
                   <span className="flex items-center justify-center gap-2">
@@ -2631,7 +2928,7 @@ const Dashboard = () => {
                 </button>
               </div>
             </div>
-            <div className="mt-4 rounded-2xl border border-border/70 p-3">
+            <div className="mt-4 dash-tile">
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-semibold text-foreground">Recent savings activity</p>
                 {savingsTransfers.length > 0 && <p className="text-xs text-muted-foreground">{savingsTransfers.length} latest</p>}
@@ -2639,7 +2936,7 @@ const Dashboard = () => {
               {savingsTransfers.length === 0 ? (
                 <p className="py-3 text-sm text-muted-foreground">No savings activity yet.</p>
               ) : (
-                <div className="divide-y divide-border/70 rounded-xl border border-border/70">
+                <div className="dash-list">
                   {savingsTransfers.map((entry, index) => {
                     const isWalletToSavings = entry.direction === "wallet_to_savings";
                     const directionLabel = isWalletToSavings ? "Move wallet to savings" : "Move savings to wallet";
@@ -2665,40 +2962,12 @@ const Dashboard = () => {
 
       {activeSection === "credit" && (
         <div className="mx-4 mt-4">
-          <DashboardSectionHero
-            badge="Credit profile"
-            metricLabel="Credit score"
-            metricValue={creditScoreDisplay}
-            metricSubtitle={creditScoreDisplay >= 120 ? "Loan-ready profile" : "Building profile"}
-            icon={TrendingUp}
-            trailing={
-              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
-                {currencyTag}
-              </span>
-            }
-            action={{ label: "Build credit", onClick: () => navigate("/send") }}
-            stats={[
-              { label: "Status", value: creditScoreDisplay >= 120 ? "Ready" : "Building" },
-              { label: "Range", value: "0 - 900" },
-              { label: "Unlock", value: `${creditScoreDisplay} / 120` },
-            ]}
-          >
-            <div className="mt-5 px-1">
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/15">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-emerald-400 transition-all duration-1000"
-                  style={{ width: `${creditProgressPercent}%` }}
-                />
-              </div>
-            </div>
-          </DashboardSectionHero>
-
-          <div className="mt-4 paypal-surface rounded-3xl p-4">
+          <div className="dash-panel">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-bold text-foreground">Credit score activity</h3>
               <span className="text-xs font-semibold text-muted-foreground">From recent activity</span>
             </div>
-            <div className="divide-y divide-border/70 rounded-2xl border border-border/70">
+            <div className="dash-list">
               {creditActivityRows.every((row) => row.count === 0) ? (
                 <p className="px-3 py-6 text-center text-sm text-muted-foreground">
                   Complete buys, sends, and checkouts to grow your credit score.
@@ -2723,37 +2992,14 @@ const Dashboard = () => {
 
       {activeSection === "loans" && (
         <div className="mx-4 mt-4">
-          <DashboardSectionHero
-            badge="Loan center"
-            metricLabel="Available to borrow"
-            metricValue={balanceHidden ? "••••••" : <AnimatedCounter value={availableToBorrow} />}
-            metricSubtitle={`${previewApr.toFixed(1)}% APR · ${previewTermDays} days`}
-            icon={HandCoins}
-            balanceHidden={balanceHidden}
-            onToggleHidden={toggleBalanceHidden}
-            trailing={
-              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
-                {currencyTag}
-              </span>
-            }
-            action={{
-              label: loanView === "overview" ? "Apply now" : "Preview",
-              onClick: () => setLoanView(loanView === "overview" ? "form" : "overview"),
-            }}
-            stats={[
-              { label: "Interest rate", value: `${previewApr.toFixed(1)}% APR`, tone: "text-emerald-200" },
-              { label: "Term", value: `${previewTermDays} days` },
-            ]}
-          />
-
-          <div className="mt-4 paypal-surface rounded-3xl p-4">
+          <div className="dash-panel">
             {loanView === "overview" ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between rounded-xl bg-secondary/40 px-4 py-3">
+                <div className="dash-tile flex items-center justify-between px-4 py-3">
                   <span className="text-base text-muted-foreground">Loan amount</span>
                   <span className="text-xl font-semibold text-foreground">{formatCompactCurrency(previewLoanAmount)}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl border border-paypal-blue/35 bg-paypal-blue/5 px-4 py-3">
+                <div className="dash-tile flex items-center justify-between bg-paypal-blue/5 px-4 py-3 ring-1 ring-paypal-blue/25">
                   <span className="text-lg font-semibold text-foreground">Total repayment</span>
                   <span className="text-xl font-semibold text-paypal-blue">{formatCompactCurrency(previewRepayment)}</span>
                 </div>
@@ -2763,20 +3009,20 @@ const Dashboard = () => {
                   type="text"
                   inputMode="decimal"
                   placeholder={`Enter loan amount (${currencyLabel})`}
-                  className="h-12 w-full rounded-xl border border-border px-3 text-sm text-foreground"
+                  className="dash-input mb-0"
                 />
               </div>
             ) : (
               <div className="space-y-4">
                 {/* KYC Status Indicator */}
-                <div className={`rounded-xl p-3 border ${
+                <div className={`dash-tile ${
                   kycStatus === 'approved' 
-                    ? 'bg-green-50 border-green-200' 
+                    ? 'bg-green-50 ring-1 ring-green-200' 
                     : kycStatus === 'pending' || kycStatus === 'under_review'
-                    ? 'bg-blue-50 border-blue-200'
+                    ? 'bg-blue-50 ring-1 ring-blue-200'
                     : kycStatus === 'rejected'
-                    ? 'bg-red-50 border-red-200'
-                    : 'bg-orange-50 border-orange-200'
+                    ? 'bg-red-50 ring-1 ring-red-200'
+                    : 'bg-orange-50 ring-1 ring-orange-200'
                 }`}>
                   <div className="flex items-center gap-2">
                     {kycStatus === 'approved' ? (
@@ -2831,35 +3077,35 @@ const Dashboard = () => {
                       type="text"
                       inputMode="decimal"
                       placeholder="e.g. 500"
-                      className="h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground"
+                      className="dash-input mb-0"
                     />
                   </label>
                   <label className="space-y-1 text-xs text-muted-foreground">
                     <span>Term months (1 - 60)</span>
-                    <input value={loanTermMonths} onChange={(e) => setLoanTermMonths(e.target.value)} type="number" min="1" max="60" placeholder="e.g. 6" className="h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground" />
+                    <input value={loanTermMonths} onChange={(e) => setLoanTermMonths(e.target.value)} type="number" min="1" max="60" placeholder="e.g. 6" className="dash-input mb-0" />
                   </label>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="space-y-1 text-xs text-muted-foreground">
                     <span>Full legal name</span>
-                    <input value={loanApplicantName} onChange={(e) => setLoanApplicantName(e.target.value)} placeholder="Enter full name" className="h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground" />
+                    <input value={loanApplicantName} onChange={(e) => setLoanApplicantName(e.target.value)} placeholder="Enter full name" className="dash-input mb-0" />
                   </label>
                   <label className="space-y-1 text-xs text-muted-foreground">
                     <span>Contact number</span>
-                    <input value={loanContactNumber} onChange={(e) => setLoanContactNumber(e.target.value)} placeholder="Phone or active contact number" className="h-10 w-full rounded-xl border border-border px-3 text-sm text-foreground" />
+                    <input value={loanContactNumber} onChange={(e) => setLoanContactNumber(e.target.value)} placeholder="Phone or active contact number" className="dash-input mb-0" />
                   </label>
                 </div>
                 <button
                   disabled={requestingLoan || loanApplication?.status === "pending" || kycStatus !== 'approved'}
                   onClick={handleRequestLoan}
-                  className="h-12 w-full rounded-xl bg-paypal-blue text-lg font-semibold text-white transition hover:bg-[#004dc5] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="dash-btn-primary text-base disabled:cursor-not-allowed"
                 >
                   {requestingLoan ? "Submitting..." : kycStatus !== 'approved' ? "KYC Required" : "Submit Loan Application"}
                 </button>
               </div>
             )}
 
-            <div className="mt-3 rounded-2xl border border-border/70 p-3">
+            <div className="mt-3 dash-tile">
               <p className="mb-2 text-sm font-semibold text-black">Pay monthly installment</p>
               <input
                 value={formatAmountInput(loanPaymentAmount)}
@@ -2867,20 +3113,20 @@ const Dashboard = () => {
                 type="text"
                 inputMode="decimal"
                 placeholder={`Default: ${loan ? formatCompactCurrency(loan.monthly_payment_amount) : `monthly due (${currencyLabel})`}`}
-                className="h-10 w-full rounded-xl border border-border px-3"
+                className="dash-input mb-0"
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setLoanPaymentMethod("wallet")}
-                  className={`h-10 rounded-xl border text-sm font-semibold ${loanPaymentMethod === "wallet" ? "border-paypal-blue bg-paypal-blue text-white" : "border-border bg-white text-foreground"}`}
+                  className={`h-11 rounded-2xl text-sm font-bold transition ${loanPaymentMethod === "wallet" ? "bg-paypal-blue text-white shadow-md shadow-paypal-blue/25" : "bg-white text-foreground ring-1 ring-border/60 dark:bg-white/5"}`}
                 >
                   OpenPay Balance
                 </button>
                 <button
                   type="button"
                   onClick={() => setLoanPaymentMethod("pi")}
-                  className={`h-10 rounded-xl border text-sm font-semibold ${loanPaymentMethod === "pi" ? "border-paypal-blue bg-paypal-blue text-white" : "border-border bg-white text-foreground"}`}
+                  className={`h-11 rounded-2xl text-sm font-bold transition ${loanPaymentMethod === "pi" ? "bg-paypal-blue text-white shadow-md shadow-paypal-blue/25" : "bg-white text-foreground ring-1 ring-border/60 dark:bg-white/5"}`}
                 >
                   Pi Payment
                 </button>
@@ -2890,14 +3136,14 @@ const Dashboard = () => {
                   value={loanPaymentReference}
                   onChange={(e) => setLoanPaymentReference(e.target.value)}
                   placeholder="Pi payment reference (required)"
-                  className="mt-2 h-10 w-full rounded-xl border border-border px-3"
+                  className="mt-2 dash-input mb-0"
                 />
               )}
-              <button disabled={payingLoan || !loan || loan.status !== "active"} onClick={() => handleProtectedAction(handlePayLoan, "handlePayLoan")} className="mt-2 h-10 w-full rounded-xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue">
+              <button disabled={payingLoan || !loan || loan.status !== "active"} onClick={() => handleProtectedAction(handlePayLoan, "handlePayLoan")} className="mt-2 dash-btn-secondary">
                 {payingLoan ? "Paying..." : "Pay Loan"}
               </button>
             </div>
-            <div className="mt-3 rounded-2xl border border-border/70 p-3">
+            <div className="mt-3 dash-tile">
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-semibold text-black">Loan payment history</p>
                 <p className="text-xs text-muted-foreground">{loanPaymentHistory.length} records</p>
@@ -2905,7 +3151,7 @@ const Dashboard = () => {
               {loanPaymentHistory.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No loan payments yet.</p>
               ) : (
-                <div className="divide-y divide-border/70 rounded-xl border border-border/70">
+                <div className="dash-list">
                   {loanPaymentHistory.map((entry) => (
                     <div key={entry.id} className="px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
@@ -2928,26 +3174,7 @@ const Dashboard = () => {
 
       {activeSection === "cards" && (
         <div className="mx-4 mt-4">
-          <DashboardSectionHero
-            badge="Virtual card"
-            metricLabel={hideCardPreviewDetails ? "Card details hidden" : "Card number"}
-            metricValue={hideCardPreviewDetails ? "•••• •••• •••• ••••" : virtualCardNumber}
-            metricSubtitle={hideCardPreviewDetails ? cardCurrencyLabel : `Linked · ${virtualCardActive ? "Active" : "Inactive"}`}
-            icon={CreditCard}
-            trailing={
-              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
-                {cardCurrencyLabel}
-              </span>
-            }
-            action={{ label: "Manage", onClick: () => navigate("/virtual-card") }}
-            secondaryAction={{
-              label: hideCardPreviewDetails ? "View details" : "Hide details",
-              onClick: () => setHideCardPreviewDetails((prev) => !prev),
-              icon: hideCardPreviewDetails ? Eye : EyeOff,
-            }}
-          />
-
-          <div className="mt-4 paypal-surface rounded-3xl p-4">
+          <div className="dash-panel">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-bold text-foreground">Card activity history</h3>
               <button
@@ -2958,7 +3185,7 @@ const Dashboard = () => {
                 See all
               </button>
             </div>
-            <div className="divide-y divide-border/70 rounded-2xl border border-border/70">
+            <div className="dash-list">
               {transactions
                 .filter((tx) => {
                   const note = String(tx.note || "").toLowerCase();
@@ -2987,36 +3214,8 @@ const Dashboard = () => {
 
       {activeSection === "buy" && (
         <div className="mx-4 mt-4">
-          <DashboardSectionHero
-            badge="Buy OpenUSD"
-            metricLabel="You get (OPEN USD)"
-            metricValue={buyOpenUsdDisplay}
-            metricSubtitle={buyOnrampProvider}
-            showBrandLogo
-            trailing={
-              <button
-                type="button"
-                onClick={() => setShowOnrampPicker(true)}
-                className="ios-active inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25"
-              >
-                Onramper <ChevronDown className="h-3.5 w-3.5" />
-              </button>
-            }
-            action={{
-              label: "Confirm",
-              onClick: () => {
-                if (!buyOpenUsdMeetsMinimum) return;
-                handleBuyOpenUsd();
-              },
-            }}
-            stats={[
-              { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
-              { label: "Provider", value: buyOnrampProvider },
-            ]}
-          />
-
-          <div className="mt-4 paypal-surface rounded-3xl p-4 space-y-4">
-            <div className="rounded-2xl bg-secondary/50 p-4">
+          <div className="dash-panel space-y-4">
+            <div className="dash-tile">
               <p className="text-sm text-muted-foreground">You spend ({buySpendUnit})</p>
               <input
                 value={formatAmountInput(buySpendAmount)}
@@ -3029,7 +3228,7 @@ const Dashboard = () => {
               <p className="mt-1 text-xs font-medium text-muted-foreground">{buySpendRateText}</p>
             </div>
 
-              <div className="rounded-2xl border border-border/70 p-4 space-y-3">
+              <div className="dash-tile space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-foreground">Payment method</p>
                   <button onClick={() => setShowPaymentMethodPicker(true)} className="text-xs font-bold text-paypal-blue">Change</button>
@@ -3037,7 +3236,7 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={() => setShowPaymentMethodPicker(true)}
-                className="flex w-full items-center justify-between rounded-xl bg-secondary/30 p-3"
+                className="dash-tile flex w-full items-center justify-between"
               >
                 <span className="inline-flex items-center gap-2 text-sm font-bold text-foreground">
                   {buyPaymentMethod === "Pi Payment" && <img src={PI_PAYMENT_ICON_URL} alt="" className="h-6 w-auto" />}
@@ -3110,31 +3309,6 @@ const Dashboard = () => {
 
       {activeSection === "swap" && (
         <div className="mx-4 mt-4 space-y-4">
-          <DashboardSectionHero
-            badge="Swap & withdraw"
-            metricLabel="Withdrawal amount"
-            metricValue={balanceHidden ? "••••••" : formatCompactCurrency(safeSwapAmount)}
-            metricSubtitle={`${swapWithdrawalType} · fee ${formatCompactCurrency(swapFeeAmount)}`}
-            icon={ArrowLeftRight}
-            balanceHidden={balanceHidden}
-            onToggleHidden={toggleBalanceHidden}
-            action={{
-              label: "Continue",
-              onClick: () => navigate(`/swap-withdrawal?amount=${safeSwapAmount.toFixed(2)}&type=${swapWithdrawalType}`),
-            }}
-            stats={[
-              { label: "You receive", value: (
-                swapWithdrawalType === "PI"
-                  ? `${swapPayoutPiAmount.toFixed(4)} PI`
-                  : swapWithdrawalType === "OUSD"
-                    ? `${swapPayoutOusdAmount.toFixed(2)} OUSD`
-                    : swapWithdrawalType === "OUSD_SOL"
-                      ? `${swapPayoutOusdSolAmount.toFixed(2)} ${OUSD_SOL_LABEL}`
-                      : `${swapPayoutMrwnAmount.toFixed(4)} MRWN`
-              ) },
-              { label: "Minimum", value: swapMeetsMinimum ? "Met" : "Below min", tone: swapMeetsMinimum ? "text-emerald-200" : "text-amber-200" },
-            ]}
-          />
           <DashboardSwapPanel
             withdrawalType={swapWithdrawalType}
             onWithdrawalTypeChange={setSwapWithdrawalType}
@@ -3183,38 +3357,17 @@ const Dashboard = () => {
 
       {activeSection === "mining" && (
         <div className="mx-4 mt-4">
-          <DashboardSectionHero
-            badge="Mining hub"
-            metricLabel="Mining balance (OUSD)"
-            metricValue={<AnimatedCounter value={miningBalance} codeOverride="OUSD" />}
-            metricSubtitle={activeMiningSession ? "Session active" : "Ready to mine"}
-            icon={Pickaxe}
-            trailing={
-              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
-                {activeMiningSession ? "Active" : "Idle"}
-              </span>
-            }
-            action={{
-              label: activeMiningSession ? "Open session" : "Start session",
-              onClick: () => navigate("/mining"),
-            }}
-            stats={[
-              { label: "Daily rate", value: "0.10 OUSD", tone: "text-emerald-200" },
-              { label: "Status", value: activeMiningSession ? "Mining" : "Stopped" },
-            ]}
-          />
-
-          <div className="mt-4 paypal-surface rounded-3xl p-4">
+          <div className="dash-panel">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-base font-bold text-foreground">Staking rewards</p>
               <button onClick={() => navigate("/staking")} className="text-xs font-bold text-paypal-blue">Open hub</button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-2xl bg-secondary/30 p-3">
+              <div className="dash-tile">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground/60">7 Days</p>
                 <p className="text-sm font-bold text-foreground">2% APY</p>
               </div>
-              <div className="rounded-2xl bg-secondary/30 p-3">
+              <div className="dash-tile">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground/60">30 Days</p>
                 <p className="text-sm font-bold text-foreground">5% APY</p>
               </div>
@@ -3225,64 +3378,28 @@ const Dashboard = () => {
 
       {activeSection === "analytics" && (
         <div className="mx-4 mt-4 space-y-4">
-          <DashboardSectionHero
-            badge="Personal Analytics"
-            metricLabel="Net balance"
-            metricValue={
-              personalAnalyticsLoading
-                ? "…"
-                : personalAnalytics
-                  ? (balanceHidden ? "••••••" : <AnimatedCounter value={personalAnalytics.summary.net_balance} />)
-                  : "—"
-            }
-            metricSubtitle={personalAnalyticsLoading ? "Loading…" : "Wallet activity"}
-            icon={TrendingUp}
-            balanceHidden={balanceHidden}
-            onToggleHidden={toggleBalanceHidden}
-            trailing={
-              <button
-                type="button"
-                onClick={() => void loadPersonalAnalytics()}
-                disabled={personalAnalyticsLoading}
-                className="ios-active inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25 disabled:opacity-60"
-              >
-                {personalAnalyticsLoading ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Refresh"}
-              </button>
-            }
-            stats={
-              personalAnalytics && !personalAnalyticsLoading
-                ? [
-                    { label: "Total sent", value: balanceHidden ? "****" : <AnimatedCounter value={personalAnalytics.summary.total_sent} />, tone: "text-rose-200" },
-                    { label: "Total received", value: balanceHidden ? "****" : <AnimatedCounter value={personalAnalytics.summary.total_received} />, tone: "text-emerald-200" },
-                    { label: "Transactions", value: String(personalAnalytics.summary.transaction_count) },
-                    { label: "Top-ups", value: String(personalAnalytics.summary.topup_count) },
-                  ]
-                : undefined
-            }
-          />
-
           {personalAnalytics && !personalAnalyticsLoading && (
             <>
               {/* Detailed Metrics */}
-              <div className="paypal-surface rounded-[2rem] p-6">
+              <div className="dash-panel p-5">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Detailed Metrics</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 rounded-xl bg-black/5 dark:bg-white/5">
+                    <div className="dash-tile flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Avg Transaction</span>
                       <span className="text-sm font-bold text-foreground">{formatCompactCurrency(personalAnalytics.detailed_metrics.avg_transaction_value)}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 rounded-xl bg-black/5 dark:bg-white/5">
+                    <div className="dash-tile flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Avg Top-up</span>
                       <span className="text-sm font-bold text-foreground">{formatCompactCurrency(personalAnalytics.detailed_metrics.avg_topup_amount)}</span>
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 rounded-xl bg-black/5 dark:bg-white/5">
+                    <div className="dash-tile flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Primary Currency</span>
                       <span className="text-sm font-bold text-foreground">{personalAnalytics.detailed_metrics.most_used_currency}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 rounded-xl bg-black/5 dark:bg-white/5">
+                    <div className="dash-tile flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Total Activities</span>
                       <span className="text-sm font-bold text-foreground">{personalAnalytics.detailed_metrics.total_activities}</span>
                     </div>
@@ -3291,7 +3408,7 @@ const Dashboard = () => {
               </div>
 
               {/* Recent Activity Table */}
-              <div className="paypal-surface rounded-[2rem] p-6">
+              <div className="dash-panel p-5">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Recent Activity</h3>
                 {personalAnalytics.recent_transactions.length === 0 ? (
                   <p className="text-center py-8 text-sm text-muted-foreground">No recent activity</p>
@@ -3376,16 +3493,16 @@ const Dashboard = () => {
 
 
         {/* Quick tabs: Recent · OpenLedger · Blockchain */}
-        <div className="paypal-surface mx-4 -mt-4 relative rounded-3xl p-3 shadow-xl shadow-black/5">
+        <div className="dash-panel mx-4 -mt-4 relative p-3">
           <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <button
               type="button"
               onClick={() => setShowRecentActivity(true)}
-              className="ios-active inline-flex shrink-0 items-center gap-1.5 rounded-full bg-paypal-blue/10 px-3 py-1.5 text-[11px] font-bold text-paypal-blue hover:bg-paypal-blue/15"
+              className="ios-active inline-flex shrink-0 items-center gap-1.5 rounded-full bg-paypal-blue px-3 py-1.5 text-[11px] font-bold text-white shadow-sm shadow-paypal-blue/25"
             >
               <Activity className="h-3.5 w-3.5" /> Recent
               {recentActivityCount > 0 && (
-                <span className="rounded-full bg-paypal-blue px-1.5 text-[9px] font-black text-white">
+                <span className="rounded-full bg-white/20 px-1.5 text-[9px] font-black text-white">
                   {recentActivityCount > 99 ? "99+" : recentActivityCount}
                 </span>
               )}
@@ -3393,7 +3510,7 @@ const Dashboard = () => {
             <button
               type="button"
               onClick={() => navigate("/ledger")}
-              className="ios-active inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-[11px] font-bold text-foreground hover:bg-secondary/70"
+              className="ios-active inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary/70 px-3 py-1.5 text-[11px] font-bold text-foreground hover:bg-secondary"
             >
               <BookOpen className="h-3.5 w-3.5" /> OpenLedger
             </button>
@@ -3401,7 +3518,7 @@ const Dashboard = () => {
               href="https://www.openpyledger.space/"
               target="_blank"
               rel="noopener noreferrer"
-              className="ios-active inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-[11px] font-bold text-foreground hover:bg-secondary/70"
+              className="ios-active inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary/70 px-3 py-1.5 text-[11px] font-bold text-foreground hover:bg-secondary"
             >
               <ExternalLink className="h-3.5 w-3.5" /> Blockchain
             </a>
@@ -3410,7 +3527,7 @@ const Dashboard = () => {
 
 
         {userAccount && (
-          <div className="mx-4 mt-4 paypal-surface rounded-3xl p-4">
+          <div className="mx-4 mt-4 dash-panel">
             <div className="flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:justify-between">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">OpenPay Account</p>
@@ -3421,9 +3538,9 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={copyAccountNumber}
-                className="w-full rounded-xl border border-border/70 bg-white px-3 py-2 text-sm font-medium text-foreground transition hover:bg-secondary sm:w-auto"
+                className="dash-btn-secondary sm:w-auto sm:px-4"
               >
-                <Copy className="mr-1 inline h-4 w-4" />
+                <Copy className="h-4 w-4" />
                 Copy
               </button>
             </div>
@@ -3431,7 +3548,7 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={() => navigate("/virtual-card")}
-                className="w-full rounded-xl bg-paypal-blue px-3 py-2 text-sm font-semibold text-white hover:bg-[#004dc5] sm:w-auto"
+                className="dash-btn-primary sm:w-auto sm:px-4"
               >
                 Open Virtual Card
               </button>
@@ -3441,9 +3558,9 @@ const Dashboard = () => {
 
         {/* Transaction History — MariBank style */}
 
-        <div className="paypal-surface mx-4 mt-4 rounded-3xl p-4 shadow-sm">
+        <div className="dash-panel mx-4 mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-black text-foreground">Transaction History</h3>
+            <h3 className="text-sm font-bold text-foreground">Transaction History</h3>
             <button
               type="button"
               onClick={() => setShowRecentActivity(true)}
@@ -3455,7 +3572,7 @@ const Dashboard = () => {
           {transactions.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">No transactions yet.</p>
           ) : (
-            <div className="divide-y divide-border/60 rounded-2xl">
+            <div className="dash-list">
               {transactions.slice(0, 5).map((tx) => renderActivityRow(tx))}
             </div>
           )}
@@ -3463,7 +3580,7 @@ const Dashboard = () => {
             <button
               type="button"
               onClick={() => setShowRecentActivity(true)}
-              className="ios-active mt-2 w-full rounded-xl py-2 text-center text-xs font-bold text-paypal-blue hover:bg-paypal-blue/5"
+              className="ios-active mt-3 w-full rounded-2xl py-2.5 text-center text-xs font-bold text-paypal-blue hover:bg-paypal-blue/5"
             >
               See More →
             </button>
@@ -3475,9 +3592,9 @@ const Dashboard = () => {
 
       
       {walletView === "merchant" && (
-        <div className="mx-4 mt-4 paypal-surface rounded-3xl p-4">
+        <div className="mx-4 mt-4 dash-panel">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-border/70 p-3">
+            <div className="dash-tile">
               <p className="mb-2 text-sm font-semibold text-foreground">Move merchant balance to savings</p>
               <input
                 value={formatAmountInput(merchantSavingsAmount)}
@@ -3485,18 +3602,18 @@ const Dashboard = () => {
                 type="text"
                 inputMode="decimal"
                 placeholder={`Amount (${currencyLabel})`}
-                className="mb-2 h-10 w-full rounded-xl border border-border px-3 text-black"
+                className="dash-input"
               />
               <button
                 disabled={movingMerchantToSavings}
                 onClick={() => handleProtectedAction(handleMoveMerchantToSavings, "handleMoveMerchantToSavings")}
-                className="h-10 w-full rounded-xl bg-paypal-blue text-sm font-semibold text-white"
+                className="dash-btn-primary"
               >
                 {movingMerchantToSavings ? "Moving..." : "Move to Savings"}
                 <ArrowLeftRight className="ml-2 h-4 w-4" />
               </button>
             </div>
-            <div className="rounded-2xl border border-border/70 p-3">
+            <div className="dash-tile">
               <p className="mb-2 text-sm font-semibold text-foreground">Move merchant balance to wallet</p>
               <input
                 value={formatAmountInput(merchantWithdrawAmount)}
@@ -3504,19 +3621,19 @@ const Dashboard = () => {
                 type="text"
                 inputMode="decimal"
                 placeholder={`Amount (${currencyLabel})`}
-                className="mb-2 h-10 w-full rounded-xl border border-border px-3 text-black"
+                className="dash-input"
               />
               <button
                 disabled={movingMerchantToWallet}
                 onClick={() => handleProtectedAction(handleMoveMerchantToWallet, "handleMoveMerchantToWallet")}
-                className="h-10 w-full rounded-xl border border-paypal-blue/40 bg-white text-sm font-semibold text-paypal-blue"
+                className="dash-btn-secondary"
               >
                 {movingMerchantToWallet ? "Moving..." : "Move to Wallet"}
                 <Wallet className="ml-2 h-4 w-4" />
               </button>
             </div>
           </div>
-          <div className="mt-4 rounded-2xl border border-border/70 p-3">
+          <div className="mt-4 dash-tile">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-semibold text-foreground">Recent merchant activity</p>
               {merchantActivity.length > 0 && <p className="text-xs text-muted-foreground">{merchantActivity.length} latest</p>}
@@ -3524,7 +3641,7 @@ const Dashboard = () => {
             {merchantActivity.length === 0 ? (
               <p className="py-3 text-sm text-muted-foreground">No merchant activity yet.</p>
             ) : (
-              <div className="divide-y divide-border/70 rounded-xl border border-border/70">
+              <div className="dash-list">
                 {merchantActivity.map((entry, index) => {
                   const isOutflow = ["refund", "transfer_to_wallet", "transfer_to_savings"].includes(entry.activity_type);
                   const label =
@@ -3619,13 +3736,13 @@ const Dashboard = () => {
                 key={item.id}
                 onClick={item.action}
                 style={{ animationDelay: `${idx * 50}ms` }}
-                className="paypal-surface ios-active flex flex-col items-center justify-center rounded-[2rem] p-5 text-center shadow-lg shadow-black/5 text-foreground"
+                className="dash-panel ios-active flex flex-col items-center justify-center p-4 text-center"
               >
-                <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${item.color} shadow-inner`}>
-                  <item.icon className={`h-6 w-6 ${item.iconColor}`} />
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/10">
+                  <item.icon className="h-5 w-5 text-paypal-blue" />
                 </div>
-                <p className="text-[11px] font-black tracking-tight text-foreground uppercase">{item.label}</p>
-                <p className="mt-1 text-[9px] font-bold text-muted-foreground/70 line-clamp-1">{item.sub}</p>
+                <p className="text-[11px] font-bold tracking-tight text-foreground">{item.label}</p>
+                <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">{item.sub}</p>
               </button>
             ))}
           </div>
@@ -3634,17 +3751,17 @@ const Dashboard = () => {
 
       {remittanceUiEnabled && (
         <div className="mx-4 mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="paypal-surface rounded-2xl p-3">
+          <div className="dash-panel p-3">
             <p className="text-xs text-muted-foreground">Remittance fee income</p>
             <p className="mt-1 text-xl font-bold text-foreground">{balanceHidden ? "****" : formatCompactCurrency(remittanceFeeIncome)}</p>
           </div>
-          <div className="paypal-surface rounded-2xl p-3">
+          <div className="dash-panel p-3">
             <p className="text-xs text-muted-foreground">This month</p>
             <p className="mt-1 text-xl font-bold text-foreground">{balanceHidden ? "****" : formatCompactCurrency(remittanceMonthIncome)}</p>
           </div>
           <button
             onClick={() => navigate("/remittance-merchant")}
-            className="paypal-surface rounded-2xl p-3 text-left transition hover:bg-secondary/50"
+            className="dash-panel p-3 text-left transition hover:bg-secondary/50"
           >
             <p className="text-xs text-muted-foreground">Remittance records</p>
             <p className="mt-1 text-xl font-bold text-foreground">{remittanceTxCount}</p>
@@ -3702,7 +3819,7 @@ const Dashboard = () => {
           </DialogDescription>
           <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
             {transactions.length === 0 ? (
-              <div className="rounded-2xl border border-border/70 bg-secondary/30 px-4 py-10 text-center">
+              <div className="dash-tile px-4 py-10 text-center">
                 <p className="text-sm text-muted-foreground">No transactions yet</p>
                 <button
                   type="button"
@@ -3716,7 +3833,7 @@ const Dashboard = () => {
                 </button>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-border/70 divide-y divide-border/70">
+              <div className="dash-list">
                 {transactions.map((tx) => renderActivityRow(tx))}
               </div>
             )}
@@ -3747,9 +3864,9 @@ const Dashboard = () => {
                 setShowReceiveOptions(false);
                 navigate("/receive");
               }}
-              className="rounded-2xl border border-border/70 bg-secondary/50 p-3 text-center transition hover:bg-secondary"
+              className="dash-tile text-center transition hover:bg-secondary"
             >
-              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-white">
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-paypal-blue/10">
                 <QrCode className="h-5 w-5 text-paypal-blue" />
               </div>
               <p className="text-sm font-semibold text-foreground">Receive</p>
@@ -3759,9 +3876,9 @@ const Dashboard = () => {
                 setShowReceiveOptions(false);
                 navigate("/request-payment");
               }}
-              className="rounded-2xl border border-border/70 bg-secondary/50 p-3 text-center transition hover:bg-secondary"
+              className="dash-tile text-center transition hover:bg-secondary"
             >
-              <div className="relative mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-white">
+              <div className="relative mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-paypal-blue/10">
                 <CircleDollarSign className="h-5 w-5 text-paypal-blue" />
                 {pendingRequestCount > 0 && (
                   <span className="absolute -right-1 -top-1 min-w-[16px] rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4 text-white">
@@ -3776,9 +3893,9 @@ const Dashboard = () => {
                 setShowReceiveOptions(false);
                 navigate("/send-invoice");
               }}
-              className="rounded-2xl border border-border/70 bg-secondary/50 p-3 text-center transition hover:bg-secondary"
+              className="dash-tile text-center transition hover:bg-secondary"
             >
-              <div className="relative mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-white">
+              <div className="relative mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-paypal-blue/10">
                 <FileText className="h-5 w-5 text-paypal-blue" />
                 {pendingInvoiceCount > 0 && (
                   <span className="absolute -right-1 -top-1 min-w-[16px] rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4 text-white">
@@ -3804,9 +3921,9 @@ const Dashboard = () => {
                 setShowBuyOptions(false);
                 setActiveSection("buy");
               }}
-              className="rounded-2xl border border-border/70 bg-secondary/50 p-3 text-center transition hover:bg-secondary"
+              className="dash-tile text-center transition hover:bg-secondary"
             >
-              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-white">
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-paypal-blue/10">
                 <CircleDollarSign className="h-5 w-5 text-paypal-blue" />
               </div>
               <p className="text-sm font-semibold text-foreground">Top Up</p>
@@ -3817,9 +3934,9 @@ const Dashboard = () => {
                 setShowBuyOptions(false);
                 setActiveSection("mining");
               }}
-              className="rounded-2xl border border-border/70 bg-secondary/50 p-3 text-center transition hover:bg-secondary"
+              className="dash-tile text-center transition hover:bg-secondary"
             >
-              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-white">
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-paypal-blue/10">
                 <Pickaxe className="h-5 w-5 text-paypal-blue" />
               </div>
               <p className="text-sm font-semibold text-foreground">Mining</p>
@@ -3830,9 +3947,9 @@ const Dashboard = () => {
                 setShowBuyOptions(false);
                 navigate("/staking");
               }}
-              className="rounded-2xl border border-border/70 bg-secondary/50 p-3 text-center transition hover:bg-secondary"
+              className="dash-tile text-center transition hover:bg-secondary"
             >
-              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-white">
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-paypal-blue/10">
                 <Coins className="h-5 w-5 text-paypal-blue" />
               </div>
               <p className="text-sm font-semibold text-foreground">Staking</p>
@@ -3843,9 +3960,9 @@ const Dashboard = () => {
                 setShowBuyOptions(false);
                 setActiveSection("swap");
               }}
-              className="rounded-2xl border border-border/70 bg-secondary/50 p-3 text-center transition hover:bg-secondary"
+              className="dash-tile text-center transition hover:bg-secondary"
             >
-              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-white">
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-paypal-blue/10">
                 <ArrowLeftRight className="h-5 w-5 text-paypal-blue" />
               </div>
               <p className="text-sm font-semibold text-foreground">Swap</p>
@@ -3862,39 +3979,36 @@ const Dashboard = () => {
             Open merchant tools quickly from dashboard.
           </DialogDescription>
           <div className="mt-2 grid gap-2">
-            <Button
+            <button
               type="button"
-              variant="outline"
-              className="h-11 justify-start rounded-xl"
+              className="dash-tile flex h-12 items-center px-4 text-left text-sm font-bold text-foreground transition hover:bg-secondary"
               onClick={() => {
                 setShowMerchantFeatures(false);
                 navigate("/merchant-onboarding");
               }}
             >
               Merchant Portal
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              variant="outline"
-              className="h-11 justify-start rounded-xl"
+              className="dash-tile flex h-12 items-center px-4 text-left text-sm font-bold text-foreground transition hover:bg-secondary"
               onClick={() => {
                 setShowMerchantFeatures(false);
                 navigate("/merchant-pos");
               }}
             >
               POS
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              variant="outline"
-              className="h-11 justify-start rounded-xl"
+              className="dash-tile flex h-12 items-center px-4 text-left text-sm font-bold text-foreground transition hover:bg-secondary"
               onClick={() => {
                 setShowMerchantFeatures(false);
                 navigate("/payment-links/create");
               }}
             >
               Checkout Link
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
@@ -3980,12 +4094,12 @@ const Dashboard = () => {
                     }
                     setShowOnrampPicker(false);
                   }}
-                  className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                  className={`dash-tile w-full text-left transition ${
                     row.disabled
-                      ? "border-border/50 bg-secondary/40 text-muted-foreground"
+                      ? "opacity-60"
                       : selected
-                        ? "border-paypal-blue/50 bg-white"
-                        : "border-border/70 bg-secondary/20 hover:bg-secondary/40"
+                        ? "bg-white ring-2 ring-paypal-blue/40 dark:bg-white/10"
+                        : "hover:bg-secondary"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -4203,12 +4317,12 @@ const Dashboard = () => {
                     }
                     setShowPaymentMethodPicker(false);
                   }}
-                  className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                  className={`dash-tile w-full text-left transition ${
                     disabled
-                      ? "border-border/50 bg-secondary/40 text-muted-foreground"
+                      ? "opacity-60"
                       : selected
-                        ? "border-paypal-blue/50 bg-white"
-                        : "border-border/70 bg-white hover:bg-secondary/20"
+                        ? "bg-white ring-2 ring-paypal-blue/40 dark:bg-white/10"
+                        : "hover:bg-secondary"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -4322,7 +4436,7 @@ const Dashboard = () => {
           <DialogDescription className="text-sm text-muted-foreground">
             OpenPay is designed for Pi-powered internal balance transfers. By continuing, you agree to use OpenPay only under the protection rules below.
           </DialogDescription>
-          <div className="rounded-2xl border border-border/70 p-3 text-sm text-foreground">
+          <div className="dash-tile text-sm text-foreground">
             <p>1. Use OpenPay only to transfer OpenPay balance backed by Pi.</p>
             <p>2. Do not use OpenPay for external wallet transfers or non-Pi crypto assets.</p>
             <p>3. Verify recipient and merchant details before every payment.</p>
@@ -4375,7 +4489,7 @@ const Dashboard = () => {
             ))}
           </div>
 
-          <div className="mt-2 rounded-2xl border border-border/70 p-3 text-sm text-muted-foreground">
+          <div className="mt-2 dash-tile text-sm text-muted-foreground">
             Pro tip: you can revisit support and usage guidance anytime from Menu.
           </div>
 

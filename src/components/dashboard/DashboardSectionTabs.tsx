@@ -4,19 +4,26 @@ import { DASHBOARD_SECTION_NAV, type DashboardSection } from "@/lib/dashboardSec
 type DashboardSectionTabsProps = {
   activeSection: DashboardSection;
   onChange: (section: DashboardSection) => void;
+  onNavigate?: (href: string) => void;
 };
 
-const DashboardSectionTabs = ({ activeSection, onChange }: DashboardSectionTabsProps) => (
-  <div className="paypal-surface rounded-2xl p-2 hover-lift">
-    <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-9">
+const DashboardSectionTabs = ({ activeSection, onChange, onNavigate }: DashboardSectionTabsProps) => (
+  <div className="dash-panel p-2 hover-lift">
+    <div className="grid grid-cols-5 gap-1.5">
       {DASHBOARD_SECTION_NAV.map((item) => {
         const Icon = item.icon;
-        const isActive = activeSection === item.key;
+        const isActive = !item.href && activeSection === item.key;
         return (
           <button
             key={item.key}
             type="button"
-            onClick={() => onChange(item.key)}
+            onClick={() => {
+              if (item.href) {
+                onNavigate?.(item.href);
+                return;
+              }
+              onChange(item.key as DashboardSection);
+            }}
             className={cn(
               "dash-tab flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center",
               isActive ? "dash-tab-active" : "text-foreground hover:bg-secondary/70",
