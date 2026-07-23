@@ -5302,9 +5302,16 @@ export type Database = {
       nft_cancel_listing: { Args: { p_listing_id: string }; Returns: boolean }
       nft_create_auction: {
         Args: {
+          p_card_cvc?: string
+          p_card_exp_month?: number
+          p_card_exp_year?: number
+          p_card_number?: string
           p_duration_hours: number
           p_item_id: string
           p_min_increment: number
+          p_payment_method?: string
+          p_pi_payment_id?: string
+          p_pi_txid?: string
           p_quantity: number
           p_start_price: number
         }
