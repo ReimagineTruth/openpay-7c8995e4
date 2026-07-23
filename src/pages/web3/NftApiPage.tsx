@@ -267,11 +267,21 @@ console.log(activity);`}</Code>
     "buyer_id": "…",
     "created_at": "2026-07-19T…Z",
     "item": {
-      "id": "…", "name": "…",
-      "code": "…", "image_url": "…",
-      "collection_id": "…",
-      "creator_id": "…"
-    }
+      "id": "…", "name": "…", "code": "…",
+      "image": "https://…/nft.jpg",
+      "image_url": "…", "media_url": "…",
+      "collection_id": "…", "creator_id": "…",
+      "permalink": "https://openpay.lovable.app/web3/nft/…",
+      "collection_url": "https://openpay.lovable.app/web3/nft?collection=…",
+      "store": {
+        "handle": "artstudio",
+        "display_name": "Art Studio",
+        "avatar_url": "…",
+        "is_verified": true,
+        "url": "https://openpay.lovable.app/web3/nft/store/artstudio"
+      }
+    },
+    "marketplace_url": "https://openpay.lovable.app/web3/nft"
   }]
 }`}</Code>
           </div>
