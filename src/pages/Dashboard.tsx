@@ -3611,29 +3611,34 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Explore the App — horizontal scroll */}
-        <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between px-1">
-            <h3 className="text-sm font-black text-white">Explore the App</h3>
-            <button type="button" onClick={() => setShowShortcuts(true)} className="text-[11px] font-bold text-white/80 hover:text-white">
-              View All →
+        {/* Transaction History — MariBank style */}
+        <div className="paypal-surface mt-4 rounded-3xl p-4 shadow-sm">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-black text-foreground">Transaction History</h3>
+            <button
+              type="button"
+              onClick={() => setShowRecentActivity(true)}
+              className="ios-active inline-flex items-center gap-1 text-[11px] font-bold text-paypal-blue hover:underline"
+            >
+              See all <ChevronDown className="h-3 w-3 -rotate-90" />
             </button>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            {dashboardFeatureCards.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={item.onClick}
-                className="ios-active flex min-w-[68px] shrink-0 flex-col items-center gap-1.5"
-              >
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-paypal-blue shadow-md shadow-black/10">
-                  <item.icon className="h-6 w-6" />
-                </span>
-                <span className="text-[10px] font-bold text-white/90 text-center leading-tight">{item.title}</span>
-              </button>
-            ))}
-          </div>
+          {transactions.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No transactions yet.</p>
+          ) : (
+            <div className="divide-y divide-border/60 rounded-2xl">
+              {transactions.slice(0, 5).map((tx) => renderActivityRow(tx))}
+            </div>
+          )}
+          {transactions.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setShowRecentActivity(true)}
+              className="ios-active mt-2 w-full rounded-xl py-2 text-center text-xs font-bold text-paypal-blue hover:bg-paypal-blue/5"
+            >
+              See More →
+            </button>
+          )}
         </div>
       </div>
 
