@@ -184,14 +184,23 @@ export const loadCookieConsent = (): CookieConsentOptions => {
 
 export const saveCookieConsent = (consent: Partial<CookieConsentOptions>): void => {
   if (typeof window === "undefined") return;
-  
+
   try {
     const current = loadCookieConsent();
     const updated = { ...current, ...consent };
-    
+    const timestamp = new Date().toISOString();
+
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(updated));
-    localStorage.setItem(CONSENT_TIMESTAMP_KEY, new Date().toISOString());
-    
+    localStorage.setItem(CONSENT_TIMESTAMP_KEY, timestamp);
+
+    // Also persist to a real browser cookie so the choice survives even when
+    // localStorage is cleared (Pi Browser, private mode, PWA reinstalls, etc.).
+    setBrowserCookie(
+      CONSENT_COOKIE_NAME,
+      JSON.stringify({ ...updated, ts: timestamp }),
+      CONSENT_COOKIE_MAX_AGE,
+    );
+
     // Update user preferences to reflect consent
     saveUserPreferences({
       cookiesAccepted: true,
@@ -205,10 +214,27 @@ export const saveCookieConsent = (consent: Partial<CookieConsentOptions>): void 
 
 export const hasAcceptedCookies = (): boolean => {
   if (typeof window === "undefined") return false;
-  
-  // Check if user has ever made a consent decision
+
+  // Check if user has ever made a consent decision — look in localStorage
+  // first, then fall back to the persistent browser cookie.
   const timestamp = localStorage.getItem(CONSENT_TIMESTAMP_KEY);
-  return timestamp !== null;
+  if (timestamp !== null) return true;
+
+  const cookieValue = readBrowserCookie(CONSENT_COOKIE_NAME);
+  if (cookieValue) {
+    // Re-hydrate localStorage from cookie so subsequent reads are fast.
+    try {
+      const parsed = JSON.parse(cookieValue) as CookieConsentOptions & { ts?: string };
+      const { ts, ...rest } = parsed;
+      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(rest));
+      localStorage.setItem(CONSENT_TIMESTAMP_KEY, ts || new Date().toISOString());
+    } catch {
+      // ignore parse failure — treat presence as consent given
+    }
+    return true;
+  }
+
+  return false;
 };
 
 export const canUseFunctionalCookies = (): boolean => {
