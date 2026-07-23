@@ -643,11 +643,11 @@ const NftMarketplacePage = () => {
                     {/* Arrows */}
                     {heroSlides.length > 1 && (
                       <>
-                        <button onClick={() => setHeroIndex((i) => (i - 1 + heroSlides.length) % heroSlides.length)}
+                        <button onClick={(e) => { e.stopPropagation(); setHeroIndex((i) => (i - 1 + heroSlides.length) % heroSlides.length); }}
                           className="hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/60 backdrop-blur items-center justify-center hover:bg-black/80">
                           <ChevronLeft className="h-5 w-5" />
                         </button>
-                        <button onClick={() => setHeroIndex((i) => (i + 1) % heroSlides.length)}
+                        <button onClick={(e) => { e.stopPropagation(); setHeroIndex((i) => (i + 1) % heroSlides.length); }}
                           className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/60 backdrop-blur items-center justify-center hover:bg-black/80">
                           <ChevronRight className="h-5 w-5" />
                         </button>
