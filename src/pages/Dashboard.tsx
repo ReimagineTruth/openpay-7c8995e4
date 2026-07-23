@@ -2377,7 +2377,8 @@ const Dashboard = () => {
             {activeSectionMeta.description}
           </p>
         ) : null}
-        <DashboardSectionQuickBar actions={sectionQuickActions[activeSection]} className="mt-3 justify-center sm:justify-start" />
+        {/* QuickBar hidden per request */}
+        {false && <DashboardSectionQuickBar actions={sectionQuickActions[activeSection]} className="mt-3 justify-center sm:justify-start" />}
         {activeSection !== "swap" && activeSection !== "wallet" ? (
           <DigitalRateDisplay
             rates={{
