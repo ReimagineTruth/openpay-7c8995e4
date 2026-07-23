@@ -492,6 +492,37 @@ const MiningPage = () => {
   const getTimeUntilNextAd = (): string => "Ready to watch";
 
   const runRewardedAd = async () => {
+    // Pi Ad Network temporarily disabled — auto-grant reward without showing an ad.
+    const fallbackAdId = `noad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    try {
+      window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
+      window.localStorage.setItem("pi_ad_rewarded_id", fallbackAdId);
+      window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
+    } catch {
+      // ignore
+    }
+    try {
+      const progress = await recordAdCompletion(fallbackAdId, {
+        rewarded_at: Date.now(),
+        fallback_used: true,
+        ads_disabled: true,
+      });
+      const progressPayload = progress as AdProgressPayload | null;
+      const newAdCount = Math.max(Number(progressPayload?.ads_completed || 0), adsWatched + 1);
+      rewardedAdCountRef.current = newAdCount;
+      setAdsWatched(newAdCount);
+      persistAdWatchCount(newAdCount);
+      if (newAdCount < requiredAds) {
+        toast.success(`Progress ${newAdCount}/${requiredAds} — tap Continue to proceed.`);
+        return false;
+      }
+    } catch {
+      // ignore
+    }
+    return true;
+  };
+
+  const _runRewardedAdOriginal = async () => {
     if (!initPi() || !window.Pi?.Ads?.showAd) {
       throw new Error("Pi Ad Network is not available. Please update Pi Browser or try again later.");
     }
