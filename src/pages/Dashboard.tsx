@@ -4606,7 +4606,9 @@ const Dashboard = () => {
       </Dialog>
       <FeatureQuestIntroModal />
       <FeedbackPromptModal />
+      <RegulatoryStatusModal open={showRegulatory} onOpenChange={setShowRegulatory} />
     </div>
+
   );
 };
 
