@@ -194,12 +194,21 @@ const NftStorePage = () => {
   };
 
   const onShare = async () => {
-    const url = window.location.href;
+    const hdl = profile?.handle || owner?.username || owner?.id?.slice(0, 8);
+    const url = `${window.location.origin}/web3/nft/store/${hdl}`;
     const name = profile?.display_name || owner?.full_name || owner?.username || "this store";
-    const title = `${name} · Open NFT on OpenPay`;
-    const text = `Check out ${name}'s NFT collection on OpenPay Open NFT.`;
-    try { await navigator.share?.({ title, text, url }); }
-    catch { await navigator.clipboard.writeText(url); toast({ title: "Link copied" }); }
+    const title = `${name} (@${hdl}) · Open NFT on OpenPay`;
+    const text = `Check out @${hdl}'s NFT collection on OpenPay Open NFT.`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast({ title: "Link copied", description: url });
+      }
+    } catch {
+      try { await navigator.clipboard.writeText(url); toast({ title: "Link copied", description: url }); } catch { /* noop */ }
+    }
   };
 
   const onCopyAddr = async () => {
