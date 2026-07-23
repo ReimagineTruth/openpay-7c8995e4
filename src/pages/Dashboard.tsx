@@ -3572,7 +3572,7 @@ const Dashboard = () => {
 
 
         {/* Quick tabs: Recent · OpenLedger · Blockchain */}
-        <div className="paypal-surface -mt-4 relative rounded-3xl p-3 shadow-xl shadow-black/5">
+        <div className="paypal-surface mx-4 -mt-4 relative rounded-3xl p-3 shadow-xl shadow-black/5">
           <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <button
               type="button"
