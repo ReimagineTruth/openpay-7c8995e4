@@ -27,7 +27,6 @@ import { playNotificationBellSound } from "@/lib/soundEffects";
 import { isPlaceholderOpenPayAccount } from "@/lib/openpayIdentity";
 import { PhantomConnect } from "@/components/ui/PhantomConnect";
 import DashboardSectionTabs from "@/components/dashboard/DashboardSectionTabs";
-import DashboardSectionQuickBar from "@/components/dashboard/DashboardSectionQuickBar";
 import DashboardRecommendations from "@/components/dashboard/DashboardRecommendations";
 import DashboardSectionHero from "@/components/dashboard/DashboardSectionHero";
 import NftShowcase from "@/components/web3/NftShowcase";
@@ -1216,16 +1215,22 @@ const Dashboard = () => {
             .map((tx) => (tx.sender_id === userIdLocal ? tx.receiver_id : tx.sender_id))
             .filter(Boolean),
         ));
-        let profilesById = new Map<string, { full_name?: string; username?: string; avatar_url?: string | null }>();
+        const profilesById = new Map<string, { full_name?: string; username?: string; avatar_url?: string | null }>();
         if (otherIds.length > 0) {
           const { data: otherProfiles } = await supabase
             .from("profiles")
             .select("id, full_name, username, avatar_url")
             .in("id", otherIds as string[]);
-          (otherProfiles || []).forEach((p: any) => profilesById.set(p.id, p));
+          (otherProfiles || []).forEach((p: { id: string; full_name?: string; username?: string; avatar_url?: string | null }) => {
+            profilesById.set(p.id, p);
+          });
         }
 
-        const enriched = txs.map((tx: any) => {
+        const enriched = txs.map((tx: {
+          sender_id: string;
+          receiver_id: string;
+          [key: string]: unknown;
+        }) => {
           const otherId = tx.sender_id === userIdLocal ? tx.receiver_id : tx.sender_id;
           const p = profilesById.get(otherId);
           return {
@@ -2254,64 +2259,9 @@ const Dashboard = () => {
   }>;
   const recentActivityCount = transactions.length;
   const activeSectionMeta = DASHBOARD_SECTION_NAV.find((item) => item.key === activeSection);
-  const sectionQuickActions: Record<DashboardSection, import("@/components/dashboard/DashboardSectionQuickBar").DashboardQuickAction[]> = {
-    wallet: [
-      { id: "send", label: "Send", icon: CircleDollarSign, onClick: () => navigate("/send"), variant: "primary" },
-      { id: "receive", label: "Receive", icon: QrCode, onClick: () => setShowReceiveOptions(true) },
-      { id: "buy", label: "Buy", icon: CircleDollarSign, onClick: () => setActiveSection("buy") },
-      { id: "activity", label: "Activity", icon: Activity, onClick: () => navigate("/activity") },
-    ],
-    savings: [
-      { id: "to-savings", label: "To savings", icon: PiggyBank, onClick: () => setActiveSection("savings"), variant: "primary" },
-      { id: "wallet", label: "Wallet", icon: Wallet, onClick: () => setActiveSection("wallet") },
-      { id: "analytics", label: "Insights", icon: TrendingUp, onClick: () => setActiveSection("analytics") },
-    ],
-    credit: [
-      { id: "build", label: "Build score", icon: TrendingUp, onClick: () => navigate("/send"), variant: "primary" },
-      { id: "loans", label: "Loans", icon: HandCoins, onClick: () => setActiveSection("loans") },
-      { id: "kyc", label: "KYC", icon: ShieldCheck, onClick: () => navigate(kycStatus === "not_submitted" ? "/kyc" : "/kyc-status") },
-    ],
-    loans: [
-      { id: "apply", label: "Apply", icon: HandCoins, onClick: () => setLoanView("form"), variant: "primary" },
-      { id: "credit", label: "Credit", icon: Scale, onClick: () => setActiveSection("credit") },
-      { id: "kyc", label: "KYC status", icon: ShieldCheck, onClick: () => navigate(kycStatus === "not_submitted" ? "/kyc" : "/kyc-status") },
-    ],
-    cards: [
-      { id: "manage", label: "Manage card", icon: CreditCard, onClick: () => navigate("/virtual-card"), variant: "primary" },
-      { id: "buy", label: "Add funds", icon: CircleDollarSign, onClick: () => setActiveSection("buy") },
-      { id: "activity", label: "Card activity", icon: Activity, onClick: () => navigate("/activity") },
-    ],
-    buy: [
-      { id: "confirm", label: "Confirm buy", icon: CircleDollarSign, onClick: handleBuyOpenUsd, variant: "primary", disabled: !buyOpenUsdMeetsMinimum },
-      { id: "methods", label: "Payment methods", icon: CreditCard, onClick: () => setShowPaymentMethodPicker(true) },
-      { id: "history", label: "Top-up history", icon: Clock, onClick: () => navigate("/topup-history") },
-    ],
-    swap: [
-      {
-        id: "continue",
-        label: "Continue swap",
-        icon: ArrowLeftRight,
-        onClick: () => navigate(`/swap-withdrawal?amount=${safeSwapAmount.toFixed(2)}&type=${swapWithdrawalType}`),
-        variant: "primary",
-        disabled: !swapMeetsMinimum,
-      },
-      { id: "withdrawals", label: "Withdrawals", icon: FileText, onClick: () => navigate("/swap-withdrawal") },
-      { id: "rates", label: "Live rates", icon: TrendingUp, onClick: () => setShowLiveRates(true) },
-    ],
-    mining: [
-      { id: "session", label: activeMiningSession ? "Mining session" : "Start mining", icon: Pickaxe, onClick: () => navigate("/mining"), variant: "primary" },
-      { id: "staking", label: "Staking", icon: Coins, onClick: () => navigate("/staking") },
-      { id: "analytics", label: "Insights", icon: TrendingUp, onClick: () => setActiveSection("analytics") },
-    ],
-    analytics: [
-      { id: "refresh", label: "Refresh", icon: RefreshCw, onClick: () => void loadPersonalAnalytics(), variant: "primary", disabled: personalAnalyticsLoading },
-      { id: "activity", label: "Full activity", icon: Activity, onClick: () => navigate("/activity") },
-      { id: "wallet", label: "Wallet", icon: Wallet, onClick: () => setActiveSection("wallet") },
-    ],
-  };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] overflow-x-hidden bg-paypal-blue pb-64 text-white dashboard-page-enter">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-paypal-blue pb-64 text-white dashboard-page-enter">
       <div ref={dashboardTopRef} className="h-0 w-0" aria-hidden tabIndex={-1} />
       <div className="flex items-center justify-between px-4 pt-5 dashboard-header-enter">
         <div className="flex items-center gap-2">
@@ -2846,9 +2796,6 @@ const Dashboard = () => {
             {activeSectionMeta.description}
           </p>
         ) : null}
-        {/* QuickBar hidden per request */}
-        {false && <DashboardSectionQuickBar actions={sectionQuickActions[activeSection]} className="mt-3 justify-center sm:justify-start" />}
-        {/* Live rates hidden per request */}
       </div>
 
 
