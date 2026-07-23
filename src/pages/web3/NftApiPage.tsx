@@ -32,12 +32,13 @@ const kindLabel: Record<string, { label: string; color: string; icon: string }> 
 
 const endpoints = [
   { method: "GET", path: "/stats", desc: "Global marketplace stats: totals per kind + volume by currency." },
-  { method: "GET", path: "/collections", desc: "List all NFT collections. Supports ?limit & ?offset." },
-  { method: "GET", path: "/collections/:id", desc: "Single collection by UUID or code." },
-  { method: "GET", path: "/collections/:id/items", desc: "Items inside a collection." },
-  { method: "GET", path: "/items", desc: "All active items. Filter by ?creator_id, ?category." },
-  { method: "GET", path: "/items/:id", desc: "Single item by UUID or code." },
-  { method: "GET", path: "/activity", desc: "Full mint/sale/auction/gift feed. Filter by ?item_id, ?collection_id." },
+  { method: "GET", path: "/collections", desc: "List all NFT collections with cover image, permalink, and creator store." },
+  { method: "GET", path: "/collections/:id", desc: "Single collection by UUID or code (includes store + permalink)." },
+  { method: "GET", path: "/collections/:id/items", desc: "Items inside a collection, enriched with image + permalink." },
+  { method: "GET", path: "/items", desc: "All active items with image, permalink, and store. Filter by ?creator_id, ?category." },
+  { method: "GET", path: "/items/:id", desc: "Single item by UUID or code (full detail + store + permalink)." },
+  { method: "GET", path: "/stores/:handle", desc: "Public creator store profile + up to 50 listed items with links." },
+  { method: "GET", path: "/activity", desc: "Full mint/sale/auction/gift feed with item image, permalink, and store. Filter by ?item_id, ?collection_id." },
   { method: "GET", path: "/activity/mints", desc: "Mints only." },
   { method: "GET", path: "/activity/sales", desc: "Sale + primary_sale + resale." },
   { method: "GET", path: "/activity/auctions", desc: "Auction settlements + bids." },
@@ -266,11 +267,21 @@ console.log(activity);`}</Code>
     "buyer_id": "…",
     "created_at": "2026-07-19T…Z",
     "item": {
-      "id": "…", "name": "…",
-      "code": "…", "image_url": "…",
-      "collection_id": "…",
-      "creator_id": "…"
-    }
+      "id": "…", "name": "…", "code": "…",
+      "image": "https://…/nft.jpg",
+      "image_url": "…", "media_url": "…",
+      "collection_id": "…", "creator_id": "…",
+      "permalink": "https://openpay.lovable.app/web3/nft/…",
+      "collection_url": "https://openpay.lovable.app/web3/nft?collection=…",
+      "store": {
+        "handle": "artstudio",
+        "display_name": "Art Studio",
+        "avatar_url": "…",
+        "is_verified": true,
+        "url": "https://openpay.lovable.app/web3/nft/store/artstudio"
+      }
+    },
+    "marketplace_url": "https://openpay.lovable.app/web3/nft"
   }]
 }`}</Code>
           </div>
