@@ -3446,63 +3446,56 @@ const Dashboard = () => {
 
       {activeSection === "wallet" && (
         <>
+      {/* E-Wallet Header — new design */}
       <div className="mx-4 mt-4">
-        <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
-          
-          <div className="relative mb-6 flex flex-wrap items-center gap-3">
-            <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
+        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-paypal-blue to-[#0059c1] p-5 text-white shadow-2xl shadow-paypal-blue/20">
+          {/* Toggles row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-full bg-white/15 p-1 backdrop-blur-sm">
               <button
                 type="button"
                 onClick={() => setWalletView("personal")}
-                className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 ios-active ${
-                  walletView === "personal" 
-                    ? "bg-white text-paypal-blue shadow-lg shadow-black/5" 
-                    : "text-muted-foreground hover:text-foreground"
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold transition ios-active ${
+                  walletView === "personal" ? "bg-white text-paypal-blue shadow" : "text-white/80"
                 }`}
               >
-                <CreditCard className="mr-1.5 h-3.5 w-3.5" />
-                Personal wallet
+                <CreditCard className="h-3 w-3" /> Personal
               </button>
               <button
                 type="button"
                 onClick={() => setWalletView("merchant")}
-                className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 ios-active ${
-                  walletView === "merchant" 
-                    ? "bg-white text-paypal-blue shadow-lg shadow-black/5" 
-                    : "text-muted-foreground hover:text-foreground"
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold transition ios-active ${
+                  walletView === "merchant" ? "bg-white text-paypal-blue shadow" : "text-white/80"
                 }`}
               >
-                <Store className="mr-1.5 h-3.5 w-3.5" />
-                Merchant wallet
+                <Store className="h-3 w-3" /> Merchant
               </button>
             </div>
             <button
               type="button"
               onClick={() => setUiMode("web3")}
               aria-label="Switch to Web3 mode"
-              className="web3-cta ml-auto ios-active group relative flex items-center gap-1.5 overflow-hidden rounded-full px-3.5 py-1.5 text-xs font-bold text-white shadow-[0_6px_18px_-4px_hsl(217_91%_60%/0.55)] transition-transform active:scale-95"
+              className="ml-auto inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
             >
-              <span aria-hidden className="web3-cta-glow" />
-              <Sparkles className="relative h-3.5 w-3.5 web3-cta-spark" />
-              <span className="relative tracking-wide">Web3</span>
+              <Sparkles className="h-3 w-3" /> Web3
             </button>
             <button
               type="button"
               onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-              className="ios-active rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue hover:bg-paypal-blue/20 transition-colors backdrop-blur-sm"
+              className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
             >
               {amountFormat === "compact" ? "Compact" : "Comma"}
             </button>
           </div>
 
           {walletView === "merchant" && (
-            <div className="relative mb-6 flex flex-wrap items-center gap-2">
-              <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-full bg-white/15 p-1 backdrop-blur-sm">
                 <button
                   type="button"
                   onClick={() => setMerchantMode("sandbox")}
-                  className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 ios-active ${
-                    merchantMode === "sandbox" ? "bg-white text-paypal-blue shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  className={`rounded-full px-3 py-1 text-[11px] font-bold transition ios-active ${
+                    merchantMode === "sandbox" ? "bg-white text-paypal-blue" : "text-white/80"
                   }`}
                 >
                   Sandbox
@@ -3510,8 +3503,8 @@ const Dashboard = () => {
                 <button
                   type="button"
                   onClick={() => setMerchantMode("live")}
-                  className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 ios-active ${
-                    merchantMode === "live" ? "bg-white text-paypal-blue shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  className={`rounded-full px-3 py-1 text-[11px] font-bold transition ios-active ${
+                    merchantMode === "live" ? "bg-white text-paypal-blue" : "text-white/80"
                   }`}
                 >
                   Live
@@ -3520,68 +3513,90 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={() => setShowMerchantFeatures(true)}
-                className="ios-active inline-flex items-center gap-2 rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue transition hover:bg-paypal-blue/20 backdrop-blur-sm"
+                className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25 ios-active"
               >
-                <Store className="h-4 w-4" />
-                Merchant features
+                <Store className="h-3 w-3" /> Merchant features
               </button>
             </div>
           )}
 
-          <div className="relative flex flex-col items-center justify-center text-center py-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/10 shadow-inner">
-                <BrandLogo className="h-8 w-8 text-paypal-blue" />
+          {/* Balance row */}
+          <div className="mt-5 flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/75">
+                <span>Available Balance</span>
+                <button type="button" onClick={toggleBalanceHidden} aria-label="Toggle balance visibility" className="opacity-80 hover:opacity-100">
+                  {balanceHidden ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                </button>
               </div>
-              <h2 className="text-5xl font-black tracking-tighter text-foreground min-w-0 flex-1 overflow-hidden">
-                <AnimatedCounter value={walletCardAmount} />
-              </h2>
+              <div className="mt-1 flex items-center gap-2">
+                <BrandLogo className="h-6 w-6 text-white/90" />
+                <h2 className="text-3xl font-black tracking-tight truncate">
+                  {balanceHidden ? "••••••" : <AnimatedCounter value={walletCardAmount} />}
+                </h2>
+              </div>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-white/60">
+                {walletView === "personal"
+                  ? `${currency.code === "PI" ? "PI" : piCurrencyLabel}`
+                  : `Merchant (${merchantMode})`}
+              </p>
             </div>
-            <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-              {walletView === "personal"
-                ? `Balance - ${currency.code === "PI" ? "PI" : piCurrencyLabel}`
-                : `Merchant available (${merchantMode})`}
-            </p>
+            <button
+              type="button"
+              onClick={() => setActiveSection("buy")}
+              className="ios-active shrink-0 rounded-full bg-white px-4 py-2 text-xs font-black text-paypal-blue shadow-lg shadow-black/10 hover:bg-white/95"
+            >
+              + Cash In
+            </button>
           </div>
 
           {walletView === "merchant" && (
-            <div className="relative mt-8 grid gap-3 sm:grid-cols-3">
+            <div className="mt-5 grid grid-cols-3 gap-2">
               {[
-                { label: "Incoming", value: selectedMerchantBalance?.gross_volume },
-                { label: "Refunded", value: selectedMerchantBalance?.refunded_total },
-                { label: "Transferred out", value: selectedMerchantBalance?.transferred_total },
-              ].map((stat, i) => (
-                <div key={i} className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">{stat.label}</p>
-                  <p className={cn(
-                    "text-base font-bold",
-                    stat.label === "Incoming" && "text-green-500",
-                    stat.label === "Refunded" && "text-red-500",
-                    stat.label === "Transferred out" && "text-paypal-blue",
-                  )}>{balanceHidden ? "****" : formatCompactCurrency(Number(stat.value ?? 0))}</p>
+                { label: "Incoming", value: selectedMerchantBalance?.gross_volume, tone: "text-emerald-200" },
+                { label: "Refunded", value: selectedMerchantBalance?.refunded_total, tone: "text-rose-200" },
+                { label: "Transferred", value: selectedMerchantBalance?.transferred_total, tone: "text-white" },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-white/60">{stat.label}</p>
+                  <p className={`mt-1 text-sm font-bold ${stat.tone}`}>{balanceHidden ? "****" : formatCompactCurrency(Number(stat.value ?? 0))}</p>
                 </div>
               ))}
             </div>
           )}
+        </div>
 
-          <div className="relative mt-6 flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={toggleBalanceHidden}
-              className="ios-active flex items-center gap-2 rounded-full bg-black/5 dark:bg-white/5 px-6 py-2.5 text-sm font-bold text-foreground hover:bg-black/10 transition-colors backdrop-blur-sm border border-white/5"
-            >
-              {balanceHidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-              {balanceHidden ? "Show balance" : "Hide balance"}
-            </button>
+        {/* Primary 4-icon action grid — overlaps header */}
+        <div className="paypal-surface -mt-4 relative rounded-3xl p-4 shadow-xl shadow-black/5">
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { id: "send", label: "Send", icon: CircleDollarSign, onClick: () => navigate("/send") },
+              { id: "receive", label: "Receive", icon: QrCode, onClick: () => setShowReceiveOptions(true) },
+              { id: "buy", label: "Buy", icon: Wallet, onClick: () => setActiveSection("buy") },
+              { id: "activity", label: "Activity", icon: Activity, onClick: () => navigate("/activity") },
+            ].map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={a.onClick}
+                className="ios-active flex flex-col items-center gap-1.5 rounded-2xl py-2 transition hover:bg-secondary/60"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-paypal-blue/10 text-paypal-blue">
+                  <a.icon className="h-5 w-5" />
+                </span>
+                <span className="text-[11px] font-bold text-foreground">{a.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
             <button
               type="button"
               onClick={() => setShowRecentActivity(true)}
-              className="ios-active flex items-center gap-2 rounded-full border border-paypal-blue/20 bg-paypal-blue/10 px-6 py-2.5 text-sm font-bold text-paypal-blue transition-colors hover:bg-paypal-blue/15"
+              className="ios-active inline-flex items-center gap-1.5 rounded-full bg-paypal-blue/10 px-3 py-1.5 text-[11px] font-bold text-paypal-blue hover:bg-paypal-blue/15"
             >
-              <Activity className="h-4 w-4" />
-              Recent activity
+              <Activity className="h-3.5 w-3.5" /> Recent
               {recentActivityCount > 0 && (
-                <span className="rounded-full bg-paypal-blue px-2 py-0.5 text-[10px] font-black text-white">
+                <span className="rounded-full bg-paypal-blue px-1.5 text-[9px] font-black text-white">
                   {recentActivityCount > 99 ? "99+" : recentActivityCount}
                 </span>
               )}
@@ -3589,11 +3604,35 @@ const Dashboard = () => {
             <button
               type="button"
               onClick={() => navigate("/ledger")}
-              className="ios-active flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-white/15 backdrop-blur-sm"
+              className="ios-active inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-[11px] font-bold text-foreground hover:bg-secondary/70"
             >
-              <BookOpen className="h-4 w-4" />
-              OpenLedger
+              <BookOpen className="h-3.5 w-3.5" /> OpenLedger
             </button>
+          </div>
+        </div>
+
+        {/* Explore the App — horizontal scroll */}
+        <div className="mt-5">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h3 className="text-sm font-black text-white">Explore the App</h3>
+            <button type="button" onClick={() => setShowShortcuts(true)} className="text-[11px] font-bold text-white/80 hover:text-white">
+              View All →
+            </button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {dashboardFeatureCards.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={item.onClick}
+                className="ios-active flex min-w-[68px] shrink-0 flex-col items-center gap-1.5"
+              >
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-paypal-blue shadow-md shadow-black/10">
+                  <item.icon className="h-6 w-6" />
+                </span>
+                <span className="text-[10px] font-bold text-white/90 text-center leading-tight">{item.title}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
