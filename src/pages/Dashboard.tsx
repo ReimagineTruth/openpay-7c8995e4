@@ -3571,33 +3571,13 @@ const Dashboard = () => {
         <>
 
 
-        {/* Primary 4-icon action grid — overlaps header */}
-        <div className="paypal-surface -mt-4 relative rounded-3xl p-4 shadow-xl shadow-black/5">
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { id: "send", label: "Send", icon: CircleDollarSign, onClick: () => navigate("/send") },
-              { id: "receive", label: "Receive", icon: QrCode, onClick: () => setShowReceiveOptions(true) },
-              { id: "buy", label: "Buy", icon: Wallet, onClick: () => setActiveSection("buy") },
-              { id: "activity", label: "Activity", icon: Activity, onClick: () => navigate("/activity") },
-            ].map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={a.onClick}
-                className="ios-active flex flex-col items-center gap-1.5 rounded-2xl py-2 transition hover:bg-secondary/60"
-              >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-paypal-blue/10 text-paypal-blue">
-                  <a.icon className="h-5 w-5" />
-                </span>
-                <span className="text-[11px] font-bold text-foreground">{a.label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
+        {/* Quick tabs: Recent · OpenLedger · Blockchain */}
+        <div className="paypal-surface -mt-4 relative rounded-3xl p-3 shadow-xl shadow-black/5">
+          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <button
               type="button"
               onClick={() => setShowRecentActivity(true)}
-              className="ios-active inline-flex items-center gap-1.5 rounded-full bg-paypal-blue/10 px-3 py-1.5 text-[11px] font-bold text-paypal-blue hover:bg-paypal-blue/15"
+              className="ios-active inline-flex shrink-0 items-center gap-1.5 rounded-full bg-paypal-blue/10 px-3 py-1.5 text-[11px] font-bold text-paypal-blue hover:bg-paypal-blue/15"
             >
               <Activity className="h-3.5 w-3.5" /> Recent
               {recentActivityCount > 0 && (
@@ -3609,12 +3589,21 @@ const Dashboard = () => {
             <button
               type="button"
               onClick={() => navigate("/ledger")}
-              className="ios-active inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-[11px] font-bold text-foreground hover:bg-secondary/70"
+              className="ios-active inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-[11px] font-bold text-foreground hover:bg-secondary/70"
             >
               <BookOpen className="h-3.5 w-3.5" /> OpenLedger
             </button>
+            <a
+              href="https://www.openpyledger.space/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ios-active inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-[11px] font-bold text-foreground hover:bg-secondary/70"
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> Blockchain
+            </a>
           </div>
         </div>
+
 
         {/* Transaction History — MariBank style */}
         <div className="paypal-surface mt-4 rounded-3xl p-4 shadow-sm">
