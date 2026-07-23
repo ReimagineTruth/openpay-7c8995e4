@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Home, QrCode, Menu } from "lucide-react";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 interface BottomNavProps {
   active: "home" | "contacts" | "scan" | "menu";
