@@ -162,40 +162,11 @@ const PiAuthPage = () => {
     return true;
   };
 
-  const showRewardedAdBeforeAuth = async () => {
-    try {
-      // Check 5-minute interval to prevent spam
-      try {
-        const lastAd = window.localStorage.getItem("openpay:pi-ads:last-rewarded");
-        if (lastAd && Date.now() - Number(lastAd) < 5 * 60 * 1000) return;
-      } catch {
-        // ignore localStorage errors
-      }
+  // NOTE: Pi Ad Network is intentionally NOT invoked anywhere in the
+  // authentication flow. Per Pi ecosystem UX best practices, sign-in must
+  // never be interrupted by advertisements. Ads only run post-login
+  // (e.g. rewarded ads in the Mining flow).
 
-      if (!window.Pi?.Ads || typeof window.Pi.nativeFeaturesList !== "function") return;
-      const features = await window.Pi.nativeFeaturesList();
-      if (!features.includes("ad_network")) return;
-      const ready = await window.Pi.Ads.isAdReady("rewarded").catch(() => ({ ready: false }));
-      if (!ready?.ready) {
-        await window.Pi.Ads.requestAd("rewarded").catch(() => null);
-      }
-      let shown = await window.Pi.Ads.showAd("rewarded").catch(() => null);
-      if (shown?.result === "USER_UNAUTHENTICATED") {
-        await window.Pi.authenticate(["username"]);
-        shown = await window.Pi.Ads.showAd("rewarded").catch(() => null);
-      }
-      if (shown?.result === "AD_REWARDED") {
-        toast.success("Thanks for watching! Authenticating...");
-        try {
-          window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
-        } catch {
-          // ignore localStorage errors
-        }
-      }
-    } catch {
-      // best-effort; never block auth
-    }
-  };
 
   const handlePiAuth = async () => {
     const expectedCode = authorizationCode.trim().toUpperCase();
