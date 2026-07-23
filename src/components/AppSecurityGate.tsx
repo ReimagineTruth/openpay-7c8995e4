@@ -300,17 +300,16 @@ const AppSecurityGate = () => {
                 <p className="mt-0.5 text-[11px] text-paypal-dark/55 dark:text-muted-foreground">4–8 digit secure PIN</p>
               </div>
 
-              {/* Hidden input for keyboard */}
+              {/* Hidden input — readOnly so the on-screen numpad is used instead of the native mobile keyboard */}
               <Input
                 type="password"
-                inputMode="numeric"
+                inputMode="none"
+                readOnly
                 value={pin}
-                onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 8))}
-                autoFocus
+                tabIndex={-1}
                 maxLength={8}
                 autoComplete="off"
                 ref={pinInputRef}
-                onKeyDown={(event) => { if (event.key === "Enter") void handleUnlockWithPin(); }}
                 className="sr-only"
                 aria-label="MPIN"
               />
