@@ -176,8 +176,8 @@ const PiAuthPage = () => {
     try {
       const referralCode = (searchParams.get("ref") || "").trim().toLowerCase();
       const auth = await window.Pi.authenticate(["username"]);
-      // Pi Ad Network disabled during authentication
-      // await showRewardedAdBeforeAuth();
+      // No ads during Pi authentication — seamless sign-in per Pi UX rules.
+
       const verified = await verifyPiAccessToken(auth.accessToken);
 
       const username =
