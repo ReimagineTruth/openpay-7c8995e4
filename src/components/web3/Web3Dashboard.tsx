@@ -25,6 +25,7 @@ import {
   Send,
   QrCode,
   Sparkles,
+  Paintbrush,
   Download,
   FileText,
   Pickaxe,
@@ -308,7 +309,7 @@ const Web3Dashboard = () => {
           {/* Markets / Tools */}
           <h3 className="mt-8 mx-5 text-white/60 text-[15px] font-semibold">Tools</h3>
           <div className="mt-3 mx-4 space-y-3">
-            <RowTile icon={<Sparkles className="h-5 w-5" style={{ color: ACCENT }} />} title="NFT Marketplace" subtitle="Mint, buy, sell & gift collectibles" onClick={() => navigate("/web3/nft")} />
+            <RowTile icon={<Paintbrush className="h-5 w-5" style={{ color: ACCENT }} />} title="NFT Marketplace" subtitle="Mint, buy, sell & gift collectibles" onClick={() => navigate("/web3/nft")} />
             <RowTile icon={<Pickaxe className="h-5 w-5 text-white/70" />} title="Mining" subtitle="Earn daily rewards" onClick={() => navigate("/mining")} />
             <RowTile icon={<Store className="h-5 w-5 text-white/70" />} title="Merchant POS" subtitle="Accept payments" onClick={() => navigate("/merchant-pos")} />
             <RowTile icon={<TrendingUp className="h-5 w-5 text-white/70" />} title="Affiliate" subtitle="Invite & earn" onClick={() => navigate("/affiliate")} />
@@ -547,7 +548,7 @@ const TxRowItem = ({ tx, format, onClick }: { tx: TxRow; format: (n: number) => 
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#0f0f0f] hover:bg-[#161616] transition">
       <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isNft ? "bg-blue-500/15" : "bg-white/5"}`}>
-        {isNft ? <Sparkles className="h-5 w-5" style={{ color: ACCENT }} /> : isIn ? <ArrowDown className="h-5 w-5 text-green-400" /> : <ArrowUp className="h-5 w-5 text-white/70" />}
+        {isNft ? <Paintbrush className="h-5 w-5" style={{ color: ACCENT }} /> : isIn ? <ArrowDown className="h-5 w-5 text-green-400" /> : <ArrowUp className="h-5 w-5 text-white/70" />}
       </div>
       <div className="flex-1 text-left min-w-0">
         <p className="font-semibold text-[14px] truncate">{tx.description || tx.type || "Transaction"}</p>

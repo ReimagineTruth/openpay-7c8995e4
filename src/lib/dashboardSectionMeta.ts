@@ -4,10 +4,10 @@ import {
   CircleDollarSign,
   CreditCard,
   HandCoins,
+  Paintbrush,
   Pickaxe,
   PiggyBank,
   Scale,
-  Sparkles,
   TrendingUp,
   Wallet,
 } from "lucide-react";
@@ -44,7 +44,7 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
   { key: "swap", label: "Swap", icon: ArrowLeftRight, description: "Withdraw OUSD" },
   { key: "mining", label: "Mining", icon: Pickaxe, description: "Earn OUSD rewards" },
   { key: "analytics", label: "Analytics", icon: TrendingUp, description: "Insights & trends" },
-  { key: "opennft", label: "OpenNFT", icon: Sparkles, description: "NFT marketplace", href: "/web3/nft" },
+  { key: "opennft", label: "OpenNFT", icon: Paintbrush, description: "NFT marketplace", href: "/web3/nft" },
 ];
 
 export const DASHBOARD_SECTION_TITLES: Record<DashboardSection, string> = {

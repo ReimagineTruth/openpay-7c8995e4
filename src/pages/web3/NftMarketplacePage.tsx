@@ -7,7 +7,7 @@ import { formatNftPrice } from "@/lib/nftPrice";
 import {
   Plus, LayoutDashboard, Users, Tag, HelpCircle, Sparkles, Gavel, Store, Search,
   BadgeCheck, X, RefreshCw, MessageCircle, Menu, Gift, Image as ImageIcon,
-  Settings, Trophy, Heart, Compass, LayoutGrid, Coins, ArrowLeftRight, Calendar,
+  Settings, Trophy, Heart, Compass, LayoutGrid, Coins, ArrowLeftRight, Paintbrush,
   Activity as ActivityIcon, Anchor, Wrench, Palette, ChevronRight, ChevronLeft, ChevronDown,
   Bell, Wallet, TrendingUp, TrendingDown, Sun, Moon, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
@@ -49,7 +49,7 @@ const SIDEBAR_ITEMS = [
   { icon: LayoutGrid, label: "Collections", to: "/web3/nft/stores" },
   { icon: Coins, label: "My Collection", to: "/web3/nft/my-nfts" },
   { icon: ArrowLeftRight, label: "Swap", to: "/web3/nft/gifts" },
-  { icon: Calendar, label: "Drops", to: "/web3/nft/auctions" },
+  { icon: Paintbrush, label: "Drops", to: "/web3/nft/auctions" },
   { icon: ActivityIcon, label: "Activity", to: "/web3/nft/dashboard" },
   { icon: LayoutDashboard, label: "Creator Dashboard", to: "/web3/nft/dashboard" },
   { icon: Anchor, label: "Rewards", to: "/web3/nft/leaderboard" },

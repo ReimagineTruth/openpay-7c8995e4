@@ -223,7 +223,13 @@
   /* Latest simple dashboard cards */
   .dash-panel {
     @apply rounded-[1.75rem] border border-white/80 bg-white/95 p-4 text-foreground backdrop-blur-md;
-    box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.35);
+    box-shadow: 0 8px 20px -16px rgba(15, 23, 42, 0.28);
+    animation: dashPanelIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transition: transform 0.22s ease;
+  }
+
+  .dash-panel:hover {
+    transform: translateY(-1px);
   }
 
   .dark .dash-panel {
@@ -233,6 +239,11 @@
 
   .dash-tile {
     @apply rounded-2xl bg-secondary/45 p-3.5;
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .dash-tile:active {
+    transform: scale(0.98);
   }
 
   .dark .dash-tile {
@@ -722,7 +733,7 @@ body {
 }
 
 .dashboard-section-enter {
-  animation: dashboardSectionEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dashboardSectionEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes dashboardPageEnter {
@@ -737,11 +748,134 @@ body {
 @keyframes dashboardSectionEnter {
   from {
     opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ===== Dashboard motion only (no glow / shine / overlays) ===== */
+@keyframes dashHeroIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashMetricPop {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashStatIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashPanelIn {
+  from {
+    opacity: 0;
     transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.dash-panel-static {
+  animation: none !important;
+}
+
+@keyframes dashTabStagger {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dash-hero {
+  animation: dashHeroIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dash-hero-metric {
+  animation: dashMetricPop 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.dash-hero-stat {
+  animation: dashStatIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dash-hero-stat:nth-child(1) { animation-delay: 0.12s; }
+.dash-hero-stat:nth-child(2) { animation-delay: 0.18s; }
+.dash-hero-stat:nth-child(3) { animation-delay: 0.24s; }
+.dash-hero-stat:nth-child(4) { animation-delay: 0.3s; }
+
+.dash-hero-cta {
+  transition: transform 0.18s ease;
+}
+
+.dash-hero-cta:hover {
+  transform: translateY(-1px);
+}
+
+.dash-hero-cta:active {
+  transform: scale(0.97);
+}
+
+.dash-tab {
+  animation: dashTabStagger 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dash-tab:nth-child(1) { animation-delay: 0.02s; }
+.dash-tab:nth-child(2) { animation-delay: 0.05s; }
+.dash-tab:nth-child(3) { animation-delay: 0.08s; }
+.dash-tab:nth-child(4) { animation-delay: 0.11s; }
+.dash-tab:nth-child(5) { animation-delay: 0.14s; }
+.dash-tab:nth-child(6) { animation-delay: 0.17s; }
+.dash-tab:nth-child(7) { animation-delay: 0.2s; }
+.dash-tab:nth-child(8) { animation-delay: 0.23s; }
+.dash-tab:nth-child(9) { animation-delay: 0.26s; }
+.dash-tab:nth-child(10) { animation-delay: 0.29s; }
+
+.dash-tab:hover:not(.dash-tab-active) {
+  transform: translateY(-1px);
+}
+
+.nft-drop-card {
+  animation: dashStatIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-hero,
+  .dash-hero-metric,
+  .dash-hero-stat,
+  .dash-tab,
+  .dash-panel,
+  .nft-drop-card {
+    animation: none !important;
   }
 }
 
@@ -1583,9 +1717,15 @@ body {
 .dash-tab-active {
   background: linear-gradient(135deg, #0057d8, #0073e6);
   color: #fff;
-  box-shadow: 0 8px 18px -6px rgba(0, 87, 216, 0.55);
+  box-shadow: none;
+  animation: dashTabActivePulse 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.dash-tab-active .dash-tab-icon { animation: dashIconPop 400ms ease; }
+.dash-tab-active .dash-tab-icon { animation: dashIconPop 320ms ease; }
+
+@keyframes dashTabActivePulse {
+  0% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
 
 @keyframes dashIconPop {
   0% { transform: scale(0.7); opacity: 0.4; }

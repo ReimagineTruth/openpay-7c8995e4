@@ -1,15 +1,14 @@
 import { ReactNode, useEffect, useState } from "react";
 import { getStoredAppTheme } from "@/lib/appTheme";
+import NftSplash from "@/components/web3/NftSplash";
 
-
-
+const SPLASH_KEY = "openpay_nft_splash_seen_v2";
 
 /**
  * Unified wrapper for every NFT page.
- * - Consistent dark background + smooth page-enter fade.
- * - Shows the NftSplash exactly once per browser session (first NFT page open),
+ * - Consistent background + page content.
+ * - Shows the NftSplash (paintbrush) once per browser session,
  *   or every time when `alwaysSplash` is true.
- * - Optional `loading` state renders a soft shimmer skeleton before children.
  */
 interface Props {
   children: ReactNode;
@@ -25,13 +24,19 @@ const NftPageShell = ({
   children,
   loading = false,
   alwaysSplash = false,
-  splashTitle,
-  splashSubtitle,
+  splashTitle = "OpenPay NFT",
+  splashSubtitle = "Mint · Trade · Auction",
   skeleton,
   className = "",
 }: Props) => {
-  // Splash disabled — marketplace loads directly for a smooth, fast entry.
-  void alwaysSplash; void splashTitle; void splashSubtitle;
+  const [showSplash, setShowSplash] = useState(() => {
+    if (alwaysSplash) return true;
+    try {
+      return sessionStorage.getItem(SPLASH_KEY) !== "1";
+    } catch {
+      return true;
+    }
+  });
 
   const [isDark, setIsDark] = useState(() => getStoredAppTheme() === "dark");
   useEffect(() => {
@@ -47,13 +52,27 @@ const NftPageShell = ({
     <div
       className={`nft-scope ${isDark ? "dark" : ""} min-h-screen bg-background text-foreground ${className}`}
     >
+      {showSplash && (
+        <NftSplash
+          title={splashTitle}
+          subtitle={splashSubtitle}
+          onDone={() => {
+            try {
+              if (!alwaysSplash) sessionStorage.setItem(SPLASH_KEY, "1");
+            } catch {
+              /* ignore */
+            }
+            setShowSplash(false);
+          }}
+        />
+      )}
       {loading ? (skeleton ?? <DefaultNftSkeleton />) : children}
     </div>
   );
 };
 
 export const DefaultNftSkeleton = () => (
-  <div className="p-4 space-y-5">
+  <div className="space-y-5 p-4">
     <div className="flex items-center gap-3">
       <div className="h-9 w-9 rounded-full nft-shimmer" />
       <div className="h-4 w-40 rounded nft-shimmer" />
@@ -69,11 +88,11 @@ export const DefaultNftSkeleton = () => (
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl overflow-hidden bg-card/50 border border-border/30"
+          className="overflow-hidden rounded-2xl border border-border/30 bg-card/50"
           style={{ animationDelay: `${i * 60}ms` }}
         >
           <div className="aspect-square nft-shimmer" />
-          <div className="p-3 space-y-2">
+          <div className="space-y-2 p-3">
             <div className="h-3 w-3/4 rounded nft-shimmer" />
             <div className="h-3 w-1/2 rounded nft-shimmer" />
             <div className="h-4 w-1/3 rounded nft-shimmer" />
@@ -83,9 +102,9 @@ export const DefaultNftSkeleton = () => (
     </div>
     <style>{`
       .nft-shimmer {
-        background: linear-gradient(90deg, 
-          hsl(var(--muted)) 0%, 
-          hsl(var(--muted-foreground) / 0.3) 50%, 
+        background: linear-gradient(90deg,
+          hsl(var(--muted)) 0%,
+          hsl(var(--muted-foreground) / 0.3) 50%,
           hsl(var(--muted)) 100%);
         background-size: 200% 100%;
         animation: nft-shimmer-slide 1.4s ease-in-out infinite;

@@ -55,7 +55,7 @@ const DashboardSectionHero = ({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-paypal-blue to-[#0059c1] p-5 text-white shadow-2xl shadow-paypal-blue/20",
+        "dash-hero relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-paypal-blue to-[#0059c1] p-5 text-white shadow-lg shadow-black/15",
         className,
       )}
     >
@@ -72,7 +72,7 @@ const DashboardSectionHero = ({
       </div>
 
       <div className="mt-5 flex items-end justify-between gap-3">
-        <div className="min-w-0">
+        <div className="dash-hero-metric min-w-0">
           <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/75">
             <span>{metricLabel}</span>
             {onToggleHidden ? (
@@ -80,7 +80,7 @@ const DashboardSectionHero = ({
                 type="button"
                 onClick={onToggleHidden}
                 aria-label="Toggle visibility"
-                className="opacity-80 hover:opacity-100"
+                className="opacity-80 transition hover:opacity-100 active:scale-90"
               >
                 {balanceHidden ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
               </button>
@@ -102,7 +102,7 @@ const DashboardSectionHero = ({
             type="button"
             onClick={action.onClick}
             disabled={action.disabled}
-            className="ios-active shrink-0 rounded-full bg-white px-4 py-2 text-xs font-black text-paypal-blue shadow-lg shadow-black/10 hover:bg-white/95 disabled:opacity-50"
+            className="dash-hero-cta ios-active shrink-0 rounded-full bg-white px-4 py-2 text-xs font-black text-paypal-blue shadow-lg shadow-black/10 hover:bg-white/95 disabled:opacity-50"
           >
             {action.label}
           </button>
@@ -121,7 +121,7 @@ const DashboardSectionHero = ({
           )}
         >
           {stats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
+            <div key={stat.label} className="dash-hero-stat rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
               <p className="text-[9px] font-black uppercase tracking-wider text-white/60">{stat.label}</p>
               <p className={cn("mt-1 text-sm font-bold text-white", stat.tone)}>{stat.value}</p>
             </div>
@@ -136,7 +136,7 @@ const DashboardSectionHero = ({
           <button
             type="button"
             onClick={secondaryAction.onClick}
-            className="ios-active inline-flex w-full items-center justify-center gap-2 rounded-full bg-white/15 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-sm hover:bg-white/25"
+            className="dash-hero-cta ios-active inline-flex w-full items-center justify-center gap-2 rounded-full bg-white/15 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-sm hover:bg-white/25"
           >
             {SecondaryIcon ? <SecondaryIcon className="h-4 w-4" /> : null}
             {secondaryAction.label}

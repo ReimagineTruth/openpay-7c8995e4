@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, useRef } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock, Hexagon } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
@@ -2379,8 +2379,8 @@ const Dashboard = () => {
       </div>
 
       {activeSection === "wallet" && (
-      <div className="mx-4 mt-4">
-        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-paypal-blue to-[#0059c1] p-5 text-white shadow-2xl shadow-paypal-blue/20">
+      <div key="wallet-balance" className="dash-balance-wrap mx-4 mt-4">
+        <div className="dash-hero relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-paypal-blue to-[#0059c1] p-5 text-white shadow-lg shadow-black/15">
           {/* Toggles row */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex rounded-full bg-white/15 p-1 backdrop-blur-sm">
@@ -2409,7 +2409,7 @@ const Dashboard = () => {
               aria-label="Switch to Web3 mode"
               className="ml-auto inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
             >
-              <Sparkles className="h-3 w-3" /> Web3
+              <Hexagon className="h-3 w-3" /> Web3
             </button>
             <button
               type="button"
@@ -2454,10 +2454,10 @@ const Dashboard = () => {
 
           {/* Balance row */}
           <div className="mt-5 flex items-end justify-between gap-3">
-            <div className="min-w-0">
+            <div className="dash-hero-metric min-w-0">
               <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/75">
                 <span>Available Balance</span>
-                <button type="button" onClick={toggleBalanceHidden} aria-label="Toggle balance visibility" className="opacity-80 hover:opacity-100">
+                <button type="button" onClick={toggleBalanceHidden} aria-label="Toggle balance visibility" className="opacity-80 transition hover:opacity-100 active:scale-90">
                   {balanceHidden ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
                 </button>
               </div>
@@ -2476,7 +2476,7 @@ const Dashboard = () => {
             <button
               type="button"
               onClick={() => setActiveSection("buy")}
-              className="ios-active shrink-0 rounded-full bg-white px-4 py-2 text-xs font-black text-paypal-blue shadow-lg shadow-black/10 hover:bg-white/95"
+              className="dash-hero-cta ios-active shrink-0 rounded-full bg-white px-4 py-2 text-xs font-black text-paypal-blue shadow-lg shadow-black/10 hover:bg-white/95"
             >
               + Cash In
             </button>
@@ -2489,7 +2489,7 @@ const Dashboard = () => {
                 { label: "Refunded", value: selectedMerchantBalance?.refunded_total, tone: "text-rose-200" },
                 { label: "Transferred", value: selectedMerchantBalance?.transferred_total, tone: "text-white" },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
+                <div key={stat.label} className="dash-hero-stat rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
                   <p className="text-[9px] font-black uppercase tracking-wider text-white/60">{stat.label}</p>
                   <p className={`mt-1 text-sm font-bold ${stat.tone}`}>{balanceHidden ? "****" : formatCompactCurrency(Number(stat.value ?? 0))}</p>
                 </div>
@@ -2502,7 +2502,7 @@ const Dashboard = () => {
 
       {/* Top balance card (Wallet style) for every section */}
       {activeSection === "savings" && (
-        <div className="mx-4 mt-4">
+        <div key="savings-balance" className="dash-balance-wrap mx-4 mt-4">
           <DashboardSectionHero
             badge="Savings wallet"
             badgeIcon={PiggyBank}
@@ -2538,7 +2538,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "credit" && (
-        <div className="mx-4 mt-4">
+        <div key="credit-balance" className="dash-balance-wrap mx-4 mt-4">
           <DashboardSectionHero
             badge="Credit profile"
             badgeIcon={TrendingUp}
@@ -2580,7 +2580,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "loans" && (
-        <div className="mx-4 mt-4">
+        <div key="loans-balance" className="dash-balance-wrap mx-4 mt-4">
           <DashboardSectionHero
             badge="Loan center"
             badgeIcon={HandCoins}
@@ -2617,7 +2617,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "cards" && (
-        <div className="mx-4 mt-4">
+        <div key="cards-balance" className="dash-balance-wrap mx-4 mt-4">
           <DashboardSectionHero
             badge="Virtual card"
             badgeIcon={CreditCard}
@@ -2650,7 +2650,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "buy" && (
-        <div className="mx-4 mt-4">
+        <div key="buy-balance" className="dash-balance-wrap mx-4 mt-4">
           <DashboardSectionHero
             badge="Buy OpenUSD"
             badgeIcon={CircleDollarSign}
@@ -2693,7 +2693,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "swap" && (
-        <div className="mx-4 mt-4">
+        <div key="swap-balance" className="dash-balance-wrap mx-4 mt-4">
           <DashboardSectionHero
             badge="Swap & withdraw"
             badgeIcon={ArrowLeftRight}
@@ -2739,7 +2739,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "mining" && (
-        <div className="mx-4 mt-4">
+        <div key="mining-balance" className="dash-balance-wrap mx-4 mt-4">
           <DashboardSectionHero
             badge="Mining hub"
             badgeIcon={Pickaxe}
@@ -2774,7 +2774,7 @@ const Dashboard = () => {
       )}
 
       {activeSection === "analytics" && (
-        <div className="mx-4 mt-4">
+        <div key="analytics-balance" className="dash-balance-wrap mx-4 mt-4">
           <DashboardSectionHero
             badge="Personal Analytics"
             badgeIcon={TrendingUp}
@@ -3730,7 +3730,7 @@ const Dashboard = () => {
               { id: "affiliate", label: "Affiliate", sub: "Refer & Earn", icon: HandCoins, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/affiliate") },
               { id: "contacts", label: "Contacts", sub: "Manage network", icon: Users, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/contacts") },
               { id: "help", label: "Help & Wiki", sub: "Guides & videos", icon: HelpCircle, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/help") },
-              { id: "web3", label: "Web3 Mode", sub: "Switch UI", icon: Sparkles, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => setUiMode("web3") },
+              { id: "web3", label: "Web3 Mode", sub: "Switch UI", icon: Hexagon, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => setUiMode("web3") },
             ].map((item, idx) => (
               <button
                 key={item.id}

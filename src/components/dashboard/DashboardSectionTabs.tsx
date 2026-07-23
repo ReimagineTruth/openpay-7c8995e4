@@ -8,15 +8,16 @@ type DashboardSectionTabsProps = {
 };
 
 const DashboardSectionTabs = ({ activeSection, onChange, onNavigate }: DashboardSectionTabsProps) => (
-  <div className="dash-panel p-2 hover-lift">
+  <div className="dash-panel dash-panel-static p-2 hover-lift">
     <div className="grid grid-cols-5 gap-1.5">
-      {DASHBOARD_SECTION_NAV.map((item) => {
+      {DASHBOARD_SECTION_NAV.map((item, index) => {
         const Icon = item.icon;
         const isActive = !item.href && activeSection === item.key;
         return (
           <button
             key={item.key}
             type="button"
+            style={{ animationDelay: `${0.02 + index * 0.03}s` }}
             onClick={() => {
               if (item.href) {
                 onNavigate?.(item.href);
