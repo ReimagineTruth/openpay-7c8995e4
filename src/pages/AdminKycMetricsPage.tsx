@@ -397,4 +397,82 @@ const BigStat = ({ iconBg, icon, label, value, change, wide }: { iconBg: string;
   </div>
 );
 
+const API_BASE = `https://araojncyittkahvvpdrn.supabase.co/functions/v1/kyc-metrics-api`;
+
+const ApiDocsSection = () => {
+  const endpoints = [
+    { path: "/metrics", desc: "Aggregate KYC stats: total users, approved, pending, rejected, approval rate, and daily/monthly/yearly breakdowns." },
+    { path: "/timeseries?days=30", desc: "Daily approval counts for the last N days (1–365). Ideal for charts on the ledger." },
+    { path: "/health", desc: "Simple health check." },
+  ];
+  const copy = async (text: string) => {
+    try { await navigator.clipboard.writeText(text); toast.success("Copied"); } catch { toast.error("Copy failed"); }
+  };
+  return (
+    <section className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
+            <Code2 className="h-5 w-5 text-paypal-blue" /> KYC Metrics API
+          </h2>
+          <p className="text-xs text-muted-foreground">Public, read-only endpoints for OpenLedger and external integrations. No auth required.</p>
+        </div>
+        <a
+          href={`${API_BASE}/metrics`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 rounded-full bg-paypal-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#004dc5]"
+        >
+          Open <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {endpoints.map((e) => {
+          const url = `${API_BASE}${e.path}`;
+          return (
+            <div key={e.path} className="rounded-xl border border-border bg-slate-50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <code className="truncate text-xs font-semibold text-paypal-blue">GET {url}</code>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button onClick={() => copy(url)} className="grid h-7 w-7 place-items-center rounded-full bg-white hover:bg-secondary" aria-label="Copy URL">
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                  <a href={url} target="_blank" rel="noreferrer" className="grid h-7 w-7 place-items-center rounded-full bg-white hover:bg-secondary" aria-label="Open URL">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{e.desc}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-border bg-slate-900 p-3 text-[11px] text-slate-100">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="font-semibold text-slate-300">Example response — /metrics</span>
+          <button onClick={() => copy(`curl ${API_BASE}/metrics`)} className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] hover:bg-white/20">
+            Copy curl
+          </button>
+        </div>
+        <pre className="overflow-x-auto whitespace-pre text-[11px] leading-relaxed">{`{
+  "generated_at": "2026-07-23T00:00:00.000Z",
+  "users": { "total": 12500, "verified": 8420, "verification_rate_pct": 67.36 },
+  "applications": {
+    "total": 9600, "approved": 8420, "pending": 780, "rejected": 400,
+    "approval_rate_pct": 87.71
+  },
+  "periods": {
+    "today":  { "approved": 42, "previous": 38, "change_pct": 10.53 },
+    "month":  { "label": "July 2026", "approved": 620, "previous": 540, "change_pct": 14.81 },
+    "year":   { "label": "2026", "approved": 5400, "previous": 4800, "change_pct": 12.5 }
+  }
+}`}</pre>
+      </div>
+    </section>
+  );
+};
+
 export default AdminKycMetricsPage;
+
