@@ -2494,6 +2494,17 @@ const Dashboard = () => {
 
       <div className="dashboard-controls-enter mt-4 px-4">
         <DashboardSectionTabs activeSection={activeSection} onChange={setActiveSection} />
+        <div className="mt-2 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setShowRegulatory(true)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-paypal-blue shadow-sm hover:bg-white"
+          >
+            <Scale className="h-3.5 w-3.5" />
+            Regulatory
+            <Info className="h-3 w-3 opacity-70" />
+          </button>
+        </div>
         {activeSectionMeta ? (
           <p className="mt-2 text-center text-xs font-semibold text-white/70">
             {activeSectionMeta.description}
@@ -2501,21 +2512,9 @@ const Dashboard = () => {
         ) : null}
         {/* QuickBar hidden per request */}
         {false && <DashboardSectionQuickBar actions={sectionQuickActions[activeSection]} className="mt-3 justify-center sm:justify-start" />}
-        {activeSection !== "swap" && activeSection !== "wallet" ? (
-          <DigitalRateDisplay
-            rates={{
-              piToOusd: PI_TO_OUSD,
-              usdToOusd: 1,
-              currencyTag: currencyTag,
-              currencyCode: currency.code,
-              currencyRate: currency.rate,
-            }}
-            open={showLiveRates}
-            onOpenChange={setShowLiveRates}
-            className="mt-4"
-          />
-        ) : null}
+        {/* Live rates hidden per request */}
       </div>
+
 
       <div key={activeSection} className="dashboard-section-enter">
       {activeSection === "savings" && (
