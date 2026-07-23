@@ -3665,19 +3665,8 @@ const Dashboard = () => {
           )}
         </div>
 
-      <div className="mx-4 mt-4">
-        <DigitalRateDisplay
-          rates={{
-            piToOusd: PI_TO_OUSD,
-            usdToOusd: 1,
-            currencyTag: currencyTag,
-            currencyCode: currency.code,
-            currencyRate: currency.rate,
-          }}
-          open={showLiveRates}
-          onOpenChange={setShowLiveRates}
-        />
-      </div>
+      <NftShowcase variant="light" className="mx-4 mt-4" />
+
 
       
       {walletView === "merchant" && (
