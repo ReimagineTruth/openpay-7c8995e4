@@ -41,6 +41,7 @@ import Web3Dashboard from "@/components/web3/Web3Dashboard";
 import { setUiMode } from "@/lib/uiMode";
 import FeatureQuestIntroModal from "@/components/FeatureQuestIntroModal";
 import FeedbackPromptModal from "@/components/FeedbackPromptModal";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 interface Transaction {
   id: string;
@@ -395,6 +396,7 @@ const Dashboard = () => {
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showReceiveOptions, setShowReceiveOptions] = useState(false);
+  const hideFloating = useHideOnScroll();
   const [showRecentActivity, setShowRecentActivity] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinAction, setPinAction] = useState<(() => Promise<void>) | null>(null);
@@ -3851,7 +3853,7 @@ const Dashboard = () => {
       )}
       </div>
 
-      <div className="fixed bottom-32 left-0 right-0 z-40 px-4">
+      <div className={`fixed bottom-32 left-0 right-0 z-40 px-4 transition-all duration-300 ease-out ${hideFloating ? "translate-y-[220%] opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
         <div className="mx-auto flex max-w-md items-center gap-2.5">
           <button
             onClick={() => navigate("/contacts")}

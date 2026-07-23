@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Home, QrCode, Menu } from "lucide-react";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 interface BottomNavProps {
   active: "home" | "contacts" | "scan" | "menu";
@@ -7,6 +8,7 @@ interface BottomNavProps {
 
 const BottomNav = ({ active }: BottomNavProps) => {
   const navigate = useNavigate();
+  const hidden = useHideOnScroll();
 
   const items = [
     { key: "home" as const, label: "Home", icon: Home, path: "/dashboard" },
@@ -15,7 +17,7 @@ const BottomNav = ({ active }: BottomNavProps) => {
   ];
 
   return (
-    <div className="fixed bottom-6 left-0 right-0 z-30 px-4">
+    <div className={`fixed bottom-6 left-0 right-0 z-30 px-4 transition-all duration-300 ease-out ${hidden ? "translate-y-[140%] opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
       <div className="mx-auto max-w-md bg-white/95 backdrop-blur-md rounded-[2rem] shadow-2xl border border-white/60 overflow-hidden">
         <div className="flex items-center justify-around px-2 py-3">
           {items.map(({ key, label, icon: Icon, path }) => {
