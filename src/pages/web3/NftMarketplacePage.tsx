@@ -599,6 +599,10 @@ const NftMarketplacePage = () => {
                           {currentSlide?.is_verified && <BadgeCheck className="h-5 w-5" style={{ color: ACCENT }} />}
                         </div>
                         <p className="text-[11px] md:text-xs text-foreground/60 mt-0.5">By @{currentSlide?.handle}</p>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if (currentSlide) nav(`/web3/nft/store/${currentSlide.handle}`); }}
+                          className="md:hidden mt-2 px-3 py-1.5 rounded-lg text-xs font-bold" style={{ background: ACCENT }}
+                        >View collection</button>
                         <div className="mt-3 hidden md:flex items-center gap-6 text-xs">
                           <div>
                             <p className="text-foreground/40 uppercase tracking-wide">Floor</p>
