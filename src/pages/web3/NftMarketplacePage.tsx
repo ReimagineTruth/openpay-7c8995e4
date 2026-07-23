@@ -657,7 +657,7 @@ const NftMarketplacePage = () => {
                   {/* Dots */}
                   <div className="flex items-center justify-center gap-1.5 py-2.5 bg-black/60">
                     {heroSlides.map((_, i) => (
-                      <button key={i} onClick={() => setHeroIndex(i)}
+                      <button key={i} onClick={(e) => { e.stopPropagation(); setHeroIndex(i); }}
                         className={`h-1 rounded-full transition-all ${i === heroIndex ? "w-6 bg-white" : "w-1.5 bg-white/30"}`} />
                     ))}
                   </div>
