@@ -170,12 +170,15 @@ serve(async (req: Request) => {
 
     // GET /collections/:id
     if (parts[0] === "collections" && parts.length === 2) {
+      const key = parts[1];
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key);
       const { data, error } = await supabase
         .from("nft_collections")
         .select("id, name, code, description, cover_url, royalty_pct, creator_id, created_at")
-        .or(`id.eq.${parts[1]},code.eq.${parts[1]}`)
+        .eq(isUuid ? "id" : "code", key)
         .maybeSingle();
       if (error) throw error;
+
       if (!data) return json({ error: "Collection not found" }, 404);
       const [{ count: itemsCount }, stores] = await Promise.all([
         supabase.from("nft_items").select("id", { count: "exact", head: true }).eq("collection_id", data.id),
