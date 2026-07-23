@@ -632,7 +632,7 @@ const NftMarketplacePage = () => {
                         {currentSlideItems.map((it) => {
                           const img = it.media_url || it.image_url || "";
                           return (
-                            <button key={it.id} onClick={() => nav(`/web3/nft/${it.id}`)} className="h-16 w-16 rounded-xl overflow-hidden border border-white/20 hover:border-white/60 transition">
+                            <button key={it.id} onClick={(e) => { e.stopPropagation(); nav(`/web3/nft/${it.id}`); }} className="h-16 w-16 rounded-xl overflow-hidden border border-white/20 hover:border-white/60 transition">
                               {img ? <img src={img} alt="" className="h-full w-full object-cover" /> : <div className="h-full w-full bg-white/10" />}
                             </button>
                           );
