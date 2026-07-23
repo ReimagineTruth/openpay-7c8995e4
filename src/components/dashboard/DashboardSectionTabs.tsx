@@ -7,8 +7,8 @@ type DashboardSectionTabsProps = {
 };
 
 const DashboardSectionTabs = ({ activeSection, onChange }: DashboardSectionTabsProps) => (
-  <div className="paypal-surface overflow-x-auto rounded-2xl p-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden hover-lift">
-    <div className="flex min-w-max gap-1.5">
+  <div className="paypal-surface rounded-2xl p-2 hover-lift">
+    <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-9">
       {DASHBOARD_SECTION_NAV.map((item) => {
         const Icon = item.icon;
         const isActive = activeSection === item.key;
@@ -18,18 +18,25 @@ const DashboardSectionTabs = ({ activeSection, onChange }: DashboardSectionTabsP
             type="button"
             onClick={() => onChange(item.key)}
             className={cn(
-              "dash-tab flex min-w-[5.5rem] flex-col items-center gap-1 rounded-xl px-3 py-2.5",
+              "dash-tab flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center",
               isActive ? "dash-tab-active" : "text-foreground hover:bg-secondary/70",
             )}
             aria-current={isActive ? "page" : undefined}
           >
-            <Icon
+            <span
               className={cn(
-                "dash-tab-icon h-4 w-4 shrink-0",
-                isActive ? "text-white" : "text-paypal-blue",
+                "flex h-8 w-8 items-center justify-center rounded-lg",
+                isActive ? "bg-white/20" : "bg-paypal-blue/10",
               )}
-            />
-            <span className="text-xs font-bold leading-tight">{item.label}</span>
+            >
+              <Icon
+                className={cn(
+                  "dash-tab-icon h-4 w-4 shrink-0",
+                  isActive ? "text-white" : "text-paypal-blue",
+                )}
+              />
+            </span>
+            <span className="text-[10px] font-bold leading-tight truncate w-full">{item.label}</span>
           </button>
         );
       })}
