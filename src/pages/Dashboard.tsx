@@ -3572,7 +3572,7 @@ const Dashboard = () => {
 
 
         {/* Quick tabs: Recent · OpenLedger · Blockchain */}
-        <div className="paypal-surface -mt-4 relative rounded-3xl p-3 shadow-xl shadow-black/5">
+        <div className="paypal-surface mx-4 -mt-4 relative rounded-3xl p-3 shadow-xl shadow-black/5">
           <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <button
               type="button"
@@ -3606,7 +3606,7 @@ const Dashboard = () => {
 
 
         {/* Transaction History — MariBank style */}
-        <div className="paypal-surface mt-4 rounded-3xl p-4 shadow-sm">
+        <div className="paypal-surface mx-4 mt-4 rounded-3xl p-4 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-black text-foreground">Transaction History</h3>
             <button
