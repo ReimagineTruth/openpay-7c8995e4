@@ -141,7 +141,7 @@ const PiAdsPage = () => {
         }
       }
 
-      let adResult = await window.Pi.Ads.showAd("rewarded");
+      let adResult: any = await window.Pi.Ads.showAd("rewarded");
       if (adResult.result === "USER_UNAUTHENTICATED") {
         await window.Pi.authenticate(["username"]);
         adResult = await window.Pi.Ads.showAd("rewarded");
