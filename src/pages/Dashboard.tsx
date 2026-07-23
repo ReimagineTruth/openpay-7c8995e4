@@ -3853,7 +3853,7 @@ const Dashboard = () => {
       )}
       </div>
 
-      <div className="fixed bottom-32 left-0 right-0 z-40 px-4">
+      <div className={`fixed bottom-32 left-0 right-0 z-40 px-4 transition-all duration-300 ease-out ${hideFloating ? "translate-y-[220%] opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
         <div className="mx-auto flex max-w-md items-center gap-2.5">
           <button
             onClick={() => navigate("/contacts")}
