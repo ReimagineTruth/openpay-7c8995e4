@@ -7,6 +7,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
+import { signInWithGoogle } from "@/lib/googleAuth";
 
 const SignUp = () => {
   const [email, setEmail] = useState("");
@@ -65,17 +66,12 @@ const SignUp = () => {
   const handleGoogleSignUp = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      
+      const { error } = await signInWithGoogle(
+        referralParam ? { referralCode: referralParam } : undefined,
+      );
       if (error) {
         toast.error(error.message || "Google sign-in failed");
         setLoading(false);
-        return;
       }
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");

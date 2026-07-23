@@ -11,57 +11,60 @@ const AuthCallbackPage = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log("Processing auth callback...");
-        console.log("Current URL:", window.location.href);
-        
-        // Check if there's an error in the URL params
         const error = searchParams.get("error");
         const errorDescription = searchParams.get("error_description");
-        
+
         if (error) {
-          console.error("OAuth error:", error, errorDescription);
           toast.error(`Authentication error: ${errorDescription || error}`);
           navigate("/sign-in", { replace: true });
           return;
         }
 
-        // Wait for Supabase to process the session from URL
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const code = searchParams.get("code");
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            toast.error(exchangeError.message || "Failed to complete Google sign-in");
+            navigate("/sign-in", { replace: true });
+            return;
+          }
+        }
 
-        // Check if we have a session now
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        if (hashParams.get("access_token") || hashParams.get("error")) {
+          const { error: hashError } = await supabase.auth.getSession();
+          if (hashError) {
+            toast.error(hashError.message || "Failed to complete sign-in");
+            navigate("/sign-in", { replace: true });
+            return;
+          }
+        }
+
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        
+
         if (sessionError) {
-          console.error("Session error:", sessionError);
-          toast.error("Failed to get session: " + sessionError.message);
+          toast.error(sessionError.message || "Failed to get session");
           navigate("/sign-in", { replace: true });
           return;
         }
 
         if (sessionData.session) {
-          console.log("Successfully authenticated:", sessionData.session.user.email);
           toast.success("Successfully signed in!");
-          
-          // Clear any URL hash fragments
-          if (window.location.hash) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-          
-          // Navigate to dashboard
+          window.history.replaceState({}, document.title, "/auth/callback");
           navigate("/dashboard", { replace: true });
-        } else {
-          console.log("No session found, redirecting to sign in");
-          toast.error("Authentication failed - no session found");
-          navigate("/sign-in", { replace: true });
+          return;
         }
-      } catch (error) {
-        console.error("Auth callback error:", error);
+
+        toast.error("Authentication failed — no session found");
+        navigate("/sign-in", { replace: true });
+      } catch (err) {
+        console.error("Auth callback error:", err);
         toast.error("An unexpected error occurred during authentication");
         navigate("/sign-in", { replace: true });
       }
     };
 
-    handleAuthCallback();
+    void handleAuthCallback();
   }, [navigate, searchParams]);
 
   return (

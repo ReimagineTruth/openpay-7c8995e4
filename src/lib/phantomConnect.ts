@@ -20,7 +20,7 @@ export class PhantomConnectService {
   private sdk: BrowserSDK | null = null;
   private connection: Connection | null = null;
   private readonly APP_ID = "872ec39f-b219-40d1-9559-726deca51695";
-  private readonly REDIRECT_URL = `${window.location.origin}/auth/callback`;
+  private readonly REDIRECT_URL = `${window.location.origin}/auth/phantom/callback`;
   private readonly STORAGE_KEY = 'phantom_connect_session';
 
   constructor() {

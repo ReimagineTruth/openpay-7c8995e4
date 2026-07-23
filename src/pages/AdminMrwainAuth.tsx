@@ -10,8 +10,8 @@ import AuthMark from "@/components/AuthMark";
 import AuthFooter from "@/components/AuthFooter";
 import { ArrowLeft, Globe, BookOpen, Users, ChevronRight, KeyRound } from "lucide-react";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
-import { lovable } from "@/integrations/lovable/index";
 import { isPiOAuthEnabled } from "@/lib/piOAuth";
+import { signInWithGoogle } from "@/lib/googleAuth";
 
 const AdminMrwainAuth = () => {
   const navigate = useNavigate();
@@ -100,17 +100,14 @@ const AdminMrwainAuth = () => {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth/callback`,
-      });
+      const { error } = await signInWithGoogle(
+        referralParam ? { referralCode: referralParam } : undefined,
+      );
 
-      if (result.error) {
-        toast.error((result.error as any)?.message || "Google sign-in failed");
+      if (error) {
+        toast.error(error.message || "Google sign-in failed");
         setLoading(false);
-        return;
       }
-      if (result.redirected) return;
-      navigate("/dashboard");
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");
       setLoading(false);

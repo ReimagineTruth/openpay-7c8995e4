@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import { Shield, ArrowLeft } from "lucide-react";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
+import { signInWithGoogle } from "@/lib/googleAuth";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -86,17 +87,10 @@ const SignIn = () => {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      
+      const { error } = await signInWithGoogle();
       if (error) {
         toast.error(error.message || "Google sign-in failed");
         setLoading(false);
-        return;
       }
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");

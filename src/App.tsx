@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import AdminMrwainAuth from "./pages/AdminMrwainAuth";
-import AuthCallbackPage from "./pages/AuthCallback";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import AuthCallback from "./pages/AuthCallback";
 import PiOAuthLoginPage from "./pages/PiOAuthLoginPage";
 import PiOAuthCallbackPage from "./pages/PiOAuthCallbackPage";
@@ -142,6 +142,7 @@ import AppPaymentCheckoutPage from "./pages/AppPaymentCheckoutPage";
 import AppPayApprovePage from "./pages/AppPayApprovePage";
 import AppPaymentSuccessPage from "./pages/AppPaymentSuccessPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import LegacyLovableOAuthInitiatePage from "./pages/LegacyLovableOAuthInitiatePage";
 import QrPayDashboardPage from "./pages/QrPayDashboardPage";
 import QrPayCreatePage from "./pages/QrPayCreatePage";
 import QrPayApiDashboardPage from "./pages/QrPayApiDashboardPage";
@@ -234,7 +235,7 @@ const AppRoutes = () => {
         // Only redirect to dashboard if user is on an auth/landing page.
         // Token refreshes and re-emitted SIGNED_IN events should NEVER
         // bounce a user away from the page they're currently using.
-        const authPaths = ['/', '/auth', '/sign-in', '/signin', '/signup', '/auth/callback'];
+        const authPaths = ['/', '/auth', '/sign-in', '/signin', '/signup', '/auth/callback', '/.lovable/oauth/initiate', '/~oauth/initiate'];
         const isOnAuthPage = authPaths.includes(location.pathname);
 
         if (isOnAuthPage) {
@@ -271,6 +272,8 @@ const AppRoutes = () => {
         <main>
         <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/.lovable/oauth/initiate" element={<LegacyLovableOAuthInitiatePage />} />
+        <Route path="/~oauth/initiate" element={<LegacyLovableOAuthInitiatePage />} />
         <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
         <Route path="/auth" element={<PiAuthPage />} />
         <Route path="/setup-profile" element={<SetupProfilePage />} />
@@ -293,6 +296,7 @@ const AppRoutes = () => {
         <Route path="/signin" element={<Navigate to="/sign-in?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-in?mode=signup" replace />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/auth/phantom/callback" element={<AuthCallback />} />
         <Route path="/auth/pi/login" element={<PiOAuthLoginPage />} />
         <Route path="/auth/pi/callback" element={<PiOAuthCallbackPage />} />
         <Route path="/dashboard" element={
