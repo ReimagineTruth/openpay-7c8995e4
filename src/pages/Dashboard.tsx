@@ -384,6 +384,8 @@ const Dashboard = () => {
     }
     return true;
   });
+  const [showRegulatory, setShowRegulatory] = useState(false);
+
   const [swapAmount, setSwapAmount] = useState("");
   const [swapWithdrawalType, setSwapWithdrawalType] = useState<WithdrawalType>("PI");
   const parsedSwapAmount = Number(swapAmount);
