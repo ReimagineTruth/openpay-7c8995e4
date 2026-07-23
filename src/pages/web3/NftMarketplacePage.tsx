@@ -296,11 +296,13 @@ const NftMarketplacePage = () => {
     });
   }, [items, search, category, storeByUser, auctionsOnly, auctions]);
 
-  // Hero carousel (top 6 stores that have banner or featured NFTs)
+  // Hero carousel — verified stores only (with banner preferred)
   const heroSlides = useMemo(() => {
-    const withBanner = stores.filter((s) => s.banner_url).slice(0, 6);
+    const verified = stores.filter((s) => s.is_verified);
+    const withBanner = verified.filter((s) => s.banner_url).slice(0, 6);
     if (withBanner.length) return withBanner;
-    return stores.slice(0, 6);
+    if (verified.length) return verified.slice(0, 6);
+    return [];
   }, [stores]);
 
   useEffect(() => {
@@ -575,7 +577,12 @@ const NftMarketplacePage = () => {
               {/* Hero carousel */}
               {heroSlides.length > 0 && (
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0f0f10]">
-                  <div className="relative aspect-[16/8] md:aspect-[16/6] w-full">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => currentSlide && nav(`/web3/nft/store/${currentSlide.handle}`)}
+                    onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && currentSlide) nav(`/web3/nft/store/${currentSlide.handle}`); }}
+                    className="relative aspect-[16/8] md:aspect-[16/6] w-full cursor-pointer">
                     {currentSlide?.banner_url ? (
                       <img src={currentSlide.banner_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
                     ) : (
@@ -592,6 +599,10 @@ const NftMarketplacePage = () => {
                           {currentSlide?.is_verified && <BadgeCheck className="h-5 w-5" style={{ color: ACCENT }} />}
                         </div>
                         <p className="text-[11px] md:text-xs text-foreground/60 mt-0.5">By @{currentSlide?.handle}</p>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if (currentSlide) nav(`/web3/nft/store/${currentSlide.handle}`); }}
+                          className="md:hidden mt-2 px-3 py-1.5 rounded-lg text-xs font-bold" style={{ background: ACCENT }}
+                        >View collection</button>
                         <div className="mt-3 hidden md:flex items-center gap-6 text-xs">
                           <div>
                             <p className="text-foreground/40 uppercase tracking-wide">Floor</p>
@@ -613,7 +624,7 @@ const NftMarketplacePage = () => {
                       </div>
                       <div className="hidden md:flex flex-col gap-2 shrink-0">
                         <button
-                          onClick={() => currentSlide && nav(`/web3/nft/store/${currentSlide.handle}`)}
+                          onClick={(e) => { e.stopPropagation(); if (currentSlide) nav(`/web3/nft/store/${currentSlide.handle}`); }}
                           className="px-4 py-2 rounded-xl text-sm font-bold" style={{ background: ACCENT }}
                         >View collection</button>
                       </div>
@@ -625,7 +636,7 @@ const NftMarketplacePage = () => {
                         {currentSlideItems.map((it) => {
                           const img = it.media_url || it.image_url || "";
                           return (
-                            <button key={it.id} onClick={() => nav(`/web3/nft/${it.id}`)} className="h-16 w-16 rounded-xl overflow-hidden border border-white/20 hover:border-white/60 transition">
+                            <button key={it.id} onClick={(e) => { e.stopPropagation(); nav(`/web3/nft/${it.id}`); }} className="h-16 w-16 rounded-xl overflow-hidden border border-white/20 hover:border-white/60 transition">
                               {img ? <img src={img} alt="" className="h-full w-full object-cover" /> : <div className="h-full w-full bg-white/10" />}
                             </button>
                           );
@@ -636,11 +647,11 @@ const NftMarketplacePage = () => {
                     {/* Arrows */}
                     {heroSlides.length > 1 && (
                       <>
-                        <button onClick={() => setHeroIndex((i) => (i - 1 + heroSlides.length) % heroSlides.length)}
+                        <button onClick={(e) => { e.stopPropagation(); setHeroIndex((i) => (i - 1 + heroSlides.length) % heroSlides.length); }}
                           className="hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/60 backdrop-blur items-center justify-center hover:bg-black/80">
                           <ChevronLeft className="h-5 w-5" />
                         </button>
-                        <button onClick={() => setHeroIndex((i) => (i + 1) % heroSlides.length)}
+                        <button onClick={(e) => { e.stopPropagation(); setHeroIndex((i) => (i + 1) % heroSlides.length); }}
                           className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/60 backdrop-blur items-center justify-center hover:bg-black/80">
                           <ChevronRight className="h-5 w-5" />
                         </button>
@@ -650,7 +661,7 @@ const NftMarketplacePage = () => {
                   {/* Dots */}
                   <div className="flex items-center justify-center gap-1.5 py-2.5 bg-black/60">
                     {heroSlides.map((_, i) => (
-                      <button key={i} onClick={() => setHeroIndex(i)}
+                      <button key={i} onClick={(e) => { e.stopPropagation(); setHeroIndex(i); }}
                         className={`h-1 rounded-full transition-all ${i === heroIndex ? "w-6 bg-white" : "w-1.5 bg-white/30"}`} />
                     ))}
                   </div>
