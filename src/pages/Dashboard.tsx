@@ -2497,18 +2497,19 @@ const Dashboard = () => {
       )}
 
       <div className="dashboard-controls-enter mt-4 px-4">
-        <DashboardSectionTabs activeSection={activeSection} onChange={setActiveSection} />
-        <div className="mt-2 flex items-center justify-center">
+        <div className="relative">
+          <DashboardSectionTabs activeSection={activeSection} onChange={setActiveSection} />
           <button
             type="button"
             onClick={() => setShowRegulatory(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-paypal-blue shadow-sm hover:bg-white"
+            className="absolute -top-2 -right-2 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-paypal-blue shadow-md ring-1 ring-paypal-blue/20 hover:bg-paypal-blue/5"
           >
-            <Scale className="h-3.5 w-3.5" />
+            <Scale className="h-3 w-3" />
             Regulatory
-            <Info className="h-3 w-3 opacity-70" />
+            <Info className="h-2.5 w-2.5 opacity-70" />
           </button>
         </div>
+
         {activeSectionMeta ? (
           <p className="mt-2 text-center text-xs font-semibold text-white/70">
             {activeSectionMeta.description}
