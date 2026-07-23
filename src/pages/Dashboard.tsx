@@ -1421,6 +1421,8 @@ const Dashboard = () => {
       /pi\s?browser/i.test(navigator.userAgent || "");
 
     const runPiAdAuto = async () => {
+      // Pi Ad Network temporarily disabled globally (no ads across the app).
+      return;
       if (typeof window === "undefined" || typeof document === "undefined" || document.visibilityState !== "visible") return;
       if (!inPiBrowser) return;
       if (!window.Pi?.Ads?.showAd) return;
@@ -1442,8 +1444,8 @@ const Dashboard = () => {
           if (!features.includes("ad_network")) return;
         }
 
-        const adResult = await window.Pi.Ads.showAd("rewarded");
-        if (adResult.result !== "AD_REWARDED" || !adResult.adId) {
+        const adResult: any = await window.Pi.Ads.showAd("rewarded");
+        if (adResult?.result !== "AD_REWARDED" || !adResult?.adId) {
           setLastAdRunAt(Date.now());
           try {
             window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));

@@ -38,7 +38,7 @@ const toGoogleTranslateCode = (languageCode: string) => {
   return region ? `${aliasBase}-${region}` : aliasBase;
 };
 
-export const APP_LANGUAGE_OPTIONS: AppLanguageOption[] = [
+const RAW_APP_LANGUAGE_OPTIONS: AppLanguageOption[] = [
   { code: "af", label: "Afrikaans" },
   { code: "sq", label: "Albanian" },
   { code: "am", label: "Amharic" },
@@ -62,23 +62,21 @@ export const APP_LANGUAGE_OPTIONS: AppLanguageOption[] = [
   { code: "da", label: "Danish" },
   { code: "nl", label: "Dutch" },
   { code: "en", label: "English" },
-  { code: "de", label: "German" },
-  { code: "pt-BR", label: "Portuguese (Brazil)" },
-  { code: "pt", label: "Portuguese" },
-  { code: "es", label: "Spanish" },
-  { code: "fr", label: "French" },
-  { code: "it", label: "Italian" },
   { code: "eo", label: "Esperanto" },
   { code: "et", label: "Estonian" },
+  { code: "fil", label: "Filipino" },
   { code: "fi", label: "Finnish" },
+  { code: "fr", label: "French" },
   { code: "fy", label: "Frisian" },
   { code: "gl", label: "Galician" },
   { code: "ka", label: "Georgian" },
+  { code: "de", label: "German" },
   { code: "el", label: "Greek" },
   { code: "gu", label: "Gujarati" },
   { code: "ht", label: "Haitian Creole" },
   { code: "ha", label: "Hausa" },
   { code: "haw", label: "Hawaiian" },
+  { code: "he", label: "Hebrew" },
   { code: "hi", label: "Hindi" },
   { code: "hmn", label: "Hmong" },
   { code: "hu", label: "Hungarian" },
@@ -86,6 +84,7 @@ export const APP_LANGUAGE_OPTIONS: AppLanguageOption[] = [
   { code: "ig", label: "Igbo" },
   { code: "id", label: "Indonesian" },
   { code: "ga", label: "Irish" },
+  { code: "it", label: "Italian" },
   { code: "ja", label: "Japanese" },
   { code: "jv", label: "Javanese" },
   { code: "kn", label: "Kannada" },
@@ -115,6 +114,8 @@ export const APP_LANGUAGE_OPTIONS: AppLanguageOption[] = [
   { code: "ps", label: "Pashto" },
   { code: "fa", label: "Persian" },
   { code: "pl", label: "Polish" },
+  { code: "pt", label: "Portuguese" },
+  { code: "pt-BR", label: "Portuguese (Brazil)" },
   { code: "pa", label: "Punjabi" },
   { code: "ro", label: "Romanian" },
   { code: "ru", label: "Russian" },
@@ -127,6 +128,7 @@ export const APP_LANGUAGE_OPTIONS: AppLanguageOption[] = [
   { code: "sk", label: "Slovak" },
   { code: "sl", label: "Slovenian" },
   { code: "so", label: "Somali" },
+  { code: "es", label: "Spanish" },
   { code: "su", label: "Sundanese" },
   { code: "sw", label: "Swahili" },
   { code: "sv", label: "Swedish" },
@@ -144,14 +146,42 @@ export const APP_LANGUAGE_OPTIONS: AppLanguageOption[] = [
   { code: "yi", label: "Yiddish" },
   { code: "yo", label: "Yoruba" },
   { code: "zu", label: "Zulu" },
-  { code: "he", label: "Hebrew" },
-  { code: "fil", label: "Filipino" },
 ];
+
+export const APP_LANGUAGE_OPTIONS: AppLanguageOption[] = (() => {
+  const seen = new Set<string>();
+  const unique: AppLanguageOption[] = [];
+  for (const opt of RAW_APP_LANGUAGE_OPTIONS) {
+    if (seen.has(opt.code)) continue;
+    seen.add(opt.code);
+    unique.push(opt);
+  }
+  return unique.sort((a, b) => a.label.localeCompare(b.label));
+})();
+
+const getCookieDomains = (): string[] => {
+  if (typeof window === "undefined") return [""];
+  const host = window.location.hostname;
+  const domains = new Set<string>([""]);
+  if (host && host !== "localhost" && !/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+    domains.add(host);
+    const parts = host.split(".");
+    if (parts.length >= 2) {
+      domains.add("." + parts.slice(-2).join("."));
+      domains.add("." + host);
+    }
+  }
+  return Array.from(domains);
+};
 
 const setGoogleTranslateCookie = (languageCode: string) => {
   if (typeof document === "undefined") return;
   const safeLanguage = toGoogleTranslateCode(languageCode || "en");
-  document.cookie = `googtrans=/auto/${safeLanguage}; path=/; SameSite=Lax`;
+  const value = `/auto/${safeLanguage}`;
+  for (const domain of getCookieDomains()) {
+    const domainPart = domain ? `; domain=${domain}` : "";
+    document.cookie = `googtrans=${value}; path=/${domainPart}; SameSite=Lax`;
+  }
 };
 
 export const getStoredAppLanguage = () => {
