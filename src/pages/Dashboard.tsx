@@ -1444,8 +1444,8 @@ const Dashboard = () => {
           if (!features.includes("ad_network")) return;
         }
 
-        const adResult = await window.Pi.Ads.showAd("rewarded");
-        if (adResult.result !== "AD_REWARDED" || !adResult.adId) {
+        const adResult: any = await window.Pi.Ads.showAd("rewarded");
+        if (adResult?.result !== "AD_REWARDED" || !adResult?.adId) {
           setLastAdRunAt(Date.now());
           try {
             window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
