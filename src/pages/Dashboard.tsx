@@ -3770,7 +3770,8 @@ const Dashboard = () => {
 
       <DashboardRecommendations items={recommendationCards} className="mx-4 mt-4" />
 
-      <NftShowcase variant="light" className="mx-4 mt-4" />
+      {/* NftShowcase moved above (in place of Live Rates) */}
+
 
 
       {/* Feature grid moved to horizontal "Explore the App" scroll above */}
