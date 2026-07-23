@@ -620,7 +620,7 @@ const NftMarketplacePage = () => {
                       </div>
                       <div className="hidden md:flex flex-col gap-2 shrink-0">
                         <button
-                          onClick={() => currentSlide && nav(`/web3/nft/store/${currentSlide.handle}`)}
+                          onClick={(e) => { e.stopPropagation(); if (currentSlide) nav(`/web3/nft/store/${currentSlide.handle}`); }}
                           className="px-4 py-2 rounded-xl text-sm font-bold" style={{ background: ACCENT }}
                         >View collection</button>
                       </div>
