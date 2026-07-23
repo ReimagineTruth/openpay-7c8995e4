@@ -577,7 +577,12 @@ const NftMarketplacePage = () => {
               {/* Hero carousel */}
               {heroSlides.length > 0 && (
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0f0f10]">
-                  <div className="relative aspect-[16/8] md:aspect-[16/6] w-full">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => currentSlide && nav(`/web3/nft/store/${currentSlide.handle}`)}
+                    onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && currentSlide) nav(`/web3/nft/store/${currentSlide.handle}`); }}
+                    className="relative aspect-[16/8] md:aspect-[16/6] w-full cursor-pointer">
                     {currentSlide?.banner_url ? (
                       <img src={currentSlide.banner_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
                     ) : (
