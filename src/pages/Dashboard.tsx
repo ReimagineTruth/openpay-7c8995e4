@@ -396,6 +396,7 @@ const Dashboard = () => {
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showReceiveOptions, setShowReceiveOptions] = useState(false);
+  const hideFloating = useHideOnScroll();
   const [showRecentActivity, setShowRecentActivity] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinAction, setPinAction] = useState<(() => Promise<void>) | null>(null);
