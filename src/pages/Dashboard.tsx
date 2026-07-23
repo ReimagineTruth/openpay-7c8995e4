@@ -1242,7 +1242,7 @@ const Dashboard = () => {
             is_topup: tx.sender_id === userIdLocal && tx.receiver_id === userIdLocal,
           };
         });
-        setTransactions(enriched);
+        setTransactions(enriched as unknown as Transaction[]);
       }
 
       const miningInfo = await miningInfoPromise;
