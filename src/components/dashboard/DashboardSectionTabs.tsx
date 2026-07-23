@@ -25,8 +25,8 @@ const DashboardSectionTabs = ({ activeSection, onChange }: DashboardSectionTabsP
           >
             <span
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-lg",
-                isActive ? "bg-white/20" : "bg-paypal-blue/10",
+                "flex h-8 w-8 items-center justify-center",
+                isActive ? "rounded-lg bg-white/20" : "rounded-full bg-paypal-blue/10",
               )}
             >
               <Icon
@@ -36,7 +36,14 @@ const DashboardSectionTabs = ({ activeSection, onChange }: DashboardSectionTabsP
                 )}
               />
             </span>
-            <span className="text-[10px] font-bold leading-tight truncate w-full">{item.label}</span>
+            <span
+              className={cn(
+                "w-full truncate text-[10px] font-bold leading-tight",
+                isActive ? "text-white" : "text-foreground",
+              )}
+            >
+              {item.label}
+            </span>
           </button>
         );
       })}

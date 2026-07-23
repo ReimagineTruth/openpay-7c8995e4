@@ -40,7 +40,7 @@ const AuthCallback = () => {
               
               // Redirect to dashboard after 2 seconds
               setTimeout(() => {
-                navigate('/dashboard');
+                navigate('/dashboard', { replace: true });
               }, 2000);
             } else {
               setStatus('error');
@@ -69,7 +69,7 @@ const AuthCallback = () => {
   }, [searchParams, navigate]);
 
   const handleRetry = () => {
-    navigate('/dashboard');
+    navigate('/dashboard', { replace: true });
   };
 
   return (

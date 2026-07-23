@@ -12,6 +12,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { isPiBrowserUserAgent } from "@/lib/appSecurity";
 import BrandLogo from "@/components/BrandLogo";
+import { PI_ADS_DISABLED } from "@/lib/piAds";
 
 interface MiningSession {
   id: string;
@@ -493,6 +494,9 @@ const MiningPage = () => {
 
   const runRewardedAd = async () => {
     // Pi Ad Network temporarily disabled — auto-grant reward without showing an ad.
+    if (!PI_ADS_DISABLED) {
+      return _runRewardedAdOriginal();
+    }
     const fallbackAdId = `noad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
       window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
@@ -523,6 +527,9 @@ const MiningPage = () => {
   };
 
   const _runRewardedAdOriginal = async () => {
+    if (PI_ADS_DISABLED) {
+      throw new Error("Pi Ad Network is temporarily disabled.");
+    }
     if (!initPi() || !window.Pi?.Ads?.showAd) {
       throw new Error("Pi Ad Network is not available. Please update Pi Browser or try again later.");
     }

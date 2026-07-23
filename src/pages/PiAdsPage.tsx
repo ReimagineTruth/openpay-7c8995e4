@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
+import { PI_ADS_DISABLED } from "@/lib/piAds";
 
 type AdVerifyResult = {
   identifier: string;
@@ -106,8 +107,10 @@ const PiAdsPage = () => {
   };
 
   const handleWatchRewardedAd = async () => {
-    toast.info("Pi Ad Network is temporarily disabled.");
-    return;
+    if (PI_ADS_DISABLED) {
+      toast.info("Pi Ad Network is temporarily disabled.");
+      return;
+    }
     if (!initPi() || !window.Pi?.Ads?.showAd) return;
     
     if (!canWatchAd()) {

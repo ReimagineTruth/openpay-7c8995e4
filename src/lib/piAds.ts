@@ -1,6 +1,9 @@
 // Pi Ad Network verification utilities
 // These functions should be implemented in your backend for production use
 
+/** Global kill switch — when true, no Pi interstitial/rewarded ads are shown anywhere. */
+export const PI_ADS_DISABLED = true;
+
 export interface PiAdVerificationRequest {
   adId: string;
   userId: string;
@@ -89,6 +92,7 @@ export function isPiBrowser(): boolean {
  * Check if Pi Ad Network is available
  */
 export async function isPiAdNetworkAvailable(): Promise<boolean> {
+  if (PI_ADS_DISABLED) return false;
   if (!isPiBrowser() || !window.Pi?.Ads) {
     return false;
   }

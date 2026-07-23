@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { PI_ADS_DISABLED } from "@/lib/piAds";
 
 const LAST_AD_KEY = "openpay:pi-ads:last-shown";
 const HOURLY_LOG_KEY = "openpay:pi-ads:hourly-log";
@@ -16,9 +17,9 @@ type PiAdsSettings = {
 };
 
 const DEFAULT_SETTINGS: PiAdsSettings = {
-  enabled: true,
-  interstitial_enabled: true,
-  rewarded_enabled: true,
+  enabled: false,
+  interstitial_enabled: false,
+  rewarded_enabled: false,
   interstitial_interval_minutes: 5,
   max_ads_per_hour: 12,
   max_ads_per_day: 60,
@@ -79,6 +80,7 @@ const recordShown = () => {
 };
 
 const showInterstitialOnce = async () => {
+  if (PI_ADS_DISABLED) return;
   if (!initPi() || !window.Pi?.Ads?.showAd) return;
   try {
     const ready = await window.Pi.Ads.isAdReady("interstitial");
@@ -105,12 +107,13 @@ const getLastShown = (): number => {
  * Automatically shows a Pi Ad Network interstitial while the app is open,
  * respecting admin-configured settings (enabled, interval, hourly/daily caps).
  */
-export const usePiAdsAutoShow = (enabled: boolean = true) => {
+export const usePiAdsAutoShow = (enabled: boolean = false) => {
   const timerRef = useRef<number | null>(null);
   const [settings, setSettings] = useState<PiAdsSettings>(DEFAULT_SETTINGS);
 
   // Load admin settings and refresh every 5 min
   useEffect(() => {
+    if (PI_ADS_DISABLED) return;
     let cancelled = false;
     const fetchSettings = async () => {
       try {
@@ -138,6 +141,7 @@ export const usePiAdsAutoShow = (enabled: boolean = true) => {
   }, []);
 
   useEffect(() => {
+    if (PI_ADS_DISABLED) return;
     if (!enabled) return;
     if (typeof window === "undefined") return;
     if (!settings.enabled || !settings.interstitial_enabled) return;

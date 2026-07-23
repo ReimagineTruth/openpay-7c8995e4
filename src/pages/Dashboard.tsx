@@ -29,10 +29,12 @@ import { PhantomConnect } from "@/components/ui/PhantomConnect";
 import DashboardSectionTabs from "@/components/dashboard/DashboardSectionTabs";
 import DashboardSectionQuickBar from "@/components/dashboard/DashboardSectionQuickBar";
 import DashboardRecommendations from "@/components/dashboard/DashboardRecommendations";
+import DashboardSectionHero from "@/components/dashboard/DashboardSectionHero";
 import NftShowcase from "@/components/web3/NftShowcase";
 import DashboardSwapPanel from "@/components/dashboard/DashboardSwapPanel";
 import { MRWN_SWAP_OUSD_PER_TOKEN } from "@/lib/mrwnRates";
 import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
+import { PI_ADS_DISABLED } from "@/lib/piAds";
 import {
   DASHBOARD_SECTION_NAV,
   DASHBOARD_SECTION_TITLES,
@@ -1422,7 +1424,7 @@ const Dashboard = () => {
 
     const runPiAdAuto = async () => {
       // Pi Ad Network temporarily disabled globally (no ads across the app).
-      return;
+      if (PI_ADS_DISABLED) return;
       if (typeof window === "undefined" || typeof document === "undefined" || document.visibilityState !== "visible") return;
       if (!inPiBrowser) return;
       if (!window.Pi?.Ads?.showAd) return;
@@ -2309,7 +2311,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-paypal-blue pb-64 text-white dashboard-page-enter">
+    <div className="min-h-screen min-h-[100dvh] overflow-x-hidden bg-paypal-blue pb-64 text-white dashboard-page-enter">
       <div ref={dashboardTopRef} className="h-0 w-0" aria-hidden tabIndex={-1} />
       <div className="flex items-center justify-between px-4 pt-5 dashboard-header-enter">
         <div className="flex items-center gap-2">
@@ -2526,58 +2528,35 @@ const Dashboard = () => {
       <div key={activeSection} className="dashboard-section-enter">
       {activeSection === "savings" && (
         <div className="mx-4 mt-4">
-          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
-            <div className="relative mb-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
-                <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
-                  Savings wallet
-                </div>
-              </div>
+          <DashboardSectionHero
+            badge="Savings wallet"
+            metricLabel="Savings balance"
+            metricValue={balanceHidden ? "••••••" : <AnimatedCounter value={savings?.savings_balance ?? 0} />}
+            metricSubtitle={currency.code === "PI" ? "PI" : piCurrencyLabel}
+            icon={PiggyBank}
+            balanceHidden={balanceHidden}
+            onToggleHidden={toggleBalanceHidden}
+            trailing={
               <button
                 type="button"
                 onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-                className="ml-auto ios-active rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue hover:bg-paypal-blue/20 transition-colors backdrop-blur-sm"
+                className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
               >
                 {amountFormat === "compact" ? "Compact" : "Comma"}
               </button>
-            </div>
-
-            <div className="relative flex flex-col items-center justify-center text-center py-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/10 shadow-inner">
-                  <PiggyBank className="h-6 w-6 text-paypal-blue" />
-                </div>
-                <h2 className="text-5xl font-black tracking-tighter text-foreground min-w-0 flex-1 overflow-hidden">
-                  <AnimatedCounter value={savings?.savings_balance ?? 0} />
-                </h2>
-              </div>
-              <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-                Savings balance
-              </p>
-            </div>
-
-            <div className="relative mt-8 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Wallet balance</p>
-                <p className="text-base font-bold text-foreground"><AnimatedCounter value={savings?.wallet_balance ?? balance} /></p>
-              </div>
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Estimated APY</p>
-                <p className="text-base font-bold text-foreground">{(savings?.apy ?? 0).toFixed(2)}%</p>
-              </div>
-            </div>
-
-            <div className="relative mt-10 flex justify-center">
-              <button
-                type="button"
-                onClick={toggleBalanceHidden}
-                className="ios-active flex items-center gap-2 rounded-full bg-black/5 dark:bg-white/5 px-6 py-2.5 text-sm font-bold text-foreground hover:bg-black/10 transition-colors backdrop-blur-sm border border-white/5"
-              >
-                {balanceHidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                {balanceHidden ? "Show balance" : "Hide balance"}
-              </button>
-            </div>
-          </div>
+            }
+            stats={[
+              {
+                label: "Wallet balance",
+                value: balanceHidden ? "****" : <AnimatedCounter value={savings?.wallet_balance ?? balance} />,
+              },
+              {
+                label: "Estimated APY",
+                value: `${(savings?.apy ?? 0).toFixed(2)}%`,
+                tone: "text-emerald-200",
+              },
+            ]}
+          />
 
           <div className="mt-4 paypal-surface rounded-3xl p-4 text-foreground">
             <div className="grid gap-3 sm:grid-cols-2">
@@ -2686,69 +2665,33 @@ const Dashboard = () => {
 
       {activeSection === "credit" && (
         <div className="mx-4 mt-4">
-          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
-            <div className="relative mb-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
-                <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
-                  Credit profile
-                </div>
-              </div>
-              <span className="ml-auto ios-active rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue backdrop-blur-sm">
+          <DashboardSectionHero
+            badge="Credit profile"
+            metricLabel="Credit score"
+            metricValue={creditScoreDisplay}
+            metricSubtitle={creditScoreDisplay >= 120 ? "Loan-ready profile" : "Building profile"}
+            icon={TrendingUp}
+            trailing={
+              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
                 {currencyTag}
               </span>
-            </div>
-
-            <div className="relative flex flex-col items-center justify-center text-center py-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/10 shadow-inner">
-                  <TrendingUp className="h-6 w-6 text-paypal-blue" />
-                </div>
-                <h2 className="text-5xl font-black tracking-tighter text-foreground min-w-0 flex-1 overflow-hidden">
-                  {creditScoreDisplay}
-                </h2>
-              </div>
-              <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-                Credit score
-              </p>
-            </div>
-
-            <div className="relative mt-6 px-4">
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/5 dark:bg-white/5 border border-white/10">
+            }
+            action={{ label: "Build credit", onClick: () => navigate("/send") }}
+            stats={[
+              { label: "Status", value: creditScoreDisplay >= 120 ? "Ready" : "Building" },
+              { label: "Range", value: "0 - 900" },
+              { label: "Unlock", value: `${creditScoreDisplay} / 120` },
+            ]}
+          >
+            <div className="mt-5 px-1">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/15">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all duration-1000"
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-emerald-400 transition-all duration-1000"
                   style={{ width: `${creditProgressPercent}%` }}
                 />
               </div>
-              <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-                {creditScoreDisplay >= 120 ? "Loan-ready profile" : "Building profile"}
-              </p>
             </div>
-
-            <div className="relative mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Status</p>
-                <p className="text-base font-bold text-foreground">{creditScoreDisplay >= 120 ? "Ready" : "Building"}</p>
-              </div>
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Range</p>
-                <p className="text-base font-bold text-foreground">0 - 900</p>
-              </div>
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Unlock</p>
-                <p className="text-base font-bold text-foreground">{creditScoreDisplay} / 120</p>
-              </div>
-            </div>
-
-            <div className="relative mt-10 flex justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => navigate("/send")}
-                className="ios-active flex flex-1 items-center justify-center gap-2 rounded-full bg-paypal-blue text-white py-3 text-sm font-bold shadow-lg shadow-paypal-blue/20 hover:bg-paypal-blue/90 transition-all"
-              >
-                Build credit
-              </button>
-            </div>
-          </div>
+          </DashboardSectionHero>
 
           <div className="mt-4 paypal-surface rounded-3xl p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -2780,53 +2723,28 @@ const Dashboard = () => {
 
       {activeSection === "loans" && (
         <div className="mx-4 mt-4">
-          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
-            <div className="relative mb-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
-                <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
-                  Loan center
-                </div>
-              </div>
-              <span className="ml-auto ios-active rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue backdrop-blur-sm">
+          <DashboardSectionHero
+            badge="Loan center"
+            metricLabel="Available to borrow"
+            metricValue={balanceHidden ? "••••••" : <AnimatedCounter value={availableToBorrow} />}
+            metricSubtitle={`${previewApr.toFixed(1)}% APR · ${previewTermDays} days`}
+            icon={HandCoins}
+            balanceHidden={balanceHidden}
+            onToggleHidden={toggleBalanceHidden}
+            trailing={
+              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
                 {currencyTag}
               </span>
-            </div>
-
-            <div className="relative flex flex-col items-center justify-center text-center py-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/10 shadow-inner">
-                  <HandCoins className="h-6 w-6 text-paypal-blue" />
-                </div>
-                <h2 className="text-5xl font-black tracking-tighter text-foreground min-w-0 flex-1 overflow-hidden">
-                  <AnimatedCounter value={availableToBorrow} />
-                </h2>
-              </div>
-              <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-                Available to borrow
-              </p>
-            </div>
-
-            <div className="relative mt-8 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Interest rate</p>
-                <p className="text-base font-bold text-emerald-600">{previewApr.toFixed(1)}% APR</p>
-              </div>
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Term</p>
-                <p className="text-base font-bold text-foreground">{previewTermDays} days</p>
-              </div>
-            </div>
-
-            <div className="relative mt-10 flex justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => setLoanView(loanView === "overview" ? "form" : "overview")}
-                className="ios-active flex flex-1 items-center justify-center gap-2 rounded-full bg-paypal-blue text-white py-3 text-sm font-bold shadow-lg shadow-paypal-blue/20 hover:bg-paypal-blue/90 transition-all"
-              >
-                {loanView === "overview" ? "Apply now" : "Back to preview"}
-              </button>
-            </div>
-          </div>
+            }
+            action={{
+              label: loanView === "overview" ? "Apply now" : "Preview",
+              onClick: () => setLoanView(loanView === "overview" ? "form" : "overview"),
+            }}
+            stats={[
+              { label: "Interest rate", value: `${previewApr.toFixed(1)}% APR`, tone: "text-emerald-200" },
+              { label: "Term", value: `${previewTermDays} days` },
+            ]}
+          />
 
           <div className="mt-4 paypal-surface rounded-3xl p-4">
             {loanView === "overview" ? (
@@ -3010,49 +2928,24 @@ const Dashboard = () => {
 
       {activeSection === "cards" && (
         <div className="mx-4 mt-4">
-          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
-            <div className="relative mb-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
-                <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
-                  Virtual card
-                </div>
-              </div>
-              <span className="ml-auto ios-active rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue backdrop-blur-sm">
+          <DashboardSectionHero
+            badge="Virtual card"
+            metricLabel={hideCardPreviewDetails ? "Card details hidden" : "Card number"}
+            metricValue={hideCardPreviewDetails ? "•••• •••• •••• ••••" : virtualCardNumber}
+            metricSubtitle={hideCardPreviewDetails ? cardCurrencyLabel : `Linked · ${virtualCardActive ? "Active" : "Inactive"}`}
+            icon={CreditCard}
+            trailing={
+              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
                 {cardCurrencyLabel}
               </span>
-            </div>
-
-            <div className="relative flex flex-col items-center justify-center text-center py-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/10 shadow-inner">
-                  <CreditCard className="h-6 w-6 text-paypal-blue" />
-                </div>
-                <h2 className="text-3xl font-black tracking-[0.15em] text-foreground">
-                  {hideCardPreviewDetails ? "**** **** **** ****" : virtualCardNumber}
-                </h2>
-              </div>
-              <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-                {hideCardPreviewDetails ? "Card details hidden" : `Linked to wallet - ${virtualCardActive ? "Active" : "Inactive"}`}
-              </p>
-            </div>
-
-            <div className="relative mt-10 flex justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => setHideCardPreviewDetails((prev) => !prev)}
-                className="ios-active flex flex-1 items-center justify-center gap-2 rounded-full bg-black/5 dark:bg-white/5 py-3 text-sm font-bold text-foreground border border-white/10 backdrop-blur-sm transition-all"
-              >
-                {hideCardPreviewDetails ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                {hideCardPreviewDetails ? "View" : "Hide"}
-              </button>
-              <button
-                onClick={() => navigate("/virtual-card")}
-                className="ios-active flex flex-1 items-center justify-center gap-2 rounded-full bg-paypal-blue text-white py-3 text-sm font-bold shadow-lg shadow-paypal-blue/20 hover:bg-paypal-blue/90 transition-all"
-              >
-                Manage card
-              </button>
-            </div>
-          </div>
+            }
+            action={{ label: "Manage", onClick: () => navigate("/virtual-card") }}
+            secondaryAction={{
+              label: hideCardPreviewDetails ? "View details" : "Hide details",
+              onClick: () => setHideCardPreviewDetails((prev) => !prev),
+              icon: hideCardPreviewDetails ? Eye : EyeOff,
+            }}
+          />
 
           <div className="mt-4 paypal-surface rounded-3xl p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -3094,101 +2987,33 @@ const Dashboard = () => {
 
       {activeSection === "buy" && (
         <div className="mx-4 mt-4">
-          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
-            <div className="relative mb-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
-                <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
-                  Buy OpenUSD
-                </div>
-              </div>
+          <DashboardSectionHero
+            badge="Buy OpenUSD"
+            metricLabel="You get (OPEN USD)"
+            metricValue={buyOpenUsdDisplay}
+            metricSubtitle={buyOnrampProvider}
+            showBrandLogo
+            trailing={
               <button
                 type="button"
                 onClick={() => setShowOnrampPicker(true)}
-                className="ml-auto ios-active inline-flex items-center gap-1 rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue backdrop-blur-sm"
+                className="ios-active inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25"
               >
                 Onramper <ChevronDown className="h-3.5 w-3.5" />
               </button>
-            </div>
-
-            <div className="relative flex flex-col items-center justify-center text-center py-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/10 shadow-inner">
-                    <BrandLogo className="h-6 w-6 text-paypal-blue" />
-                  </div>
-                  <h2 className="text-5xl font-black tracking-tighter text-foreground min-w-0 flex-1 overflow-hidden">
-                    {buyOpenUsdDisplay}
-                  </h2>
-                </div>
-              <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-                You get (OPEN USD)
-              </p>
-            </div>
-
-            <div className="relative mt-8 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">You spend</p>
-                <p className="text-base font-bold text-foreground">{buySpendAmount || "0"} {buySpendUnit}</p>
-              </div>
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Provider</p>
-                  <button
-                    type="button"
-                    onClick={() => setShowOnrampPicker(true)}
-                    className="text-[10px] font-black uppercase tracking-widest text-paypal-blue"
-                  >
-                    Change
-                  </button>
-                </div>
-                <p className="inline-flex items-center gap-2 text-base font-bold text-foreground">
-                  {buyOnrampProvider === "Pi Payment" && <img src={PI_PAYMENT_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider === "Ewallet QR PH" && <img src={JQRPH_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider === "PayPal" && <img src={PAYPAL_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider === "USDT" && (
-                    <img
-                      src={USDT_ICON_URL}
-                      alt=""
-                      className="h-5 w-auto object-contain"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.src = USDT_ICON_FALLBACK_URL;
-                      }}
-                    />
-                  )}
-                  {buyOnrampProvider === "USDC" && (
-                    <img
-                      src={USDC_ICON_URL}
-                      alt=""
-                      className="h-5 w-auto object-contain"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.src = USDC_ICON_FALLBACK_URL;
-                      }}
-                    />
-                  )}
-                  {buyOnrampProvider === "Solana Pay" && <img src={SOLANA_PAY_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider === "Apple Pay" && <img src={APPLE_PAY_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider === "Google Pay" && <img src={GOOGLE_PAY_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider === "Debit Card" && <img src={VISA_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider === "Credit Card" && <img src={MASTERCARD_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider === "Stripe" && <img src={STRIPE_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider === "Venmo" && <img src={VENMO_ICON_URL} alt="" className="h-5 w-auto object-contain" />}
-                  {buyOnrampProvider}
-                </p>
-              </div>
-            </div>
-
-            <div className="relative mt-10 flex justify-center gap-3">
-              <button
-                type="button"
-                onClick={handleBuyOpenUsd}
-                disabled={!buyOpenUsdMeetsMinimum}
-                className="ios-active flex flex-1 items-center justify-center gap-2 rounded-full bg-paypal-blue text-white py-3 text-sm font-bold shadow-lg shadow-paypal-blue/20 hover:bg-paypal-blue/90 transition-all disabled:opacity-60"
-              >
-                Confirm purchase
-              </button>
-            </div>
-          </div>
+            }
+            action={{
+              label: "Confirm",
+              onClick: () => {
+                if (!buyOpenUsdMeetsMinimum) return;
+                handleBuyOpenUsd();
+              },
+            }}
+            stats={[
+              { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
+              { label: "Provider", value: buyOnrampProvider },
+            ]}
+          />
 
           <div className="mt-4 paypal-surface rounded-3xl p-4 space-y-4">
             <div className="rounded-2xl bg-secondary/50 p-4">
@@ -3284,7 +3109,32 @@ const Dashboard = () => {
       )}
 
       {activeSection === "swap" && (
-        <div className="mx-4 mt-4">
+        <div className="mx-4 mt-4 space-y-4">
+          <DashboardSectionHero
+            badge="Swap & withdraw"
+            metricLabel="Withdrawal amount"
+            metricValue={balanceHidden ? "••••••" : formatCompactCurrency(safeSwapAmount)}
+            metricSubtitle={`${swapWithdrawalType} · fee ${formatCompactCurrency(swapFeeAmount)}`}
+            icon={ArrowLeftRight}
+            balanceHidden={balanceHidden}
+            onToggleHidden={toggleBalanceHidden}
+            action={{
+              label: "Continue",
+              onClick: () => navigate(`/swap-withdrawal?amount=${safeSwapAmount.toFixed(2)}&type=${swapWithdrawalType}`),
+            }}
+            stats={[
+              { label: "You receive", value: (
+                swapWithdrawalType === "PI"
+                  ? `${swapPayoutPiAmount.toFixed(4)} PI`
+                  : swapWithdrawalType === "OUSD"
+                    ? `${swapPayoutOusdAmount.toFixed(2)} OUSD`
+                    : swapWithdrawalType === "OUSD_SOL"
+                      ? `${swapPayoutOusdSolAmount.toFixed(2)} ${OUSD_SOL_LABEL}`
+                      : `${swapPayoutMrwnAmount.toFixed(4)} MRWN`
+              ) },
+              { label: "Minimum", value: swapMeetsMinimum ? "Met" : "Below min", tone: swapMeetsMinimum ? "text-emerald-200" : "text-amber-200" },
+            ]}
+          />
           <DashboardSwapPanel
             withdrawalType={swapWithdrawalType}
             onWithdrawalTypeChange={setSwapWithdrawalType}
@@ -3333,49 +3183,26 @@ const Dashboard = () => {
 
       {activeSection === "mining" && (
         <div className="mx-4 mt-4">
-          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
-            <div className="relative mb-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
-                <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
-                  Mining hub
-                </div>
-              </div>
-              <span className="ml-auto ios-active rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue backdrop-blur-sm">
-                Active
+          <DashboardSectionHero
+            badge="Mining hub"
+            metricLabel="Mining balance (OUSD)"
+            metricValue={<AnimatedCounter value={miningBalance} codeOverride="OUSD" />}
+            metricSubtitle={activeMiningSession ? "Session active" : "Ready to mine"}
+            icon={Pickaxe}
+            trailing={
+              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
+                {activeMiningSession ? "Active" : "Idle"}
               </span>
-            </div>
-
-            <div className="relative flex flex-col items-center justify-center text-center py-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/10 shadow-inner">
-                  <Pickaxe className={`h-6 w-6 text-paypal-blue ${activeMiningSession ? "animate-bounce-slow" : ""}`} />
-                </div>
-                <h2 className="text-5xl font-black tracking-tighter text-foreground min-w-0 flex-1 overflow-hidden">
-                  <AnimatedCounter value={miningBalance} codeOverride="OUSD" />
-                </h2>
-              </div>
-              <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-                Mining balance (OUSD)
-              </p>
-            </div>
-
-            <div className="relative mt-8">
-              <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Daily rate</p>
-                <p className="text-base font-bold text-foreground">0.10 OUSD</p>
-              </div>
-            </div>
-
-            <div className="relative mt-10 flex justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => navigate("/mining")}
-                className="ios-active flex flex-1 items-center justify-center gap-2 rounded-full bg-paypal-blue text-white py-3 text-sm font-bold shadow-lg shadow-paypal-blue/20 hover:bg-paypal-blue/90 transition-all"
-              >
-                {activeMiningSession ? "Mining session" : "Start session"}
-              </button>
-            </div>
-          </div>
+            }
+            action={{
+              label: activeMiningSession ? "Open session" : "Start session",
+              onClick: () => navigate("/mining"),
+            }}
+            stats={[
+              { label: "Daily rate", value: "0.10 OUSD", tone: "text-emerald-200" },
+              { label: "Status", value: activeMiningSession ? "Mining" : "Stopped" },
+            ]}
+          />
 
           <div className="mt-4 paypal-surface rounded-3xl p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -3398,70 +3225,41 @@ const Dashboard = () => {
 
       {activeSection === "analytics" && (
         <div className="mx-4 mt-4 space-y-4">
-          <div className="paypal-surface relative overflow-hidden rounded-[2.5rem] p-8 shadow-2xl shadow-black/10 text-foreground">
-            <div className="relative mb-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex rounded-full bg-black/5 dark:bg-white/5 p-1 backdrop-blur-sm border border-white/10">
-                <div className="rounded-full px-4 py-1.5 text-xs font-bold bg-white text-paypal-blue shadow-lg shadow-black/5">
-                  Personal Analytics
-                </div>
-              </div>
+          <DashboardSectionHero
+            badge="Personal Analytics"
+            metricLabel="Net balance"
+            metricValue={
+              personalAnalyticsLoading
+                ? "…"
+                : personalAnalytics
+                  ? (balanceHidden ? "••••••" : <AnimatedCounter value={personalAnalytics.summary.net_balance} />)
+                  : "—"
+            }
+            metricSubtitle={personalAnalyticsLoading ? "Loading…" : "Wallet activity"}
+            icon={TrendingUp}
+            balanceHidden={balanceHidden}
+            onToggleHidden={toggleBalanceHidden}
+            trailing={
               <button
                 type="button"
                 onClick={() => void loadPersonalAnalytics()}
                 disabled={personalAnalyticsLoading}
-                className="ml-auto ios-active rounded-full bg-paypal-blue/10 px-4 py-1.5 text-xs font-bold text-paypal-blue hover:bg-paypal-blue/20 transition-colors backdrop-blur-sm"
+                className="ios-active inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25 disabled:opacity-60"
               >
                 {personalAnalyticsLoading ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Refresh"}
               </button>
-            </div>
-
-            {personalAnalyticsLoading ? (
-              <div className="relative flex flex-col items-center justify-center py-12">
-                <RefreshCw className="h-8 w-8 animate-spin text-paypal-blue" />
-                <p className="mt-4 text-sm font-bold uppercase tracking-widest text-muted-foreground/60">Loading analytics...</p>
-              </div>
-            ) : personalAnalytics ? (
-              <div className="relative">
-                <div className="flex flex-col items-center justify-center text-center py-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paypal-blue/10 shadow-inner">
-                      <TrendingUp className="h-6 w-6 text-paypal-blue" />
-                    </div>
-                    <h2 className="text-5xl font-black tracking-tighter text-foreground min-w-0 flex-1 overflow-hidden">
-                      <AnimatedCounter value={personalAnalytics.summary.net_balance} />
-                    </h2>
-                  </div>
-                  <p className="mt-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-                    Net Balance
-                  </p>
-                </div>
-
-                <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Total Sent</p>
-                    <p className="text-lg font-bold text-red-500"><AnimatedCounter value={personalAnalytics.summary.total_sent} /></p>
-                  </div>
-                  <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Total Received</p>
-                    <p className="text-lg font-bold text-green-500"><AnimatedCounter value={personalAnalytics.summary.total_received} /></p>
-                  </div>
-                  <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Transactions</p>
-                    <p className="text-lg font-bold text-foreground">{personalAnalytics.summary.transaction_count}</p>
-                  </div>
-                  <div className="rounded-2xl bg-black/5 dark:bg-white/5 p-4 border border-white/5 backdrop-blur-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Top-ups</p>
-                    <p className="text-lg font-bold text-foreground">{personalAnalytics.summary.topup_count}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="relative flex flex-col items-center justify-center py-12 text-center">
-                <TrendingUp className="h-12 w-12 text-muted-foreground/20" />
-                <p className="mt-4 text-sm font-bold uppercase tracking-widest text-muted-foreground/60">No data available</p>
-              </div>
-            )}
-          </div>
+            }
+            stats={
+              personalAnalytics && !personalAnalyticsLoading
+                ? [
+                    { label: "Total sent", value: balanceHidden ? "****" : <AnimatedCounter value={personalAnalytics.summary.total_sent} />, tone: "text-rose-200" },
+                    { label: "Total received", value: balanceHidden ? "****" : <AnimatedCounter value={personalAnalytics.summary.total_received} />, tone: "text-emerald-200" },
+                    { label: "Transactions", value: String(personalAnalytics.summary.transaction_count) },
+                    { label: "Top-ups", value: String(personalAnalytics.summary.topup_count) },
+                  ]
+                : undefined
+            }
+          />
 
           {personalAnalytics && !personalAnalyticsLoading && (
             <>

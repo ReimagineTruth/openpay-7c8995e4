@@ -23,7 +23,6 @@ const ProtectedRoute = ({ children, redirectTo = "/sign-in" }: ProtectedRoutePro
           console.log('User not authenticated, redirecting to:', redirectTo);
           navigate(redirectTo, {
             replace: true,
-            state: { from: location.pathname }
           });
           return;
         }
@@ -55,7 +54,6 @@ const ProtectedRoute = ({ children, redirectTo = "/sign-in" }: ProtectedRoutePro
         console.error('Auth check error:', error);
         navigate(redirectTo, {
           replace: true,
-          state: { from: location.pathname }
         });
       } finally {
         setIsLoading(false);

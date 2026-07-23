@@ -163,6 +163,13 @@ import ThankYouModal from "./components/ThankYouModal";
 import GlobalThankYouModal from "./components/GlobalThankYouModal";
 import PageTransition from "./components/PageTransition";
 import { isSolanaPayEnabled } from "@/lib/solanaPayAccess";
+import {
+  POST_AUTH_HOME,
+  claimAppBootRedirect,
+  isAllowedDirectOpenPath,
+  isAuthLandingPath,
+  shouldHomeOnResume,
+} from "@/lib/postAuthLanding";
 
 const queryClient = new QueryClient();
 
@@ -170,8 +177,7 @@ const AppRoutes = () => {
   const location = useLocation();
   const navigate = useNavigate();
   usePiOAuthAutoLink();
-  // Pi Ad Network is disabled globally. Ads are only shown on-demand in the
-  // Mining flow (rewarded ads via PiAdsPage / MiningPage).
+  // Pi Ad Network is disabled globally via PI_ADS_DISABLED.
   usePiAdsAutoShow(false);
   const routeLoaderReady = useRef(false);
   const [showRouteSplash, setShowRouteSplash] = useState(true);
@@ -181,6 +187,45 @@ const AppRoutes = () => {
   useEffect(() => {
     navigateRef.current = navigate;
   }, [navigate]);
+
+  // Cold start / reopen: signed-in users should land on dashboard, not resume a feature page.
+  useEffect(() => {
+    let cancelled = false;
+
+    const goHomeIfNeeded = async (reason: string) => {
+      const path = window.location.pathname;
+      if (isAllowedDirectOpenPath(path)) return;
+
+      const { data } = await supabase.auth.getSession();
+      if (cancelled || !data.session) return;
+      if (path === POST_AUTH_HOME) return;
+
+      console.log(`${reason} redirect to dashboard from:`, path);
+      navigateRef.current(POST_AUTH_HOME, { replace: true });
+    };
+
+    if (claimAppBootRedirect()) {
+      void goHomeIfNeeded("Boot");
+    }
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        shouldHomeOnResume(); // records hidden timestamp
+        return;
+      }
+      if (shouldHomeOnResume()) {
+        void goHomeIfNeeded("Resume");
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+    // Intentionally once on mount for this tab session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Toggle a global `nft-scope` class on <body> while browsing NFT routes so
   // theme-aware CSS overrides can adapt hardcoded dark utilities to light mode.
@@ -231,15 +276,17 @@ const AppRoutes = () => {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Only redirect to dashboard if user is on an auth/landing page.
-        // Token refreshes and re-emitted SIGNED_IN events should NEVER
-        // bounce a user away from the page they're currently using.
-        const authPaths = ['/', '/auth', '/sign-in', '/signin', '/signup', '/auth/callback'];
-        const isOnAuthPage = authPaths.includes(location.pathname);
+        // Fresh sign-in from auth screens always goes to dashboard.
+        // Do NOT bounce users who are already mid-session on a feature page
+        // (TOKEN_REFRESH / rehydrated SIGNED_IN can re-fire while browsing).
+        const path = location.pathname;
+        if (path === "/setup-profile" || path === "/onboarding") {
+          return;
+        }
 
-        if (isOnAuthPage) {
-          console.log('Redirecting to dashboard from auth page:', location.pathname);
-          navigateRef.current('/dashboard', { replace: true });
+        if (isAuthLandingPath(path)) {
+          console.log('Redirecting to dashboard after sign-in from:', path);
+          navigateRef.current(POST_AUTH_HOME, { replace: true });
         }
       } else if (event === 'SIGNED_OUT') {
         // Only redirect if not already on sign-in page and not on a public path
@@ -268,7 +315,7 @@ const AppRoutes = () => {
   return (
     <>
       <PageTransition key={location.pathname}>
-        <main>
+        <main className="app-shell">
         <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />

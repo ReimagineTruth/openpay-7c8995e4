@@ -405,7 +405,7 @@ const ReceivePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-paypal-blue px-4 pt-4 pb-10 text-white">
+    <div className="min-h-screen min-h-[100dvh] overflow-x-hidden bg-paypal-blue px-4 pt-4 pb-10 text-white safe-pb">
       <style>{`
         @media print {
           body * {
@@ -826,23 +826,27 @@ const ReceivePage = () => {
       </div>
 
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
-        <DialogContent className="rounded-3xl border-white/20 bg-white p-5 sm:max-w-xl">
-          <DialogTitle className="text-center text-xl font-bold text-gray-900">Receive QR Code</DialogTitle>
-          <DialogDescription className="text-center text-sm text-gray-500">
+        <DialogContent className="rounded-3xl border-white/20 bg-white p-4 sm:p-6 sm:max-w-md gap-3">
+          <DialogTitle className="pr-8 text-center text-lg font-bold leading-snug text-gray-900 sm:text-xl">
+            Receive QR Code
+          </DialogTitle>
+          <DialogDescription className="text-center text-sm text-gray-500 px-1">
             Let the sender scan this code in OpenPay Express Send.
           </DialogDescription>
-          <div className="rounded-3xl border border-gray-200 bg-white p-4">
-            <div className="flex justify-center rounded-2xl bg-white p-2">
+          <div className="min-w-0 rounded-3xl border border-gray-200 bg-white p-3 sm:p-4">
+            <div className="mx-auto flex w-full max-w-[min(260px,calc(100vw-5rem))] items-center justify-center rounded-2xl bg-white p-1 sm:max-w-[300px]">
               {receiveQrValue ? (
                 <QRCodeSVG
                   value={receiveQrValue}
-                  size={320}
+                  size={260}
                   level="H"
                   includeMargin
+                  className="h-auto w-full max-w-full"
+                  style={{ width: "100%", height: "auto" }}
                   imageSettings={{
                     src: "/openpay-logo.jpg",
-                    height: 56,
-                    width: 56,
+                    height: 46,
+                    width: 46,
                     excavate: true,
                   }}
                 />
@@ -850,32 +854,36 @@ const ReceivePage = () => {
                 <p className="text-sm text-gray-500">Loading QR code...</p>
               )}
             </div>
-            <p className="mt-4 text-center text-sm font-semibold text-gray-900">
+            <p className="mt-3 break-words px-1 text-center text-sm font-semibold text-gray-900 sm:mt-4">
               {profile?.full_name || "OpenPay User"}
             </p>
-            {effectiveAccountNumber && <p className="mt-1 text-center text-sm text-gray-500">{effectiveAccountNumber}</p>}
-            <p className="mt-3 text-center text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
+            {effectiveAccountNumber && (
+              <p className="mt-1 break-all px-1 text-center text-xs text-gray-500 sm:text-sm">
+                {effectiveAccountNumber}
+              </p>
+            )}
+            <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 sm:text-xs sm:tracking-[0.2em]">
               Scan to pay
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-2.5 sm:grid-cols-2 sm:gap-3">
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-2xl font-bold text-gray-800"
+              className="h-11 w-full rounded-2xl font-bold text-gray-800"
               onClick={() => handleCopy(receiveQrValue, "QR link")}
               disabled={!receiveQrValue}
             >
-              <Copy className="mr-2 h-4 w-4" />
+              <Copy className="mr-2 h-4 w-4 shrink-0" />
               Copy QR Link
             </Button>
             <Button
               type="button"
-              className="h-11 rounded-2xl bg-blue-600 font-bold text-white hover:bg-blue-700"
+              className="h-11 w-full rounded-2xl bg-blue-600 font-bold text-white hover:bg-blue-700"
               onClick={() => handleShare(webPayLink)}
               disabled={!webPayLink}
             >
-              <Share2 className="mr-2 h-4 w-4" />
+              <Share2 className="mr-2 h-4 w-4 shrink-0" />
               Share Payment Link
             </Button>
           </div>

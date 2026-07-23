@@ -58,7 +58,7 @@ const AdminMrwainAuth = () => {
       }
       
       // 2FA verification disabled for now - go directly to dashboard
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
       return;
     }
 
@@ -97,8 +97,8 @@ const AdminMrwainAuth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-paypal-blue via-[#0a3fa8] to-[#062468] px-5 py-8">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center">
+    <div className="min-h-screen min-h-[100dvh] overflow-x-hidden bg-gradient-to-b from-paypal-blue via-[#0a3fa8] to-[#062468] px-4 py-6 sm:px-5 sm:py-8 safe-pb">
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-md min-w-0 flex-col justify-center">
         {/* Brand header */}
         <div className="mb-6 text-center">
           <AuthMark className="mx-auto mb-4 h-14 w-14" />
@@ -109,7 +109,7 @@ const AdminMrwainAuth = () => {
         </div>
 
         {/* Main card */}
-        <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-black/20 dark:bg-[#0f172a]">
+        <div className="min-w-0 rounded-3xl bg-white p-4 shadow-2xl shadow-black/20 sm:p-6 dark:bg-[#0f172a]">
           {/* Back to Pi link */}
           <Link
             to="/auth"

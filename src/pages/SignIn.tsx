@@ -40,7 +40,7 @@ const SignIn = () => {
       console.log("User metadata:", data.user.user_metadata);
       
       // 2FA verification disabled - proceed directly to dashboard
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
   };
 
@@ -61,7 +61,7 @@ const SignIn = () => {
       if (isValid) {
         // Complete the sign-in process
         toast.success("2FA verification successful");
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } else {
         toast.error("Invalid 2FA code. Please try again.");
       }

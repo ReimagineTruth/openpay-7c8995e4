@@ -13,9 +13,9 @@ const Index = () => {
       new Promise((resolve) => setTimeout(resolve, 300)),
     ]).then(([{ data: { session } }]) => {
       if (session) {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } else {
-        navigate("/auth");
+        navigate("/auth", { replace: true });
       }
       setChecking(false);
     });

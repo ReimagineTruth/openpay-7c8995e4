@@ -19,9 +19,9 @@ type PiAdsSettings = {
 };
 
 const DEFAULTS: PiAdsSettings = {
-  enabled: true,
-  interstitial_enabled: true,
-  rewarded_enabled: true,
+  enabled: false,
+  interstitial_enabled: false,
+  rewarded_enabled: false,
   interstitial_interval_minutes: 5,
   max_ads_per_hour: 12,
   max_ads_per_day: 60,
@@ -40,9 +40,9 @@ const AdminPiAdsPage = () => {
       toast.error(error.message);
     } else if (data) {
       setS({
-        enabled: !!data.enabled,
-        interstitial_enabled: !!data.interstitial_enabled,
-        rewarded_enabled: !!data.rewarded_enabled,
+        enabled: false,
+        interstitial_enabled: false,
+        rewarded_enabled: false,
         interstitial_interval_minutes: Number(data.interstitial_interval_minutes ?? 5),
         max_ads_per_hour: Number(data.max_ads_per_hour ?? 12),
         max_ads_per_day: Number(data.max_ads_per_day ?? 60),
@@ -59,9 +59,9 @@ const AdminPiAdsPage = () => {
   const save = async () => {
     setSaving(true);
     const { data, error } = await (supabase as any).rpc("pi_ads_set_settings", {
-      p_enabled: s.enabled,
-      p_interstitial_enabled: s.interstitial_enabled,
-      p_rewarded_enabled: s.rewarded_enabled,
+      p_enabled: false,
+      p_interstitial_enabled: false,
+      p_rewarded_enabled: false,
       p_interstitial_interval_minutes: Math.max(1, Math.min(1440, Math.floor(s.interstitial_interval_minutes || 5))),
       p_max_ads_per_hour: Math.max(0, Math.min(240, Math.floor(s.max_ads_per_hour || 0))),
       p_max_ads_per_day: Math.max(0, Math.min(2000, Math.floor(s.max_ads_per_day || 0))),
@@ -71,8 +71,8 @@ const AdminPiAdsPage = () => {
       toast.error(error.message);
       return;
     }
-    toast.success("Pi Ad Network settings saved");
-    if (data) setS((prev) => ({ ...prev, ...data }));
+    toast.success("Pi Ad Network remains disabled (locked off)");
+    if (data) setS((prev) => ({ ...prev, ...data, enabled: false, interstitial_enabled: false, rewarded_enabled: false }));
   };
 
   return (
@@ -104,25 +104,26 @@ const AdminPiAdsPage = () => {
             <ToggleRow
               icon={<Power className="h-4 w-4" />}
               title="Enable Pi Ad Network"
-              desc="Master switch. When off, no ads (interstitial or rewarded) are shown anywhere."
-              checked={s.enabled}
-              onChange={(v) => setS({ ...s, enabled: v })}
+              desc="Master switch. When off, no ads (interstitial or rewarded) are shown anywhere. Code kill-switch (PI_ADS_DISABLED) also blocks all ads."
+              checked={false}
+              onChange={() => toast.info("Pi Ad Network is locked off in code (PI_ADS_DISABLED).")}
+              disabled
             />
             <ToggleRow
               icon={<Megaphone className="h-4 w-4" />}
               title="Interstitial ads"
               desc="Auto-shown ads while users browse the app."
-              checked={s.interstitial_enabled}
-              onChange={(v) => setS({ ...s, interstitial_enabled: v })}
-              disabled={!s.enabled}
+              checked={false}
+              onChange={() => {}}
+              disabled
             />
             <ToggleRow
               icon={<Megaphone className="h-4 w-4" />}
               title="Rewarded ads"
               desc="Ads users watch to unlock mining and other rewards."
-              checked={s.rewarded_enabled}
-              onChange={(v) => setS({ ...s, rewarded_enabled: v })}
-              disabled={!s.enabled}
+              checked={false}
+              onChange={() => {}}
+              disabled
             />
 
             <NumberRow

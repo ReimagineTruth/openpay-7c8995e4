@@ -745,7 +745,7 @@ const MenuPage = () => {
 
   return (
 
-    <div className="min-h-screen bg-paypal-blue px-4 pt-8 pb-10 text-white animate-fadeIn">
+    <div className="min-h-screen min-h-[100dvh] overflow-x-hidden bg-paypal-blue px-4 pt-8 pb-28 text-white animate-fadeIn safe-pb">
 
       <div className="px-4 pt-8">
 
