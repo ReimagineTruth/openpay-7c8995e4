@@ -299,6 +299,8 @@ const AppRoutes = () => {
                             location.pathname.startsWith('/pay/') ||
                             location.pathname.startsWith('/paybutton/') ||
                             location.pathname.startsWith('/connect') ||
+                            location.pathname.startsWith('/oauth/') ||
+                            location.pathname.startsWith('/oauth2/') ||
 
 
                             location.pathname.startsWith('/forgot') ||
@@ -580,6 +582,8 @@ const AppRoutes = () => {
         <Route path="/partner-api" element={<PartnerApiPage />} />
         <Route path="/paybutton/:chargeId" element={<PayButtonCheckoutPage />} />
         <Route path="/connect" element={<PartnerConnectPage />} />
+        <Route path="/oauth/authorize" element={<Navigate to={`/connect${window.location.search}`} replace />} />
+        <Route path="/oauth2/authorize" element={<Navigate to={`/connect${window.location.search}`} replace />} />
 
         <Route path="/openpay-pos-docs" element={<OpenPayPosDocsPage />} />
         <Route path="/openpay-merchant-portal-docs" element={<OpenPayMerchantPortalDocsPage />} />
