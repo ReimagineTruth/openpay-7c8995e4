@@ -34,18 +34,23 @@ Deno.serve(async (req) => {
   if (req.method === 'GET' && (path === '/' || path === '/health')) {
     return ok({
       service: 'OpenPay Partner Transfer API',
-      version: '1.0.0',
+      version: '1.1.0',
       docs: 'https://openpay.lovable.app/partner-api',
       endpoints: [
         'GET  /health',
-        'GET  /me                              — partner app info',
-        'GET  /accounts/:identifier            — resolve account (username | @user | OP… | email)',
-        'GET  /balance                         — balance of the partner-app owner',
-        'POST /transfers                       — send balance from owner → recipient',
-        'GET  /transfers?limit=&direction=     — list partner transfer history',
+        'GET  /me',
+        'GET  /accounts/:identifier',
+        'GET  /balance',
+        'POST /transfers',
+        'GET  /transfers?limit=&direction=',
+        'POST /charges                         — create a PayButton checkout',
+        'GET  /charges/:id                     — check charge status',
+        'GET  /charges?limit=&status=          — list charges',
+        'POST /charges/:id/cancel              — cancel unpaid charge',
       ],
     });
   }
+
 
   // Auth: partner API key
   const authHeader = req.headers.get('Authorization') || '';
