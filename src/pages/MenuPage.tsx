@@ -660,6 +660,8 @@ const MenuPage = () => {
 
         { icon: BookOpen, label: "Merchant Docs", action: () => navigate("/openpay-merchant-portal-docs") },
 
+        { icon: KeyRound, label: "Partner API", subtitle: "Wallet-to-wallet transfer API", action: () => navigate("/partner-api") },
+
       ],
 
     },
