@@ -2951,6 +2951,77 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_charges: {
+        Row: {
+          amount: number
+          buyer_user_id: string | null
+          cancel_url: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          expires_at: string
+          id: string
+          metadata: Json
+          owner_user_id: string
+          paid_at: string | null
+          partner_app_id: string
+          reference: string | null
+          status: string
+          success_url: string | null
+          transaction_id: string | null
+          transfer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          buyer_user_id?: string | null
+          cancel_url?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          owner_user_id: string
+          paid_at?: string | null
+          partner_app_id: string
+          reference?: string | null
+          status?: string
+          success_url?: string | null
+          transaction_id?: string | null
+          transfer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          buyer_user_id?: string | null
+          cancel_url?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          owner_user_id?: string
+          paid_at?: string | null
+          partner_app_id?: string
+          reference?: string | null
+          status?: string
+          success_url?: string | null
+          transaction_id?: string | null
+          transfer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_charges_partner_app_id_fkey"
+            columns: ["partner_app_id"]
+            isOneToOne: false
+            referencedRelation: "partner_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_transfers: {
         Row: {
           amount: number
@@ -5504,6 +5575,53 @@ export type Database = {
         Returns: string
       }
       normalize_openpay_code: { Args: { p_code: string }; Returns: string }
+      partner_charge_approve: {
+        Args: { p_charge_id: string }
+        Returns: {
+          buyer_balance: number
+          charge_id: string
+          success_url: string
+          transaction_id: string
+        }[]
+      }
+      partner_charge_cancel: { Args: { p_charge_id: string }; Returns: boolean }
+      partner_charge_create: {
+        Args: {
+          p_amount: number
+          p_cancel_url: string
+          p_currency: string
+          p_description: string
+          p_metadata: Json
+          p_owner_user_id: string
+          p_partner_app_id: string
+          p_reference: string
+          p_success_url: string
+        }
+        Returns: {
+          charge_id: string
+          expires_at: string
+        }[]
+      }
+      partner_charge_get_public: {
+        Args: { p_charge_id: string }
+        Returns: {
+          amount: number
+          cancel_url: string
+          currency: string
+          description: string
+          expires_at: string
+          id: string
+          owner_avatar_url: string
+          owner_full_name: string
+          owner_user_id: string
+          owner_username: string
+          partner_app_id: string
+          partner_app_name: string
+          partner_app_website: string
+          status: string
+          success_url: string
+        }[]
+      }
       partner_lookup_account: {
         Args: { p_identifier: string }
         Returns: {
