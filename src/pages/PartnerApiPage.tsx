@@ -19,6 +19,7 @@ type PartnerApp = {
   is_active: boolean;
   last_used_at: string | null;
   created_at: string;
+  redirect_uris: string[];
 };
 
 const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/partner-transfer-api`;
