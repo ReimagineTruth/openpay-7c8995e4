@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import {
+  formatProDestinationPreview,
   isOpenPayProPartnerNote,
   isProXferNote,
   parseProXferNote,
@@ -58,6 +59,12 @@ const UsernamePayPage = () => {
   const isProXfer = isProXferNote(requestedNote);
   const isPartnerTopup =
     isOpenPayProPartnerNote(requestedNote) || (Boolean(successUrl) && hasValidAmount);
+  const proXferParsed = useMemo(() => parseProXferNote(requestedNote), [requestedNote]);
+  const proDestinationPreview = proXferParsed
+    ? formatProDestinationPreview(proXferParsed.to)
+    : "";
+  const displayNote = requestedNote.trim();
+  const isLongRoutingNote = isProXfer || displayNote.length > 48;
 
   useEffect(() => {
     const load = async () => {
@@ -481,21 +488,43 @@ const UsernamePayPage = () => {
 
           {!loadError && recipient ? (
             <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/15 bg-black/10 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/65">Pay to</p>
-                  <p className="mt-2 text-lg font-bold">{recipient.full_name}</p>
-                  <p className="text-sm text-white/75">@{recipient.username}</p>
+              <div className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="min-w-0 rounded-2xl border border-white/15 bg-black/10 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/65">Pay to</p>
+                    <p className="mt-2 truncate text-lg font-bold">{recipient.full_name}</p>
+                    <p className="truncate text-sm text-white/75">@{recipient.username}</p>
+                  </div>
+                  <div className="min-w-0 rounded-2xl border border-white/15 bg-black/10 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/65">Requested amount</p>
+                    <p className="mt-2 text-lg font-bold">
+                      {hasValidAmount
+                        ? `${amountNum.toFixed(2)} ${isPartnerTopup ? "OUSD" : requestedCurrency}`
+                        : "Choose amount in app"}
+                    </p>
+                    {!isLongRoutingNote ? (
+                      <p className="truncate text-sm text-white/75">{displayNote || "No note added"}</p>
+                    ) : isProXfer && proDestinationPreview ? (
+                      <p className="truncate text-sm text-white/75">Pro · {proDestinationPreview}</p>
+                    ) : (
+                      <p className="text-sm text-white/75">Routing note</p>
+                    )}
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-white/15 bg-black/10 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/65">Requested amount</p>
-                  <p className="mt-2 text-lg font-bold">
-                    {hasValidAmount
-                      ? `${amountNum.toFixed(2)} ${isPartnerTopup ? "OUSD" : requestedCurrency}`
-                      : "Choose amount in app"}
-                  </p>
-                  <p className="text-sm text-white/75">{requestedNote.trim() || "No note added"}</p>
-                </div>
+
+                {isLongRoutingNote && displayNote ? (
+                  <div className="min-w-0 rounded-2xl border border-white/15 bg-black/10 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/65">
+                      {isProXfer ? "Pro destination" : "Note"}
+                    </p>
+                    {isProXfer && proDestinationPreview ? (
+                      <p className="mt-2 text-lg font-bold">{proDestinationPreview}</p>
+                    ) : null}
+                    <p className="mt-2 break-all font-mono text-xs leading-relaxed text-white/70">
+                      {displayNote}
+                    </p>
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4">
