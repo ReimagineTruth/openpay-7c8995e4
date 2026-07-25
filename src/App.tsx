@@ -89,6 +89,8 @@ import LegalPage from "./pages/LegalPage";
 import OpenPayDocumentationPage from "./pages/OpenPayDocumentationPage";
 import OpenPayApiDocsPage from "./pages/OpenPayApiDocsPage";
 import PartnerApiPage from "./pages/PartnerApiPage";
+import PayButtonCheckoutPage from "./pages/PayButtonCheckoutPage";
+
 import OpenPayPosDocsPage from "./pages/OpenPayPosDocsPage";
 import OpenPayMerchantPortalDocsPage from "./pages/OpenPayMerchantPortalDocsPage";
 import OpenPartnerPage from "./pages/OpenPartnerPage";
@@ -294,6 +296,8 @@ const AppRoutes = () => {
         const publicPaths = ['/', '/auth', '/sign-in', '/signin', '/signup', '/terms', 'privacy', 'about-openpay', 'legal', 'help-center'];
         const isPublicPath = publicPaths.some(path => location.pathname === path) || 
                             location.pathname.startsWith('/pay/') ||
+                            location.pathname.startsWith('/paybutton/') ||
+
                             location.pathname.startsWith('/forgot') ||
                             location.pathname.startsWith('/reset') ||
                             location.pathname.startsWith('/two-factor');
@@ -571,6 +575,8 @@ const AppRoutes = () => {
         <Route path="/openpay-documentation" element={<OpenPayDocumentationPage />} />
         <Route path="/openpay-api-docs" element={<OpenPayApiDocsPage />} />
         <Route path="/partner-api" element={<PartnerApiPage />} />
+        <Route path="/paybutton/:chargeId" element={<PayButtonCheckoutPage />} />
+
         <Route path="/openpay-pos-docs" element={<OpenPayPosDocsPage />} />
         <Route path="/openpay-merchant-portal-docs" element={<OpenPayMerchantPortalDocsPage />} />
         <Route path="/open-partner" element={<OpenPartnerPage />} />
