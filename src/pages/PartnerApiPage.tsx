@@ -38,7 +38,7 @@ function PartnerApiPageInner() {
     setLoading(true);
     const { data, error } = await supabase
       .from("partner_apps")
-      .select("id,name,description,website,key_prefix,is_active,last_used_at,created_at")
+      .select("id,name,description,website,key_prefix,is_active,last_used_at,created_at,redirect_uris")
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
     setApps((data as PartnerApp[]) || []);
