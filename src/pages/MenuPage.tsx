@@ -22,7 +22,7 @@ import { PI_TO_USD } from "@/contexts/CurrencyContext";
 
 import { CompactDigitalRateDisplay } from "@/components/ui/DigitalRateDisplay";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 import BrandLogo from "@/components/BrandLogo";
 
@@ -749,7 +749,7 @@ const MenuPage = () => {
 
   return (
 
-    <div className="min-h-screen min-h-[100dvh] overflow-x-hidden bg-paypal-blue px-4 pt-8 pb-28 text-white animate-fadeIn safe-pb">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-paypal-blue px-4 pt-8 pb-28 text-white animate-fadeIn safe-pb">
 
       <div className="px-4 pt-8">
 
@@ -1011,6 +1011,14 @@ const MenuPage = () => {
       <Dialog open={showApkModal} onOpenChange={setShowApkModal}>
 
         <DialogContent showCloseButton={false} className="rounded-3xl p-0 sm:max-w-2xl">
+
+          <DialogTitle className="sr-only">Download OpenPay Android APK</DialogTitle>
+
+          <DialogDescription className="sr-only">
+
+            Scan the QR code or copy the download link to install the OpenPay APK on your Android phone or tablet.
+
+          </DialogDescription>
 
           <div className="relative bg-white px-6 py-6 text-foreground">
 
