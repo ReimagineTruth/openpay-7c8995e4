@@ -7,8 +7,45 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, KeyRound, Plus, Trash2, Power } from "lucide-react";
+import { ArrowLeft, Copy, KeyRound, Plus, Trash2, Power, Link2, Save } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+
+function RedirectUrisEditor({ app, onSaved }: { app: PartnerApp; onSaved: () => void }) {
+  const [value, setValue] = useState((app.redirect_uris || []).join("\n"));
+  const [saving, setSaving] = useState(false);
+  async function save() {
+    const uris = value.split(/\s+/).map(s => s.trim()).filter(Boolean);
+    for (const u of uris) {
+      try { new URL(u); } catch { return toast.error(`Invalid URL: ${u}`); }
+    }
+    setSaving(true);
+    const { error } = await supabase.from("partner_apps").update({ redirect_uris: uris }).eq("id", app.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Redirect URIs saved");
+    onSaved();
+  }
+  return (
+    <div className="rounded-md bg-muted/40 p-2 space-y-2">
+      <div className="flex items-center gap-2 text-xs font-medium">
+        <Link2 className="h-3.5 w-3.5" /> Connect with OpenPay — redirect URIs
+      </div>
+      <Textarea
+        rows={2}
+        placeholder="https://yourapp.com/openpay/callback&#10;https://staging.yourapp.com/openpay/callback"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="text-xs font-mono"
+      />
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] text-muted-foreground">One per line. Users are only redirected to URIs listed here.</p>
+        <Button size="sm" variant="outline" onClick={save} disabled={saving}>
+          <Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 type PartnerApp = {
   id: string;
