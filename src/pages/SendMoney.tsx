@@ -701,6 +701,45 @@ const SendMoney = () => {
     const qrAmount = searchParams.get("amount");
     const qrCurrency = (searchParams.get("currency") || "").toUpperCase();
     const qrNote = searchParams.get("note");
+    const successUrlParam = (searchParams.get("success_url") || "").trim();
+    const cancelUrlParam = (searchParams.get("cancel_url") || "").trim();
+    const isProTopupLink =
+      String(qrNote || "")
+        .trim()
+        .toLowerCase()
+        .startsWith("pro_topup_") ||
+      (Boolean(successUrlParam) &&
+        Boolean(qrAmount) &&
+        Number.isFinite(Number(qrAmount)) &&
+        Number(qrAmount) > 0);
+
+    // OpenPay Pro top-ups must use one-click /pay/:username — never stay on /send
+    if (isProTopupLink && toId) {
+      let usernameForPay =
+        profiles?.find((p) => p.id === toId)?.username ||
+        null;
+      if (!usernameForPay) {
+        const { data: profileRow } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", toId)
+          .maybeSingle();
+        usernameForPay = profileRow?.username || null;
+      }
+      if (usernameForPay) {
+        const payParams = new URLSearchParams();
+        if (qrAmount && Number.isFinite(Number(qrAmount)) && Number(qrAmount) > 0) {
+          payParams.set("amount", Number(qrAmount).toFixed(2));
+        }
+        payParams.set("currency", "OUSD");
+        if (qrNote) payParams.set("note", qrNote);
+        if (successUrlParam) payParams.set("success_url", successUrlParam);
+        if (cancelUrlParam) payParams.set("cancel_url", cancelUrlParam);
+        navigate(`/pay/${encodeURIComponent(usernameForPay)}?${payParams.toString()}`, { replace: true });
+        return;
+      }
+    }
+
     if (accountParam) {
       setSearchQuery(accountParam);
     } else if (initialSearch) {

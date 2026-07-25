@@ -321,7 +321,15 @@ const UsernamePayPage = () => {
   const handleContinueToPay = () => {
     if (!recipient) return;
 
-    if (isPartnerTopup) {
+    // Re-read params at click time so Pro top-ups never fall through to /send
+    const noteNow = (searchParams.get("note") || "").trim();
+    const successNow = (searchParams.get("success_url") || "").trim();
+    const amountNow = Number(searchParams.get("amount") || "");
+    const isTopupNow =
+      noteNow.toLowerCase().startsWith("pro_topup_") ||
+      (Boolean(successNow) && Number.isFinite(amountNow) && amountNow > 0);
+
+    if (isTopupNow || isPartnerTopup) {
       void handlePartnerTopupPay();
       return;
     }

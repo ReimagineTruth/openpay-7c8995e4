@@ -15,6 +15,15 @@ import { isPiOAuthEnabled } from "@/lib/piOAuth";
 const AdminMrwainAuth = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
+  const [loading, setLoading] = useState(false);
+  const [showEmailConfirmationModal, setShowEmailConfirmationModal] = useState(false);
+  const [signedUpEmail, setSignedUpEmail] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [signupCode, setSignupCode] = useState("");
+
   const mode = params.get("mode") === "signup" ? "signup" : "signin";
   const referralParam = (params.get("ref") || "").trim().toLowerCase();
   const nextParam = (params.get("next") || "").trim();
@@ -26,15 +35,6 @@ const AdminMrwainAuth = () => {
     const search = referralParam ? `?ref=${referralParam}` : "";
     return <Navigate to={`/auth${search}`} replace />;
   }
-  const [loading, setLoading] = useState(false);
-  const [showEmailConfirmationModal, setShowEmailConfirmationModal] = useState(false);
-  const [signedUpEmail, setSignedUpEmail] = useState("");
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [username, setUsername] = useState("");
-  const [signupCode, setSignupCode] = useState("");
 
   const setMode = (nextMode: "signin" | "signup") => {
     const next: Record<string, string> = { mode: nextMode };
