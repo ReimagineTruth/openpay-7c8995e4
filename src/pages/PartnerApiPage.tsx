@@ -328,7 +328,77 @@ function PartnerApiPageInner() {
             </section>
 
 
+            <section className="border-t pt-4">
+              <h3 className="font-semibold mb-1 text-blue-700 dark:text-blue-300">🔐 Connect with OpenPay — OAuth 2.0 sign-in for third-party apps</h3>
+              <p className="text-muted-foreground">
+                Add a <strong>"Connect with OpenPay"</strong> button to your app. Users click it, are sent to OpenPay to sign in and
+                confirm, and are then redirected back to your app with an authorization <code>code</code>. Exchange the code for an
+                access token and read the user's OpenPay profile/balance on their behalf. Standard OAuth 2.0 Authorization Code flow.
+              </p>
+            </section>
+
             <section>
+              <h3 className="font-semibold mb-1">1. Register a redirect URI</h3>
+              <p className="text-muted-foreground">In the list above, expand your app and add the exact URLs OpenPay may redirect users back to (e.g. <code>https://yourapp.com/openpay/callback</code>). Only URIs in this list are accepted.</p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">2. Send the user to OpenPay</h3>
+              <p className="text-muted-foreground">From your app, open this URL in the browser:</p>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`https://openpay.lovable.app/connect
+  ?client_id=YOUR_APP_ID
+  &redirect_uri=https://yourapp.com/openpay/callback
+  &scope=profile%20balance
+  &state=RANDOM_CSRF_TOKEN`}</pre>
+              <p className="text-xs text-muted-foreground mt-1">
+                <code>client_id</code> is the <code>client_id</code> shown next to your app above. Supported scopes:
+                <code> profile</code>, <code>balance</code>.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">3. Handle the callback</h3>
+              <p className="text-muted-foreground">If the user approves, OpenPay redirects to:</p>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`https://yourapp.com/openpay/callback?code=opc_...&state=RANDOM_CSRF_TOKEN`}</pre>
+              <p className="text-muted-foreground">If they cancel, you receive <code>?error=access_denied</code>. Verify <code>state</code> matches what you sent.</p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">4. Exchange the code for an access token</h3>
+              <p className="text-muted-foreground">From your <strong>backend</strong> (never expose your API key to the browser):</p>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`curl -X POST "${FN_BASE}/oauth/token" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "grant_type": "authorization_code",
+    "code": "opc_...",
+    "redirect_uri": "https://yourapp.com/openpay/callback",
+    "client_id": "YOUR_APP_ID",
+    "client_secret": "opk_live_YOUR_KEY"
+  }'`}</pre>
+              <p className="text-xs text-muted-foreground mt-1">
+                Response: <code>{`{ access_token: "opa_live_...", token_type: "Bearer", expires_in: 2592000, scope, user_id }`}</code>.
+                Codes expire in 10 minutes and are single-use. Access tokens last 30 days.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">5. Call OpenPay on behalf of the user</h3>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`curl -H "Authorization: Bearer opa_live_..." ${FN_BASE}/user/me
+curl -H "Authorization: Bearer opa_live_..." ${FN_BASE}/user/balance`}</pre>
+              <p className="text-xs text-muted-foreground mt-1">
+                <code>GET /user/me</code> returns <code>{`{ user_id, account_number, full_name, username, avatar_url, balance, currency, scope }`}</code>.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">Drop-in button</h3>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`<a href="https://openpay.lovable.app/connect?client_id=YOUR_APP_ID&redirect_uri=https://yourapp.com/openpay/callback&scope=profile%20balance&state=xyz"
+   style="display:inline-flex;align-items:center;gap:8px;background:#1652f0;color:#fff;
+   padding:12px 20px;border-radius:10px;font-weight:600;text-decoration:none;">
+  Connect with OpenPay
+</a>`}</pre>
+            </section>
+
               <h3 className="font-semibold mb-1">Errors</h3>
               <ul className="list-disc pl-5 text-muted-foreground space-y-1">
                 <li><code>401</code> — missing / invalid / revoked key</li>
