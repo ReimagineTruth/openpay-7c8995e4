@@ -398,7 +398,7 @@ curl -H "Authorization: Bearer opa_live_..." ${FN_BASE}/user/balance`}</pre>
   Connect with OpenPay
 </a>`}</pre>
             </section>
-
+            <section>
               <h3 className="font-semibold mb-1">Errors</h3>
               <ul className="list-disc pl-5 text-muted-foreground space-y-1">
                 <li><code>401</code> — missing / invalid / revoked key</li>
