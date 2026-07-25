@@ -90,6 +90,7 @@ import OpenPayDocumentationPage from "./pages/OpenPayDocumentationPage";
 import OpenPayApiDocsPage from "./pages/OpenPayApiDocsPage";
 import PartnerApiPage from "./pages/PartnerApiPage";
 import PayButtonCheckoutPage from "./pages/PayButtonCheckoutPage";
+import PartnerConnectPage from "./pages/PartnerConnectPage";
 
 import OpenPayPosDocsPage from "./pages/OpenPayPosDocsPage";
 import OpenPayMerchantPortalDocsPage from "./pages/OpenPayMerchantPortalDocsPage";
@@ -297,6 +298,8 @@ const AppRoutes = () => {
         const isPublicPath = publicPaths.some(path => location.pathname === path) || 
                             location.pathname.startsWith('/pay/') ||
                             location.pathname.startsWith('/paybutton/') ||
+                            location.pathname.startsWith('/connect') ||
+
 
                             location.pathname.startsWith('/forgot') ||
                             location.pathname.startsWith('/reset') ||
@@ -576,6 +579,7 @@ const AppRoutes = () => {
         <Route path="/openpay-api-docs" element={<OpenPayApiDocsPage />} />
         <Route path="/partner-api" element={<PartnerApiPage />} />
         <Route path="/paybutton/:chargeId" element={<PayButtonCheckoutPage />} />
+        <Route path="/connect" element={<PartnerConnectPage />} />
 
         <Route path="/openpay-pos-docs" element={<OpenPayPosDocsPage />} />
         <Route path="/openpay-merchant-portal-docs" element={<OpenPayMerchantPortalDocsPage />} />

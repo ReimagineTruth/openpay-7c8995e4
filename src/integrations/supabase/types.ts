@@ -2918,6 +2918,7 @@ export type Database = {
           last_used_at: string | null
           name: string
           owner_user_id: string
+          redirect_uris: string[]
           updated_at: string
           website: string | null
         }
@@ -2932,6 +2933,7 @@ export type Database = {
           last_used_at?: string | null
           name: string
           owner_user_id: string
+          redirect_uris?: string[]
           updated_at?: string
           website?: string | null
         }
@@ -2946,6 +2948,7 @@ export type Database = {
           last_used_at?: string | null
           name?: string
           owner_user_id?: string
+          redirect_uris?: string[]
           updated_at?: string
           website?: string | null
         }
@@ -3015,6 +3018,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "partner_charges_partner_app_id_fkey"
+            columns: ["partner_app_id"]
+            isOneToOne: false
+            referencedRelation: "partner_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_oauth_grants: {
+        Row: {
+          access_token_expires_at: string | null
+          access_token_hash: string | null
+          code_expires_at: string | null
+          code_hash: string | null
+          code_used_at: string | null
+          created_at: string
+          id: string
+          partner_app_id: string
+          redirect_uri: string
+          revoked_at: string | null
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          access_token_expires_at?: string | null
+          access_token_hash?: string | null
+          code_expires_at?: string | null
+          code_hash?: string | null
+          code_used_at?: string | null
+          created_at?: string
+          id?: string
+          partner_app_id: string
+          redirect_uri: string
+          revoked_at?: string | null
+          scope?: string
+          user_id: string
+        }
+        Update: {
+          access_token_expires_at?: string | null
+          access_token_hash?: string | null
+          code_expires_at?: string | null
+          code_hash?: string | null
+          code_used_at?: string | null
+          created_at?: string
+          id?: string
+          partner_app_id?: string
+          redirect_uri?: string
+          revoked_at?: string | null
+          scope?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_oauth_grants_partner_app_id_fkey"
             columns: ["partner_app_id"]
             isOneToOne: false
             referencedRelation: "partner_apps"
@@ -5632,6 +5688,40 @@ export type Database = {
           full_name: string
           user_id: string
           username: string
+        }[]
+      }
+      partner_oauth_approve: {
+        Args: { p_app_id: string; p_redirect_uri: string; p_scope: string }
+        Returns: {
+          code: string
+        }[]
+      }
+      partner_oauth_exchange: {
+        Args: {
+          p_app_id: string
+          p_code_hash: string
+          p_redirect_uri: string
+          p_token_hash: string
+          p_ttl_seconds?: number
+        }
+        Returns: {
+          expires_at: string
+          scope: string
+          user_id: string
+        }[]
+      }
+      partner_oauth_get_client: {
+        Args: { p_app_id: string }
+        Returns: {
+          description: string
+          id: string
+          is_active: boolean
+          name: string
+          owner_avatar_url: string
+          owner_full_name: string
+          owner_username: string
+          redirect_uris: string[]
+          website: string
         }[]
       }
       partner_transfer_send: {

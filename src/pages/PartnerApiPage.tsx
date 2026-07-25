@@ -7,8 +7,45 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, KeyRound, Plus, Trash2, Power } from "lucide-react";
+import { ArrowLeft, Copy, KeyRound, Plus, Trash2, Power, Link2, Save } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+
+function RedirectUrisEditor({ app, onSaved }: { app: PartnerApp; onSaved: () => void }) {
+  const [value, setValue] = useState((app.redirect_uris || []).join("\n"));
+  const [saving, setSaving] = useState(false);
+  async function save() {
+    const uris = value.split(/\s+/).map(s => s.trim()).filter(Boolean);
+    for (const u of uris) {
+      try { new URL(u); } catch { return toast.error(`Invalid URL: ${u}`); }
+    }
+    setSaving(true);
+    const { error } = await supabase.from("partner_apps").update({ redirect_uris: uris }).eq("id", app.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Redirect URIs saved");
+    onSaved();
+  }
+  return (
+    <div className="rounded-md bg-muted/40 p-2 space-y-2">
+      <div className="flex items-center gap-2 text-xs font-medium">
+        <Link2 className="h-3.5 w-3.5" /> Connect with OpenPay — redirect URIs
+      </div>
+      <Textarea
+        rows={2}
+        placeholder="https://yourapp.com/openpay/callback&#10;https://staging.yourapp.com/openpay/callback"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="text-xs font-mono"
+      />
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] text-muted-foreground">One per line. Users are only redirected to URIs listed here.</p>
+        <Button size="sm" variant="outline" onClick={save} disabled={saving}>
+          <Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 type PartnerApp = {
   id: string;
@@ -19,6 +56,7 @@ type PartnerApp = {
   is_active: boolean;
   last_used_at: string | null;
   created_at: string;
+  redirect_uris: string[];
 };
 
 const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/partner-transfer-api`;
@@ -37,7 +75,7 @@ function PartnerApiPageInner() {
     setLoading(true);
     const { data, error } = await supabase
       .from("partner_apps")
-      .select("id,name,description,website,key_prefix,is_active,last_used_at,created_at")
+      .select("id,name,description,website,key_prefix,is_active,last_used_at,created_at,redirect_uris")
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
     setApps((data as PartnerApp[]) || []);
@@ -163,23 +201,27 @@ function PartnerApiPageInner() {
               apps.length === 0 ? <p className="text-sm text-muted-foreground">No API keys yet.</p> :
               <div className="space-y-2">
                 {apps.map(app => (
-                  <div key={app.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold">{app.name}</span>
-                        {app.is_active ? <Badge className="bg-green-600">Active</Badge> : <Badge variant="secondary">Revoked</Badge>}
+                  <div key={app.id} className="rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold">{app.name}</span>
+                          {app.is_active ? <Badge className="bg-green-600">Active</Badge> : <Badge variant="secondary">Revoked</Badge>}
+                        </div>
+                        <code className="text-xs text-muted-foreground">client_id: {app.id}</code>
+                        <div><code className="text-xs text-muted-foreground">{app.key_prefix}••••••••</code></div>
+                        {app.website && <p className="text-xs text-muted-foreground truncate">{app.website}</p>}
                       </div>
-                      <code className="text-xs text-muted-foreground">{app.key_prefix}••••••••</code>
-                      {app.website && <p className="text-xs text-muted-foreground truncate">{app.website}</p>}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="icon" variant="ghost" title={app.is_active ? "Revoke" : "Activate"} onClick={() => toggleActive(app)}>
+                          <Power className={`h-4 w-4 ${app.is_active ? "text-amber-600" : "text-green-600"}`} />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => remove(app)}>
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button size="icon" variant="ghost" title={app.is_active ? "Revoke" : "Activate"} onClick={() => toggleActive(app)}>
-                        <Power className={`h-4 w-4 ${app.is_active ? "text-amber-600" : "text-green-600"}`} />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => remove(app)}>
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
+                    <RedirectUrisEditor app={app} onSaved={load} />
                   </div>
                 ))}
               </div>
@@ -286,6 +328,76 @@ function PartnerApiPageInner() {
             </section>
 
 
+            <section className="border-t pt-4">
+              <h3 className="font-semibold mb-1 text-blue-700 dark:text-blue-300">🔐 Connect with OpenPay — OAuth 2.0 sign-in for third-party apps</h3>
+              <p className="text-muted-foreground">
+                Add a <strong>"Connect with OpenPay"</strong> button to your app. Users click it, are sent to OpenPay to sign in and
+                confirm, and are then redirected back to your app with an authorization <code>code</code>. Exchange the code for an
+                access token and read the user's OpenPay profile/balance on their behalf. Standard OAuth 2.0 Authorization Code flow.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">1. Register a redirect URI</h3>
+              <p className="text-muted-foreground">In the list above, expand your app and add the exact URLs OpenPay may redirect users back to (e.g. <code>https://yourapp.com/openpay/callback</code>). Only URIs in this list are accepted.</p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">2. Send the user to OpenPay</h3>
+              <p className="text-muted-foreground">From your app, open this URL in the browser:</p>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`https://openpay.lovable.app/connect
+  ?client_id=YOUR_APP_ID
+  &redirect_uri=https://yourapp.com/openpay/callback
+  &scope=profile%20balance
+  &state=RANDOM_CSRF_TOKEN`}</pre>
+              <p className="text-xs text-muted-foreground mt-1">
+                <code>client_id</code> is the <code>client_id</code> shown next to your app above. Supported scopes:
+                <code> profile</code>, <code>balance</code>.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">3. Handle the callback</h3>
+              <p className="text-muted-foreground">If the user approves, OpenPay redirects to:</p>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`https://yourapp.com/openpay/callback?code=opc_...&state=RANDOM_CSRF_TOKEN`}</pre>
+              <p className="text-muted-foreground">If they cancel, you receive <code>?error=access_denied</code>. Verify <code>state</code> matches what you sent.</p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">4. Exchange the code for an access token</h3>
+              <p className="text-muted-foreground">From your <strong>backend</strong> (never expose your API key to the browser):</p>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`curl -X POST "${FN_BASE}/oauth/token" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "grant_type": "authorization_code",
+    "code": "opc_...",
+    "redirect_uri": "https://yourapp.com/openpay/callback",
+    "client_id": "YOUR_APP_ID",
+    "client_secret": "opk_live_YOUR_KEY"
+  }'`}</pre>
+              <p className="text-xs text-muted-foreground mt-1">
+                Response: <code>{`{ access_token: "opa_live_...", token_type: "Bearer", expires_in: 2592000, scope, user_id }`}</code>.
+                Codes expire in 10 minutes and are single-use. Access tokens last 30 days.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">5. Call OpenPay on behalf of the user</h3>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`curl -H "Authorization: Bearer opa_live_..." ${FN_BASE}/user/me
+curl -H "Authorization: Bearer opa_live_..." ${FN_BASE}/user/balance`}</pre>
+              <p className="text-xs text-muted-foreground mt-1">
+                <code>GET /user/me</code> returns <code>{`{ user_id, account_number, full_name, username, avatar_url, balance, currency, scope }`}</code>.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">Drop-in button</h3>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`<a href="https://openpay.lovable.app/connect?client_id=YOUR_APP_ID&redirect_uri=https://yourapp.com/openpay/callback&scope=profile%20balance&state=xyz"
+   style="display:inline-flex;align-items:center;gap:8px;background:#1652f0;color:#fff;
+   padding:12px 20px;border-radius:10px;font-weight:600;text-decoration:none;">
+  Connect with OpenPay
+</a>`}</pre>
+            </section>
             <section>
               <h3 className="font-semibold mb-1">Errors</h3>
               <ul className="list-disc pl-5 text-muted-foreground space-y-1">
