@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import AuthMark from "@/components/AuthMark";
 import AuthFooter from "@/components/AuthFooter";
@@ -101,7 +101,7 @@ const AdminMrwainAuth = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] overflow-x-hidden bg-gradient-to-b from-paypal-blue via-[#0a3fa8] to-[#062468] px-4 py-6 sm:px-5 sm:py-8 safe-pb">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-gradient-to-b from-paypal-blue via-[#0a3fa8] to-[#062468] px-4 py-6 sm:px-5 sm:py-8 safe-pb">
       <div className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-md min-w-0 flex-col justify-center">
         {/* Brand header */}
         <div className="mb-6 text-center">
@@ -249,6 +249,9 @@ const AdminMrwainAuth = () => {
             <DialogTitle className="text-center text-lg font-semibold text-paypal-blue">
               Check Your Email
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              We sent a confirmation email. Open the message and click the confirmation link, then return here to sign in.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-center">
             <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">

@@ -206,12 +206,10 @@ const SendMoney = () => {
       if (!isInitialLoadDone) return;
 
       const state = location.state as PinReturnState;
-      console.log('PIN verification state:', state);
       if (state?.pinVerified && state?.actionData) {
         // Restore state from before PIN redirect
         const data = state.actionData;
-        console.log('Restoring action data from PIN:', data);
-        
+
         // Execute send immediately
         void handleSend(data.selectedUser, data.amount, data.note, data.selectedUsers, data.isMultiSend);
 
@@ -249,7 +247,7 @@ const SendMoney = () => {
               .from("profiles")
               .select("full_name, username, avatar_url")
               .eq("id", otherId)
-              .single();
+              .maybeSingle();
             return {
               ...tx,
               other_name: p?.full_name || "Unknown",
@@ -623,21 +621,58 @@ const SendMoney = () => {
 
   const loadDashboard = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { 
-      navigate("/signin"); 
-      return; 
+    if (!user) {
+      navigate("/sign-in");
+      return;
     }
+
+    const toIdEarly = searchParams.get("to");
+    const qrAmountEarly = searchParams.get("amount");
+    const qrNoteEarly = searchParams.get("note");
+    const successUrlEarly = (searchParams.get("success_url") || "").trim();
+    const cancelUrlEarly = (searchParams.get("cancel_url") || "").trim();
+    const isProTopupEarly =
+      String(qrNoteEarly || "")
+        .trim()
+        .toLowerCase()
+        .startsWith("pro_topup_") ||
+      (Boolean(successUrlEarly) &&
+        Boolean(qrAmountEarly) &&
+        Number.isFinite(Number(qrAmountEarly)) &&
+        Number(qrAmountEarly) > 0);
+
+    // Redirect Pro top-ups before state updates to avoid unmount console warnings
+    if (isProTopupEarly && toIdEarly) {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", toIdEarly)
+        .maybeSingle();
+      if (profileRow?.username) {
+        const payParams = new URLSearchParams();
+        if (qrAmountEarly && Number.isFinite(Number(qrAmountEarly)) && Number(qrAmountEarly) > 0) {
+          payParams.set("amount", Number(qrAmountEarly).toFixed(2));
+        }
+        payParams.set("currency", "OUSD");
+        if (qrNoteEarly) payParams.set("note", qrNoteEarly);
+        if (successUrlEarly) payParams.set("success_url", successUrlEarly);
+        if (cancelUrlEarly) payParams.set("cancel_url", cancelUrlEarly);
+        navigate(`/pay/${encodeURIComponent(profileRow.username)}?${payParams.toString()}`, { replace: true });
+        return;
+      }
+    }
+
     setUserId(user.id);
 
     const { data: wallet } = await supabase
-      .from("wallets").select("balance").eq("user_id", user.id).single();
+      .from("wallets").select("balance").eq("user_id", user.id).maybeSingle();
     setBalance(wallet?.balance || 0);
 
     const { data: myProfile } = await supabase
       .from("profiles")
       .select("full_name, avatar_url")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     setMyAvatarUrl(myProfile?.avatar_url || null);
     setMyFullName(myProfile?.full_name || "");
 
@@ -656,7 +691,7 @@ const SendMoney = () => {
           .from("profiles")
           .select("id, full_name, username, avatar_url")
           .eq("username", "openpay")
-          .single();
+          .maybeSingle();
         openpayProfile = openpayRow || null;
       }
       const combinedProfiles = openpayProfile && !profiles.some((p) => p.id === openpayProfile!.id)
@@ -701,44 +736,6 @@ const SendMoney = () => {
     const qrAmount = searchParams.get("amount");
     const qrCurrency = (searchParams.get("currency") || "").toUpperCase();
     const qrNote = searchParams.get("note");
-    const successUrlParam = (searchParams.get("success_url") || "").trim();
-    const cancelUrlParam = (searchParams.get("cancel_url") || "").trim();
-    const isProTopupLink =
-      String(qrNote || "")
-        .trim()
-        .toLowerCase()
-        .startsWith("pro_topup_") ||
-      (Boolean(successUrlParam) &&
-        Boolean(qrAmount) &&
-        Number.isFinite(Number(qrAmount)) &&
-        Number(qrAmount) > 0);
-
-    // OpenPay Pro top-ups must use one-click /pay/:username — never stay on /send
-    if (isProTopupLink && toId) {
-      let usernameForPay =
-        profiles?.find((p) => p.id === toId)?.username ||
-        null;
-      if (!usernameForPay) {
-        const { data: profileRow } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("id", toId)
-          .maybeSingle();
-        usernameForPay = profileRow?.username || null;
-      }
-      if (usernameForPay) {
-        const payParams = new URLSearchParams();
-        if (qrAmount && Number.isFinite(Number(qrAmount)) && Number(qrAmount) > 0) {
-          payParams.set("amount", Number(qrAmount).toFixed(2));
-        }
-        payParams.set("currency", "OUSD");
-        if (qrNote) payParams.set("note", qrNote);
-        if (successUrlParam) payParams.set("success_url", successUrlParam);
-        if (cancelUrlParam) payParams.set("cancel_url", cancelUrlParam);
-        navigate(`/pay/${encodeURIComponent(usernameForPay)}?${payParams.toString()}`, { replace: true });
-        return;
-      }
-    }
 
     if (accountParam) {
       setSearchQuery(accountParam);
@@ -1210,7 +1207,7 @@ const SendMoney = () => {
             {showPurposeSelector && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[99999]" />
             )}
-            <DialogContent className="rounded-3xl max-h-[80vh] overflow-y-auto z-[100000] relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md shadow-2xl border border-white/20">
+            <DialogContent className="rounded-3xl max-h-[80vh] overflow-y-auto z-[100000] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md shadow-2xl border border-white/20">
               <DialogTitle className="text-xl font-bold">Select Payment Purpose</DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
                 Choose a purpose to help track your spending in analytics
