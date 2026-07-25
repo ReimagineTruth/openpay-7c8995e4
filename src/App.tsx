@@ -573,6 +573,8 @@ const AppRoutes = () => {
         <Route path="/openpay-documentation" element={<OpenPayDocumentationPage />} />
         <Route path="/openpay-api-docs" element={<OpenPayApiDocsPage />} />
         <Route path="/partner-api" element={<PartnerApiPage />} />
+        <Route path="/paybutton/:chargeId" element={<PayButtonCheckoutPage />} />
+
         <Route path="/openpay-pos-docs" element={<OpenPayPosDocsPage />} />
         <Route path="/openpay-merchant-portal-docs" element={<OpenPayMerchantPortalDocsPage />} />
         <Route path="/open-partner" element={<OpenPartnerPage />} />
