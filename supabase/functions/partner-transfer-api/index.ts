@@ -34,11 +34,11 @@ Deno.serve(async (req) => {
   if (req.method === 'GET' && (path === '/' || path === '/health')) {
     return ok({
       service: 'OpenPay Partner Transfer API',
-      version: '1.1.0',
+      version: '1.2.0',
       docs: 'https://openpay.lovable.app/partner-api',
       endpoints: [
         'GET  /health',
-        'GET  /me',
+        'GET  /me                              — partner app owner (opk_ key)',
         'GET  /accounts/:identifier',
         'GET  /balance',
         'POST /transfers',
@@ -47,8 +47,73 @@ Deno.serve(async (req) => {
         'GET  /charges/:id                     — check charge status',
         'GET  /charges?limit=&status=          — list charges',
         'POST /charges/:id/cancel              — cancel unpaid charge',
+        'POST /oauth/token                     — exchange auth code (Connect with OpenPay)',
+        'GET  /user/me                         — signed-in end user (opa_ token)',
+        'GET  /user/balance                    — signed-in end user balance (opa_ token)',
       ],
     });
+  }
+
+  // ----- Connect with OpenPay: token exchange (no opk_ key on Authorization header) -----
+  if (req.method === 'POST' && path === '/oauth/token') {
+    const body = await req.json().catch(() => ({}));
+    const grantType = String(body?.grant_type || '');
+    const code = String(body?.code || '');
+    const redirectUri = String(body?.redirect_uri || '');
+    const clientId = String(body?.client_id || '');
+    const clientSecret = String(body?.client_secret || '');
+    if (grantType !== 'authorization_code') return err('unsupported_grant_type', 400);
+    if (!code || !redirectUri || !clientId || !clientSecret) return err('invalid_request', 400);
+    const secretHash = await sha256Hex(clientSecret);
+    const { data: app } = await admin.from('partner_apps')
+      .select('id, is_active').eq('id', clientId).eq('key_hash', secretHash).maybeSingle();
+    if (!app || !app.is_active) return err('invalid_client', 401);
+    const codeHash = await sha256Hex(code);
+    const accessToken = 'opa_live_' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+    const tokenHash = await sha256Hex(accessToken);
+    const { data: ex, error: exErr } = await admin.rpc('partner_oauth_exchange', {
+      p_app_id: app.id, p_code_hash: codeHash, p_redirect_uri: redirectUri,
+      p_token_hash: tokenHash, p_ttl_seconds: 60 * 60 * 24 * 30,
+    });
+    if (exErr) return err(exErr.message, 400);
+    const row = Array.isArray(ex) ? ex[0] : ex;
+    return ok({
+      access_token: accessToken,
+      token_type: 'Bearer',
+      expires_in: 60 * 60 * 24 * 30,
+      scope: row?.scope || 'profile balance',
+      user_id: row?.user_id,
+    });
+  }
+
+  // ----- Per-end-user endpoints authenticated with opa_ access token -----
+  if (path.startsWith('/user/')) {
+    const authHdr = req.headers.get('Authorization') || '';
+    const tok = authHdr.startsWith('Bearer ') ? authHdr.slice(7).trim() : '';
+    if (!tok.startsWith('opa_')) return err('invalid_token', 401);
+    const tHash = await sha256Hex(tok);
+    const { data: g } = await admin.from('partner_oauth_grants')
+      .select('user_id, scope, access_token_expires_at, revoked_at, partner_app_id')
+      .eq('access_token_hash', tHash).maybeSingle();
+    if (!g || g.revoked_at || (g.access_token_expires_at && new Date(g.access_token_expires_at) < new Date())) {
+      return err('invalid_token', 401);
+    }
+    if (req.method === 'GET' && path === '/user/me') {
+      const { data: p } = await admin.from('profiles')
+        .select('id, full_name, username, avatar_url').eq('id', g.user_id).maybeSingle();
+      const { data: w } = await admin.from('wallets').select('balance').eq('user_id', g.user_id).maybeSingle();
+      return ok({
+        user_id: p?.id,
+        account_number: p?.id ? 'OP' + String(p.id).replace(/-/g, '').toUpperCase() : null,
+        full_name: p?.full_name, username: p?.username, avatar_url: p?.avatar_url,
+        balance: Number(w?.balance ?? 0), currency: 'OUSD', scope: g.scope,
+      });
+    }
+    if (req.method === 'GET' && path === '/user/balance') {
+      const { data: w } = await admin.from('wallets').select('balance, updated_at').eq('user_id', g.user_id).maybeSingle();
+      return ok({ balance: Number(w?.balance ?? 0), currency: 'OUSD', updated_at: w?.updated_at ?? null });
+    }
+    return err('Not found', 404);
   }
 
 
