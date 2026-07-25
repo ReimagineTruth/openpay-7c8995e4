@@ -93,6 +93,25 @@ function PartnerApiPageInner() {
   -H "Idempotency-Key: $(uuidgen)" \\
   -d '{"to":"@username","amount":10.00,"note":"Payout"}'`, []);
 
+  const curlCharge = useMemo(() => `curl -X POST "${FN_BASE}/charges" \\
+  -H "Authorization: Bearer opk_live_YOUR_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "amount": 19.99,
+    "currency": "OUSD",
+    "description": "Order #1234",
+    "reference": "order_1234",
+    "success_url": "https://yourapp.com/thanks",
+    "cancel_url": "https://yourapp.com/cart"
+  }'`, []);
+
+  const paybuttonHtml = `<a href="https://openpay.lovable.app/paybutton/CHARGE_ID"
+   style="display:inline-flex;align-items:center;gap:8px;background:#1652f0;color:#fff;
+   padding:12px 20px;border-radius:10px;font-weight:600;text-decoration:none;">
+  Pay with OpenPay
+</a>`;
+
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b">
