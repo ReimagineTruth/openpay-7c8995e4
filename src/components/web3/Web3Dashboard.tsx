@@ -36,6 +36,7 @@ import {
   Bell,
   Eye,
   EyeOff,
+  ArrowLeftRight,
 } from "lucide-react";
 
 
@@ -269,8 +270,9 @@ const Web3Dashboard = () => {
           </div>
 
           {/* Quick actions row */}
-          <div className="mt-8 mx-4 grid grid-cols-4 gap-2">
+          <div className="mt-8 mx-4 grid grid-cols-5 gap-2">
             <QuickAction icon={<Send className="h-5 w-5" />} label="Send" onClick={() => navigate("/send")} />
+            <QuickAction icon={<ArrowLeftRight className="h-5 w-5" />} label="Transfer" onClick={() => navigate("/send/pro")} />
             <QuickAction icon={<Download className="h-5 w-5" />} label="Receive" onClick={() => navigate("/receive")} />
             <QuickAction icon={<QrCode className="h-5 w-5" />} label="Scan" onClick={() => navigate("/scan-qr")} />
             <QuickAction icon={<FileText className="h-5 w-5" />} label="Request" onClick={() => navigate("/request-payment")} />
@@ -422,9 +424,9 @@ const Web3Dashboard = () => {
               <p className="text-white/60 text-sm mb-3">Quick links</p>
               <div className="grid grid-cols-2 gap-3">
                 <Tile icon={<Send className="h-5 w-5 text-white/70" />} title="Send money" subtitle="Pay anyone" onClick={() => navigate("/send")} />
+                <Tile icon={<ArrowLeftRight className="h-5 w-5 text-white/70" />} title="Transfer Pro" subtitle="Send to OpenPay Pro" onClick={() => navigate("/send/pro")} />
                 <Tile icon={<Download className="h-5 w-5 text-white/70" />} title="Receive" subtitle="Get paid" onClick={() => navigate("/receive")} />
                 <Tile icon={<QrCode className="h-5 w-5 text-white/70" />} title="Scan QR" subtitle="Pay by code" onClick={() => navigate("/scan-qr")} />
-                <Tile icon={<Repeat className="h-5 w-5 text-white/70" />} title="Convert" subtitle="FX rates" onClick={() => navigate("/currency-converter")} />
               </div>
             </div>
           ) : searchResults.length === 0 ? (
@@ -445,6 +447,7 @@ const Web3Dashboard = () => {
           <div className="fixed inset-0 bg-black/70 z-40 animate-in fade-in duration-200" onClick={() => setActionsOpen(false)} />
           <div className="fixed bottom-28 left-4 right-4 z-50 rounded-3xl bg-[#1a1a1a] p-3 space-y-1 animate-in slide-in-from-bottom-4 duration-300">
             <ActionRow color={ACCENT} icon={<Send className="h-5 w-5 text-white" />} title="Send money" desc="Pay anyone instantly" onClick={() => { setActionsOpen(false); navigate("/send"); }} />
+            <ActionRow color={ACCENT} icon={<ArrowLeftRight className="h-5 w-5 text-white" />} title="Transfer to Pro" desc="Send OUSD to OpenPay Pro" onClick={() => { setActionsOpen(false); navigate("/send/pro"); }} />
             <ActionRow color={ACCENT} icon={<Download className="h-5 w-5 text-white" />} title="Receive" desc="Share your payment info" onClick={() => { setActionsOpen(false); navigate("/receive"); }} />
             <ActionRow color={ACCENT} icon={<QrCode className="h-5 w-5 text-white" />} title="Scan QR" desc="Scan to pay" onClick={() => { setActionsOpen(false); navigate("/scan-qr"); }} />
             <ActionRow color={ACCENT} icon={<ArrowDown className="h-5 w-5 text-white" />} title="Top up" desc="Add funds to wallet" onClick={() => { setActionsOpen(false); navigate("/topup"); }} />

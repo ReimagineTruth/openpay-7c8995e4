@@ -2432,6 +2432,33 @@ const Dashboard = () => {
             </button>
           </div>
 
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/send")}
+              className="ios-active rounded-2xl bg-white/15 px-3 py-3 text-center backdrop-blur-sm transition hover:bg-white/25"
+            >
+              <p className="text-sm font-black text-white">Pay</p>
+              <p className="mt-0.5 text-[10px] font-semibold text-white/65">OpenPay users</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/send/pro")}
+              className="ios-active rounded-2xl bg-white px-3 py-3 text-center shadow-lg shadow-black/10 transition hover:bg-white/95"
+            >
+              <p className="text-sm font-black text-paypal-blue">Transfer</p>
+              <p className="mt-0.5 text-[10px] font-semibold text-paypal-blue/70">OpenPay Pro</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowReceiveOptions(true)}
+              className="ios-active rounded-2xl bg-white/15 px-3 py-3 text-center backdrop-blur-sm transition hover:bg-white/25"
+            >
+              <p className="text-sm font-black text-white">Receive</p>
+              <p className="mt-0.5 text-[10px] font-semibold text-white/65">Get paid</p>
+            </button>
+          </div>
+
           {walletView === "merchant" && (
             <div className="mt-5 grid grid-cols-3 gap-2">
               {[
@@ -3669,7 +3696,7 @@ const Dashboard = () => {
         <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 mt-2">
             {[
-              { id: "transfer-pro", label: "Transfer Pro", sub: "Send to Pro @user", icon: ArrowLeftRight, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/send/pro") },
+              { id: "transfer-pro", label: "Transfer", sub: "Send to OpenPay Pro", icon: ArrowLeftRight, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/send/pro") },
               { id: "qr-pay", label: "QR Pay", sub: "Accept payments", icon: QrCode, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/qr-pay") },
               { id: "analytics", label: "Analytics", sub: "Wallet activity", icon: TrendingUp, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => setActiveSection("analytics") },
               { id: "swap", label: "Swap", sub: "OUSD to PI", icon: ArrowLeftRight, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => setActiveSection("swap") },
@@ -3740,9 +3767,10 @@ const Dashboard = () => {
           </button>
           <button
             onClick={() => navigate("/send/pro")}
-            className="dash-cta dash-cta-outline min-w-0 flex-1 py-4 text-base"
+            className="dash-cta dash-cta-outline min-w-0 flex-[0.9] py-4 text-sm font-bold"
+            aria-label="Transfer to OpenPay Pro"
           >
-            Transfer Pro
+            Transfer
           </button>
           <button
             onClick={() => setShowReceiveOptions(true)}
