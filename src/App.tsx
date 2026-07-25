@@ -33,6 +33,7 @@ import NftStoreSettingsPage from "./pages/web3/NftStoreSettingsPage";
 import NftChatPage from "./pages/web3/NftChatPage";
 import NftApiPage from "./pages/web3/NftApiPage";
 import SendMoney from "./pages/SendMoney";
+import SendToOpenPayProPage from "./pages/SendToOpenPayProPage";
 import QrScannerPage from "./pages/QrScannerPage";
 import TopUp from "./pages/TopUp";
 import TopUpEwalletQrPh from "./pages/TopUpEwalletQrPh";
@@ -381,6 +382,12 @@ const AppRoutes = () => {
             <SendMoney />
           </ProtectedRoute>
         } />
+        <Route path="/send/pro" element={
+          <ProtectedRoute>
+            <SendToOpenPayProPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/transfer-pro" element={<Navigate to="/send/pro" replace />} />
         <Route path="/scan-qr" element={
           <ProtectedRoute>
             <QrScannerPage />

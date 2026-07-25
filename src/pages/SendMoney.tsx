@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
 import { useThankYouModal } from "@/contexts/ThankYouModalContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
+import { isOpenPayProPartnerNote } from "@/lib/openpayProTransfer";
+import SendToOpenPayProPanel from "@/pages/SendToOpenPayProPage";
 import CurrencySelector from "@/components/CurrencySelector";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import NumberPad from "@/components/NumberPad";
@@ -134,6 +136,9 @@ const SendMoney = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const [destinationMode, setDestinationMode] = useState<"openpay" | "pro">(
+    () => (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mode") === "pro" ? "pro" : "openpay"),
+  );
 	  const { currencies, currency, setCurrency, format: formatCurrency } = useCurrency();
 	  const checkoutSessionToken = searchParams.get("checkout_session") || "";
   const checkoutCustomerName = searchParams.get("checkout_customer_name") || "";
@@ -632,10 +637,7 @@ const SendMoney = () => {
     const successUrlEarly = (searchParams.get("success_url") || "").trim();
     const cancelUrlEarly = (searchParams.get("cancel_url") || "").trim();
     const isProTopupEarly =
-      String(qrNoteEarly || "")
-        .trim()
-        .toLowerCase()
-        .startsWith("pro_topup_") ||
+      isOpenPayProPartnerNote(String(qrNoteEarly || "")) ||
       (Boolean(successUrlEarly) &&
         Boolean(qrAmountEarly) &&
         Number.isFinite(Number(qrAmountEarly)) &&
@@ -1479,41 +1481,73 @@ const SendMoney = () => {
           <ArrowLeft className="w-6 h-6 text-white" />
         </button>
         <div className="flex-1">
-          <Input 
-            placeholder="Name, username, email, or account number" 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-12 rounded-full border-none bg-white/10 text-white placeholder:text-white/55 pl-4 focus-visible:ring-1 focus-visible:ring-white/30" 
-            autoFocus 
-          />
+          {destinationMode === "openpay" ? (
+            <Input 
+              placeholder="Name, username, email, or account number" 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-12 rounded-full border-none bg-white/10 text-white placeholder:text-white/55 pl-4 focus-visible:ring-1 focus-visible:ring-white/30" 
+              autoFocus 
+            />
+          ) : (
+            <div className="flex h-12 items-center rounded-full bg-white/10 px-4 text-sm font-semibold text-white/90">
+              Transfer to OpenPay Pro
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsMultiSend(!isMultiSend)}
-            className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
-              isMultiSend ? "bg-white text-paypal-blue" : "bg-white/10 text-white"
-            }`}
-            aria-label="Toggle Multi-Send"
-          >
-            <Users className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => navigate("/scan-qr?returnTo=/send")}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 active:bg-white/20 transition-colors"
-            aria-label="Scan QR code"
-          >
-            <ScanLine className="h-5 w-5 text-white" />
-          </button>
-          <button
-            onClick={() => navigate("/send-invoice")}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 active:bg-white/20 transition-colors"
-            aria-label="Send Invoice"
-          >
-            <FileText className="h-5 w-5 text-white" />
-          </button>
-        </div>
+        {destinationMode === "openpay" ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsMultiSend(!isMultiSend)}
+              className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
+                isMultiSend ? "bg-white text-paypal-blue" : "bg-white/10 text-white"
+              }`}
+              aria-label="Toggle Multi-Send"
+            >
+              <Users className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => navigate("/scan-qr?returnTo=/send")}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 active:bg-white/20 transition-colors"
+              aria-label="Scan QR code"
+            >
+              <ScanLine className="h-5 w-5 text-white" />
+            </button>
+            <button
+              onClick={() => navigate("/send-invoice")}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 active:bg-white/20 transition-colors"
+              aria-label="Send Invoice"
+            >
+              <FileText className="h-5 w-5 text-white" />
+            </button>
+          </div>
+        ) : null}
       </div>
 
+      <div className="mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-white/10 p-1">
+        <button
+          type="button"
+          onClick={() => setDestinationMode("openpay")}
+          className={`rounded-xl py-2.5 text-sm font-bold transition ${
+            destinationMode === "openpay" ? "bg-white text-paypal-blue" : "text-white/75"
+          }`}
+        >
+          OpenPay
+        </button>
+        <button
+          type="button"
+          onClick={() => setDestinationMode("pro")}
+          className={`rounded-xl py-2.5 text-sm font-bold transition ${
+            destinationMode === "pro" ? "bg-white text-paypal-blue" : "text-white/75"
+          }`}
+        >
+          OpenPay Pro
+        </button>
+      </div>
+
+      {destinationMode === "pro" ? (
+        <SendToOpenPayProPanel embedded onBack={() => setDestinationMode("openpay")} />
+      ) : (
       <div className="mt-6 pb-12">
         {isMultiSend && (
           <div className="mb-6 p-4 rounded-2xl bg-white/10 border border-white/20">
@@ -1650,6 +1684,7 @@ const SendMoney = () => {
           )}
         </div>
       </div>
+      )}
 
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent className="rounded-3xl">

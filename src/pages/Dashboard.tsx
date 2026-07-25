@@ -3669,6 +3669,7 @@ const Dashboard = () => {
         <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 mt-2">
             {[
+              { id: "transfer-pro", label: "Transfer Pro", sub: "Send to Pro @user", icon: ArrowLeftRight, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/send/pro") },
               { id: "qr-pay", label: "QR Pay", sub: "Accept payments", icon: QrCode, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => navigate("/qr-pay") },
               { id: "analytics", label: "Analytics", sub: "Wallet activity", icon: TrendingUp, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => setActiveSection("analytics") },
               { id: "swap", label: "Swap", sub: "OUSD to PI", icon: ArrowLeftRight, color: "bg-blue-50 dark:bg-blue-900/20", iconColor: "text-blue-600 dark:text-blue-400", action: () => setActiveSection("swap") },
@@ -3736,6 +3737,12 @@ const Dashboard = () => {
             className="dash-cta dash-cta-primary min-w-0 flex-1 py-4 text-base"
           >
             Pay
+          </button>
+          <button
+            onClick={() => navigate("/send/pro")}
+            className="dash-cta dash-cta-outline min-w-0 flex-1 py-4 text-base"
+          >
+            Transfer Pro
           </button>
           <button
             onClick={() => setShowReceiveOptions(true)}

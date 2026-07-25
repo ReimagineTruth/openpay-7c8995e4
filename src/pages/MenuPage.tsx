@@ -384,6 +384,8 @@ const MenuPage = () => {
 
         { icon: Send, label: "Express Send", action: () => navigate("/send") },
 
+        { icon: ArrowLeftRight, label: "Transfer to Pro", action: () => navigate("/send/pro") },
+
         { icon: ArrowLeftRight, label: "Transfer", action: () => navigate("/topup") },
 
         { icon: ArrowLeftRight, label: "Swap", action: () => navigate("/swap-withdrawal") },

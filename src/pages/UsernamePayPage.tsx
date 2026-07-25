@@ -5,6 +5,11 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
+import {
+  isOpenPayProPartnerNote,
+  isProXferNote,
+  parseProXferNote,
+} from "@/lib/openpayProTransfer";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AuthMark from "@/components/AuthMark";
@@ -50,8 +55,9 @@ const UsernamePayPage = () => {
 
   const amountNum = Number(requestedAmount);
   const hasValidAmount = Number.isFinite(amountNum) && amountNum > 0;
-  const isProTopupNote = requestedNote.trim().toLowerCase().startsWith("pro_topup_");
-  const isPartnerTopup = isProTopupNote || (Boolean(successUrl) && hasValidAmount);
+  const isProXfer = isProXferNote(requestedNote);
+  const isPartnerTopup =
+    isOpenPayProPartnerNote(requestedNote) || (Boolean(successUrl) && hasValidAmount);
 
   useEffect(() => {
     const load = async () => {
@@ -263,7 +269,8 @@ const UsernamePayPage = () => {
         return;
       }
 
-      const note = requestedNote.trim() || "OpenPay Pro top-up";
+      const note = requestedNote.trim() || (isProXfer ? "pro_xfer:unknown:manual" : "OpenPay Pro top-up");
+      const purpose = isProXfer ? "openpay_pro_xfer" : "openpay_pro_topup";
       let txId = "";
 
       const { data, error } = await supabase.functions.invoke("send-money", {
@@ -271,7 +278,7 @@ const UsernamePayPage = () => {
           receiver_id: recipient.id,
           amount: amountNum,
           note,
-          purpose: "openpay_pro_topup",
+          purpose,
           currency_code: "OUSD",
           sender_amount: amountNum,
           sender_currency_code: "OUSD",
@@ -296,6 +303,28 @@ const UsernamePayPage = () => {
         }
       } else {
         txId = (data as { transaction_id?: string } | null)?.transaction_id || "";
+      }
+
+      if (isProXfer && txId) {
+        const parsed = parseProXferNote(note);
+        const { error: notifyError, data: notifyData } = await supabase.functions.invoke(
+          "transfer-to-openpay-pro",
+          {
+            body: {
+              notify_only: true,
+              openpay_tx_id: txId,
+              amount: amountNum,
+              note,
+              to: parsed?.to || undefined,
+            },
+          },
+        );
+        if (notifyError) {
+          console.error("Pro inbound notify failed", notifyError);
+          toast.message("Payment sent on OpenPay. Pro credit may need a moment to sync.");
+        } else if ((notifyData as { error?: string } | null)?.error) {
+          toast.message(String((notifyData as { error?: string }).error));
+        }
       }
 
       const thankYouParams = new URLSearchParams({
@@ -326,7 +355,7 @@ const UsernamePayPage = () => {
     const successNow = (searchParams.get("success_url") || "").trim();
     const amountNow = Number(searchParams.get("amount") || "");
     const isTopupNow =
-      noteNow.toLowerCase().startsWith("pro_topup_") ||
+      isOpenPayProPartnerNote(noteNow) ||
       (Boolean(successNow) && Number.isFinite(amountNow) && amountNow > 0);
 
     if (isTopupNow || isPartnerTopup) {
@@ -458,15 +487,19 @@ const UsernamePayPage = () => {
                     <p className="text-sm font-bold text-white">
                       {isPartnerTopup
                         ? isAuthenticated
-                          ? "One-click Pro top-up"
-                          : "Sign in to top up"
+                          ? isProXfer
+                            ? "One-click Pro transfer"
+                            : "One-click Pro top-up"
+                          : "Sign in to continue"
                         : isAuthenticated
                           ? "Continue in OpenPay"
                           : "Sign in to pay"}
                     </p>
                     <p className="mt-1 text-sm text-white/75">
                       {isPartnerTopup
-                        ? "Pay from your OpenPay balance to complete this OpenPay Pro wallet top-up."
+                        ? isProXfer
+                          ? "Pay from your OpenPay balance to credit an OpenPay Pro wallet via this partner tag."
+                          : "Pay from your OpenPay balance to complete this OpenPay Pro wallet top-up."
                         : `This payment link opens the existing OpenPay send flow, prefilled for @${recipient.username}.`}
                     </p>
                   </div>
