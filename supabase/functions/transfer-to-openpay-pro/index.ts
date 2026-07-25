@@ -82,10 +82,6 @@ serve(async (req: Request) => {
       .replace(/^@+/, "")
       .toLowerCase();
 
-    if (!partnerApiKey) {
-      throw new Error("OpenPay Pro inbound is not configured (missing partner API key).");
-    }
-
     const supabase: any = createClient(supabaseUrl, supabaseServiceKey);
 
     const authHeader = req.headers.get("Authorization");
@@ -129,6 +125,9 @@ serve(async (req: Request) => {
     const fromUsername = String(senderProfile?.username || "").trim() || null;
 
     const notifyPro = async (txId: string, routingNote: string, destination: string) => {
+      if (!partnerApiKey) {
+        throw new Error("OpenPay Pro inbound is not configured (missing partner API key).");
+      }
       const proTo = formatProDestinationForApi(destination);
       const response = await fetch(inboundUrl, {
         method: "POST",
@@ -174,14 +173,32 @@ serve(async (req: Request) => {
         const ref = String(body?.ref || makeRef());
         note = buildProXferNote(toPro, ref);
       }
-      const proResult = await notifyPro(openpayTxId, note, toPro);
-      return jsonResponse({
-        success: true,
-        notify_only: true,
-        transaction_id: openpayTxId,
-        note,
-        pro: proResult,
-      });
+      try {
+        const proResult = await notifyPro(openpayTxId, note, toPro);
+        return jsonResponse({
+          success: true,
+          notify_only: true,
+          transaction_id: openpayTxId,
+          note,
+          pro: proResult,
+        });
+      } catch (notifyError) {
+        const message =
+          notifyError instanceof Error ? notifyError.message : "OpenPay Pro credit failed";
+        return jsonResponse(
+          {
+            success: true,
+            notify_only: true,
+            partial: true,
+            transaction_id: openpayTxId,
+            note,
+            error: message,
+            warning:
+              "OpenPay debit already completed, but OpenPay Pro credit failed. Support can retry with the same openpay_tx_id.",
+          },
+          200,
+        );
+      }
     }
 
     // Full transfer path (in-app Transfer to OpenPay Pro)

@@ -91,3 +91,53 @@ export const getProDestinationError = (raw: string): string | null => {
   if (kind === "invalid") return "Invalid OpenPay Pro username.";
   return null;
 };
+
+/** Pull a Pro @username or 0x wallet from a scanned QR payload. */
+export const extractProDestinationFromQr = (raw: string): string | null => {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+
+  const walletMatch = value.match(/0x[a-fA-F0-9]{40}/);
+  if (walletMatch) return walletMatch[0].toLowerCase();
+
+  const ethMatch = value.match(/^ethereum:(0x[a-fA-F0-9]{40})/i);
+  if (ethMatch) return ethMatch[1].toLowerCase();
+
+  try {
+    const url = new URL(value);
+    const candidates = [
+      url.searchParams.get("wallet"),
+      url.searchParams.get("address"),
+      url.searchParams.get("to"),
+      url.searchParams.get("username"),
+      url.searchParams.get("pro"),
+      url.searchParams.get("pro_to"),
+    ];
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      if (isProWalletAddress(candidate)) return candidate.toLowerCase();
+      const username = candidate.replace(/^@+/, "").trim();
+      if (/^[a-z0-9_]{3,32}$/i.test(username)) return `@${username.toLowerCase()}`;
+    }
+    const pathUser = url.pathname.split("/").filter(Boolean).pop();
+    if (pathUser) {
+      const username = pathUser.replace(/^@+/, "").trim();
+      if (/^[a-z0-9_]{3,32}$/i.test(username) && !/^(pay|send|transfer|pro)$/i.test(username)) {
+        return `@${username.toLowerCase()}`;
+      }
+    }
+  } catch {
+    // not a URL
+  }
+
+  if (/^@?[a-z0-9_]{3,32}$/i.test(value)) {
+    return `@${value.replace(/^@+/, "").toLowerCase()}`;
+  }
+
+  if (/^uid_[a-f0-9-]+$/i.test(value)) return value;
+
+  const atMatch = value.match(/@[a-z0-9_]{3,32}/i);
+  if (atMatch) return atMatch[0].toLowerCase();
+
+  return null;
+};

@@ -273,20 +273,26 @@ const UsernamePayPage = () => {
       const purpose = isProXfer ? "openpay_pro_xfer" : "openpay_pro_topup";
       let txId = "";
 
+      // Keep pro_xfer notes untouched (no FX suffix) so Pro can parse them.
+      const sendBody: Record<string, unknown> = {
+        receiver_id: recipient.id,
+        amount: amountNum,
+        note,
+        purpose,
+      };
+      if (!isProXfer) {
+        sendBody.currency_code = "OUSD";
+        sendBody.sender_amount = amountNum;
+        sendBody.sender_currency_code = "OUSD";
+        sendBody.receiver_amount = amountNum;
+        sendBody.receiver_currency_code = "OUSD";
+      }
+
       const { data, error } = await supabase.functions.invoke("send-money", {
-        body: {
-          receiver_id: recipient.id,
-          amount: amountNum,
-          note,
-          purpose,
-          currency_code: "OUSD",
-          sender_amount: amountNum,
-          sender_currency_code: "OUSD",
-          receiver_amount: amountNum,
-          receiver_currency_code: "OUSD",
-        },
+        body: sendBody,
       });
 
+      let proNotified = false;
       if (error) {
         try {
           txId = await transferViaSecureRpcFallback(recipient.id, amountNum, note);
@@ -302,10 +308,22 @@ const UsernamePayPage = () => {
           return;
         }
       } else {
-        txId = (data as { transaction_id?: string } | null)?.transaction_id || "";
+        const payload = (data || {}) as {
+          transaction_id?: string;
+          pro_notified?: boolean;
+          partial?: boolean;
+          warning?: string;
+          error?: string;
+        };
+        txId = payload.transaction_id || "";
+        proNotified = Boolean(payload.pro_notified);
+        if (payload.partial || payload.warning) {
+          toast.message(payload.warning || payload.error || "Pro credit pending");
+        }
       }
 
-      if (isProXfer && txId) {
+      // Fallback notify only if send-money did not already notify Pro.
+      if (isProXfer && txId && !proNotified) {
         const parsed = parseProXferNote(note);
         const { error: notifyError, data: notifyData } = await supabase.functions.invoke(
           "transfer-to-openpay-pro",
@@ -322,6 +340,8 @@ const UsernamePayPage = () => {
         if (notifyError) {
           console.error("Pro inbound notify failed", notifyError);
           toast.message("Payment sent on OpenPay. Pro credit may need a moment to sync.");
+        } else if ((notifyData as { error?: string; warning?: string } | null)?.warning) {
+          toast.message(String((notifyData as { warning?: string }).warning));
         } else if ((notifyData as { error?: string } | null)?.error) {
           toast.message(String((notifyData as { error?: string }).error));
         }

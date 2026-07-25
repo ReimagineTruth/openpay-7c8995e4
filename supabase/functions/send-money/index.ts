@@ -8,6 +8,30 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
+const DEFAULT_INBOUND_URL = "https://openpaypromainnet.lovable.app/api/public/openpay/inbound";
+const PRO_XFER_RE =
+  /^pro_xfer:(0x[a-fA-F0-9]{40}|@?[A-Za-z0-9_]+|uid_[a-f0-9-]+):([A-Za-z0-9_-]+)/i;
+
+const isProRoutingNote = (note: string) => {
+  const n = String(note || "").trim().toLowerCase();
+  return n.startsWith("pro_xfer:") || n.startsWith("pro_topup_");
+};
+
+const parseProXferNote = (note: string) => {
+  const match = String(note || "").trim().match(PRO_XFER_RE);
+  if (!match) return null;
+  return { to: match[1], ref: match[2] };
+};
+
+const formatProDestinationForApi = (raw: string) => {
+  const cleaned = String(raw || "").trim();
+  if (!cleaned) return "";
+  if (/^0x[a-fA-F0-9]{40}$/.test(cleaned)) return cleaned.toLowerCase();
+  if (/^uid_[a-f0-9-]+$/i.test(cleaned)) return cleaned;
+  const username = cleaned.replace(/^@+/, "").toLowerCase();
+  return username ? `@${username}` : "";
+};
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -60,20 +84,21 @@ serve(async (req: Request) => {
     if (!receiverId) throw new Error("No recipient specified");
     if (receiverId === user.id) throw new Error("Cannot send to yourself");
 
-    // Build an enriched note that preserves FX context, since the installed
-    // transfer_funds(p_sender_id, p_receiver_id, p_amount, p_note) signature
-    // does not accept currency columns.
-    const fxParts: string[] = [];
-    if (typeof sender_amount === "number" && typeof sender_currency_code === "string") {
-      fxParts.push(`Paid ${Number(sender_amount).toFixed(2)} ${sender_currency_code}`);
-    }
-    if (typeof receiver_amount === "number" && typeof receiver_currency_code === "string") {
-      fxParts.push(`→ ${Number(receiver_amount).toFixed(2)} ${receiver_currency_code}`);
-    }
     const baseNote = (note || "").toString();
-    const enrichedNote = fxParts.length
-      ? `${baseNote}${baseNote ? " · " : ""}${fxParts.join(" ")}`
-      : baseNote;
+    // Keep pro_xfer / pro_topup notes untouched so OpenPay Pro can parse them.
+    let enrichedNote = baseNote;
+    if (!isProRoutingNote(baseNote)) {
+      const fxParts: string[] = [];
+      if (typeof sender_amount === "number" && typeof sender_currency_code === "string") {
+        fxParts.push(`Paid ${Number(sender_amount).toFixed(2)} ${sender_currency_code}`);
+      }
+      if (typeof receiver_amount === "number" && typeof receiver_currency_code === "string") {
+        fxParts.push(`→ ${Number(receiver_amount).toFixed(2)} ${receiver_currency_code}`);
+      }
+      enrichedNote = fxParts.length
+        ? `${baseNote}${baseNote ? " · " : ""}${fxParts.join(" ")}`
+        : baseNote;
+    }
 
     let transactionId: unknown = null;
     let transferError: unknown = null;
@@ -117,7 +142,89 @@ serve(async (req: Request) => {
       throw new Error(msg);
     }
 
-    return jsonResponse({ success: true, transaction_id: transactionId });
+    const txId = String(transactionId || "");
+    const responseBody: Record<string, unknown> = {
+      success: true,
+      transaction_id: transactionId,
+      note: enrichedNote,
+    };
+
+    // After debit, notify OpenPay Pro for pro_xfer routing notes (API key stays server-side).
+    const parsedPro = parseProXferNote(enrichedNote);
+    if (parsedPro && txId) {
+      const inboundUrl = (Deno.env.get("OPENPAY_PRO_INBOUND_URL") || DEFAULT_INBOUND_URL).trim();
+      const partnerApiKey = (
+        Deno.env.get("OPENPAY_PRO_PARTNER_API_KEY") ||
+        Deno.env.get("OPENPAY_PRO_API_KEY") ||
+        ""
+      ).trim();
+
+      if (!partnerApiKey) {
+        responseBody.partial = true;
+        responseBody.pro_notified = false;
+        responseBody.warning =
+          "OpenPay debit succeeded, but OpenPay Pro inbound is not configured (missing partner API key).";
+      } else {
+        try {
+          const { data: senderProfile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", user.id)
+            .maybeSingle();
+          const fromUsername = String(senderProfile?.username || "").trim() || null;
+          const proTo = formatProDestinationForApi(parsedPro.to);
+
+          const notifyRes = await fetch(inboundUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${partnerApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: proTo,
+              amount: Number(parsedAmount.toFixed(2)),
+              openpay_tx_id: txId,
+              note: enrichedNote,
+              from_username: fromUsername,
+            }),
+          });
+
+          const rawText = await notifyRes.text();
+          let payload: Record<string, unknown> = {};
+          try {
+            payload = rawText ? JSON.parse(rawText) : {};
+          } catch {
+            payload = { raw: rawText };
+          }
+
+          if (!notifyRes.ok) {
+            const message =
+              (typeof payload.error === "string" && payload.error) ||
+              (typeof payload.message === "string" && payload.message) ||
+              `OpenPay Pro inbound failed (${notifyRes.status})`;
+            responseBody.partial = true;
+            responseBody.pro_notified = false;
+            responseBody.warning =
+              "OpenPay debit succeeded, but OpenPay Pro credit failed. Support can retry with the same openpay_tx_id.";
+            responseBody.error = message;
+            responseBody.pro = payload;
+          } else {
+            responseBody.pro_notified = true;
+            responseBody.to_pro = proTo;
+            responseBody.pro = payload;
+          }
+        } catch (notifyError) {
+          responseBody.partial = true;
+          responseBody.pro_notified = false;
+          responseBody.warning =
+            "OpenPay debit succeeded, but OpenPay Pro credit failed. Support can retry with the same openpay_tx_id.";
+          responseBody.error =
+            notifyError instanceof Error ? notifyError.message : "OpenPay Pro credit failed";
+        }
+      }
+    }
+
+    return jsonResponse(responseBody);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unexpected error";
     return jsonResponse({ error: message }, 400);
