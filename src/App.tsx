@@ -296,6 +296,8 @@ const AppRoutes = () => {
         const publicPaths = ['/', '/auth', '/sign-in', '/signin', '/signup', '/terms', 'privacy', 'about-openpay', 'legal', 'help-center'];
         const isPublicPath = publicPaths.some(path => location.pathname === path) || 
                             location.pathname.startsWith('/pay/') ||
+                            location.pathname.startsWith('/paybutton/') ||
+
                             location.pathname.startsWith('/forgot') ||
                             location.pathname.startsWith('/reset') ||
                             location.pathname.startsWith('/two-factor');
