@@ -164,23 +164,27 @@ function PartnerApiPageInner() {
               apps.length === 0 ? <p className="text-sm text-muted-foreground">No API keys yet.</p> :
               <div className="space-y-2">
                 {apps.map(app => (
-                  <div key={app.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold">{app.name}</span>
-                        {app.is_active ? <Badge className="bg-green-600">Active</Badge> : <Badge variant="secondary">Revoked</Badge>}
+                  <div key={app.id} className="rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold">{app.name}</span>
+                          {app.is_active ? <Badge className="bg-green-600">Active</Badge> : <Badge variant="secondary">Revoked</Badge>}
+                        </div>
+                        <code className="text-xs text-muted-foreground">client_id: {app.id}</code>
+                        <div><code className="text-xs text-muted-foreground">{app.key_prefix}••••••••</code></div>
+                        {app.website && <p className="text-xs text-muted-foreground truncate">{app.website}</p>}
                       </div>
-                      <code className="text-xs text-muted-foreground">{app.key_prefix}••••••••</code>
-                      {app.website && <p className="text-xs text-muted-foreground truncate">{app.website}</p>}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="icon" variant="ghost" title={app.is_active ? "Revoke" : "Activate"} onClick={() => toggleActive(app)}>
+                          <Power className={`h-4 w-4 ${app.is_active ? "text-amber-600" : "text-green-600"}`} />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => remove(app)}>
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button size="icon" variant="ghost" title={app.is_active ? "Revoke" : "Activate"} onClick={() => toggleActive(app)}>
-                        <Power className={`h-4 w-4 ${app.is_active ? "text-amber-600" : "text-green-600"}`} />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => remove(app)}>
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
+                    <RedirectUrisEditor app={app} onSaved={load} />
                   </div>
                 ))}
               </div>
