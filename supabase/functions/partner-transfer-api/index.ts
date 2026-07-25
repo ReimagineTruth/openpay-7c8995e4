@@ -163,8 +163,91 @@ Deno.serve(async (req) => {
       }, 201);
     }
 
+    // POST /charges — create a PayButton checkout session
+    if (req.method === 'POST' && path === '/charges') {
+      const body = await req.json().catch(() => ({}));
+      const amount = Number(body?.amount);
+      const currency = String(body?.currency || 'OUSD').toUpperCase();
+      const description = String(body?.description ?? '').slice(0, 300);
+      const reference = String(body?.reference ?? '').slice(0, 120);
+      const success_url = String(body?.success_url ?? '').slice(0, 500);
+      const cancel_url = String(body?.cancel_url ?? '').slice(0, 500);
+      const metadata = (body && typeof body.metadata === 'object' && body.metadata) || {};
+      if (!Number.isFinite(amount) || amount <= 0) return err('`amount` must be > 0');
+
+      const { data, error } = await admin.rpc('partner_charge_create', {
+        p_partner_app_id: appRow.id,
+        p_owner_user_id: ownerId,
+        p_amount: amount,
+        p_currency: currency,
+        p_description: description,
+        p_reference: reference,
+        p_success_url: success_url,
+        p_cancel_url: cancel_url,
+        p_metadata: metadata,
+      });
+      if (error) return err(error.message, 400);
+      const row = Array.isArray(data) ? data[0] : data;
+      const chargeId = row?.charge_id;
+      return ok({
+        id: chargeId,
+        amount, currency, description, reference,
+        status: 'created',
+        expires_at: row?.expires_at,
+        checkout_url: `https://openpay.lovable.app/paybutton/${chargeId}`,
+        success_url: success_url || null,
+        cancel_url: cancel_url || null,
+      }, 201);
+    }
+
+    // GET /charges/:id
+    const chargeMatch = path.match(/^\/charges\/([0-9a-fA-F-]{36})$/);
+    if (req.method === 'GET' && chargeMatch) {
+      const { data, error } = await admin
+        .from('partner_charges')
+        .select('id, amount, currency, description, reference, status, buyer_user_id, transaction_id, paid_at, expires_at, success_url, cancel_url, metadata, created_at')
+        .eq('id', chargeMatch[1])
+        .eq('partner_app_id', appRow.id)
+        .maybeSingle();
+      if (error) return err(error.message, 500);
+      if (!data) return err('Charge not found', 404);
+      return ok({ ...data, checkout_url: `https://openpay.lovable.app/paybutton/${data.id}` });
+    }
+
+    // POST /charges/:id/cancel
+    const cancelMatch = path.match(/^\/charges\/([0-9a-fA-F-]{36})\/cancel$/);
+    if (req.method === 'POST' && cancelMatch) {
+      const { data: row } = await admin
+        .from('partner_charges')
+        .select('id, status')
+        .eq('id', cancelMatch[1])
+        .eq('partner_app_id', appRow.id)
+        .maybeSingle();
+      if (!row) return err('Charge not found', 404);
+      if (row.status !== 'created') return err(`Charge is ${row.status}`, 400);
+      const { error } = await admin.from('partner_charges').update({ status: 'canceled' }).eq('id', row.id);
+      if (error) return err(error.message, 500);
+      return ok({ id: row.id, status: 'canceled' });
+    }
+
+    // GET /charges
+    if (req.method === 'GET' && path === '/charges') {
+      const limit = Math.min(Number(url.searchParams.get('limit') || 50), 200);
+      const status = url.searchParams.get('status');
+      let q = admin.from('partner_charges')
+        .select('id, amount, currency, description, reference, status, buyer_user_id, transaction_id, paid_at, expires_at, created_at')
+        .eq('partner_app_id', appRow.id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (status) q = q.eq('status', status);
+      const { data, error } = await q;
+      if (error) return err(error.message, 500);
+      return ok({ data });
+    }
+
     return err('Not found', 404);
   } catch (e) {
     return err((e as Error).message || 'Internal error', 500);
   }
 });
+
