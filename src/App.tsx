@@ -90,6 +90,7 @@ import OpenPayDocumentationPage from "./pages/OpenPayDocumentationPage";
 import OpenPayApiDocsPage from "./pages/OpenPayApiDocsPage";
 import PartnerApiPage from "./pages/PartnerApiPage";
 import PayButtonCheckoutPage from "./pages/PayButtonCheckoutPage";
+import PartnerConnectPage from "./pages/PartnerConnectPage";
 
 import OpenPayPosDocsPage from "./pages/OpenPayPosDocsPage";
 import OpenPayMerchantPortalDocsPage from "./pages/OpenPayMerchantPortalDocsPage";
