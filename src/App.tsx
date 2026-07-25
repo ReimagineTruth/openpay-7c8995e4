@@ -297,6 +297,8 @@ const AppRoutes = () => {
         const isPublicPath = publicPaths.some(path => location.pathname === path) || 
                             location.pathname.startsWith('/pay/') ||
                             location.pathname.startsWith('/paybutton/') ||
+                            location.pathname.startsWith('/connect') ||
+
 
                             location.pathname.startsWith('/forgot') ||
                             location.pathname.startsWith('/reset') ||
