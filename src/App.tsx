@@ -126,6 +126,7 @@ import MerchantCheckoutThankYouPage from "./pages/MerchantCheckoutThankYouPage";
 import PosThankYouPage from "./pages/PosThankYouPage";
 import PublicWalletPaymentPage from "./pages/PublicWalletPaymentPage";
 import UsernamePayPage from "./pages/UsernamePayPage";
+import PartnerPayThankYouPage from "./pages/PartnerPayThankYouPage";
 import OpenAppPage from "./pages/OpenAppPage";
 import OpenPayDesktopPage from "./pages/OpenPayDesktopPage";
 import VirtualCardPage from "./pages/VirtualCardPage";
@@ -606,6 +607,7 @@ const AppRoutes = () => {
         <Route path="/payment-link/:token" element={<MerchantCheckoutPage />} />
         <Route path="/merchant-checkout" element={<MerchantCheckoutPage />} />
         <Route path="/public-payment" element={<PublicWalletPaymentPage />} />
+        <Route path="/pay/thank-you" element={<PartnerPayThankYouPage />} />
         <Route path="/pay/:username" element={<UsernamePayPage />} />
         <Route path="/merchant-checkout/thank-you" element={<MerchantCheckoutThankYouPage />} />
         <Route path="/pos-thank-you" element={<PosThankYouPage />} />

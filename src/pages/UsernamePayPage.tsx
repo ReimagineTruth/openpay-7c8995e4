@@ -4,6 +4,7 @@ import { ArrowLeft, Copy, Share2, Wallet, CircleDollarSign, AtSign } from "lucid
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AuthMark from "@/components/AuthMark";
@@ -15,11 +16,26 @@ interface RecipientProfile {
   avatar_url: string | null;
 }
 
+const appendQueryParams = (baseUrl: string, params: Record<string, string | undefined | null>) => {
+  try {
+    const url = new URL(baseUrl);
+    for (const [key, value] of Object.entries(params)) {
+      if (value != null && String(value).trim() !== "") {
+        url.searchParams.set(key, String(value));
+      }
+    }
+    return url.toString();
+  } catch {
+    return baseUrl;
+  }
+};
+
 const UsernamePayPage = () => {
   const navigate = useNavigate();
   const { username = "" } = useParams();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
   const [recipient, setRecipient] = useState<RecipientProfile | null>(null);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -29,6 +45,13 @@ const UsernamePayPage = () => {
   const requestedAmount = searchParams.get("amount") || "";
   const requestedCurrency = (searchParams.get("currency") || "PI").toUpperCase();
   const requestedNote = searchParams.get("note") || "";
+  const successUrl = (searchParams.get("success_url") || "").trim();
+  const cancelUrl = (searchParams.get("cancel_url") || "").trim();
+
+  const amountNum = Number(requestedAmount);
+  const hasValidAmount = Number.isFinite(amountNum) && amountNum > 0;
+  const isProTopupNote = requestedNote.trim().toLowerCase().startsWith("pro_topup_");
+  const isPartnerTopup = isProTopupNote || (Boolean(successUrl) && hasValidAmount);
 
   useEffect(() => {
     const load = async () => {
@@ -85,8 +108,8 @@ const UsernamePayPage = () => {
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined" || !normalizedUsername) return "";
     const params = new URLSearchParams();
-    if (requestedAmount && Number.isFinite(Number(requestedAmount)) && Number(requestedAmount) > 0) {
-      params.set("amount", Number(requestedAmount).toFixed(2));
+    if (hasValidAmount) {
+      params.set("amount", amountNum.toFixed(2));
     }
     if (requestedCurrency) {
       params.set("currency", requestedCurrency);
@@ -94,9 +117,28 @@ const UsernamePayPage = () => {
     if (requestedNote.trim()) {
       params.set("note", requestedNote.trim());
     }
+    if (successUrl) {
+      params.set("success_url", successUrl);
+    }
+    if (cancelUrl) {
+      params.set("cancel_url", cancelUrl);
+    }
     const suffix = params.toString();
     return `${window.location.origin}/pay/${encodeURIComponent(normalizedUsername)}${suffix ? `?${suffix}` : ""}`;
-  }, [normalizedUsername, requestedAmount, requestedCurrency, requestedNote]);
+  }, [
+    amountNum,
+    cancelUrl,
+    hasValidAmount,
+    normalizedUsername,
+    requestedCurrency,
+    requestedNote,
+    successUrl,
+  ]);
+
+  const currentPayPath = useMemo(() => {
+    if (typeof window === "undefined") return `/pay/${encodeURIComponent(normalizedUsername)}`;
+    return `${window.location.pathname}${window.location.search}`;
+  }, [normalizedUsername, searchParams]);
 
   const initials = (recipient?.full_name || recipient?.username || "OP")
     .split(" ")
@@ -107,11 +149,185 @@ const UsernamePayPage = () => {
 
   const canPayThisUser = recipient && recipient.id !== viewerId;
 
+  const redirectToSignIn = () => {
+    toast.message("Sign in to continue with this payment.");
+    navigate(`/sign-in?mode=signin&next=${encodeURIComponent(currentPayPath)}`);
+  };
+
+  const handleCancelOrder = () => {
+    if (cancelUrl) {
+      window.location.href = appendQueryParams(cancelUrl, {
+        openpay_cancel: "1",
+        openpay_ref: requestedNote.trim() || undefined,
+      });
+      return;
+    }
+    navigate(-1);
+  };
+
+  const handleBack = () => {
+    if (isPartnerTopup) {
+      handleCancelOrder();
+      return;
+    }
+    navigate(-1);
+  };
+
+  const transferViaSecureRpcFallback = async (receiverId: string, amount: number, note: string) => {
+    const { data: txId, error: rpcError } = await supabase.rpc("transfer_funds_authenticated", {
+      p_receiver_id: receiverId,
+      p_amount: amount,
+      p_note: note,
+      p_currency_code: "OUSD",
+      p_sender_amount: amount,
+      p_sender_currency_code: "OUSD",
+      p_receiver_amount: amount,
+      p_receiver_currency_code: "OUSD",
+    } as never);
+
+    if (!rpcError) {
+      return String(txId || "");
+    }
+
+    const rpcMessage =
+      typeof (rpcError as { message?: unknown })?.message === "string"
+        ? (rpcError as { message: string }).message
+        : "Fallback transfer failed";
+
+    const shouldTryLegacy =
+      /schema cache|transfer_funds_authenticated|function.*not\s+found/i.test(rpcMessage);
+
+    if (!shouldTryLegacy) {
+      throw new Error(rpcMessage);
+    }
+
+    const { data: legacyTxId, error: legacyError } = await supabase.rpc("transfer_funds_authenticated", {
+      p_receiver_id: receiverId,
+      p_amount: amount,
+      p_note: note,
+    });
+
+    if (legacyError) {
+      const legacyMessage =
+        typeof (legacyError as { message?: unknown })?.message === "string"
+          ? (legacyError as { message: string }).message
+          : "Fallback transfer failed";
+      throw new Error(legacyMessage);
+    }
+
+    return String(legacyTxId || "");
+  };
+
+  const handlePartnerTopupPay = async () => {
+    if (!recipient) return;
+
+    if (!isAuthenticated) {
+      redirectToSignIn();
+      return;
+    }
+
+    if (!canPayThisUser) {
+      toast.error("You can't pay your own account from this link.");
+      return;
+    }
+
+    if (!hasValidAmount) {
+      toast.error("This top-up link is missing a valid amount.");
+      return;
+    }
+
+    setPaying(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        redirectToSignIn();
+        return;
+      }
+
+      const { data: wallet, error: walletError } = await supabase
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (walletError) {
+        throw walletError;
+      }
+
+      const balance = Number(wallet?.balance ?? 0);
+      if (balance < amountNum) {
+        toast.error("Insufficient balance for this top-up.");
+        return;
+      }
+
+      const note = requestedNote.trim() || "OpenPay Pro top-up";
+      let txId = "";
+
+      const { data, error } = await supabase.functions.invoke("send-money", {
+        body: {
+          receiver_id: recipient.id,
+          amount: amountNum,
+          note,
+          purpose: "openpay_pro_topup",
+          currency_code: "OUSD",
+          sender_amount: amountNum,
+          sender_currency_code: "OUSD",
+          receiver_amount: amountNum,
+          receiver_currency_code: "OUSD",
+        },
+      });
+
+      if (error) {
+        try {
+          txId = await transferViaSecureRpcFallback(recipient.id, amountNum, note);
+        } catch (fallbackError) {
+          const edgeErrorMessage = await getFunctionErrorMessage(error, "Transfer failed");
+          const fallbackErrorMessage =
+            fallbackError instanceof Error
+              ? fallbackError.message
+              : typeof (fallbackError as { message?: unknown })?.message === "string"
+                ? String((fallbackError as { message: string }).message)
+                : "Fallback transfer failed";
+          toast.error(`${edgeErrorMessage}. ${fallbackErrorMessage}`);
+          return;
+        }
+      } else {
+        txId = (data as { transaction_id?: string } | null)?.transaction_id || "";
+      }
+
+      const thankYouParams = new URLSearchParams({
+        amount: amountNum.toFixed(2),
+        currency: "OUSD",
+        to: recipient.username || normalizedUsername,
+        name: recipient.full_name,
+        note,
+        tx: txId,
+      });
+      if (successUrl) thankYouParams.set("success_url", successUrl);
+      if (cancelUrl) thankYouParams.set("cancel_url", cancelUrl);
+
+      navigate(`/pay/thank-you?${thankYouParams.toString()}`, { replace: true });
+    } catch (error) {
+      console.error("Pro top-up payment failed", error);
+      toast.error(error instanceof Error ? error.message : "Payment failed");
+    } finally {
+      setPaying(false);
+    }
+  };
+
   const handleContinueToPay = () => {
     if (!recipient) return;
+
+    if (isPartnerTopup) {
+      void handlePartnerTopupPay();
+      return;
+    }
+
     if (!isAuthenticated) {
-      toast.message("Sign in to continue with this payment.");
-      navigate("/sign-in?mode=signin");
+      redirectToSignIn();
       return;
     }
     if (!canPayThisUser) {
@@ -120,8 +336,8 @@ const UsernamePayPage = () => {
     }
 
     const params = new URLSearchParams({ to: recipient.id });
-    if (requestedAmount && Number.isFinite(Number(requestedAmount)) && Number(requestedAmount) > 0) {
-      params.set("amount", Number(requestedAmount).toFixed(2));
+    if (hasValidAmount) {
+      params.set("amount", amountNum.toFixed(2));
     }
     if (requestedCurrency) {
       params.set("currency", requestedCurrency);
@@ -177,7 +393,7 @@ const UsernamePayPage = () => {
       <div className="mx-auto max-w-xl">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="mb-5 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/15"
           aria-label="Back"
         >
@@ -217,8 +433,8 @@ const UsernamePayPage = () => {
                 <div className="rounded-2xl border border-white/15 bg-black/10 p-4">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/65">Requested amount</p>
                   <p className="mt-2 text-lg font-bold">
-                    {requestedAmount && Number.isFinite(Number(requestedAmount)) && Number(requestedAmount) > 0
-                      ? `${Number(requestedAmount).toFixed(2)} ${requestedCurrency}`
+                    {hasValidAmount
+                      ? `${amountNum.toFixed(2)} ${isPartnerTopup ? "OUSD" : requestedCurrency}`
                       : "Choose amount in app"}
                   </p>
                   <p className="text-sm text-white/75">{requestedNote.trim() || "No note added"}</p>
@@ -232,10 +448,18 @@ const UsernamePayPage = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-white">
-                      {isAuthenticated ? "Continue in OpenPay" : "Sign in to pay"}
+                      {isPartnerTopup
+                        ? isAuthenticated
+                          ? "One-click Pro top-up"
+                          : "Sign in to top up"
+                        : isAuthenticated
+                          ? "Continue in OpenPay"
+                          : "Sign in to pay"}
                     </p>
                     <p className="mt-1 text-sm text-white/75">
-                      This payment link opens the existing OpenPay send flow, prefilled for @{recipient.username}.
+                      {isPartnerTopup
+                        ? "Pay from your OpenPay balance to complete this OpenPay Pro wallet top-up."
+                        : `This payment link opens the existing OpenPay send flow, prefilled for @${recipient.username}.`}
                     </p>
                   </div>
                 </div>
@@ -245,11 +469,27 @@ const UsernamePayPage = () => {
                 type="button"
                 onClick={handleContinueToPay}
                 className="mt-5 h-12 w-full rounded-2xl bg-white font-bold text-paypal-blue hover:bg-white/95"
-                disabled={!canPayThisUser}
+                disabled={!canPayThisUser || paying}
               >
                 <CircleDollarSign className="mr-2 h-4 w-4" />
-                {isAuthenticated ? `Pay @${recipient.username}` : `Sign in to pay @${recipient.username}`}
+                {paying
+                  ? "Processing..."
+                  : isAuthenticated
+                    ? `Pay @${recipient.username}`
+                    : `Sign in to pay @${recipient.username}`}
               </Button>
+
+              {isPartnerTopup ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelOrder}
+                  className="mt-3 h-11 w-full rounded-2xl border-white/20 bg-transparent font-bold text-white hover:bg-white/10"
+                  disabled={paying}
+                >
+                  Cancel order
+                </Button>
+              ) : null}
 
               {!canPayThisUser && isAuthenticated ? (
                 <p className="mt-3 text-center text-sm text-white/75">This payment tag belongs to your current account.</p>

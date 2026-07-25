@@ -17,6 +17,9 @@ const AdminMrwainAuth = () => {
   const [params, setParams] = useSearchParams();
   const mode = params.get("mode") === "signup" ? "signup" : "signin";
   const referralParam = (params.get("ref") || "").trim().toLowerCase();
+  const nextParam = (params.get("next") || "").trim();
+  const safeNextPath =
+    nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard";
 
   // In Pi Browser, only Pi authentication is allowed — hide email sign in/up
   if (isPiBrowserUAOnly()) {
@@ -36,6 +39,7 @@ const AdminMrwainAuth = () => {
   const setMode = (nextMode: "signin" | "signup") => {
     const next: Record<string, string> = { mode: nextMode };
     if (referralParam) next.ref = referralParam;
+    if (nextParam) next.next = nextParam;
     setParams(next);
   };
 
@@ -57,8 +61,8 @@ const AdminMrwainAuth = () => {
         return;
       }
       
-      // 2FA verification disabled for now - go directly to dashboard
-      navigate("/dashboard", { replace: true });
+      // 2FA verification disabled for now — honor optional `next` return path
+      navigate(safeNextPath, { replace: true });
       return;
     }
 
