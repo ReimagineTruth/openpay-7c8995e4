@@ -88,6 +88,7 @@ import SocialsPage from "./pages/SocialsPage";
 import LegalPage from "./pages/LegalPage";
 import OpenPayDocumentationPage from "./pages/OpenPayDocumentationPage";
 import OpenPayApiDocsPage from "./pages/OpenPayApiDocsPage";
+import PartnerApiPage from "./pages/PartnerApiPage";
 import OpenPayPosDocsPage from "./pages/OpenPayPosDocsPage";
 import OpenPayMerchantPortalDocsPage from "./pages/OpenPayMerchantPortalDocsPage";
 import OpenPartnerPage from "./pages/OpenPartnerPage";
@@ -569,6 +570,7 @@ const AppRoutes = () => {
         <Route path="/socials" element={<SocialsPage />} />
         <Route path="/openpay-documentation" element={<OpenPayDocumentationPage />} />
         <Route path="/openpay-api-docs" element={<OpenPayApiDocsPage />} />
+        <Route path="/partner-api" element={<PartnerApiPage />} />
         <Route path="/openpay-pos-docs" element={<OpenPayPosDocsPage />} />
         <Route path="/openpay-merchant-portal-docs" element={<OpenPayMerchantPortalDocsPage />} />
         <Route path="/open-partner" element={<OpenPartnerPage />} />

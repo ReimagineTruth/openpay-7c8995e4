@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import BottomNav from "@/components/BottomNav";
 
-import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot, QrCode, Bell, Settings, ExternalLink, RefreshCw, Presentation, Trophy, Blocks } from "lucide-react";
+import { Send, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, Store, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, UserCheck, History, MessageSquare, Bot, QrCode, Bell, Settings, ExternalLink, RefreshCw, Presentation, Trophy, Blocks, KeyRound } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -659,6 +659,8 @@ const MenuPage = () => {
         { icon: BookOpen, label: "POS Docs", action: () => navigate("/openpay-pos-docs") },
 
         { icon: BookOpen, label: "Merchant Docs", action: () => navigate("/openpay-merchant-portal-docs") },
+
+        { icon: KeyRound, label: "Partner API", subtitle: "Wallet-to-wallet transfer API", action: () => navigate("/partner-api") },
 
       ],
 

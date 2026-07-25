@@ -2906,6 +2906,117 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_apps: {
+        Row: {
+          allowed_origins: string[]
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          owner_user_id: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          allowed_origins?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          owner_user_id: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          allowed_origins?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          owner_user_id?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      partner_transfers: {
+        Row: {
+          amount: number
+          counterparty_identifier: string
+          counterparty_user_id: string | null
+          created_at: string
+          currency: string
+          direction: string
+          id: string
+          idempotency_key: string | null
+          metadata: Json
+          note: string | null
+          owner_user_id: string
+          partner_app_id: string
+          status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          amount: number
+          counterparty_identifier: string
+          counterparty_user_id?: string | null
+          created_at?: string
+          currency?: string
+          direction: string
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          note?: string | null
+          owner_user_id: string
+          partner_app_id: string
+          status?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number
+          counterparty_identifier?: string
+          counterparty_user_id?: string | null
+          created_at?: string
+          currency?: string
+          direction?: string
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          note?: string | null
+          owner_user_id?: string
+          partner_app_id?: string
+          status?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_transfers_partner_app_id_fkey"
+            columns: ["partner_app_id"]
+            isOneToOne: false
+            referencedRelation: "partner_apps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_transfers_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_requests: {
         Row: {
           amount: number
@@ -5393,6 +5504,35 @@ export type Database = {
         Returns: string
       }
       normalize_openpay_code: { Args: { p_code: string }; Returns: string }
+      partner_lookup_account: {
+        Args: { p_identifier: string }
+        Returns: {
+          account_number: string
+          avatar_url: string
+          balance: number
+          currency: string
+          full_name: string
+          user_id: string
+          username: string
+        }[]
+      }
+      partner_transfer_send: {
+        Args: {
+          p_amount: number
+          p_idempotency_key?: string
+          p_note?: string
+          p_partner_app_id: string
+          p_recipient_identifier: string
+          p_sender_user_id: string
+        }
+        Returns: {
+          recipient_user_id: string
+          sender_balance: number
+          status: string
+          transaction_id: string
+          transfer_id: string
+        }[]
+      }
       pay_merchant_checkout_with_virtual_card:
         | {
             Args: {
