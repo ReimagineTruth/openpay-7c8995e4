@@ -10,26 +10,49 @@ const corsHeaders = {
 
 const DEFAULT_PARTNER_USERNAME = "wainfoundation";
 const DEFAULT_INBOUND_URL = "https://openpaypromainnet.lovable.app/api/public/openpay/inbound";
+const PRO_WALLET_RE = /^0x[a-fA-F0-9]{40}$/;
+
+const isProWalletAddress = (raw: string) => PRO_WALLET_RE.test(String(raw || "").trim());
 
 const normalizeProTarget = (raw: string) => {
   const cleaned = String(raw || "").trim();
   if (!cleaned) return "";
+  if (isProWalletAddress(cleaned)) return cleaned.toLowerCase();
   if (/^uid_[a-f0-9-]+$/i.test(cleaned)) return cleaned;
+  if (cleaned.toLowerCase().startsWith("0x")) return ""; // invalid partial wallet
   return cleaned.replace(/^@+/, "").toLowerCase();
 };
 
+const formatProDestinationForApi = (raw: string) => {
+  const cleaned = String(raw || "").trim();
+  if (!cleaned) return "";
+  if (isProWalletAddress(cleaned)) return cleaned.toLowerCase();
+  if (/^uid_[a-f0-9-]+$/i.test(cleaned)) return cleaned;
+  const username = cleaned.replace(/^@+/, "").toLowerCase();
+  return username ? `@${username}` : "";
+};
+
 const buildProXferNote = (toRaw: string, ref: string) => {
-  const to = normalizeProTarget(toRaw);
-  const target = to.startsWith("uid_") ? to : `@${to}`;
+  const target = formatProDestinationForApi(toRaw);
   return `pro_xfer:${target}:${ref}`;
 };
 
 const parseProXferNote = (note: string) => {
   const match = String(note || "")
     .trim()
-    .match(/^pro_xfer:(@?[A-Za-z0-9_]+|uid_[a-f0-9-]+):([A-Za-z0-9_-]+)/i);
+    .match(
+      /^pro_xfer:(0x[a-fA-F0-9]{40}|@?[A-Za-z0-9_]+|uid_[a-f0-9-]+):([A-Za-z0-9_-]+)/i,
+    );
   if (!match) return null;
   return { to: match[1], ref: match[2] };
+};
+
+const isValidProDestination = (raw: string) => {
+  const cleaned = String(raw || "").trim();
+  if (!cleaned) return false;
+  if (isProWalletAddress(cleaned)) return true;
+  if (/^uid_[a-f0-9-]{8,}$/i.test(cleaned)) return true;
+  return /^[a-z0-9_]{3,32}$/i.test(cleaned.replace(/^@+/, ""));
 };
 
 const makeRef = () => `r_${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
@@ -78,20 +101,24 @@ serve(async (req: Request) => {
     if (!Number.isFinite(amount) || amount <= 0) throw new Error("Invalid amount");
 
     let note = String(body?.note || "").trim();
-    let toPro = normalizeProTarget(String(body?.to || body?.to_pro_username || ""));
+    let toPro = normalizeProTarget(String(body?.to || body?.to_pro_username || body?.to_wallet || ""));
     let openpayTxId = String(body?.openpay_tx_id || "").trim();
 
     if (note) {
       const parsed = parseProXferNote(note);
       if (parsed) {
-        toPro = normalizeProTarget(parsed.to);
-        if (!note.startsWith("pro_xfer:")) note = buildProXferNote(parsed.to, parsed.ref);
+        toPro = normalizeProTarget(parsed.to) || toPro;
       }
     }
 
-    if (!toPro) throw new Error("Pro username is required");
-    if (!/^([a-z0-9_]{3,32}|uid_[a-f0-9-]{8,})$/i.test(toPro)) {
-      throw new Error("Invalid OpenPay Pro username.");
+    const rawToInput = String(body?.to || body?.to_pro_username || body?.to_wallet || toPro || "").trim();
+    if (rawToInput.toLowerCase().startsWith("0x") && !isProWalletAddress(rawToInput) && !isProWalletAddress(toPro)) {
+      throw new Error("Invalid Pro wallet address. Use 0x followed by 40 hex characters.");
+    }
+
+    if (!toPro) throw new Error("Pro @username or 0x wallet address is required");
+    if (!isValidProDestination(toPro)) {
+      throw new Error("Invalid OpenPay Pro destination.");
     }
 
     const { data: senderProfile } = await supabase
@@ -102,7 +129,7 @@ serve(async (req: Request) => {
     const fromUsername = String(senderProfile?.username || "").trim() || null;
 
     const notifyPro = async (txId: string, routingNote: string, destination: string) => {
-      const proTo = destination.startsWith("uid_") ? destination : `@${destination.replace(/^@+/, "")}`;
+      const proTo = formatProDestinationForApi(destination);
       const response = await fetch(inboundUrl, {
         method: "POST",
         headers: {
@@ -256,7 +283,7 @@ serve(async (req: Request) => {
       partner_username: partnerProfile.username,
       partner_name: partnerProfile.full_name,
       partner_avatar_url: partnerProfile.avatar_url,
-      to_pro: toPro.startsWith("uid_") ? toPro : `@${toPro}`,
+      to_pro: formatProDestinationForApi(toPro),
       pro: proResult,
     });
   } catch (error: unknown) {
@@ -265,6 +292,7 @@ serve(async (req: Request) => {
     const status =
       lowered.includes("insufficient") ? 400 :
       lowered.includes("unauthorized") || lowered.includes("auth") ? 401 :
+      lowered.includes("invalid") && lowered.includes("address") ? 400 :
       lowered.includes("unknown") || lowered.includes("not found") ? 404 :
       400;
     return jsonResponse({ error: message }, status);

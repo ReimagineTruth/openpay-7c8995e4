@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import {
+  classifyProDestination,
+  formatProDestinationPreview,
+  getProDestinationError,
   makeProXferRef,
-  normalizeProUsername,
+  normalizeProDestination,
   OPENPAY_PRO_PARTNER_USERNAME,
 } from "@/lib/openpayProTransfer";
 import { useThankYouModal } from "@/contexts/ThankYouModalContext";
@@ -23,7 +26,7 @@ type Props = {
 const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
   const navigate = useNavigate();
   const { showThankYouModal } = useThankYouModal();
-  const [proUsername, setProUsername] = useState("");
+  const [proTo, setProTo] = useState("");
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [balance, setBalance] = useState(0);
@@ -31,16 +34,21 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
   const [submitting, setSubmitting] = useState(false);
 
   const amountNum = Number(amount);
-  const normalizedPro = normalizeProUsername(proUsername);
-  const previewTarget = normalizedPro
-    ? normalizedPro.startsWith("uid_")
-      ? normalizedPro
-      : `@${normalizedPro}`
-    : "";
+  const destinationKind = classifyProDestination(proTo);
+  const normalizedPro = normalizeProDestination(proTo);
+  const destinationError = getProDestinationError(proTo);
+  const previewTarget = destinationKind === "invalid" || destinationKind === "empty"
+    ? ""
+    : formatProDestinationPreview(proTo);
 
   const canSubmit = useMemo(
-    () => Boolean(normalizedPro) && Number.isFinite(amountNum) && amountNum > 0 && !submitting,
-    [amountNum, normalizedPro, submitting],
+    () =>
+      Boolean(normalizedPro) &&
+      !destinationError &&
+      Number.isFinite(amountNum) &&
+      amountNum > 0 &&
+      !submitting,
+    [amountNum, destinationError, normalizedPro, submitting],
   );
 
   useEffect(() => {
@@ -73,6 +81,11 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
+
+    if (destinationError) {
+      toast.error(destinationError);
+      return;
+    }
 
     if (amountNum > balance) {
       toast.error("Insufficient balance");
@@ -129,7 +142,7 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
 
       setAmount("");
       setMemo("");
-      setProUsername("");
+      setProTo("");
 
       const {
         data: { user },
@@ -144,8 +157,10 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Transfer failed";
-      if (/unknown|not found|does not exist/i.test(message)) {
-        toast.error("Unknown OpenPay Pro user. Check the @username and try again.");
+      if (/invalid.*address/i.test(message)) {
+        toast.error("Invalid Pro wallet address. Use 0x followed by 40 hex characters.");
+      } else if (/unknown|not found|does not exist/i.test(message)) {
+        toast.error("Unknown OpenPay Pro destination. Check the @username or wallet address.");
       } else if (/insufficient/i.test(message)) {
         toast.error("Insufficient balance");
       } else {
@@ -170,15 +185,25 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
 
       <div>
         <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-white/70">
-          Pro @username
+          To (Pro @username or 0x wallet)
         </label>
         <Input
-          value={proUsername}
-          onChange={(e) => setProUsername(e.target.value)}
-          placeholder="@alice"
+          value={proTo}
+          onChange={(e) => setProTo(e.target.value)}
+          placeholder="@alice or 0x7bf2…851a"
           required
-          className="h-12 rounded-2xl border-white/20 bg-white/10 text-white placeholder:text-white/45"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          className="h-12 rounded-2xl border-white/20 bg-white/10 font-mono text-sm text-white placeholder:font-sans placeholder:text-white/45"
         />
+        {proTo.trim() && destinationError ? (
+          <p className="mt-2 text-xs font-medium text-red-200">{destinationError}</p>
+        ) : (
+          <p className="mt-2 text-xs text-white/60">
+            Use a Pro @username or a 0x wallet address (40 hex characters).
+          </p>
+        )}
       </div>
 
       <div>
@@ -213,7 +238,7 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
 
       {previewTarget ? (
         <div className="rounded-2xl border border-emerald-300/25 bg-emerald-500/10 p-4 text-sm text-emerald-50">
-          Preview: Send to OpenPay Pro <span className="font-bold">{previewTarget}</span>
+          Preview: Send to OpenPay Pro <span className="font-bold break-all">{previewTarget}</span>
           {Number.isFinite(amountNum) && amountNum > 0 ? (
             <span className="font-bold"> · {amountNum.toFixed(2)} OUSD</span>
           ) : null}
