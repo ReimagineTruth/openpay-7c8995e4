@@ -229,20 +229,62 @@ function PartnerApiPageInner() {
               </div>
             </section>
 
-            <section>
-              <h3 className="font-semibold mb-1">GET /transfers</h3>
-              <p className="text-muted-foreground">List past partner transfers. Query: <code>?limit=50&direction=debit|credit</code>.</p>
-              <pre className="bg-muted rounded p-3 text-xs overflow-auto">curl -H "Authorization: Bearer opk_live_YOUR_KEY" {FN_BASE}/transfers?limit=20</pre>
+            <section className="border-t pt-4">
+              <h3 className="font-semibold mb-1 text-blue-700 dark:text-blue-300">💳 PayButton — Accept OpenPay balance on your platform</h3>
+              <p className="text-muted-foreground">
+                Let your customers pay from their OpenPay balance without ever leaving the flow. Create a charge from your backend,
+                redirect the buyer to the returned <code>checkout_url</code>, and OpenPay handles sign-in, balance check and payment.
+                Funds land in <em>your</em> partner-app owner's OpenPay wallet in real time.
+              </p>
             </section>
 
             <section>
-              <h3 className="font-semibold mb-1">Receiving into OpenPay</h3>
+              <h3 className="font-semibold mb-1">POST /charges — Create a checkout</h3>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{curlCharge}</pre>
+              <div className="text-xs text-muted-foreground mt-2">
+                Returns <code>{`{ id, amount, currency, status, checkout_url, expires_at }`}</code>. Charges expire in 2 hours.
+              </div>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">Redirect the buyer</h3>
+              <p className="text-muted-foreground">Send the customer to the returned <code>checkout_url</code>. They will:</p>
+              <ol className="list-decimal pl-5 text-muted-foreground text-sm space-y-1 mt-1">
+                <li>See your app name, amount and description on a secure OpenPay page</li>
+                <li>Sign in to OpenPay (Email, Google, Apple, or Pi)</li>
+                <li>Confirm payment from their OpenPay balance</li>
+                <li>Get redirected back to your <code>success_url</code></li>
+              </ol>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">Drop-in PayButton</h3>
+              <p className="text-muted-foreground">After creating a charge, render this button anywhere in your site:</p>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{paybuttonHtml}</pre>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">GET /charges/:id — Check status</h3>
+              <p className="text-muted-foreground">Poll after the buyer returns, or list charges with <code>GET /charges?status=paid</code>.</p>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">curl -H "Authorization: Bearer opk_live_YOUR_KEY" {FN_BASE}/charges/CHARGE_ID</pre>
+              <div className="text-xs text-muted-foreground mt-2">
+                Status values: <code>created</code>, <code>paid</code>, <code>canceled</code>, <code>expired</code>.
+              </div>
+            </section>
+
+            <section>
+              <h3 className="font-semibold mb-1">POST /charges/:id/cancel</h3>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">curl -X POST -H "Authorization: Bearer opk_live_YOUR_KEY" {FN_BASE}/charges/CHARGE_ID/cancel</pre>
+            </section>
+
+            <section className="border-t pt-4">
+              <h3 className="font-semibold mb-1">Receiving into OpenPay (server-to-server)</h3>
               <p className="text-muted-foreground">
-                Any external app can push funds into an OpenPay user by calling <code>POST /transfers</code> from its own OpenPay account
-                (each partner has an OpenPay wallet that holds float). Top up that partner wallet from your platform, then call the API
-                to distribute balance to your users' OpenPay accounts.
+                Prefer server-to-server? Call <code>POST /transfers</code> from your OpenPay-funded partner account
+                to push balance directly into any OpenPay user by <code>@username</code>, account number or email.
               </p>
             </section>
+
 
             <section>
               <h3 className="font-semibold mb-1">Errors</h3>
