@@ -298,10 +298,35 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
       const note = buildProXferNote(proTo, ref);
       // Use live send-money (debits partner + notifies Pro when secrets are set).
       // Dedicated transfer-to-openpay-pro is optional and may not be deployed yet.
-      const payload = await transferViaSendMoney(note);
+      let payload = await transferViaSendMoney(note);
+
+      // If the Pro-side credit failed (partial), retry via the dedicated notify endpoint
+      // so users don't end up debited-without-credit.
+      if ((payload.partial || payload.warning) && payload.transaction_id) {
+        try {
+          const retry = await supabase.functions.invoke("transfer-to-openpay-pro", {
+            body: {
+              notify_only: true,
+              amount: amountNum,
+              to: proTo,
+              openpay_tx_id: payload.transaction_id,
+              note: payload.note || note,
+              ref,
+            },
+          });
+          const retryData = (retry?.data ?? {}) as TransferPayload;
+          if (!retry?.error && !retryData.partial && !retryData.warning) {
+            payload = { ...payload, ...retryData, partial: false, warning: undefined, error: undefined };
+          } else if (retryData?.warning || retryData?.error) {
+            payload = { ...payload, warning: retryData.warning || retryData.error || payload.warning };
+          }
+        } catch (retryError) {
+          console.warn("Pro credit retry failed", retryError);
+        }
+      }
 
       if (payload.partial || payload.warning) {
-        toast.message(payload.warning || payload.error || "Pro credit pending");
+        toast.error(payload.warning || payload.error || "OpenPay Pro credit failed — support has been notified.");
       } else {
         toast.success(`Sent to OpenPay Pro ${payload.to_pro || previewTarget}`);
       }

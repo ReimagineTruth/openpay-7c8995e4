@@ -291,7 +291,7 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
                   <p className="text-xs text-muted-foreground">
                     {receipt.type === "topup" ? "Top up" : receipt.type === "send" ? "Payment Sent" : "Payment Received"}
                   </p>
-                  {receipt.note && <p className="text-xs text-muted-foreground mt-1">{toPreviewText(receipt.note)}</p>}
+                  {receipt.note && <p className="text-xs text-muted-foreground mt-1 [overflow-wrap:anywhere] break-all line-clamp-2">{toPreviewText(receipt.note)}</p>}
                 </div>
                 <div className="text-right">
                   <p className={`font-bold text-lg ${receipt.type === "send" ? "text-red-600" : "text-green-600"}`}>
