@@ -465,6 +465,7 @@ const MenuPage = () => {
 
           { icon: Store, label: "NFT Creator Dashboard", subtitle: "Sales, royalties & mint", action: () => navigate("/web3/nft/dashboard") },
           { icon: Store, label: "My NFT Store", subtitle: "Manage your NFTs", action: () => navigate("/web3/nft/store") },
+          { icon: Store, label: "Collectibles API", subtitle: "OpenPay Pro NFT holdings", action: () => navigate("/web3/nft/api/collectibles") },
 
 
           ...(remittanceUiEnabled
@@ -663,6 +664,8 @@ const MenuPage = () => {
         { icon: BookOpen, label: "Merchant Docs", action: () => navigate("/openpay-merchant-portal-docs") },
 
         { icon: KeyRound, label: "Partner API", subtitle: "Wallet-to-wallet transfer API", action: () => navigate("/partner-api") },
+        { icon: BookOpen, label: "OpenNFT Collectibles API", subtitle: "For OpenPay Pro integration", action: () => navigate("/web3/nft/api/collectibles") },
+        { icon: BookOpen, label: "OpenNFT Public API", subtitle: "Marketplace feed & activity", action: () => navigate("/web3/nft/api") },
 
       ],
 

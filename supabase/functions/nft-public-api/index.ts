@@ -93,7 +93,7 @@ const fetchItemsMap = async (supabase: ReturnType<typeof createClient>, itemIds:
   if (!ids.length) return {} as Record<string, Record<string, unknown>>;
   const { data } = await supabase
     .from("nft_items")
-    .select("id, name, code, image_url, media_url, collection_id, creator_id, price, currency")
+    .select("id, name, code, image_url, media_url, collection_id, creator_id, price, currency, category")
     .in("id", ids);
   const map: Record<string, Record<string, unknown>> = {};
   for (const r of (data || []) as Record<string, unknown>[]) map[String(r.id)] = r;
@@ -111,6 +111,7 @@ const itemSummary = (
     id: item.id,
     name: item.name,
     code: item.code,
+    category: item.category ?? null,
     image: (item.media_url as string) || (item.image_url as string) || null,
     image_url: item.image_url,
     media_url: item.media_url,
@@ -119,6 +120,98 @@ const itemSummary = (
     permalink: itemUrl(id),
     collection_url: item.collection_id ? collectionUrl(String(item.collection_id)) : null,
     store: buildStore(creatorId ? storeMap[creatorId] : null, creatorId),
+  };
+};
+
+type OwnerProfile = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+};
+
+const resolveOwnerProfile = async (
+  supabase: ReturnType<typeof createClient>,
+  identifier: string,
+): Promise<OwnerProfile | null> => {
+  const raw = String(identifier || "").trim();
+  if (!raw) return null;
+
+  if (isUuid(raw)) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, username, full_name, avatar_url")
+      .eq("id", raw)
+      .maybeSingle();
+    return (data as OwnerProfile | null) || null;
+  }
+
+  const username = raw.replace(/^@+/, "").toLowerCase();
+  if (!username) return null;
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, username, full_name, avatar_url")
+    .ilike("username", username)
+    .maybeSingle();
+  return (data as OwnerProfile | null) || null;
+};
+
+const collectiblesForOwner = async (
+  supabase: ReturnType<typeof createClient>,
+  owner: OwnerProfile,
+  url: URL,
+) => {
+  const limit = parseLimit(url.searchParams.get("limit"));
+  const offset = parseOffset(url.searchParams.get("offset"));
+  const category = (url.searchParams.get("category") || "").trim();
+  const collectionId = (url.searchParams.get("collection_id") || "").trim();
+
+  const { data, error } = await supabase
+    .from("nft_ownership")
+    .select("id, item_id, owner_id, quantity, acquired_at, updated_at")
+    .eq("owner_id", owner.id)
+    .gt("quantity", 0)
+    .order("updated_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) throw error;
+
+  const itemMap = await fetchItemsMap(
+    supabase,
+    (data || []).map((r: Record<string, unknown>) => r.item_id as string),
+  );
+  const stores = await fetchStores(
+    supabase,
+    Object.values(itemMap).map((i) => i.creator_id as string),
+  );
+
+  let holdings = (data || []).map((r: Record<string, unknown>) => ({
+    ...r,
+    item: itemSummary(itemMap[String(r.item_id)], stores),
+  }));
+
+  if (category) {
+    holdings = holdings.filter(
+      (h) => String((h.item as Record<string, unknown> | null)?.category || "").toLowerCase() === category.toLowerCase(),
+    );
+  }
+  if (collectionId) {
+    holdings = holdings.filter(
+      (h) => String((h.item as Record<string, unknown> | null)?.collection_id || "") === collectionId,
+    );
+  }
+
+  return {
+    owner: {
+      id: owner.id,
+      username: owner.username,
+      full_name: owner.full_name,
+      avatar_url: owner.avatar_url,
+    },
+    owner_id: owner.id,
+    collectibles: holdings,
+    holdings,
+    count: holdings.length,
+    pagination: { limit, offset },
   };
 };
 
@@ -140,8 +233,8 @@ serve(async (req: Request) => {
     if (parts.length === 0) {
       return json({
         name: "OpenPay NFT Public API",
-        version: "2.0.0",
-        description: "Complete read-only feed of every NFT collection, item, store, listing, auction, owner, and transaction across the OpenPay marketplace. Every record embeds a public permalink, image URL, currency, and creator store info for OpenLedger integration.",
+        version: "2.1.0",
+        description: "Complete read-only feed of every NFT collection, item, store, listing, auction, owner, and transaction across the OpenPay marketplace. Includes Collectibles endpoints for OpenPay Pro integration by @username or user id.",
         site: SITE_BASE,
         endpoints: [
           "GET /stats",
@@ -159,6 +252,8 @@ serve(async (req: Request) => {
           "GET /stores/:handle/items",
           "GET /stores/:handle/transactions",
           "GET /owners/:user_id",
+          "GET /collectibles/:username_or_user_id",
+          "GET /collectibles/:username_or_user_id/items/:item_id",
           "GET /listings",
           "GET /auctions",
           "GET /auctions/:id",
@@ -172,6 +267,7 @@ serve(async (req: Request) => {
           "GET /activity/gifts",
         ],
         docs: `${SITE_BASE}/web3/nft/api`,
+        collectibles_docs: `${SITE_BASE}/web3/nft/api/collectibles`,
       }, 200, 300);
     }
 
@@ -444,27 +540,85 @@ serve(async (req: Request) => {
       return await transactionsResponse(supabase, url, { sellerId: store.user_id as string });
     }
 
-    // ---------- /owners/:user_id ----------
-    if (parts[0] === "owners" && parts.length === 2) {
-      const limit = parseLimit(url.searchParams.get("limit"));
-      const offset = parseOffset(url.searchParams.get("offset"));
-      const { data, error } = await supabase
+    // ---------- /collectibles/:username_or_user_id ----------
+    // OpenPay Pro–friendly collectibles feed (resolve OpenPay @username or UUID).
+    if (parts[0] === "collectibles" && parts.length === 2) {
+      const owner = await resolveOwnerProfile(supabase, decodeURIComponent(parts[1]));
+      if (!owner) return json({ error: "Owner not found" }, 404);
+      const payload = await collectiblesForOwner(supabase, owner, url);
+      return json(payload);
+    }
+
+    // ---------- /collectibles/:username_or_user_id/items/:item_id ----------
+    if (parts[0] === "collectibles" && parts.length === 4 && parts[2] === "items") {
+      const owner = await resolveOwnerProfile(supabase, decodeURIComponent(parts[1]));
+      if (!owner) return json({ error: "Owner not found" }, 404);
+      const itemKey = decodeURIComponent(parts[3]);
+
+      let itemId = itemKey;
+      if (!isUuid(itemKey)) {
+        const { data: byCode } = await supabase
+          .from("nft_items")
+          .select("id")
+          .ilike("code", itemKey)
+          .maybeSingle();
+        if (!byCode?.id) return json({ error: "Item not found" }, 404);
+        itemId = String(byCode.id);
+      }
+
+      const { data: holding, error } = await supabase
         .from("nft_ownership")
         .select("id, item_id, owner_id, quantity, acquired_at, updated_at")
-        .eq("owner_id", parts[1])
+        .eq("owner_id", owner.id)
+        .eq("item_id", itemId)
         .gt("quantity", 0)
-        .order("updated_at", { ascending: false })
-        .range(offset, offset + limit - 1);
+        .maybeSingle();
       if (error) throw error;
-      const itemMap = await fetchItemsMap(supabase, (data || []).map((r: Record<string, unknown>) => r.item_id as string));
+
+      const itemMap = await fetchItemsMap(supabase, [itemId]);
       const stores = await fetchStores(supabase, Object.values(itemMap).map((i) => i.creator_id as string));
+      const item = itemSummary(itemMap[itemId], stores);
+
       return json({
-        owner_id: parts[1],
-        holdings: (data || []).map((r: Record<string, unknown>) => ({
-          ...r,
-          item: itemSummary(itemMap[String(r.item_id)], stores),
-        })),
-        pagination: { limit, offset },
+        owner: {
+          id: owner.id,
+          username: owner.username,
+          full_name: owner.full_name,
+          avatar_url: owner.avatar_url,
+        },
+        item_id: itemId,
+        owns: Boolean(holding && Number(holding.quantity) > 0),
+        quantity: Number(holding?.quantity || 0),
+        holding: holding
+          ? {
+              ...holding,
+              item,
+            }
+          : null,
+        item,
+      });
+    }
+
+    // ---------- /owners/:user_id ----------
+    if (parts[0] === "owners" && parts.length === 2) {
+      const owner = await resolveOwnerProfile(supabase, decodeURIComponent(parts[1]));
+      if (!owner) {
+        // Preserve legacy UUID-only behaviour for unknown ids: empty holdings.
+        if (!isUuid(parts[1])) return json({ error: "Owner not found" }, 404);
+        const limit = parseLimit(url.searchParams.get("limit"));
+        const offset = parseOffset(url.searchParams.get("offset"));
+        return json({
+          owner_id: parts[1],
+          holdings: [],
+          pagination: { limit, offset },
+        });
+      }
+      const payload = await collectiblesForOwner(supabase, owner, url);
+      return json({
+        owner_id: payload.owner_id,
+        owner: payload.owner,
+        holdings: payload.holdings,
+        pagination: payload.pagination,
       });
     }
 

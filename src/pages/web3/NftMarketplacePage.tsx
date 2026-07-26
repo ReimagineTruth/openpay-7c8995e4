@@ -9,7 +9,7 @@ import {
   BadgeCheck, X, RefreshCw, MessageCircle, Menu, Gift, Image as ImageIcon,
   Settings, Trophy, Heart, Compass, LayoutGrid, Coins, ArrowLeftRight, Paintbrush,
   Activity as ActivityIcon, Anchor, Wrench, Palette, ChevronRight, ChevronLeft, ChevronDown,
-  Bell, Wallet, TrendingUp, TrendingDown, Sun, Moon, PanelLeftClose, PanelLeftOpen,
+  Bell, Wallet, TrendingUp, TrendingDown, Sun, Moon, PanelLeftClose, PanelLeftOpen, Code2,
 } from "lucide-react";
 import { playNftSound } from "@/lib/nftFx";
 import { NFT_CATEGORIES, getCategoryMeta } from "@/lib/nftCategories";
@@ -62,6 +62,7 @@ const SECONDARY_ITEMS = [
   { icon: Heart, label: "Following", to: "/web3/nft/following" },
   { icon: MessageCircle, label: "Live Chat", to: "/web3/nft/chat", live: true },
   { icon: HelpCircle, label: "How it works", to: "/web3/nft/how-to" },
+  { icon: Code2, label: "Collectibles API", to: "/web3/nft/api/collectibles", beta: true },
 ];
 
 const NftMarketplacePage = () => {

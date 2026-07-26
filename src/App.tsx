@@ -32,6 +32,7 @@ import NftStoresPage from "./pages/web3/NftStoresPage";
 import NftStoreSettingsPage from "./pages/web3/NftStoreSettingsPage";
 import NftChatPage from "./pages/web3/NftChatPage";
 import NftApiPage from "./pages/web3/NftApiPage";
+import NftCollectiblesApiPage from "./pages/web3/NftCollectiblesApiPage";
 import SendMoney from "./pages/SendMoney";
 import SendToOpenPayProPage from "./pages/SendToOpenPayProPage";
 import QrScannerPage from "./pages/QrScannerPage";
@@ -361,6 +362,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         <Route path="/web3/nft" element={<NftMarketplacePage />} />
+        <Route path="/web3/nft/api/collectibles" element={<NftCollectiblesApiPage />} />
         <Route path="/web3/nft/api" element={<NftApiPage />} />
         <Route path="/web3/nft/create" element={<ProtectedRoute><NftCreatePage /></ProtectedRoute>} />
        <Route path="/web3/nft/how-to" element={<ProtectedRoute><NftHowToPage /></ProtectedRoute>} />

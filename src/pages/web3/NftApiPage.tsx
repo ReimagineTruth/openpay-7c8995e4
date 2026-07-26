@@ -45,7 +45,9 @@ const endpoints = [
   { method: "GET", path: "/stores/:handle", desc: "Public creator store: profile, socials, followers, up to 50 items." },
   { method: "GET", path: "/stores/:handle/items", desc: "All items belonging to a store (paginated)." },
   { method: "GET", path: "/stores/:handle/transactions", desc: "Sales & mints originating from a store." },
-  { method: "GET", path: "/owners/:user_id", desc: "Every NFT held by a wallet with quantity + item details." },
+  { method: "GET", path: "/owners/:user_id", desc: "Every NFT held by a user (UUID or @username) with quantity + item details." },
+  { method: "GET", path: "/collectibles/:username_or_user_id", desc: "OpenPay Pro collectibles feed — resolve by OpenPay @username or user id." },
+  { method: "GET", path: "/collectibles/:username_or_user_id/items/:item_id", desc: "Ownership check for one collectible (UUID or item code)." },
   { method: "GET", path: "/listings", desc: "Marketplace listings feed. ?status=active|sold|cancelled." },
   { method: "GET", path: "/auctions", desc: "Auction feed with item + seller. ?status=live|ended|cancelled." },
   { method: "GET", path: "/auctions/:id", desc: "Single auction with full bid history sorted high → low." },
@@ -198,6 +200,9 @@ const NftApiPage = () => {
               <a href={`${API_BASE}/activity`} target="_blank" rel="noreferrer" className="nft-on-media inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 text-white font-semibold text-sm border border-white/30">
                 <Activity className="w-4 h-4" /> Try /activity
               </a>
+              <Link to="/web3/nft/api/collectibles" className="nft-on-media inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 text-white font-semibold text-sm border border-white/30">
+                Collectibles API (Pro)
+              </Link>
               <Link to="/web3/nft" className="nft-on-media inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 text-white font-semibold text-sm border border-white/30">
                 Marketplace
               </Link>
