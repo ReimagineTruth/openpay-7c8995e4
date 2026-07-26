@@ -3,8 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ShieldCheck, ArrowLeft, CheckCircle2, XCircle, User, Wallet } from "lucide-react";
+import { Loader2, ShieldCheck, ArrowLeft, CheckCircle2, XCircle, User, Wallet, Mail } from "lucide-react";
 import { toast } from "sonner";
+import AuthMark from "@/components/AuthMark";
 
 type Client = {
   id: string;
@@ -18,9 +19,10 @@ type Client = {
   owner_avatar_url: string | null;
 };
 
-const SCOPE_LABELS: Record<string, { icon: any; label: string; desc: string }> = {
+const SCOPE_LABELS: Record<string, { icon: typeof User; label: string; desc: string }> = {
   profile: { icon: User, label: "Your OpenPay profile", desc: "Name, username, avatar and account number" },
   balance: { icon: Wallet, label: "Your OpenPay balance", desc: "Read your current OUSD balance" },
+  email: { icon: Mail, label: "Your email address", desc: "The email on your OpenPay account" },
 };
 
 export default function PartnerConnectPage() {
@@ -29,8 +31,9 @@ export default function PartnerConnectPage() {
 
   const clientId = params.get("client_id") || "";
   const redirectUri = params.get("redirect_uri") || "";
-  const scope = params.get("scope") || "profile balance";
+  const scope = params.get("scope") || "profile";
   const state = params.get("state") || "";
+  const responseType = params.get("response_type") || "code";
 
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(false);
@@ -94,6 +97,13 @@ export default function PartnerConnectPage() {
   if (!clientId || !redirectUri) {
     return <div className="min-h-screen grid place-items-center bg-background text-sm text-muted-foreground">Missing client_id or redirect_uri.</div>;
   }
+  if (responseType && responseType !== "code") {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background p-6 text-center text-sm text-muted-foreground">
+        Unsupported response_type. Use <code className="rounded bg-muted px-1">code</code>.
+      </div>
+    );
+  }
   if (!client || !client.is_active) {
     return <div className="min-h-screen grid place-items-center bg-background text-sm text-muted-foreground">Unknown or inactive partner app.</div>;
   }
@@ -115,18 +125,19 @@ export default function PartnerConnectPage() {
       <header className="max-w-md mx-auto px-4 py-4 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={deny}><ArrowLeft className="h-5 w-5" /></Button>
         <div className="flex items-center gap-2 text-sm font-semibold text-blue-700 dark:text-blue-300">
-          <ShieldCheck className="h-4 w-4" /> Connect with OpenPay
+          <AuthMark className="h-7 w-7" />
+          Sign in with OpenPay
         </div>
       </header>
 
       <main className="max-w-md mx-auto px-4 pb-10">
         <Card className="overflow-hidden border-blue-100 dark:border-blue-900/40 shadow-xl">
           <div className="bg-gradient-to-br from-blue-600 to-blue-800 text-white p-6 text-center">
-            <p className="text-xs uppercase tracking-wide opacity-80">Authorize</p>
+            <p className="text-xs uppercase tracking-wide opacity-80">OpenPay Auth</p>
             <p className="text-xl font-bold mt-1">{client.name}</p>
             {client.website && <p className="text-xs opacity-80 mt-1 truncate">{client.website}</p>}
             <p className="text-sm opacity-90 mt-4">
-              wants to connect to your OpenPay account
+              wants to sign you in with your OpenPay account
             </p>
           </div>
 
@@ -134,7 +145,7 @@ export default function PartnerConnectPage() {
             {done === "approved" && (
               <div className="flex flex-col items-center gap-2 py-6 text-center">
                 <CheckCircle2 className="h-14 w-14 text-green-600" />
-                <p className="font-semibold">Connected</p>
+                <p className="font-semibold">Signed in</p>
                 <p className="text-xs text-muted-foreground">Sending you back to {client.name}…</p>
               </div>
             )}
@@ -148,7 +159,8 @@ export default function PartnerConnectPage() {
             {!done && !authed && (
               <>
                 <p className="text-sm text-muted-foreground text-center">
-                  Sign in to your OpenPay account to review what <span className="font-semibold text-foreground">{client.name}</span> is requesting.
+                  Sign in to your OpenPay account to continue to{" "}
+                  <span className="font-semibold text-foreground">{client.name}</span>.
                 </p>
                 <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={signIn}>
                   Sign in to OpenPay
@@ -188,7 +200,7 @@ export default function PartnerConnectPage() {
         </Card>
 
         <p className="text-[10px] text-center text-muted-foreground mt-4">
-          Powered by OpenPay · Secure OAuth 2.0 Authorization Code flow
+          Powered by OpenPay Auth · Secure OAuth 2.0 Authorization Code flow
         </p>
       </main>
     </div>

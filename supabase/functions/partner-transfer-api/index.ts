@@ -47,9 +47,9 @@ Deno.serve(async (req) => {
         'GET  /charges/:id                     — check charge status',
         'GET  /charges?limit=&status=          — list charges',
         'POST /charges/:id/cancel              — cancel unpaid charge',
-        'POST /oauth/token                     — exchange auth code (Connect with OpenPay)',
-        'GET  /user/me                         — signed-in end user (opa_ token)',
-        'GET  /user/balance                    — signed-in end user balance (opa_ token)',
+        'POST /oauth/token                     — exchange auth code (Sign in with OpenPay)',
+        'GET  /user/me                         — signed-in end user (opa_ token; scope-aware)',
+        'GET  /user/balance                    — signed-in end user balance (requires balance scope)',
       ],
     });
   }
@@ -99,17 +99,54 @@ Deno.serve(async (req) => {
       return err('invalid_token', 401);
     }
     if (req.method === 'GET' && path === '/user/me') {
+      const scopes = String(g.scope || '')
+        .split(/\s+/)
+        .map((s: string) => s.trim().toLowerCase())
+        .filter(Boolean);
+      const has = (s: string) => scopes.includes(s);
+
+      if (!has('profile') && !has('balance') && !has('email')) {
+        return err('insufficient_scope', 403);
+      }
+
       const { data: p } = await admin.from('profiles')
         .select('id, full_name, username, avatar_url').eq('id', g.user_id).maybeSingle();
-      const { data: w } = await admin.from('wallets').select('balance').eq('user_id', g.user_id).maybeSingle();
-      return ok({
-        user_id: p?.id,
-        account_number: p?.id ? 'OP' + String(p.id).replace(/-/g, '').toUpperCase() : null,
-        full_name: p?.full_name, username: p?.username, avatar_url: p?.avatar_url,
-        balance: Number(w?.balance ?? 0), currency: 'OUSD', scope: g.scope,
-      });
+
+      const body: Record<string, unknown> = {
+        user_id: p?.id || g.user_id,
+        scope: g.scope,
+      };
+
+      if (has('profile')) {
+        body.account_number = p?.id ? 'OP' + String(p.id).replace(/-/g, '').toUpperCase() : null;
+        body.full_name = p?.full_name ?? null;
+        body.username = p?.username ?? null;
+        body.avatar_url = p?.avatar_url ?? null;
+      }
+
+      if (has('email')) {
+        try {
+          const authUser = await admin.auth.admin.getUserById(g.user_id);
+          body.email = authUser?.data?.user?.email ?? null;
+        } catch {
+          body.email = null;
+        }
+      }
+
+      if (has('balance')) {
+        const { data: w } = await admin.from('wallets').select('balance').eq('user_id', g.user_id).maybeSingle();
+        body.balance = Number(w?.balance ?? 0);
+        body.currency = 'OUSD';
+      }
+
+      return ok(body);
     }
     if (req.method === 'GET' && path === '/user/balance') {
+      const scopes = String(g.scope || '')
+        .split(/\s+/)
+        .map((s: string) => s.trim().toLowerCase())
+        .filter(Boolean);
+      if (!scopes.includes('balance')) return err('insufficient_scope', 403);
       const { data: w } = await admin.from('wallets').select('balance, updated_at').eq('user_id', g.user_id).maybeSingle();
       return ok({ balance: Number(w?.balance ?? 0), currency: 'OUSD', updated_at: w?.updated_at ?? null });
     }

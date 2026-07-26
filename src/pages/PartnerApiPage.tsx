@@ -28,7 +28,7 @@ function RedirectUrisEditor({ app, onSaved }: { app: PartnerApp; onSaved: () => 
   return (
     <div className="rounded-md bg-muted/40 p-2 space-y-2">
       <div className="flex items-center gap-2 text-xs font-medium">
-        <Link2 className="h-3.5 w-3.5" /> Connect with OpenPay — redirect URIs
+        <Link2 className="h-3.5 w-3.5" /> Sign in with OpenPay — redirect URIs
       </div>
       <Textarea
         rows={2}
@@ -329,37 +329,37 @@ function PartnerApiPageInner() {
 
 
             <section className="border-t pt-4">
-              <h3 className="font-semibold mb-1 text-blue-700 dark:text-blue-300">🔐 Connect with OpenPay — OAuth 2.0 sign-in for third-party apps</h3>
+              <h3 className="font-semibold mb-1 text-blue-700 dark:text-blue-300">🔐 Sign in with OpenPay — OAuth 2.0 for third-party apps</h3>
               <p className="text-muted-foreground">
-                Add a <strong>"Connect with OpenPay"</strong> button to your app. Users click it, are sent to OpenPay to sign in and
-                confirm, and are then redirected back to your app with an authorization <code>code</code>. Exchange the code for an
-                access token and read the user's OpenPay profile/balance on their behalf. Standard OAuth 2.0 Authorization Code flow.
+                Add a <strong>"Sign in with OpenPay"</strong> button to your app. Users approve on OpenPay and return with an
+                authorization <code>code</code>. Exchange it for an access token and call <code>/user/me</code>. Full public docs:{" "}
+                <a href="/openpay-auth" className="font-semibold text-blue-700 underline">/openpay-auth</a>.
               </p>
             </section>
 
             <section>
               <h3 className="font-semibold mb-1">1. Register a redirect URI</h3>
-              <p className="text-muted-foreground">In the list above, expand your app and add the exact URLs OpenPay may redirect users back to (e.g. <code>https://yourapp.com/openpay/callback</code>). Only URIs in this list are accepted.</p>
+              <p className="text-muted-foreground">In the list above, expand your app and add the exact URLs OpenPay may redirect users back to (e.g. <code>https://yourapp.com/auth/openpay/callback</code>). Only URIs in this list are accepted.</p>
             </section>
 
             <section>
               <h3 className="font-semibold mb-1">2. Send the user to OpenPay</h3>
               <p className="text-muted-foreground">From your app, open this URL in the browser:</p>
-              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`https://openpay.lovable.app/connect
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`https://openpy.space/connect
   ?client_id=YOUR_APP_ID
-  &redirect_uri=https://yourapp.com/openpay/callback
-  &scope=profile%20balance
-  &state=RANDOM_CSRF_TOKEN`}</pre>
+  &redirect_uri=https://yourapp.com/auth/openpay/callback
+  &scope=profile
+  &state=RANDOM_CSRF_TOKEN
+  &response_type=code`}</pre>
               <p className="text-xs text-muted-foreground mt-1">
-                <code>client_id</code> is the <code>client_id</code> shown next to your app above. Supported scopes:
-                <code> profile</code>, <code>balance</code>.
+                <code>client_id</code> is your app id above. Scopes: <code>profile</code>, <code>balance</code>, <code>email</code>.
               </p>
             </section>
 
             <section>
               <h3 className="font-semibold mb-1">3. Handle the callback</h3>
               <p className="text-muted-foreground">If the user approves, OpenPay redirects to:</p>
-              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`https://yourapp.com/openpay/callback?code=opc_...&state=RANDOM_CSRF_TOKEN`}</pre>
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`https://yourapp.com/auth/openpay/callback?code=opc_...&state=RANDOM_CSRF_TOKEN`}</pre>
               <p className="text-muted-foreground">If they cancel, you receive <code>?error=access_denied</code>. Verify <code>state</code> matches what you sent.</p>
             </section>
 
@@ -371,7 +371,7 @@ function PartnerApiPageInner() {
   -d '{
     "grant_type": "authorization_code",
     "code": "opc_...",
-    "redirect_uri": "https://yourapp.com/openpay/callback",
+    "redirect_uri": "https://yourapp.com/auth/openpay/callback",
     "client_id": "YOUR_APP_ID",
     "client_secret": "opk_live_YOUR_KEY"
   }'`}</pre>
@@ -386,16 +386,16 @@ function PartnerApiPageInner() {
               <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`curl -H "Authorization: Bearer opa_live_..." ${FN_BASE}/user/me
 curl -H "Authorization: Bearer opa_live_..." ${FN_BASE}/user/balance`}</pre>
               <p className="text-xs text-muted-foreground mt-1">
-                <code>GET /user/me</code> returns <code>{`{ user_id, account_number, full_name, username, avatar_url, balance, currency, scope }`}</code>.
+                <code>GET /user/me</code> is scope-aware: profile fields, optional <code>email</code>, optional <code>balance</code>.
               </p>
             </section>
 
             <section>
               <h3 className="font-semibold mb-1">Drop-in button</h3>
-              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`<a href="https://openpay.lovable.app/connect?client_id=YOUR_APP_ID&redirect_uri=https://yourapp.com/openpay/callback&scope=profile%20balance&state=xyz"
+              <pre className="bg-muted rounded p-3 text-xs overflow-auto">{`<a href="https://openpy.space/connect?client_id=YOUR_APP_ID&redirect_uri=https://yourapp.com/auth/openpay/callback&scope=profile&state=xyz&response_type=code"
    style="display:inline-flex;align-items:center;gap:8px;background:#1652f0;color:#fff;
    padding:12px 20px;border-radius:10px;font-weight:600;text-decoration:none;">
-  Connect with OpenPay
+  Sign in with OpenPay
 </a>`}</pre>
             </section>
             <section>

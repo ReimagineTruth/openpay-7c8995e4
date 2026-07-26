@@ -659,11 +659,13 @@ const MenuPage = () => {
 
         { icon: BookOpen, label: "API Docs", action: () => navigate("/openpay-api-docs") },
 
+        { icon: BookOpen, label: "OpenPay Auth", subtitle: "Sign in with OpenPay for apps", action: () => navigate("/openpay-auth") },
+
         { icon: BookOpen, label: "POS Docs", action: () => navigate("/openpay-pos-docs") },
 
         { icon: BookOpen, label: "Merchant Docs", action: () => navigate("/openpay-merchant-portal-docs") },
 
-        { icon: KeyRound, label: "Partner API", subtitle: "Wallet-to-wallet transfer API", action: () => navigate("/partner-api") },
+        { icon: KeyRound, label: "Partner API", subtitle: "Keys, transfers & OAuth apps", action: () => navigate("/partner-api") },
         { icon: BookOpen, label: "OpenNFT Collectibles API", subtitle: "For OpenPay Pro integration", action: () => navigate("/web3/nft/api/collectibles") },
         { icon: BookOpen, label: "OpenNFT Public API", subtitle: "Marketplace feed & activity", action: () => navigate("/web3/nft/api") },
 

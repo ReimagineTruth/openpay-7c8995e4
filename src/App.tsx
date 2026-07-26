@@ -93,6 +93,7 @@ import OpenPayApiDocsPage from "./pages/OpenPayApiDocsPage";
 import PartnerApiPage from "./pages/PartnerApiPage";
 import PayButtonCheckoutPage from "./pages/PayButtonCheckoutPage";
 import PartnerConnectPage from "./pages/PartnerConnectPage";
+import OpenPayAuthDocsPage from "./pages/OpenPayAuthDocsPage";
 
 import OpenPayPosDocsPage from "./pages/OpenPayPosDocsPage";
 import OpenPayMerchantPortalDocsPage from "./pages/OpenPayMerchantPortalDocsPage";
@@ -302,6 +303,8 @@ const AppRoutes = () => {
                             location.pathname.startsWith('/pay/') ||
                             location.pathname.startsWith('/paybutton/') ||
                             location.pathname.startsWith('/connect') ||
+                            location.pathname.startsWith('/openpay-auth') ||
+                            location.pathname.startsWith('/auth/docs') ||
                             location.pathname.startsWith('/oauth/') ||
                             location.pathname.startsWith('/oauth2/') ||
 
@@ -589,6 +592,9 @@ const AppRoutes = () => {
         <Route path="/socials" element={<SocialsPage />} />
         <Route path="/openpay-documentation" element={<OpenPayDocumentationPage />} />
         <Route path="/openpay-api-docs" element={<OpenPayApiDocsPage />} />
+        <Route path="/openpay-auth" element={<OpenPayAuthDocsPage />} />
+        <Route path="/auth/docs" element={<OpenPayAuthDocsPage />} />
+        <Route path="/signin/openpay" element={<Navigate to="/openpay-auth" replace />} />
         <Route path="/partner-api" element={<PartnerApiPage />} />
         <Route path="/paybutton/:chargeId" element={<PayButtonCheckoutPage />} />
         <Route path="/connect" element={<PartnerConnectPage />} />
