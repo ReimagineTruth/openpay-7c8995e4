@@ -62,13 +62,13 @@ const ThankYouModal = ({ open, onOpenChange, data, onViewReceipt }: ThankYouModa
           <p className="text-sm opacity-90">Payment sent successfully</p>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-5 space-y-3">
           {/* Receiver Info */}
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl min-w-0">
+            <div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold overflow-hidden">
               {data.receiverAvatar ? (
-                <img 
-                  src={data.receiverAvatar} 
+                <img
+                  src={data.receiverAvatar}
                   alt={data.receiverName}
                   className="w-full h-full rounded-full object-cover"
                 />
@@ -76,46 +76,48 @@ const ThankYouModal = ({ open, onOpenChange, data, onViewReceipt }: ThankYouModa
                 data.receiverName.charAt(0).toUpperCase()
               )}
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">{data.receiverName}</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 truncate">{data.receiverName}</p>
               {data.receiverUsername && (
-                <p className="text-sm text-gray-500">@{data.receiverUsername}</p>
+                <p className="text-sm text-gray-500 truncate">@{data.receiverUsername}</p>
               )}
             </div>
           </div>
 
           {/* Amount */}
-          <div className="text-center py-2">
+          <div className="text-center py-1">
             <p className="text-3xl font-bold text-gray-900">{formatCurrency(data.amount)}</p>
           </div>
 
           {/* Purpose */}
           {data.purpose && (
-            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl">
-              <span className="text-2xl">{getPurposeIcon(data.purpose)}</span>
-              <div>
+            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl min-w-0">
+              <span className="text-2xl shrink-0">{getPurposeIcon(data.purpose)}</span>
+              <div className="min-w-0">
                 <p className="text-xs text-blue-600 font-medium">Purpose</p>
-                <p className="font-semibold text-blue-900 capitalize">{data.purpose}</p>
+                <p className="font-semibold text-blue-900 capitalize truncate">{data.purpose}</p>
               </div>
             </div>
           )}
 
           {/* Note */}
           {data.note && (
-            <div className="p-3 bg-amber-50 rounded-xl">
+            <div className="p-3 bg-amber-50 rounded-xl min-w-0">
               <p className="text-xs text-amber-600 font-medium mb-1">Note</p>
-              <p className="text-sm text-amber-900 break-words">{data.note}</p>
+              <p className="text-xs text-amber-900 font-mono [overflow-wrap:anywhere] break-all line-clamp-2">
+                {data.note}
+              </p>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="pt-2 flex gap-3">
+          <div className="pt-2 flex flex-col-reverse sm:flex-row gap-2">
             {onViewReceipt && (
-              <Button 
+              <Button
                 onClick={() => {
                   onViewReceipt();
                   onOpenChange(false);
-                }} 
+                }}
                 variant="outline"
                 className="flex-1 rounded-full border-paypal-blue text-paypal-blue hover:bg-paypal-blue/10 font-medium"
               >
@@ -123,9 +125,9 @@ const ThankYouModal = ({ open, onOpenChange, data, onViewReceipt }: ThankYouModa
                 View Receipt
               </Button>
             )}
-            <Button 
-              onClick={() => onOpenChange(false)} 
-              className={`${onViewReceipt ? 'flex-1' : 'flex-1'} rounded-full bg-gradient-to-r from-paypal-blue to-[#0073e6] text-white font-medium hover:bg-[#004dc5]`}
+            <Button
+              onClick={() => onOpenChange(false)}
+              className="flex-1 rounded-full bg-gradient-to-r from-paypal-blue to-[#0073e6] text-white font-medium hover:bg-[#004dc5]"
             >
               Done
             </Button>
