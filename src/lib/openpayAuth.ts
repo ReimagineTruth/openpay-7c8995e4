@@ -16,7 +16,12 @@ export const OPENPAY_AUTH_DOCS_PATH = "/openpay-auth";
 
 export function getOpenPayAuthSite(): string {
   if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin;
+    const origin = window.location.origin;
+    // Prefer production domain in docs/buttons even when previewing on Lovable.
+    if (/lovable\.app$/i.test(new URL(origin).hostname)) {
+      return OPENPAY_AUTH_SITE;
+    }
+    return origin;
   }
   return OPENPAY_AUTH_SITE;
 }
