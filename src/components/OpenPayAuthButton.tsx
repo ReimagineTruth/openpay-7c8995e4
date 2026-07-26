@@ -63,11 +63,11 @@ export function OpenPayAuthButton({
       )}
     >
       <img
-        src="/openpay-o-white.svg"
+        src="/openpay-auth-logo.png"
         alt=""
         width={20}
         height={20}
-        className="h-5 w-5 object-contain"
+        className="h-5 w-5 rounded-sm object-contain"
       />
       {label}
     </a>

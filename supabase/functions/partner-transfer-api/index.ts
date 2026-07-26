@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   if (req.method === 'GET' && (path === '/' || path === '/health')) {
     return ok({
       service: 'OpenPay Partner Transfer API',
-      version: '1.2.0',
+      version: '1.3.0',
       docs: 'https://openpy.space/partner-api',
       endpoints: [
         'GET  /health',
