@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     return ok({
       service: 'OpenPay Partner Transfer API',
       version: '1.2.0',
-      docs: 'https://openpay.lovable.app/partner-api',
+      docs: 'https://openpy.space/partner-api',
       endpoints: [
         'GET  /health',
         'GET  /me                              — partner app owner (opk_ key)',
@@ -277,26 +277,34 @@ Deno.serve(async (req) => {
       const metadata = (body && typeof body.metadata === 'object' && body.metadata) || {};
       if (!Number.isFinite(amount) || amount <= 0) return err('`amount` must be > 0');
 
-      const { data, error } = await admin.rpc('partner_charge_create', {
-        p_partner_app_id: appRow.id,
-        p_owner_user_id: ownerId,
-        p_amount: amount,
-        p_currency: currency,
-        p_description: description,
-        p_reference: reference,
-        p_success_url: success_url,
-        p_cancel_url: cancel_url,
-        p_metadata: metadata,
-      });
+      // Direct insert avoids ambiguous expires_at bug in partner_charge_create RPC
+      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+      const { data: inserted, error } = await admin
+        .from('partner_charges')
+        .insert({
+          partner_app_id: appRow.id,
+          owner_user_id: ownerId,
+          amount,
+          currency,
+          description: description || null,
+          reference: reference || null,
+          success_url: success_url || null,
+          cancel_url: cancel_url || null,
+          metadata,
+          expires_at: expiresAt,
+          status: 'created',
+        })
+        .select('id, expires_at')
+        .single();
+
       if (error) return err(error.message, 400);
-      const row = Array.isArray(data) ? data[0] : data;
-      const chargeId = row?.charge_id;
+      const chargeId = inserted?.id;
       return ok({
         id: chargeId,
         amount, currency, description, reference,
         status: 'created',
-        expires_at: row?.expires_at,
-        checkout_url: `https://openpay.lovable.app/paybutton/${chargeId}`,
+        expires_at: inserted?.expires_at || expiresAt,
+        checkout_url: `https://openpy.space/paybutton/${chargeId}`,
         success_url: success_url || null,
         cancel_url: cancel_url || null,
       }, 201);
@@ -313,7 +321,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (error) return err(error.message, 500);
       if (!data) return err('Charge not found', 404);
-      return ok({ ...data, checkout_url: `https://openpay.lovable.app/paybutton/${data.id}` });
+      return ok({ ...data, checkout_url: `https://openpy.space/paybutton/${data.id}` });
     }
 
     // POST /charges/:id/cancel
