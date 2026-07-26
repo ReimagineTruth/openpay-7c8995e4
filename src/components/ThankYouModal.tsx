@@ -49,10 +49,10 @@ const ThankYouModal = ({ open, onOpenChange, data, onViewReceipt }: ThankYouModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden">
+      <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden gap-0">
         <DialogTitle className="sr-only">Thank You</DialogTitle>
         <DialogDescription className="sr-only">Thank you message for successful payment</DialogDescription>
-        
+
         <div className="bg-gradient-to-br from-paypal-blue to-[#0073e6] p-6 text-center text-white">
           <div className="relative">
             <CheckCircle className="mx-auto h-16 w-16 mb-3 animate-pulse" />
