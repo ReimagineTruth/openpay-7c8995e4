@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, Sparkles, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb, ChevronDown as ChevronIcon, Menu as MenuIcon, Compass, MessageCircle } from "lucide-react";
+import { Send, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb, ChevronDown as ChevronIcon, Menu as MenuIcon, Compass, MessageCircle, Plus, PanelLeft, X, SquarePen, ArrowLeft, BarChart3, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getStoredAppTheme, persistAndApplyAppTheme, type AppThemeMode } from "@/lib/appTheme";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,6 +85,146 @@ type SmartRecommendation = {
   estimated_impact?: string;
 };
 
+/** Repair UTF-8 text that was mis-decoded as Windows-1252 (mojibake). */
+const fixMojibakeText = (input: string): string => {
+  if (!input || !/[âðïÃ]/.test(input)) return input;
+
+  const replacements: Record<string, string> = {
+    "â€¢": "•",
+    "â€”": "—",
+    "â€“": "–",
+    "â€˜": "‘",
+    "â€™": "’",
+    "â€œ": "“",
+    "â€": "”",
+    "âš ï¸": "⚠️",
+    "âš ": "⚠",
+    "ï¸": "️",
+    "âœ…": "✅",
+    "âŒ": "❌",
+    "ðŸš€": "🚀",
+    "ðŸ’¡": "💡",
+    "ðŸ“‹": "📋",
+    "ðŸ’°": "💰",
+    "ðŸŽ¯": "🎯",
+    "ðŸ’¸": "💸",
+    "ðŸ¤–": "🤖",
+    "ðŸ”®": "🔮",
+    "ðŸ””": "🔔",
+    "ðŸ“Š": "📊",
+    "ðŸ”": "🔐",
+    "ðŸ’³": "💳",
+    "ðŸ”´": "🔴",
+    "ðŸŸ¡": "🟡",
+    "ðŸŸ¢": "🟢",
+    "ðŸŸ ": "🟠",
+    "ðŸ’¬": "💬",
+    "ðŸ“": "📝",
+    "ðŸ’¾": "💾",
+    "â³": "⏳",
+  };
+
+  let out = input;
+  for (const [bad, good] of Object.entries(replacements)) {
+    if (out.includes(bad)) out = out.split(bad).join(good);
+  }
+  return out;
+};
+
+const escapeHtml = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+/** Lightweight markdown for AI chat replies (bold, lists, headings, breaks). */
+const renderChatMarkdown = (md: string) => {
+  const text = fixMojibakeText(md);
+  const lines = text.split("\n");
+  const out: JSX.Element[] = [];
+  let listBuffer: string[] = [];
+
+  const inline = (s: string) =>
+    escapeHtml(s)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(
+        /`([^`]+)`/g,
+        '<code class="rounded bg-black/5 px-1.5 py-0.5 font-ai-sans text-[0.86em] dark:bg-white/10">$1</code>'
+      );
+
+  const flushList = () => {
+    if (!listBuffer.length) return;
+    out.push(
+      <ul
+        key={`ul-${out.length}`}
+        className="my-2.5 list-disc space-y-1.5 pl-5 font-ai-serif text-[16.5px] leading-[1.7] text-foreground"
+      >
+        {listBuffer.map((li, i) => (
+          <li key={i} dangerouslySetInnerHTML={{ __html: inline(li) }} />
+        ))}
+      </ul>
+    );
+    listBuffer = [];
+  };
+
+  lines.forEach((raw, i) => {
+    const line = raw.trimEnd();
+    if (/^#{3}\s+/.test(line)) {
+      flushList();
+      out.push(
+        <h3
+          key={i}
+          className="mb-1.5 mt-4 font-ai-serif text-[1.05rem] font-semibold tracking-[-0.01em] text-foreground"
+          dangerouslySetInnerHTML={{ __html: inline(line.replace(/^#{3}\s+/, "")) }}
+        />
+      );
+      return;
+    }
+    if (/^#{2}\s+/.test(line)) {
+      flushList();
+      out.push(
+        <h2
+          key={i}
+          className="mb-2 mt-5 font-ai-serif text-[1.25rem] font-semibold tracking-[-0.015em] text-foreground"
+          dangerouslySetInnerHTML={{ __html: inline(line.replace(/^#{2}\s+/, "")) }}
+        />
+      );
+      return;
+    }
+    if (/^#\s+/.test(line)) {
+      flushList();
+      out.push(
+        <h1
+          key={i}
+          className="mb-2.5 mt-5 font-ai-serif text-[1.45rem] font-semibold tracking-[-0.02em] text-foreground"
+          dangerouslySetInnerHTML={{ __html: inline(line.replace(/^#\s+/, "")) }}
+        />
+      );
+      return;
+    }
+    if (/^[-*•]\s+/.test(line)) {
+      listBuffer.push(line.replace(/^[-*•]\s+/, ""));
+      return;
+    }
+    if (!line.trim()) {
+      flushList();
+      return;
+    }
+    flushList();
+    out.push(
+      <p
+        key={i}
+        className="my-2 font-ai-serif text-[16.5px] leading-[1.7] text-foreground"
+        dangerouslySetInnerHTML={{ __html: inline(line) }}
+      />
+    );
+  });
+  flushList();
+  return out;
+};
+
 const OpenPayAIPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -95,6 +236,7 @@ const OpenPayAIPage = () => {
   const [budgetAlerts, setBudgetAlerts] = useState<BudgetAlert[]>([]);
   const [insights, setInsights] = useState<FinancialInsight[]>([]);
   const [pendingPayment, setPendingPayment] = useState<any>(null);
+  const [pendingSendRecipient, setPendingSendRecipient] = useState<string | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -109,6 +251,46 @@ const OpenPayAIPage = () => {
   const [commandNavigation, setCommandNavigation] = useState<{ route: string; featureName: string } | null>(null);
   const [showCommandModal, setShowCommandModal] = useState(false);
   const [pendingUserMessage, setPendingUserMessage] = useState<string>("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showInsightsPanel, setShowInsightsPanel] = useState(false);
+  const [themeMode, setThemeMode] = useState<AppThemeMode>(() => getStoredAppTheme());
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const isDarkTheme = themeMode === "dark";
+
+  const toggleTheme = () => {
+    const next: AppThemeMode = isDarkTheme ? "light" : "dark";
+    setThemeMode(next);
+    persistAndApplyAppTheme(next);
+  };
+
+  const suggestionPrompts = [
+    { label: "Check my balance", prompt: "What's my current balance and spending forecast?", icon: Wallet },
+    { label: "Spending analysis", prompt: "Analyze my spending patterns and suggest optimizations", icon: PieChart },
+    { label: "Financial health", prompt: "What's my financial health score?", icon: Target },
+    { label: "Smart advice", prompt: "Give me personalized financial advice", icon: Lightbulb },
+  ];
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setInputMessage("");
+    setPendingPayment(null);
+    setPendingSendRecipient(null);
+    setShowPaymentConfirm(false);
+    setSidebarOpen(false);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const handleSuggestionClick = (prompt: string) => {
+    setInputMessage(prompt);
+    setSidebarOpen(false);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const recentUserPrompts = messages
+    .filter((m) => m.role === "user")
+    .slice(-12)
+    .reverse();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -599,7 +781,7 @@ const OpenPayAIPage = () => {
       const history = data.map((msg: any) => ({
         id: msg.id,
         role: msg.role as "user" | "assistant",
-        content: msg.content,
+        content: fixMojibakeText(msg.content || ""),
         timestamp: msg.created_at,
         type: msg.type || "text"
       }));
@@ -643,16 +825,16 @@ const OpenPayAIPage = () => {
         }
         return `AI error: ${data.error}`;
       }
-      return data?.reply || "I couldn't generate a response. Please try again.";
+      return fixMojibakeText(data?.reply || "I couldn't generate a response. Please try again.");
     } catch (e) {
       console.error("callOpenPayAI failed", e);
       return "I'm having trouble connecting to the AI service. Please try again later.";
     }
   };
   
-  // Feature command parser
+  // Feature command parser — avoid hijacking payment / balance intents
   const parseFeatureCommand = (message: string): string | null => {
-    const commands = {
+    const commands: Record<string, string> = {
       // Navigation commands - exact route mapping
       'dashboard': '/dashboard',
       'menu': '/menu',
@@ -668,6 +850,7 @@ const OpenPayAIPage = () => {
       'send': '/send',
       'transfer': '/send',
       'pay': '/send',
+      'send money': '/send',
       'topup': '/topup',
       'top up': '/topup',
       'add funds': '/topup',
@@ -704,20 +887,110 @@ const OpenPayAIPage = () => {
       'ai': '/ai',
       'openpay ai': '/ai'
     };
-    
-    // Check for exact matches first
-    if (commands[message as keyof typeof commands]) {
-      return commands[message as keyof typeof commands];
+
+    const normalized = message.toLowerCase().trim();
+
+    // Exact matches first
+    if (commands[normalized]) {
+      return commands[normalized];
     }
-    
-    // Check for partial matches
-    for (const [cmd, route] of Object.entries(commands)) {
-      if (message.includes(cmd)) {
-        return route;
+
+    // Explicit navigation phrasing: "open wallet", "go to send", "take me to mining"
+    const openNav = normalized.match(/^(?:open|go to|take me to|navigate to|show(?:\s+me)?)\s+(.+)$/);
+    if (openNav) {
+      const target = openNav[1].trim();
+      if (commands[target]) return commands[target];
+      for (const [cmd, route] of Object.entries(commands)) {
+        if (target === cmd || target.includes(cmd)) return route;
       }
     }
-    
+
+    // Ambiguous payment verbs: only navigate when bare ("send" / "send money")
+    const paymentVerbs = new Set(["send", "transfer", "pay", "send money"]);
+
+    for (const [cmd, route] of Object.entries(commands)) {
+      if (!normalized.includes(cmd)) continue;
+      if (paymentVerbs.has(cmd)) {
+        const isBare = /^(?:send|transfer|pay)(?:\s+money)?$/.test(normalized);
+        if (!isBare) continue;
+      }
+      // Don't steal balance/forecast queries when "wallet" isn't explicitly asked
+      if (cmd === "wallet" && /\bbalance\b|\bforecast\b|\bprediction\b/.test(normalized) && !/\bwallet\b/.test(normalized)) {
+        continue;
+      }
+      return route;
+    }
+
     return null;
+  };
+
+  const parseSendIntent = (message: string): { recipient: string; amount: number | null } | null => {
+    const text = message.trim();
+
+    // send/transfer/pay [to] @user amount
+    let match = text.match(
+      /(?:send|transfer|pay)\s+(?:to\s+)?@?([a-zA-Z0-9_]+)\s+\$?(\d+(?:\.\d{1,2})?)\s*(?:php|₱|\$|dollars?|usd)?$/i
+    );
+    if (match) {
+      return { recipient: match[1], amount: parseFloat(match[2]) };
+    }
+
+    // send/transfer/pay amount to @user
+    match = text.match(
+      /(?:send|transfer|pay)\s+\$?(\d+(?:\.\d{1,2})?)\s*(?:php|₱|\$|dollars?|usd)?\s+(?:to\s+)?@?([a-zA-Z0-9_]+)\s*$/i
+    );
+    if (match) {
+      return { recipient: match[2], amount: parseFloat(match[1]) };
+    }
+
+    // send/transfer/pay to @user  (amount missing)
+    match = text.match(
+      /(?:send|transfer|pay)\s+(?:to\s+)?@([a-zA-Z0-9_]+)\s*$/i
+    );
+    if (match) {
+      return { recipient: match[1], amount: null };
+    }
+
+    match = text.match(
+      /(?:send|transfer|pay)\s+to\s+([a-zA-Z0-9_]+)\s*$/i
+    );
+    if (match) {
+      return { recipient: match[1], amount: null };
+    }
+
+    return null;
+  };
+
+  const buildBalanceResponse = async (): Promise<string> => {
+    const { data: freshBalanceData } = await supabase
+      .from("wallets")
+      .select("balance")
+      .eq("user_id", userId)
+      .single();
+
+    const freshBalance = freshBalanceData?.balance || 0;
+    let response = `💰 **Your current balance is $${freshBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.**`;
+
+    if (balancePrediction) {
+      response += `\n\n📊 **Balance Forecast:**\n`;
+      response += `• In 7 days: $${balancePrediction.predicted_7_days.toFixed(2)}\n`;
+      response += `• In 30 days: $${balancePrediction.predicted_30_days.toFixed(2)}\n`;
+      response += `• Days until zero: ${balancePrediction.days_until_zero < 999 ? Math.ceil(balancePrediction.days_until_zero) : "N/A"}\n`;
+      response += `• Confidence: ${Math.round(balancePrediction.confidence * 100)}%\n`;
+
+      if (balancePrediction.days_until_zero < 7 && balancePrediction.days_until_zero < 999) {
+        response += `\n⚠️ **Low Balance Alert:** Your balance may run out soon. Consider topping up.`;
+      } else if (balancePrediction.days_until_zero < 30 && balancePrediction.days_until_zero < 999) {
+        response += `\n💡 **Suggestion:** Monitor your spending to maintain a healthy balance.`;
+      }
+    }
+
+    if (freshBalance < 1000) {
+      response += `\n\n🔔 **Recommendation:** Consider topping up to avoid service interruptions.`;
+    }
+
+    response += `\n\n💡 **Tip:** Send money with \`send to @username amount\` (example: \`send to @openpay 50\`).`;
+    return response;
   };
   
   // Feature command executor
@@ -968,30 +1241,53 @@ const OpenPayAIPage = () => {
 
   const processUserMessage = async (message: string) => {
     const lowerMessage = message.toLowerCase().trim();
-    
-    // Enhanced payment commands with actual transaction execution - check FIRST
-    const sendCommandRegex = /(?:send|transfer|pay)\s+(?:to\s+)?@?(\w+)\s+(\d+(?:\.\d{2})?)\s*(?:php|₱|\$|dollars?)?/i;
-    const sendMatch = message.match(sendCommandRegex);
 
-    if (sendMatch) {
-      const recipient = sendMatch[1];
-      const amount = parseFloat(sendMatch[2]);
-      
-      return await executeDirectTransaction(recipient, amount);
+    // Confirm / cancel pending send
+    if (pendingPayment && /^(confirm|yes|approve|proceed|ok|okay)$/i.test(lowerMessage)) {
+      await confirmPayment();
+      return ""; // confirmPayment already posts the result message
     }
-    
-    // Alternative format: "send to username amount"
-    const altSendRegex = /(?:send|transfer|pay)\s+to\s+@(\w+)\s+(\d+(?:\.\d{2})?)\s*(?:php|₱|\$|dollars?)?/i;
-    const altSendMatch = message.match(altSendRegex);
-    
-    if (altSendMatch) {
-      const recipient = altSendMatch[1];
-      const amount = parseFloat(altSendMatch[2]);
-      
-      return await executeDirectTransaction(recipient, amount);
+    if ((pendingPayment || pendingSendRecipient) && /^(cancel|no|stop|nevermind|never mind)$/i.test(lowerMessage)) {
+      setPendingPayment(null);
+      setPendingSendRecipient(null);
+      setShowPaymentConfirm(false);
+      return `❌ Transfer cancelled. You can start again with \`send to @username amount\`.`;
     }
-    
-    // Feature command recognition and routing - check AFTER payment commands
+
+    // If we asked for an amount, accept a bare number next
+    if (pendingSendRecipient) {
+      const amountOnly = lowerMessage.match(/^\$?(\d+(?:\.\d{1,2})?)\s*(?:php|₱|\$|dollars?|usd)?$/);
+      if (amountOnly) {
+        const amount = parseFloat(amountOnly[1]);
+        const recipient = pendingSendRecipient;
+        setPendingSendRecipient(null);
+        return await executeDirectTransaction(recipient, amount);
+      }
+    }
+
+    // Payment intents — must run before feature navigation
+    const sendIntent = parseSendIntent(message);
+    if (sendIntent) {
+      if (sendIntent.amount == null || Number.isNaN(sendIntent.amount)) {
+        setPendingSendRecipient(sendIntent.recipient);
+        return `💸 **Send to @${sendIntent.recipient}**\n\nHow much would you like to send?\n\nReply with an amount, for example:\n• \`50\`\n• \`25.50\`\n• \`send to @${sendIntent.recipient} 100\`\n\nOr type \`cancel\` to stop.`;
+      }
+      setPendingSendRecipient(null);
+      return await executeDirectTransaction(sendIntent.recipient, sendIntent.amount);
+    }
+
+    // Balance / forecast — before feature routing so "balance" is never hijacked
+    if (
+      /\bbalance\b/.test(lowerMessage) ||
+      /\bforecast\b/.test(lowerMessage) ||
+      /\bprediction\b/.test(lowerMessage) ||
+      /^(?:check|show|my)\s+balance$/.test(lowerMessage) ||
+      lowerMessage === "balance"
+    ) {
+      return await buildBalanceResponse();
+    }
+
+    // Feature command recognition and routing - check AFTER payment / balance commands
     const featureCommand = parseFeatureCommand(lowerMessage);
     if (featureCommand) {
       // Store the command info and show modal instead of direct navigation
@@ -1001,7 +1297,7 @@ const OpenPayAIPage = () => {
       setShowCommandModal(true);
       
       // Return a temporary message while waiting for user decision
-      return `🤖 I can help you with ${featureName}! Would you like me to:
+      return `I can help you with **${featureName}**! Would you like me to:
 
 📋 **Option 1:** Take you directly to the ${featureName} page
 💬 **Option 2:** Answer your questions about ${featureName} here in chat
@@ -1014,38 +1310,7 @@ Please choose an option or let me know how you'd like to proceed!`;
       return generateHelpResponse();
     }
 
-    // Enhanced balance requests with predictions
-    if (lowerMessage.includes("balance") || lowerMessage.includes("forecast") || lowerMessage.includes("prediction")) {
-      // Get fresh balance for AI response
-      const { data: freshBalanceData } = await supabase
-        .from("wallets")
-        .select("balance")
-        .eq("user_id", userId)
-        .single();
-      
-      const freshBalance = freshBalanceData?.balance || 0;
-      let response = `Your current balance is $${freshBalance.toFixed(2)}.`;
-      
-      if (balancePrediction) {
-        response += `\n\n🔮 **Balance Forecast:**\n`;
-        response += `• In 7 days: $${balancePrediction.predicted_7_days.toFixed(2)}\n`;
-        response += `• In 30 days: $${balancePrediction.predicted_30_days.toFixed(2)}\n`;
-        response += `• Days until zero: ${balancePrediction.days_until_zero < 999 ? Math.ceil(balancePrediction.days_until_zero) : 'N/A'}\n`;
-        response += `• Confidence: ${Math.round(balancePrediction.confidence * 100)}%\n\n`;
-        
-        if (balancePrediction.days_until_zero < 7 && balancePrediction.days_until_zero < 999) {
-          response += `⚠️ **Low Balance Alert:** Your balance may run out soon. Consider topping up.`;
-        } else if (balancePrediction.days_until_zero < 30 && balancePrediction.days_until_zero < 999) {
-          response += `💡 **Suggestion:** Monitor your spending to maintain a healthy balance.`;
-        }
-      }
-      
-      if (freshBalance < 1000) {
-        response += `\n\n🔔 **Recommendation:** Consider topping up to avoid service interruptions.`;
-      }
-      
-      return response;
-    }
+    // (balance handled above)
 
     // Enhanced spending analysis with AI insights
     if (lowerMessage.includes("spending") || lowerMessage.includes("analyze") || lowerMessage.includes("patterns")) {
@@ -1210,12 +1475,19 @@ Please choose an option or let me know how you'd like to proceed!`;
 
     setMessages(prev => [...prev, userMessage]);
     setInputMessage("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
     setIsTyping(true);
 
     try {
       console.log("🤖 Processing message with AI...");
       const aiResponse = await processUserMessage(inputMessage);
       console.log("✅ AI response received:", aiResponse);
+
+      if (!aiResponse?.trim()) {
+        return;
+      }
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -1244,46 +1516,7 @@ Please choose an option or let me know how you'd like to proceed!`;
 
   // Enhanced confirm payment to handle direct transactions
   const handleConfirmPayment = async () => {
-    if (!pendingPayment) return;
-
-    try {
-      // Here you would integrate with your actual payment system
-      // For now, we'll simulate the transaction
-      
-      toast.success(`Payment of $${pendingPayment.amount.toFixed(2)} to @${pendingPayment.recipient} initiated`);
-      
-      // Add confirmation message
-      const confirmationMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        role: "assistant",
-        content: `✅ **Transaction Completed Successfully!**\n\n📋 **Payment Details:**\n• Recipient: @${pendingPayment.recipient}\n• Amount: $${pendingPayment.amount.toFixed(2)}\n• Status: Completed\n• Transaction ID: TXN${Date.now().toString().slice(-6)}\n• Time: ${new Date().toLocaleString()}\n\n💰 **Updated Balance:** Available in your wallet\n\n🎯 **What's next?**\n• Check your transaction history\n• Send more money\n• View your balance\n• Get financial advice`,
-        timestamp: new Date().toISOString(),
-        type: "text"
-      };
-      
-      setMessages(prev => [...prev, confirmationMessage]);
-      await saveMessage(confirmationMessage);
-      
-      setPendingPayment(null);
-      setShowPaymentConfirm(false);
-      
-      // Refresh balance and related data after payment
-      if (userId) {
-        await Promise.all([
-          loadBalance(userId),
-          generateBalancePrediction(userId),
-          loadInsights(userId),
-          generateSmartRecommendations(userId)
-        ]);
-        // Mark as interacted after payment
-        setUserInteracted(true);
-      }
-      
-    } catch (error) {
-      toast.error("Payment failed. Please try again.");
-      setPendingPayment(null);
-      setShowPaymentConfirm(false);
-    }
+    await confirmPayment();
   };
 
   if (loading) {
@@ -1301,858 +1534,524 @@ Please choose an option or let me know how you'd like to proceed!`;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
-      {/* Header */}
-      <div className="bg-white border-b border-border/70 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BrandLogo className="h-8 w-8" />
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">OpenPay AI</h1>
-              <p className="text-xs text-muted-foreground">Your Smart Financial Assistant</p>
+    <div className="flex h-[100dvh] overflow-hidden bg-background font-ai-sans text-foreground">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Theme-aware sidebar (matches dashboard light/dark) */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-border bg-card text-foreground transition-transform duration-200 dark:border-white/10 dark:bg-black dark:text-white lg:static lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center gap-2 p-3">
+          <button
+            type="button"
+            onClick={handleNewChat}
+            className="flex flex-1 items-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm font-medium transition hover:bg-muted dark:border-white/15 dark:hover:bg-white/10"
+          >
+            <SquarePen className="h-4 w-4" />
+            New chat
+          </button>
+          <button
+            type="button"
+            className="rounded-lg p-2.5 text-muted-foreground transition hover:bg-muted dark:text-white/70 dark:hover:bg-white/10 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-2 pb-3">
+          <p className="px-2 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground dark:text-white/40">
+            Recent
+          </p>
+          {recentUserPrompts.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-muted-foreground dark:text-white/40">Your conversations will appear here</p>
+          ) : (
+            <div className="space-y-0.5">
+              {recentUserPrompts.map((msg) => (
+                <button
+                  key={msg.id}
+                  type="button"
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    scrollToBottom();
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
+                >
+                  <MessageCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground dark:text-white/40" />
+                  <span className="truncate">{msg.content}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <p className="mt-4 px-2 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground dark:text-white/40">
+            Quick asks
+          </p>
+          <div className="space-y-0.5">
+            {suggestionPrompts.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => handleSuggestionClick(item.prompt)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
+              >
+                <item.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground dark:text-white/40" />
+                <span className="truncate">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-1 border-t border-border p-3 dark:border-white/10">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
+            aria-label={isDarkTheme ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDarkTheme ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {isDarkTheme ? "Light mode" : "Dark mode"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowInsightsPanel(true);
+              setSidebarOpen(false);
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Financial insights
+            {insights.length > 0 && (
+              <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[10px] dark:bg-white/15">
+                {insights.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/menu")}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to menu
+          </button>
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paypal-blue text-xs font-semibold text-white">
+              {userProfile?.full_name?.charAt(0) || "U"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{userProfile?.full_name || "User"}</p>
+              <p className="truncate text-xs text-muted-foreground dark:text-white/45">
+                ${userBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate("/menu")}>
-            Back
-          </Button>
         </div>
-      </div>
+      </aside>
 
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)]">
-        {/* Mobile Sidebar Toggle */}
-        <div className="lg:hidden bg-white border-b border-border/70 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowQuickMenu(true)}
-              className="flex items-center gap-2"
+      {/* Main chat column */}
+      <div className="relative flex min-w-0 flex-1 flex-col bg-[#F4F1EA] dark:bg-black">
+        {/* Top bar */}
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E0D6]/80 bg-[#F4F1EA]/90 px-3 backdrop-blur dark:border-white/10 dark:bg-black/90 sm:px-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="rounded-lg p-2 text-foreground/70 transition hover:bg-muted lg:hidden"
+              aria-label="Open sidebar"
             >
-              <MenuIcon className="h-4 w-4" />
-              Quick Actions
-            </Button>
-            <Badge variant="secondary" className="text-xs">
-              {insights.length} Insights
-            </Badge>
+              <PanelLeft className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <BrandLogo className="h-7 w-7" />
+              <div>
+                <h1 className="text-sm font-semibold leading-none sm:text-base">OpenPay AI</h1>
+                <p className="mt-0.5 hidden text-[11px] text-muted-foreground sm:block">Financial assistant</p>
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Enhanced Insights Sidebar - Mobile & Desktop */}
-        <div className="lg:w-80 bg-white border-r border-border/70 p-4 overflow-y-auto lg:block block max-h-96 lg:max-h-none lg:h-auto">
-          <div className="space-y-4">
-            {/* User Profile Section */}
-            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <User className="h-4 w-4 text-blue-600" />
-                  My Profile
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                    {userProfile?.full_name?.charAt(0) || "U"}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm">{userProfile?.full_name || "User"}</p>
-                    <p className="text-xs text-muted-foreground">@{userProfile?.username || "username"}</p>
-                  </div>
-                  <Badge variant={isKycVerified(userProfile?.kyc_status) ? "default" : "secondary"} className="text-xs">
-                    {kycStatusLabel(userProfile?.kyc_status)}
-                  </Badge>
-                </div>
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Account #:</span>
-                    <span className="font-mono">{userProfile?.account_number || "Loading..."}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Referral:</span>
-                    <span className="font-mono">{userProfile?.referral_code || "None"}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Personalized Greeting */}
-            {greeting && (
-              <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-                <CardContent className="p-3">
-                  <p className="text-sm text-green-800">{greeting}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Enhanced Quick Stats */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Brain className="h-4 w-4 text-blue-600" />
-                  Smart Insights
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {insights.map((insight, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs font-medium">{insight.title}</p>
-                        {insight.priority === "high" && <AlertCircle className="h-3 w-3 text-red-500" />}
-                        {insight.priority === "medium" && <Info className="h-3 w-3 text-yellow-500" />}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{insight.description}</p>
-                      {insight.actionable && (
-                        <button className="text-xs text-blue-600 hover:text-blue-800 mt-1">
-                          {insight.action} →
-                        </button>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      {insight.value && <p className="text-sm font-semibold">{insight.value}</p>}
-                      {insight.trend && (
-                        <Badge variant={insight.trend === "up" ? "destructive" : insight.trend === "down" ? "secondary" : "default"} className="text-xs">
-                          {insight.trend}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Balance Prediction */}
-            {balancePrediction && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Target className="h-4 w-4 text-purple-600" />
-                    Balance Forecast
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">7 Days</span>
-                      <span className="text-sm font-semibold">${balancePrediction.predicted_7_days.toFixed(2)}</span>
-                    </div>
-                    <Progress value={Math.max(0, (balancePrediction.predicted_7_days / balancePrediction.current_balance) * 100)} className="h-2" />
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">30 Days</span>
-                      <span className="text-sm font-semibold">${balancePrediction.predicted_30_days.toFixed(2)}</span>
-                    </div>
-                    <Progress value={Math.max(0, (balancePrediction.predicted_30_days / balancePrediction.current_balance) * 100)} className="h-2" />
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Confidence: {Math.round(balancePrediction.confidence * 100)}%
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Smart Recommendations */}
-            {recommendations.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Lightbulb className="h-4 w-4 text-yellow-600" />
-                    AI Recommendations
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {recommendations.map((rec, index) => (
-                      <div key={rec.id} className="p-2 rounded-lg bg-yellow-50 border border-yellow-200">
-                        <div className="flex items-start gap-2">
-                          <Zap className="h-3 w-3 text-yellow-600 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-xs font-medium text-yellow-800">{rec.title}</p>
-                            <p className="text-xs text-yellow-700 mt-1">{rec.description}</p>
-                            {rec.estimated_impact && (
-                              <p className="text-xs text-yellow-600 mt-1">Impact: {rec.estimated_impact}</p>
-                            )}
-                            {rec.actionable && (
-                              <button className="text-xs bg-yellow-600 text-white px-2 py-1 rounded mt-2 hover:bg-yellow-700 transition-colors">
-                                {rec.action_text}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Spending Categories */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <PieChart className="h-4 w-4 text-blue-600" />
-                  Spending Categories
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">Spending categories breakdown will appear here.</p>
-              </CardContent>
-            </Card>
-
-            {/* Budget Alerts */}
-            {budgetAlerts.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-orange-600" />
-                    Budget Alerts
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {budgetAlerts.map((alert, index) => (
-                      <Alert key={index} className="p-2">
-                        <AlertDescription className="text-xs">
-                          <strong>{alert.category}</strong>: ${alert.spent.toFixed(2)} / ${alert.limit.toFixed(2)} ({alert.percentage.toFixed(0)}%)
-                        </AlertDescription>
-                      </Alert>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground/70 transition hover:bg-muted"
+              aria-label={isDarkTheme ? "Switch to light mode" : "Switch to dark mode"}
+              title={isDarkTheme ? "Light mode" : "Dark mode"}
+            >
+              {isDarkTheme ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span className="hidden sm:inline">{isDarkTheme ? "Light" : "Dark"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowInsightsPanel(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground/70 transition hover:bg-muted"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Insights</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleNewChat}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground/70 transition hover:bg-muted"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">New</span>
+            </button>
           </div>
-        </div>
+        </header>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-gray-50 min-h-0 lg:min-h-0">
-          <ScrollArea className="flex-1 p-4 lg:p-6">
-            <div className="max-w-3xl mx-auto space-y-4">
-              {messages.length === 0 && (
-                <div className="text-center py-8">
-                  <Bot className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">{greeting || "Welcome to OpenPay AI!"}</h3>
-                  <p className="text-muted-foreground mb-4">
-                    I'm your intelligent financial assistant, powered by advanced AI to help you make smarter financial decisions.
-                  </p>
-                  
-                  {/* Smart Recommendations Preview */}
-                  {recommendations.length > 0 && (
-                    <div className="mb-6">
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-yellow-900 mb-3 flex items-center gap-2">
-                          <Lightbulb className="h-5 w-5 text-yellow-600" />
-                          Today's Smart Recommendations
-                        </h4>
-                        <div className="space-y-2">
-                          {recommendations.slice(0, 2).map((rec) => (
-                            <div key={rec.id} className="flex items-center gap-3 p-2 bg-white rounded border border-yellow-300">
-                              <Zap className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-                              <div className="flex-1 text-left">
-                                <p className="text-sm font-medium text-yellow-800">{rec.title}</p>
-                                <p className="text-xs text-yellow-700">{rec.description}</p>
-                              </div>
-                              {rec.actionable && (
-                                <button 
-                                  onClick={() => setInputMessage(rec.action_text)}
-                                  className="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700 transition-colors"
-                                >
-                                  {rec.action_text}
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-lg p-4 border">
-                      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                        <Wallet className="h-5 w-5 text-blue-600" />
-                        Banking Features
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 text-sm">
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("What's my current balance and spending forecast?")}>
-                          <p className="font-medium">💰 Smart Balance</p>
-                          <p className="text-xs text-gray-600">View balance with AI predictions</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Send $50 to @wain")}>
-                          <p className="font-medium">💸 Smart Send</p>
-                          <p className="text-xs text-gray-600">AI-powered transfers</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("What's the best way to top up my account?")}>
-                          <p className="font-medium">💳 Smart Top-up</p>
-                          <p className="text-xs text-gray-600">Optimized funding options</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Analyze my spending patterns and suggest optimizations")}>
-                          <p className="font-medium">� Spending Analysis</p>
-                          <p className="text-xs text-gray-600">AI-powered insights</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I create and manage virtual cards?")}>
-                          <p className="font-medium">💳 Virtual Cards</p>
-                          <p className="text-xs text-gray-600">Smart card management</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Show me my transaction history with insights")}>
-                          <p className="font-medium">📋 Smart History</p>
-                          <p className="text-xs text-gray-600">AI-categorized transactions</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border">
-                      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                        <Store className="h-5 w-5 text-blue-600" />
-                        Merchant Services
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 text-sm">
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How do I optimize my merchant account for better sales?")}>
-                          <p className="font-medium">🏪 Merchant Optimization</p>
-                          <p className="text-xs text-gray-600">AI sales recommendations</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Set up intelligent POS for my business")}>
-                          <p className="font-medium">📱 Smart POS</p>
-                          <p className="text-xs text-gray-600">AI-enhanced payments</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Create optimized payment links for my business")}>
-                          <p className="font-medium">🔗 Smart Links</p>
-                          <p className="text-xs text-gray-600">AI-optimized payments</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How can AI help me manage my product catalog?")}>
-                          <p className="font-medium">📦 Catalog AI</p>
-                          <p className="text-xs text-gray-600">Smart inventory insights</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Generate professional invoices with AI assistance")}>
-                          <p className="font-medium">🧾 Smart Invoices</p>
-                          <p className="text-xs text-gray-600">AI-powered billing</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Analyze my merchant fees and suggest optimizations")}>
-                          <p className="font-medium">💰 Fee Analysis</p>
-                          <p className="text-xs text-gray-600">AI cost optimization</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border">
-                      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                        <Coins className="h-5 w-5 text-blue-600" />
-                        Earning & Rewards
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 text-sm">
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Optimize my mining strategy for maximum returns?")}>
-                          <p className="font-medium">⛏️ Smart Mining</p>
-                          <p className="text-xs text-gray-600">AI-optimized mining</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("What's the best staking strategy for my portfolio?")}>
-                          <p className="font-medium">💎 Smart Staking</p>
-                          <p className="text-xs text-gray-600">AI investment advice</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("How can I maximize my affiliate earnings?")}>
-                          <p className="font-medium">👥 Affiliate AI</p>
-                          <p className="text-xs text-gray-600">Smart referral strategy</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Optimize my ad viewing for maximum earnings")}>
-                          <p className="font-medium">📺 Ad Optimizer</p>
-                          <p className="text-xs text-gray-600">AI ad strategy</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border">
-                      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-blue-600" />
-                        Security & Support
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 text-sm">
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Analyze my account security and suggest improvements?")}>
-                          <p className="font-medium">🔐 Security Audit</p>
-                          <p className="text-xs text-gray-600">AI security analysis</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Guide me through KYC verification step by step")}>
-                          <p className="font-medium">🆔 KYC Assistant</p>
-                          <p className="text-xs text-gray-600">AI verification help</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Help me resolve a transaction dispute effectively")}>
-                          <p className="font-medium">⚖️ Dispute AI</p>
-                          <p className="text-xs text-gray-600">Smart resolution</p>
-                        </div>
-                        <div className="p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors" onClick={() => setInputMessage("Get personalized support for my issue")}>
-                          <p className="font-medium">💬 AI Support</p>
-                          <p className="text-xs text-gray-600">Intelligent assistance</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6 bg-blue-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-blue-900 mb-3">Quick AI Questions</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                      <button 
-                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
-                        onClick={() => setInputMessage("What's my financial health score?")}
-                      >
-                        🏥 Health Score
-                      </button>
-                      <button 
-                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
-                        onClick={() => setInputMessage("How can I save money this month?")}
-                      >
-                        � Save Money
-                      </button>
-                      <button 
-                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
-                        onClick={() => setInputMessage("What are my top financial goals?")}
-                      >
-                        🎯 Financial Goals
-                      </button>
-                      <button 
-                        className="p-2 bg-white rounded-lg border hover:bg-blue-100 transition-colors text-left w-full"
-                        onClick={() => setInputMessage("Give me personalized financial advice")}
-                      >
-                        🤖 AI Advice
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                      message.role === "user"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white border border-border/70"
-                    }`}
+        {/* Messages — Claude-style layout */}
+        <div className="flex-1 overflow-y-auto">
+          {messages.length === 0 ? (
+            <div className="mx-auto flex h-full max-w-[48rem] flex-col items-center justify-center px-4 pb-32 pt-12">
+              <BrandLogo className="mb-5 h-12 w-12" animate={false} />
+              <h2 className="max-w-xl text-center font-ai-serif text-[1.75rem] font-medium leading-snug tracking-[-0.02em] text-foreground sm:text-[2rem]">
+                {greeting
+                  ? greeting.replace(/^Good (morning|afternoon|evening),?\s*/i, "Hi, ").split(/[.!]/)[0]
+                  : "How can I help with your finances today?"}
+              </h2>
+              <div className="mt-10 grid w-full max-w-2xl grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {suggestionPrompts.map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => handleSuggestionClick(item.prompt)}
+                    className="rounded-2xl border border-border/80 bg-transparent px-4 py-3.5 text-left transition hover:bg-muted/60"
                   >
-                    <div className="flex items-start gap-2">
-                      {message.role === "assistant" && (
-                        <Bot className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      )}
-                      <div className="flex-1">
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                        <p className="text-xs opacity-70 mt-1">
-                          {new Date(message.timestamp).toLocaleTimeString()}
+                    <p className="font-ai-sans text-sm font-medium text-foreground">{item.label}</p>
+                    <p className="mt-1 line-clamp-2 font-ai-sans text-xs leading-relaxed text-muted-foreground">
+                      {item.prompt}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mx-auto w-full max-w-[48rem] px-4 py-8 sm:px-6">
+              <div className="flex flex-col gap-7">
+                {messages.map((message) =>
+                  message.role === "user" ? (
+                    <div key={message.id} className="flex justify-end">
+                      <div className="max-w-[min(85%,36rem)] rounded-2xl bg-[#E8E4DA] px-4 py-2.5 dark:bg-white/10">
+                        <p className="whitespace-pre-wrap font-ai-sans text-[15px] font-medium leading-[1.55] text-foreground">
+                          {fixMojibakeText(message.content)}
                         </p>
                       </div>
-                      {message.role === "user" && (
-                        <User className="h-5 w-5 text-white mt-0.5 flex-shrink-0" />
-                      )}
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ) : (
+                    <div key={message.id} className="w-full">
+                      <div className="chat-md font-ai-serif">{renderChatMarkdown(message.content)}</div>
+                    </div>
+                  )
+                )}
 
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-white border border-border/70 rounded-2xl px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Bot className="h-5 w-5 text-blue-600" />
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
-                      </div>
-                    </div>
+                {isTyping && (
+                  <div className="flex items-center gap-2 py-1 font-ai-sans text-sm text-muted-foreground">
+                    <BrandLogo className="h-5 w-5" animate={false} />
+                    <span>OpenPay AI is thinking</span>
+                    <span className="inline-flex gap-1">
+                      <span className="h-1 w-1 animate-bounce rounded-full bg-foreground/35 [animation-delay:0ms]" />
+                      <span className="h-1 w-1 animate-bounce rounded-full bg-foreground/35 [animation-delay:150ms]" />
+                      <span className="h-1 w-1 animate-bounce rounded-full bg-foreground/35 [animation-delay:300ms]" />
+                    </span>
                   </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
+                )}
+                <div ref={messagesEndRef} />
+              </div>
             </div>
-          </ScrollArea>
+          )}
+        </div>
 
-          {/* Input Area */}
-          <div className="bg-white border-t border-border/70 p-3 lg:p-4">
-            <div className="max-w-3xl mx-auto">
-              <div className="flex gap-2">
-                {/* Quick Menu Dropdown - Desktop Only */}
-                <div className="hidden lg:block">
-                  <DropdownMenu open={showQuickMenu} onOpenChange={setShowQuickMenu}>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" className="shrink-0">
-                        <MenuIcon className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-80 max-h-96 overflow-y-auto">
-                      <div className="p-2">
-                        <h4 className="font-semibold text-sm mb-2 text-blue-600">💬 Quick AI Questions</h4>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("What's my current balance and spending forecast?");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Wallet className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">Smart Balance</p>
-                            <p className="text-xs text-gray-600">View balance with AI predictions</p>
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("Analyze my spending patterns and suggest optimizations");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <PieChart className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">Spending Analysis</p>
-                            <p className="text-xs text-gray-600">AI-powered insights</p>
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("What's my financial health score?");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Target className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">Health Score</p>
-                            <p className="text-xs text-gray-600">Financial wellness check</p>
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("Give me personalized financial advice");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Brain className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">AI Advice</p>
-                            <p className="text-xs text-gray-600">Personalized recommendations</p>
-                          </div>
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuSeparator />
-                        
-                        <h4 className="font-semibold text-sm mb-2 text-blue-600">💳 Banking Features</h4>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("Send $50 to @wain");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Send className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">Smart Send</p>
-                            <p className="text-xs text-gray-600">AI-powered transfers</p>
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("What's best way to top up my account?");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">Smart Top-up</p>
-                            <p className="text-xs text-gray-600">Optimized funding options</p>
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("Show me my transaction history with insights");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <History className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">Smart History</p>
-                            <p className="text-xs text-gray-600">AI-categorized transactions</p>
-                          </div>
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuSeparator />
-                        
-                        <h4 className="font-semibold text-sm mb-2 text-blue-600">🏪 Business Services</h4>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("How do I optimize my merchant account for better sales?");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Store className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">Merchant Optimization</p>
-                            <p className="text-xs text-gray-600">AI sales recommendations</p>
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("Create optimized payment links for my business");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <ArrowLeftRight className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">Smart Links</p>
-                            <p className="text-xs text-gray-600">AI-optimized payments</p>
-                          </div>
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuSeparator />
-                        
-                        <h4 className="font-semibold text-sm mb-2 text-blue-600">🔐 Security & Support</h4>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("Analyze my account security and suggest improvements");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Shield className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">Security Audit</p>
-                            <p className="text-xs text-gray-600">AI security analysis</p>
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setInputMessage("Guide me through KYC verification step by step");
-                            setShowQuickMenu(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          <div className="flex-1">
-                            <p className="font-medium">KYC Assistant</p>
-                            <p className="text-xs text-gray-600">AI verification help</p>
-                          </div>
-                        </DropdownMenuItem>
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                
-                <Input
+        {/* Composer — Claude flat border style */}
+        <div className="shrink-0 bg-gradient-to-t from-[#F4F1EA] via-[#F4F1EA] to-transparent px-4 pb-4 pt-1 dark:from-black dark:via-black sm:px-6">
+          <div className="mx-auto max-w-[48rem]">
+            <div className="rounded-2xl border border-[#E5E0D6] bg-card dark:border-white/10 dark:bg-[#0a0a0a]">
+              <div className="flex items-end gap-1 p-2 sm:p-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickMenu(true)}
+                  className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground/55 transition hover:bg-muted"
+                  aria-label="Quick actions"
+                  title="Quick actions (Ctrl+K)"
+                >
+                  <MenuIcon className="h-5 w-5" />
+                </button>
+                <textarea
+                  ref={inputRef}
                   value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Ask me anything about your finances..."
-                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                  onChange={(e) => {
+                    setInputMessage(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Message OpenPay AI..."
                   disabled={isTyping}
-                  className="flex-1 text-sm lg:text-base"
+                  rows={1}
+                  className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-1 py-2.5 font-ai-sans text-[15px] text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-60"
                 />
-                <Button 
-                  onClick={handleSendMessage} 
+                <Button
+                  onClick={handleSendMessage}
                   disabled={isTyping || !inputMessage.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 shrink-0"
-                  size="sm"
+                  size="icon"
+                  className="mb-0.5 h-10 w-10 shrink-0 rounded-full bg-paypal-blue text-white hover:bg-[#004dc5] disabled:bg-muted disabled:text-muted-foreground"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex items-center justify-between gap-2 mt-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-3 w-3" />
-                  <span className="hidden sm:inline">All payments require confirmation</span>
-                  <span className="sm:hidden">Secure payments</span>
-                </div>
-                <span className="hidden lg:inline">Press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl</kbd> + <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">K</kbd> for quick menu</span>
-              </div>
             </div>
+            <p className="mt-2.5 text-center font-ai-sans text-[11px] text-muted-foreground">
+              OpenPay AI can make mistakes. Please double-check responses. Payments always need confirmation.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Mobile Quick Actions Dialog */}
+      {/* Insights panel */}
+      <Dialog open={showInsightsPanel} onOpenChange={setShowInsightsPanel}>
+        <DialogContent className="z-[200] max-h-[85vh] max-w-md overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-paypal-blue" />
+              Financial insights
+            </DialogTitle>
+            <DialogDescription>
+              Live snapshot of your balance, forecast, and recommendations.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {greeting && (
+              <div className="rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
+                {greeting}
+              </div>
+            )}
+
+            <div className="rounded-xl border border-border/70 bg-white p-3">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                <Brain className="h-4 w-4 text-paypal-blue" />
+                Smart insights
+              </div>
+              <div className="space-y-2">
+                {insights.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No insights yet.</p>
+                ) : (
+                  insights.map((insight, index) => (
+                    <div key={index} className="rounded-lg bg-muted/50 p-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-medium">{insight.title}</p>
+                          <p className="text-xs text-muted-foreground">{insight.description}</p>
+                        </div>
+                        {insight.value && (
+                          <p className="shrink-0 text-sm font-semibold">{insight.value}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {balancePrediction && (
+              <div className="rounded-xl border border-border/70 bg-white p-3">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                  <Target className="h-4 w-4 text-paypal-blue" />
+                  Balance forecast
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <div className="mb-1 flex justify-between text-xs">
+                      <span className="text-muted-foreground">7 days</span>
+                      <span className="font-semibold">${balancePrediction.predicted_7_days.toFixed(2)}</span>
+                    </div>
+                    <Progress
+                      value={Math.max(
+                        0,
+                        (balancePrediction.predicted_7_days / Math.max(balancePrediction.current_balance, 1)) * 100
+                      )}
+                      className="h-2"
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex justify-between text-xs">
+                      <span className="text-muted-foreground">30 days</span>
+                      <span className="font-semibold">${balancePrediction.predicted_30_days.toFixed(2)}</span>
+                    </div>
+                    <Progress
+                      value={Math.max(
+                        0,
+                        (balancePrediction.predicted_30_days / Math.max(balancePrediction.current_balance, 1)) * 100
+                      )}
+                      className="h-2"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Confidence: {Math.round(balancePrediction.confidence * 100)}%
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {recommendations.length > 0 && (
+              <div className="rounded-xl border border-border/70 bg-white p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                  <Lightbulb className="h-4 w-4 text-amber-500" />
+                  Recommendations
+                </div>
+                <div className="space-y-2">
+                  {recommendations.map((rec) => (
+                    <div key={rec.id} className="rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+                      <p className="text-xs font-medium text-amber-900">{rec.title}</p>
+                      <p className="mt-0.5 text-xs text-amber-800">{rec.description}</p>
+                      {rec.actionable && (
+                        <button
+                          type="button"
+                          className="mt-2 rounded-md bg-amber-600 px-2 py-1 text-xs text-white hover:bg-amber-700"
+                          onClick={() => {
+                            handleSuggestionClick(rec.action_text);
+                            setShowInsightsPanel(false);
+                          }}
+                        >
+                          {rec.action_text}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {budgetAlerts.length > 0 && (
+              <div className="rounded-xl border border-border/70 bg-white p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                  Budget alerts
+                </div>
+                <div className="space-y-2">
+                  {budgetAlerts.map((alert, index) => (
+                    <Alert key={index} className="p-2">
+                      <AlertDescription className="text-xs">
+                        <strong>{alert.category}</strong>: ${alert.spent.toFixed(2)} / ${alert.limit.toFixed(2)} (
+                        {alert.percentage.toFixed(0)}%)
+                      </AlertDescription>
+                    </Alert>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Actions Dialog */}
       <Dialog open={showQuickMenu} onOpenChange={setShowQuickMenu}>
-        <DialogContent className="z-[200] max-w-md mx-auto max-h-[80vh] overflow-y-auto">
+        <DialogContent className="z-[200] mx-auto max-h-[80vh] max-w-md overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MenuIcon className="h-5 w-5" />
-              Quick Actions
+              Quick actions
             </DialogTitle>
+            <DialogDescription>Pick a prompt to fill the composer.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <h4 className="font-semibold text-sm mb-3 text-blue-600">💬 Quick AI Questions</h4>
+              <h4 className="mb-3 text-sm font-semibold text-paypal-blue">Quick AI questions</h4>
               <div className="grid grid-cols-1 gap-2">
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("What's my current balance and spending forecast?");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <Wallet className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">Smart Balance</p>
-                    <p className="text-xs text-gray-600">View balance with AI predictions</p>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("Analyze my spending patterns and suggest optimizations");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <PieChart className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">Spending Analysis</p>
-                    <p className="text-xs text-gray-600">AI-powered insights</p>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("What's my financial health score?");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <Target className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">Health Score</p>
-                    <p className="text-xs text-gray-600">Financial wellness check</p>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("Give me personalized financial advice");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <Brain className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">AI Advice</p>
-                    <p className="text-xs text-gray-600">Personalized recommendations</p>
-                  </div>
-                </Button>
+                {[
+                  { label: "Smart Balance", desc: "View balance with AI predictions", prompt: "What's my current balance and spending forecast?", icon: Wallet },
+                  { label: "Spending Analysis", desc: "AI-powered insights", prompt: "Analyze my spending patterns and suggest optimizations", icon: PieChart },
+                  { label: "Health Score", desc: "Financial wellness check", prompt: "What's my financial health score?", icon: Target },
+                  { label: "AI Advice", desc: "Personalized recommendations", prompt: "Give me personalized financial advice", icon: Brain },
+                ].map((item) => (
+                  <Button
+                    key={item.label}
+                    variant="outline"
+                    className="h-auto justify-start p-3"
+                    onClick={() => {
+                      handleSuggestionClick(item.prompt);
+                      setShowQuickMenu(false);
+                    }}
+                  >
+                    <item.icon className="mr-3 h-4 w-4" />
+                    <div className="text-left">
+                      <p className="font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </Button>
+                ))}
               </div>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold text-sm mb-3 text-blue-600">💳 Banking Features</h4>
+              <h4 className="mb-3 text-sm font-semibold text-paypal-blue">Banking</h4>
               <div className="grid grid-cols-1 gap-2">
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("Send $50 to @wain");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <Send className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">Smart Send</p>
-                    <p className="text-xs text-gray-600">AI-powered transfers</p>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("What's best way to top up my account?");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <CreditCard className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">Smart Top-up</p>
-                    <p className="text-xs text-gray-600">Optimized funding options</p>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("Show me my transaction history with insights");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <History className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">Smart History</p>
-                    <p className="text-xs text-gray-600">AI-categorized transactions</p>
-                  </div>
-                </Button>
+                {[
+                  { label: "Smart Send", desc: "AI-powered transfers", prompt: "Send $50 to @wain", icon: Send },
+                  { label: "Smart Top-up", desc: "Optimized funding options", prompt: "What's best way to top up my account?", icon: CreditCard },
+                  { label: "Smart History", desc: "AI-categorized transactions", prompt: "Show me my transaction history with insights", icon: History },
+                ].map((item) => (
+                  <Button
+                    key={item.label}
+                    variant="outline"
+                    className="h-auto justify-start p-3"
+                    onClick={() => {
+                      handleSuggestionClick(item.prompt);
+                      setShowQuickMenu(false);
+                    }}
+                  >
+                    <item.icon className="mr-3 h-4 w-4" />
+                    <div className="text-left">
+                      <p className="font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </Button>
+                ))}
               </div>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold text-sm mb-3 text-blue-600">🏪 Business Services</h4>
+              <h4 className="mb-3 text-sm font-semibold text-paypal-blue">Business & security</h4>
               <div className="grid grid-cols-1 gap-2">
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("How do I optimize my merchant account for better sales?");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <Store className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">Merchant Optimization</p>
-                    <p className="text-xs text-gray-600">AI sales recommendations</p>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("Create optimized payment links for my business");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <ArrowLeftRight className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">Smart Links</p>
-                    <p className="text-xs text-gray-600">AI-optimized payments</p>
-                  </div>
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-sm mb-3 text-blue-600">🔐 Security & Support</h4>
-              <div className="grid grid-cols-1 gap-2">
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("Analyze my account security and suggest improvements");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <Shield className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">Security Audit</p>
-                    <p className="text-xs text-gray-600">AI security analysis</p>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-3"
-                  onClick={() => {
-                    setInputMessage("Guide me through KYC verification step by step");
-                    setShowQuickMenu(false);
-                  }}
-                >
-                  <CheckCircle className="h-4 w-4 mr-3" />
-                  <div className="text-left">
-                    <p className="font-medium">KYC Assistant</p>
-                    <p className="text-xs text-gray-600">AI verification help</p>
-                  </div>
-                </Button>
+                {[
+                  { label: "Merchant Optimization", desc: "AI sales recommendations", prompt: "How do I optimize my merchant account for better sales?", icon: Store },
+                  { label: "Smart Links", desc: "AI-optimized payments", prompt: "Create optimized payment links for my business", icon: ArrowLeftRight },
+                  { label: "Security Audit", desc: "AI security analysis", prompt: "Analyze my account security and suggest improvements", icon: Shield },
+                  { label: "KYC Assistant", desc: "AI verification help", prompt: "Guide me through KYC verification step by step", icon: CheckCircle },
+                ].map((item) => (
+                  <Button
+                    key={item.label}
+                    variant="outline"
+                    className="h-auto justify-start p-3"
+                    onClick={() => {
+                      handleSuggestionClick(item.prompt);
+                      setShowQuickMenu(false);
+                    }}
+                  >
+                    <item.icon className="mr-3 h-4 w-4" />
+                    <div className="text-left">
+                      <p className="font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </Button>
+                ))}
               </div>
             </div>
           </div>
@@ -2161,103 +2060,100 @@ Please choose an option or let me know how you'd like to proceed!`;
 
       {/* Enhanced Payment Confirmation Dialog */}
       <Dialog open={showPaymentConfirm} onOpenChange={setShowPaymentConfirm}>
-        <DialogContent className="z-[200] max-w-md mx-auto">
+        <DialogContent className="z-[200] mx-auto max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirm Top Up Request</DialogTitle>
+            <DialogTitle>Confirm transfer</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <Alert>
               <AlertDescription>
-                Please review the top-up details before confirming:
+                Please review the transfer details before confirming:
               </AlertDescription>
             </Alert>
-            
+
             {pendingPayment && (
-              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+              <div className="space-y-3 rounded-lg bg-gray-50 p-4">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Recipient:</span>
+                  <span className="font-semibold">@{pendingPayment.recipient}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Amount:</span>
                   <span className="font-semibold">${pendingPayment.amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium">Provider:</span>
-                  <span className="font-semibold">Bank Transfer</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Account:</span>
-                  <span className="font-semibold">{userProfile?.account_number || "Loading..."}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Reference:</span>
-                  <span className="font-semibold">TOPUP{Date.now().toString().slice(-6)}</span>
+                  <span className="text-sm font-medium">From:</span>
+                  <span className="font-semibold">{userProfile?.account_number || "Your wallet"}</span>
                 </div>
               </div>
             )}
-            
+
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={() => setShowPaymentConfirm(false)} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPaymentConfirm(false);
+                  setPendingPayment(null);
+                  setPendingSendRecipient(null);
+                }}
+                className="flex-1"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleConfirmPayment} className="bg-blue-600 hover:bg-blue-700 flex-1">
-                Confirm & Submit
+              <Button onClick={handleConfirmPayment} className="flex-1 bg-paypal-blue hover:bg-[#004dc5]">
+                Confirm & Send
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-      
+
       {/* Command Navigation Confirmation Modal */}
       <Dialog open={showCommandModal} onOpenChange={setShowCommandModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Compass className="h-5 w-5 text-blue-600" />
+              <Compass className="h-5 w-5 text-paypal-blue" />
               Feature Navigation
             </DialogTitle>
             <DialogDescription>
               How would you like to proceed with {commandNavigation?.featureName}?
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
               <div className="flex items-start gap-3">
-                <Compass className="h-5 w-5 text-blue-600 mt-0.5" />
+                <Compass className="mt-0.5 h-5 w-5 text-paypal-blue" />
                 <div>
                   <h4 className="font-semibold text-blue-900">Go to {commandNavigation?.featureName} Page</h4>
-                  <p className="text-sm text-blue-700 mt-1">
+                  <p className="mt-1 text-sm text-blue-700">
                     Navigate directly to the {commandNavigation?.featureName} page for full functionality and features.
                   </p>
                 </div>
               </div>
             </div>
-            
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
               <div className="flex items-start gap-3">
-                <MessageCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                <MessageCircle className="mt-0.5 h-5 w-5 text-green-600" />
                 <div>
                   <h4 className="font-semibold text-green-900">Ask AI Assistant</h4>
-                  <p className="text-sm text-green-700 mt-1">
+                  <p className="mt-1 text-sm text-green-700">
                     Get information about {commandNavigation?.featureName} right here in the chat.
                   </p>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div className="flex gap-2 pt-2">
-            <Button 
-              variant="outline" 
-              onClick={handleStayInChat} 
-              className="flex-1"
-            >
-              <MessageCircle className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={handleStayInChat} className="flex-1">
+              <MessageCircle className="mr-2 h-4 w-4" />
               Ask AI
             </Button>
-            <Button 
-              onClick={handleNavigateToFeature} 
-              className="bg-blue-600 hover:bg-blue-700 flex-1"
-            >
-              <Compass className="h-4 w-4 mr-2" />
+            <Button onClick={handleNavigateToFeature} className="flex-1 bg-paypal-blue hover:bg-[#004dc5]">
+              <Compass className="mr-2 h-4 w-4" />
               Navigate
             </Button>
           </div>

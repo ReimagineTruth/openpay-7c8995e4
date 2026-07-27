@@ -69,6 +69,24 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        // Claude-inspired pairing for OpenPay AI (open alternatives to Anthropic Serif / Sans)
+        "ai-serif": [
+          "Newsreader",
+          "Iowan Old Style",
+          "Palatino Linotype",
+          "Palatino",
+          "Georgia",
+          "serif",
+        ],
+        "ai-sans": [
+          "Plus Jakarta Sans",
+          "ui-sans-serif",
+          "system-ui",
+          "Segoe UI",
+          "sans-serif",
+        ],
+      },
       keyframes: {
         "accordion-down": {
           from: {

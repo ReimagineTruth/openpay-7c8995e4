@@ -664,7 +664,7 @@ const AppRoutes = () => {
       </main>
       </PageTransition>
       <AppSecurityGate />
-      {location.pathname !== "/support" ? <AppFooter /> : null}
+      {location.pathname !== "/support" && location.pathname !== "/ai" ? <AppFooter /> : null}
       {!showRouteSplash ? <SupportWidget /> : null}
 
       {showRouteSplash && (

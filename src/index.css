@@ -2003,6 +2003,32 @@ html:not(.dark) .nft-on-media :where(.text-white\/60, .text-white\/50, .text-whi
 html:not(.dark) .nft-store-banner :where(h1, h2, h3, h4, p, span, a, button) { color: #ffffff !important; }
 html:not(.dark) .nft-store-banner :where(svg) { color: #ffffff !important; }
 
+/* OpenPay AI — Claude-inspired typography + prose rhythm */
+.chat-md {
+  font-optical-sizing: auto;
+  font-feature-settings: "liga" 1, "kern" 1;
+  max-width: 48rem;
+}
+.chat-md strong {
+  font-weight: 600;
+}
+.chat-md em {
+  font-style: italic;
+}
+.chat-md code {
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+.chat-md p:first-child {
+  margin-top: 0;
+}
+.chat-md p:last-child {
+  margin-bottom: 0;
+}
+.chat-md ul {
+  margin-top: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
 
 
 
