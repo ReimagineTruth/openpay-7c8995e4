@@ -16,7 +16,14 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import BrandLogo from "@/components/BrandLogo";
 import AuthMark from "@/components/AuthMark";
+import AiTransferReceipt, { type AiReceiptData } from "@/components/AiTransferReceipt";
 import { isKycVerified, kycStatusLabel } from "@/lib/kyc";
+import {
+  formatPartnerRecipient,
+  partnerGetBalance,
+  partnerLookupAccount,
+  partnerSendTransfer,
+} from "@/lib/partnerTransferClient";
 
 // AI calls go through the openpay-ai-chat edge function (Lovable AI Gateway)
 
@@ -25,7 +32,8 @@ type Message = {
   role: "user" | "assistant";
   content: string;
   timestamp: string;
-  type?: "text" | "insight" | "payment" | "alert";
+  type?: "text" | "insight" | "payment" | "alert" | "receipt";
+  receipt?: AiReceiptData;
 };
 
 type SpendingCategory = {
@@ -83,6 +91,8 @@ type SmartRecommendation = {
   actionable: boolean;
   action_text: string;
   estimated_impact?: string;
+  route?: string;
+  prompt?: string;
 };
 
 /** Repair UTF-8 text that was mis-decoded as Windows-1252 (mojibake). */
@@ -266,9 +276,13 @@ const OpenPayAIPage = () => {
 
   const suggestionPrompts = [
     { label: "Check my balance", prompt: "What's my current balance and spending forecast?", icon: Wallet },
-    { label: "Spending analysis", prompt: "Analyze my spending patterns and suggest optimizations", icon: PieChart },
-    { label: "Financial health", prompt: "What's my financial health score?", icon: Target },
-    { label: "Smart advice", prompt: "Give me personalized financial advice", icon: Lightbulb },
+    { label: "Send money", prompt: "How do I send money to another OpenPay user?", icon: Send },
+    { label: "Top up wallet", prompt: "What are the best ways to top up my OpenPay wallet?", icon: CreditCard },
+    { label: "Complete KYC", prompt: "Help me complete KYC verification step by step", icon: Shield },
+    { label: "Start mining", prompt: "How does OpenPay mining work and how do I claim rewards?", icon: Pickaxe },
+    { label: "Merchant setup", prompt: "How do I set up a merchant store and payment links?", icon: Store },
+    { label: "Stake OUSD", prompt: "Explain OpenPay staking options and how to earn yield", icon: Coins },
+    { label: "Invite & earn", prompt: "How does the affiliate referral program work?", icon: Users },
   ];
 
   const handleNewChat = () => {
@@ -560,60 +574,168 @@ const OpenPayAIPage = () => {
 
   const generateSmartRecommendations = async (userId: string) => {
     const recommendations: SmartRecommendation[] = [];
-    
-    // Get fresh balance for recommendations
-    const { data: walletData } = await supabase
-      .from("wallets")
-      .select("balance")
-      .eq("user_id", userId)
-      .single();
-    
-    const currentBalance = walletData?.balance || 0;
-    
-    // Low balance recommendation
-    if (currentBalance < 1000) {
+
+    const [{ data: walletData }, { data: profileData }] = await Promise.all([
+      supabase.from("wallets").select("balance").eq("user_id", userId).single(),
+      supabase.from("profiles").select("kyc_status, username").eq("id", userId).maybeSingle(),
+    ]);
+
+    const currentBalance = Number(walletData?.balance || 0);
+    const kycDone = isKycVerified(profileData?.kyc_status || userProfile?.kyc_status);
+
+    // Low balance
+    if (currentBalance < 100) {
       recommendations.push({
         id: "low-balance",
         type: "topup",
-        title: "Top Up Recommended",
-        description: "Your balance is running low. Consider adding funds to avoid interruptions.",
+        title: "Top up your wallet",
+        description: "Your balance is low. Add funds so sends and payments don’t get interrupted.",
         priority: "high",
         actionable: true,
-        action_text: "Top Up Now",
-        estimated_impact: "Prevents service interruptions"
+        action_text: "Go to Top Up",
+        estimated_impact: "Keep payments flowing",
+        route: "/topup",
+        prompt: "What are the best ways to top up my OpenPay wallet right now?",
       });
     }
-    
-    // KYC recommendation
-    if (!isKycVerified(userProfile?.kyc_status)) {
+
+    // KYC
+    if (!kycDone) {
       recommendations.push({
         id: "kyc-verification",
         type: "security",
-        title: "Complete KYC Verification",
-        description: "Verify your identity to unlock higher limits and enhanced features.",
-        priority: "medium",
+        title: "Complete KYC verification",
+        description: "Verify your identity to unlock higher limits, merchant tools, remittance, and loans.",
+        priority: "high",
         actionable: true,
-        action_text: "Complete KYC",
-        estimated_impact: "Increase transaction limits"
+        action_text: "Start KYC",
+        estimated_impact: "Higher limits & more features",
+        route: "/kyc",
+        prompt: "Help me complete KYC verification step by step",
       });
     }
-    
+
+    // Security / 2FA nudge (always useful if KYC done or alongside)
+    recommendations.push({
+      id: "enable-2fa",
+      type: "security",
+      title: "Turn on two-factor auth",
+      description: "Protect sends and withdrawals with authenticator 2FA on your OpenPay account.",
+      priority: "medium",
+      actionable: true,
+      action_text: "Open 2FA",
+      estimated_impact: "Stronger account security",
+      route: "/two-factor",
+      prompt: "How do I enable two-factor authentication on OpenPay?",
+    });
+
+    // Earn — mining
+    recommendations.push({
+      id: "start-mining",
+      type: "feature",
+      title: "Earn with daily mining",
+      description: "Start a mining cycle to earn rewards. Watch an ad when required, then claim after 24 hours.",
+      priority: "medium",
+      actionable: true,
+      action_text: "Open Mining",
+      estimated_impact: "Passive daily rewards",
+      route: "/mining",
+      prompt: "How does OpenPay mining work and how do I claim rewards?",
+    });
+
+    // Staking if they have balance
+    if (currentBalance >= 50) {
+      recommendations.push({
+        id: "stake-ousd",
+        type: "investment",
+        title: "Stake OUSD for yield",
+        description: "Lock part of your balance for 7–365 days to earn staking rewards.",
+        priority: "low",
+        actionable: true,
+        action_text: "View Staking",
+        estimated_impact: "Earn yield on idle funds",
+        route: "/staking",
+        prompt: "Explain OpenPay staking options and how to earn yield",
+      });
+    }
+
+    // Merchant / business
+    recommendations.push({
+      id: "merchant-setup",
+      type: "feature",
+      title: "Accept payments as a merchant",
+      description: "Set up POS, payment links, or QR Pay to get paid for products and services.",
+      priority: kycDone ? "medium" : "low",
+      actionable: true,
+      action_text: "Merchant Portal",
+      estimated_impact: "Get paid online & in person",
+      route: kycDone ? "/merchant-onboarding" : "/kyc",
+      prompt: kycDone
+        ? "How do I set up a merchant store and payment links?"
+        : "Do I need KYC before I can accept merchant payments?",
+    });
+
+    // Affiliate
+    recommendations.push({
+      id: "affiliate-invite",
+      type: "feature",
+      title: "Invite friends & earn",
+      description: "Share your referral link and earn bonuses when people join and mine.",
+      priority: "low",
+      actionable: true,
+      action_text: "Open Affiliate",
+      estimated_impact: "Extra referral rewards",
+      route: "/affiliate",
+      prompt: "How does the affiliate referral program work?",
+    });
+
     // Spending optimization
     const topCategory = spendingCategories[0];
     if (topCategory && topCategory.percentage > 40) {
       recommendations.push({
         id: "spending-optimization",
         type: "saving",
-        title: "Optimize " + topCategory.name + " Spending",
-        description: `You're spending ${topCategory.percentage.toFixed(0)}% on ${topCategory.name}. Consider setting a budget.`,
+        title: `Review ${topCategory.name} spending`,
+        description: `${topCategory.percentage.toFixed(0)}% of recent spending is in ${topCategory.name}. Ask AI for a budget plan.`,
         priority: "medium",
         actionable: true,
-        action_text: "Set Budget",
-        estimated_impact: "Save 10-20% on expenses"
+        action_text: "Get advice",
+        estimated_impact: "Cut unnecessary spend",
+        prompt: `Analyze my spending on ${topCategory.name} and suggest how to save money this month`,
       });
     }
-    
-    setRecommendations(recommendations);
+
+    // Virtual card
+    recommendations.push({
+      id: "virtual-card",
+      type: "feature",
+      title: "Activate a virtual card",
+      description: "Use a wallet-backed virtual card for OpenPay checkouts and lock it anytime.",
+      priority: "low",
+      actionable: true,
+      action_text: "Virtual Card",
+      estimated_impact: "Faster checkouts",
+      route: "/virtual-card",
+      prompt: "How do OpenPay virtual cards work?",
+    });
+
+    // Priority sort, keep top 5
+    const rank = { high: 0, medium: 1, low: 2 } as const;
+    recommendations.sort((a, b) => rank[a.priority] - rank[b.priority]);
+    setRecommendations(recommendations.slice(0, 5));
+  };
+
+  const handleRecommendationAction = (rec: SmartRecommendation) => {
+    setShowInsightsPanel(false);
+    if (rec.route) {
+      navigate(rec.route);
+      return;
+    }
+    if (rec.prompt) {
+      handleSuggestionClick(rec.prompt);
+      return;
+    }
+    handleSuggestionClick(rec.action_text);
   };
 
   const loadSpendingAnalysis = async (userId: string) => {
@@ -783,7 +905,8 @@ const OpenPayAIPage = () => {
         role: msg.role as "user" | "assistant",
         content: fixMojibakeText(msg.content || ""),
         timestamp: msg.created_at,
-        type: msg.type || "text"
+        type: (msg.type || "text") as Message["type"],
+        receipt: msg.metadata?.receipt || undefined,
       }));
       setMessages(history.reverse());
     }
@@ -798,7 +921,8 @@ const OpenPayAIPage = () => {
         user_id: userId,
         role: message.role,
         content: message.content,
-        type: message.type || "text",
+        type: message.type === "receipt" ? "payment" : message.type || "text",
+        metadata: message.receipt ? { receipt: message.receipt } : {},
         created_at: message.timestamp
       });
   };
@@ -835,62 +959,137 @@ const OpenPayAIPage = () => {
   // Feature command parser — avoid hijacking payment / balance intents
   const parseFeatureCommand = (message: string): string | null => {
     const commands: Record<string, string> = {
-      // Navigation commands - exact route mapping
-      'dashboard': '/dashboard',
-      'menu': '/menu',
-      'home': '/dashboard',
-      'main': '/dashboard',
-      'profile': '/profile',
-      'settings': '/settings',
-      'wallet': '/wallet',
-      'cards': '/virtual-card',
-      'virtual cards': '/virtual-card',
-      'transactions': '/activity',
-      'history': '/activity',
-      'send': '/send',
-      'transfer': '/send',
-      'pay': '/send',
-      'send money': '/send',
-      'topup': '/topup',
-      'top up': '/topup',
-      'add funds': '/topup',
-      'deposit': '/topup',
-      'merchant': '/merchant-pos',
-      'business': '/merchant-pos',
-      'store': '/merchant-pos',
-      'pos': '/merchant-pos',
-      'payment links': '/payment-links/create',
-      'links': '/payment-links/create',
-      'invoices': '/send-invoice',
-      'billing': '/send-invoice',
-      'support': '/help-center',
-      'help center': '/help-center',
-      'contact': '/help-center',
-      'mining': '/mining',
-      'earn': '/mining',
-      'ads': '/pi-ads',
-      'watch ads': '/pi-ads',
-      'staking': '/staking',
-      'invest': '/staking',
-      'affiliate': '/affiliate',
-      'referral': '/affiliate',
-      'rewards': '/affiliate',
-      'kyc': '/kyc',
-      'verification': '/kyc',
-      'verify': '/kyc',
-      'security': '/settings',
-      'privacy': '/privacy',
-      'notifications': '/notifications',
-      'alerts': '/notifications',
-      'logout': '/sign-in',
-      'sign out': '/sign-in',
-      'ai': '/ai',
-      'openpay ai': '/ai'
+      // Core
+      dashboard: "/dashboard",
+      menu: "/menu",
+      home: "/dashboard",
+      main: "/dashboard",
+      wallet: "/dashboard",
+      balance page: "/dashboard",
+      savings: "/dashboard?section=savings",
+      analytics: "/dashboard?section=analytics",
+      profile: "/profile",
+      settings: "/settings",
+      // Cards & identity
+      cards: "/virtual-card",
+      "virtual card": "/virtual-card",
+      "virtual cards": "/virtual-card",
+      kyc: "/kyc",
+      verification: "/kyc",
+      verify: "/kyc",
+      "kyc status": "/kyc-status",
+      "two factor": "/two-factor",
+      "2fa": "/two-factor",
+      mpin: "/settings",
+      // Payments
+      transactions: "/activity",
+      history: "/activity",
+      activity: "/activity",
+      receipts: "/activity",
+      send: "/send",
+      transfer: "/send",
+      pay: "/send",
+      "send money": "/send",
+      "express send": "/send",
+      "transfer pro": "/send/pro",
+      "openpay pro": "/send/pro",
+      receive: "/receive",
+      "get paid": "/receive",
+      "my qr": "/receive",
+      request: "/request-payment",
+      "request money": "/request-payment",
+      invoices: "/send-invoice",
+      billing: "/send-invoice",
+      invoice: "/send-invoice",
+      "scan qr": "/scan-qr",
+      scan: "/scan-qr",
+      "qr scanner": "/scan-qr",
+      contacts: "/contacts",
+      disputes: "/disputes",
+      dispute: "/disputes",
+      // Funding
+      topup: "/topup",
+      "top up": "/topup",
+      "add funds": "/topup",
+      deposit: "/topup",
+      buy: "/topup",
+      "topup history": "/topup-history",
+      "top up history": "/topup-history",
+      swap: "/swap-withdrawal",
+      withdraw: "/swap-withdrawal",
+      withdrawal: "/swap-withdrawal",
+      "cash out": "/swap-withdrawal",
+      converter: "/currency-converter",
+      currency: "/currency-converter",
+      fx: "/currency-converter",
+      // Earn
+      mining: "/mining",
+      earn: "/mining",
+      mine: "/mining",
+      ads: "/pi-ads",
+      "watch ads": "/pi-ads",
+      "pi ads": "/pi-ads",
+      staking: "/staking",
+      stake: "/staking",
+      invest: "/staking",
+      affiliate: "/affiliate",
+      referral: "/affiliate",
+      rewards: "/affiliate",
+      invite: "/affiliate",
+      // Merchant
+      merchant: "/merchant-onboarding",
+      business: "/merchant-onboarding",
+      "merchant portal": "/merchant-onboarding",
+      store: "/merchant-products",
+      products: "/merchant-products",
+      catalog: "/merchant-products",
+      pos: "/merchant-pos",
+      "point of sale": "/merchant-pos",
+      "payment links": "/payment-links/create",
+      links: "/payment-links/create",
+      "qr pay": "/qr-pay",
+      buttons: "/buttons",
+      remittance: "/remittance-center",
+      // NFT / Web3
+      nft: "/web3/nft",
+      marketplace: "/web3/nft",
+      web3: "/web3/nft",
+      mint: "/web3/nft/create",
+      "nft store": "/web3/nft/store",
+      collectibles: "/web3/nft",
+      // Developer
+      developer: "/developer-dashboard",
+      "api docs": "/openpay-api-docs",
+      api: "/openpay-api-docs",
+      "partner api": "/partner-api",
+      oauth: "/openpay-auth",
+      // Help & account
+      support: "/help-center",
+      "help center": "/help-center",
+      contact: "/help-center",
+      wiki: "/help",
+      guide: "/openpay-guide",
+      ledger: "/ledger",
+      openledger: "/ledger",
+      feedback: "/feedback",
+      announcements: "/announcements",
+      blog: "/blog",
+      quest: "/feature-quest",
+      "feature quest": "/feature-quest",
+      security: "/settings",
+      privacy: "/privacy",
+      terms: "/terms",
+      notifications: "/notifications",
+      alerts: "/notifications",
+      logout: "/sign-in",
+      "sign out": "/sign-in",
+      ai: "/ai",
+      "openpay ai": "/ai",
     };
 
     const normalized = message.toLowerCase().trim();
 
-    // Exact matches first
+    // Exact matches first (longer keys preferred via Object order — sort by length)
     if (commands[normalized]) {
       return commands[normalized];
     }
@@ -900,7 +1099,8 @@ const OpenPayAIPage = () => {
     if (openNav) {
       const target = openNav[1].trim();
       if (commands[target]) return commands[target];
-      for (const [cmd, route] of Object.entries(commands)) {
+      const sorted = Object.entries(commands).sort((a, b) => b[0].length - a[0].length);
+      for (const [cmd, route] of sorted) {
         if (target === cmd || target.includes(cmd)) return route;
       }
     }
@@ -908,7 +1108,9 @@ const OpenPayAIPage = () => {
     // Ambiguous payment verbs: only navigate when bare ("send" / "send money")
     const paymentVerbs = new Set(["send", "transfer", "pay", "send money"]);
 
-    for (const [cmd, route] of Object.entries(commands)) {
+    // Match longer aliases first so "payment links" wins over "links"
+    const sortedCmds = Object.entries(commands).sort((a, b) => b[0].length - a[0].length);
+    for (const [cmd, route] of sortedCmds) {
       if (!normalized.includes(cmd)) continue;
       if (paymentVerbs.has(cmd)) {
         const isBare = /^(?:send|transfer|pay)(?:\s+money)?$/.test(normalized);
@@ -962,13 +1164,18 @@ const OpenPayAIPage = () => {
   };
 
   const buildBalanceResponse = async (): Promise<string> => {
-    const { data: freshBalanceData } = await supabase
-      .from("wallets")
-      .select("balance")
-      .eq("user_id", userId)
-      .single();
-
-    const freshBalance = freshBalanceData?.balance || 0;
+    let freshBalance = 0;
+    try {
+      const bal = await partnerGetBalance();
+      freshBalance = bal.balance;
+    } catch {
+      const { data: freshBalanceData } = await supabase
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", userId)
+        .single();
+      freshBalance = Number(freshBalanceData?.balance || 0);
+    }
     let response = `💰 **Your current balance is $${freshBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.**`;
 
     if (balancePrediction) {
@@ -1009,140 +1216,96 @@ const OpenPayAIPage = () => {
     }
   };
   
-  // Enhanced confirm payment to handle direct transactions
+  // Real transfer via Partner Transfer API POST /transfers — deducts connected wallet
   const confirmPayment = async () => {
-    if (!pendingPayment) return;
+    if (!pendingPayment || !userId) return;
+
+    const recipientRaw = String(pendingPayment.recipient || "").trim();
+    const to = formatPartnerRecipient(recipientRaw);
+    const amount = Number(pendingPayment.amount);
 
     try {
-      const { data: walletData } = await supabase
-        .from("wallets")
-        .select("balance")
-        .eq("user_id", userId)
-        .single();
-      
-      const currentBalance = walletData?.balance || 0;
-      
-      if (pendingPayment.amount > currentBalance) {
+      if (!(amount > 0)) {
+        toast.error("Invalid amount.");
+        setPendingPayment(null);
+        setShowPaymentConfirm(false);
+        return;
+      }
+
+      const { balance: currentBalance } = await partnerGetBalance();
+      if (amount > currentBalance) {
         toast.error("Insufficient balance. Transaction cancelled.");
         setPendingPayment(null);
         setShowPaymentConfirm(false);
         return;
       }
-      
-      // Deduct amount from sender's wallet
-      const { error: senderError } = await supabase
-        .from("wallets")
-        .update({ 
-          balance: currentBalance - pendingPayment.amount,
-          updated_at: new Date().toISOString()
-        })
-        .eq("user_id", userId);
-      
-      if (senderError) {
-        console.error('Failed to deduct from sender wallet:', senderError);
-        toast.error("Transaction failed. Please try again.");
+
+      // Resolve via Partner API GET /accounts/:identifier
+      let displayName = recipientRaw.replace(/^@/, "");
+      try {
+        const account = await partnerLookupAccount(to);
+        if (account.user_id === userId) {
+          toast.error("You can't send money to yourself.");
+          setPendingPayment(null);
+          setShowPaymentConfirm(false);
+          return;
+        }
+        displayName = account.username || displayName;
+      } catch (lookupErr) {
+        toast.error(
+          lookupErr instanceof Error
+            ? lookupErr.message
+            : `User ${to} not found on OpenPay.`
+        );
         setPendingPayment(null);
         setShowPaymentConfirm(false);
         return;
       }
-      
-      // Find recipient user
-      const { data: recipientData, error: recipientError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("username", pendingPayment.recipient)
-        .single();
-      
-      if (recipientError || !recipientData) {
-        // Refund if recipient not found
-        await supabase
-          .from("wallets")
-          .update({ 
-            balance: currentBalance,
-            updated_at: new Date().toISOString()
-          })
-          .eq("user_id", userId);
-        
-        toast.error(`User @${pendingPayment.recipient} not found. Transaction cancelled.`);
-        setPendingPayment(null);
-        setShowPaymentConfirm(false);
-        return;
-      }
-      
-      // Add to recipient's wallet
-      const { data: recipientWallet } = await supabase
-        .from("wallets")
-        .select("balance")
-        .eq("user_id", recipientData.id)
-        .single();
-      
-      if (recipientWallet) {
-        await supabase
-          .from("wallets")
-          .update({ 
-            balance: recipientWallet.balance + pendingPayment.amount,
-            updated_at: new Date().toISOString()
-          })
-          .eq("user_id", recipientData.id);
-      } else {
-        // Create wallet for recipient if they don't have one
-        await supabase
-          .from("wallets")
-          .insert({
-            user_id: recipientData.id,
-            balance: pendingPayment.amount,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as never);
-      }
-      
-      // Create transaction record
-      const transactionId = `TXN${Date.now().toString().slice(-6)}`;
-      await supabase
-        .from("transactions")
-        .insert({
-          transaction_id: transactionId,
-          sender_id: userId,
-          receiver_id: recipientData.id,
-          amount: pendingPayment.amount,
-          type: 'transfer',
-          status: 'completed',
-          description: `Transfer to @${pendingPayment.recipient}`,
-          created_at: new Date().toISOString()
-        } as never);
-      
-      toast.success(`Payment of $${pendingPayment.amount.toFixed(2)} to @${pendingPayment.recipient} completed!`);
-      
-      // Add confirmation message
+
+      const note = `OpenPay AI transfer to ${to}`;
+      const result = await partnerSendTransfer({ to, amount, note });
+
+      await loadBalance(userId);
+      const balanceAfter = Number(result.sender_balance);
+
+      const receipt: AiReceiptData = {
+        transactionId: result.transaction_id,
+        recipient: result.recipient_username || displayName,
+        amount,
+        balanceAfter,
+        status: result.status === "completed" ? "Completed" : result.status,
+        timestamp: new Date().toISOString(),
+        note,
+      };
+
+      toast.success(`Sent $${amount.toFixed(2)} to @${receipt.recipient}`);
+
       const confirmationMessage: Message = {
         id: (Date.now() + 2).toString(),
         role: "assistant",
-        content: `✅ **Transaction Completed Successfully!**\n\n📋 **Payment Details:**\n• Recipient: @${pendingPayment.recipient}\n• Amount: $${pendingPayment.amount.toFixed(2)}\n• Status: Completed\n• Transaction ID: ${transactionId}\n• Time: ${new Date().toLocaleString()}\n\n💰 **Updated Balance:** $${(currentBalance - pendingPayment.amount).toFixed(2)}\n\n🎯 **What's next?**\n• Check your transaction history\n• Send more money\n• View your balance\n• Get financial advice`,
+        content: `Payment of $${amount.toFixed(2)} to @${receipt.recipient} completed. View it on OpenLedger.`,
         timestamp: new Date().toISOString(),
-        type: "text"
+        type: "receipt",
+        receipt,
       };
-      
-      setMessages(prev => [...prev, confirmationMessage]);
+
+      setMessages((prev) => [...prev, confirmationMessage]);
       await saveMessage(confirmationMessage);
-      
+
       setPendingPayment(null);
       setShowPaymentConfirm(false);
-      
-      // Refresh balance and related data after payment
-      if (userId) {
-        await Promise.all([
-          loadBalance(userId),
-          generateBalancePrediction(userId),
-          loadInsights(userId),
-          generateSmartRecommendations(userId)
-        ]);
-        // Mark as interacted after payment
-        setUserInteracted(true);
-      }
-      
+
+      await Promise.all([
+        generateBalancePrediction(userId),
+        loadInsights(userId),
+        generateSmartRecommendations(userId),
+      ]);
+      setUserInteracted(true);
     } catch (error) {
-      console.error('Transaction error:', error);
-      toast.error("Payment failed. Please try again.");
+      console.error("Transaction error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Payment failed. Please try again."
+      );
       setPendingPayment(null);
       setShowPaymentConfirm(false);
     }
@@ -1151,44 +1314,76 @@ const OpenPayAIPage = () => {
   // Direct transaction executor
   const executeDirectTransaction = async (recipient: string, amount: number): Promise<string> => {
     try {
-      // Get fresh balance
-      const { data: walletData } = await supabase
-        .from("wallets")
-        .select("balance")
-        .eq("user_id", userId)
-        .single();
-      
-      const currentBalance = walletData?.balance || 0;
-      
-      // Validate transaction
+      let currentBalance = 0;
+      try {
+        currentBalance = (await partnerGetBalance()).balance;
+      } catch {
+        const { data: walletData } = await supabase
+          .from("wallets")
+          .select("balance")
+          .eq("user_id", userId)
+          .single();
+        currentBalance = Number(walletData?.balance || 0);
+      }
+
       if (amount <= 0) {
         return `❌ Invalid amount. Please enter a positive amount.`;
       }
-      
+
       if (amount > currentBalance) {
         return `❌ Insufficient balance. Your current balance is $${currentBalance.toFixed(2)}.\n\n💡 Consider topping up your account first.`;
       }
-      
-      // Check if recipient exists (simplified validation)
+
       if (recipient.length < 2) {
         return `❌ Invalid recipient. Please enter a valid username.`;
       }
-      
-      // Set pending payment for confirmation
-      setPendingPayment({ amount, recipient });
+
+      const to = formatPartnerRecipient(recipient);
+      try {
+        await partnerLookupAccount(to);
+      } catch (e) {
+        return `❌ ${e instanceof Error ? e.message : `User ${to} not found on OpenPay.`}`;
+      }
+
+      setPendingPayment({ amount, recipient: recipient.replace(/^@/, "") });
       setShowPaymentConfirm(true);
-      
-      return `💸 **Ready to Send Money**\n\n📋 **Transaction Details:**\n• Recipient: @${recipient}\n• Amount: $${amount.toFixed(2)}\n• Your Balance: $${currentBalance.toFixed(2)}\n• Remaining: $${(currentBalance - amount).toFixed(2)}\n\n⚠️ **Please confirm the payment below to proceed.**\n\n💡 **Quick Commands:**\n• "confirm" - Approve this transaction\n• "cancel" - Cancel this transaction\n• "send to @username amount" - Send to different person`;
-      
+
+      return `💸 **Ready to Send Money**\n\n📋 **Transaction Details:**\n• Recipient: ${to}\n• Amount: $${amount.toFixed(2)}\n• Your Balance: $${currentBalance.toFixed(2)}\n• Remaining: $${(currentBalance - amount).toFixed(2)}\n\n⚠️ **Confirm below** — Partner Transfer API debits your OpenPay wallet and posts to OpenLedger.\n\n💡 Quick replies: \`confirm\` · \`cancel\``;
     } catch (error) {
-      console.error('Transaction execution error:', error);
+      console.error("Transaction execution error:", error);
       return `❌ Failed to process transaction. Please try again or contact support.`;
     }
   };
   
   // Help response generator
   const generateHelpResponse = (): string => {
-    return `🤖 **OpenPay AI Commands & Features**\n\n## 🚀 Quick Navigation Commands\nJust type any of these to instantly open the feature:\n\n• **dashboard** or **home** - Main dashboard\n• **menu** - Main menu\n• **wallet** - Wallet balance\n• **cards** or **virtual cards** - Virtual cards\n• **transactions** or **history** - Transaction history\n• **send**, **transfer**, or **pay** - Send money\n• **topup**, **top up**, or **add funds** - Add funds\n• **merchant**, **business**, or **store** - Merchant POS\n• **pos** - Point of sale\n• **payment links** or **links** - Create payment links\n• **invoices** or **billing** - Send invoices\n• **support**, **help center**, or **contact** - Get help\n• **mining**, **earn**, or **ads** - Earn rewards\n• **staking** or **invest** - Investment options\n• **affiliate**, **referral**, or **rewards** - Referral program\n• **kyc**, **verification**, or **verify** - Identity verification\n• **security** or **privacy** - Security settings\n• **notifications** or **alerts** - Manage notifications\n• **profile** - User profile\n• **settings** - Account settings\n• **logout** or **sign out** - Sign out\n• **ai** or **openpay ai** - AI Assistant\n\n## 💸 **Direct Transaction Commands**\nSend money instantly with these commands:\n\n• **send to @username amount** - Send money to user\n• **transfer @username amount** - Transfer funds\n• **pay @username amount** - Make payment\n• **send username amount** - Alternative format\n\n## 💬 AI Assistant Commands\n• **balance** - Check current balance & predictions\n• **spending** - Analyze spending patterns\n• **health score** - Financial wellness check\n• **advice** - Get personalized recommendations\n• **forecast** - Balance predictions\n• **history** - Transaction insights\n\n## 💡 Tips\n• Type any command directly (e.g., "send money")\n• Use natural language (e.g., "I want to top up my account")\n• Ask questions about any feature\n• Type "help" anytime to see this menu\n• All commands navigate to exact pages - no 404 errors\n\n🎯 **Try these examples:**\n• "send to @john 50" - Send $50 to @john\n• "transfer @mary 25.50" - Send $25.50 to @mary\n• "pay @david 100 dollars" - Send $100 to @david\n• "Open wallet"\n• "Show me my transactions"\n• "I want to send money"\n• "Take me to merchant dashboard"\n• "Check my balance"\n• "Help me with KYC"\n• "Take me to AI assistant"`;
+    return `## OpenPay AI can help with everything in the app
+
+### Quick actions
+• **balance** — check balance & forecast
+• **send to @username amount** — start a transfer (then confirm)
+• **help** — this menu
+
+### Go to a feature (type the name)
+**Wallet:** dashboard · activity · receive · contacts · currency converter  
+**Pay:** send · transfer pro · request · invoice · scan qr · disputes  
+**Fund:** top up · topup history · swap · withdraw  
+**Cards & ID:** virtual card · kyc · 2fa · settings · profile  
+**Earn:** mining · staking · affiliate · ads  
+**Business:** merchant · products · pos · payment links · qr pay · buttons  
+**Web3:** nft · mint · nft store  
+**Dev:** api docs · partner api · developer  
+**Help:** help center · wiki · support · feature quest · ledger
+
+### Examples
+• "How do I top up with PayPal?"
+• "Help me complete KYC"
+• "How does staking work?"
+• "Create a payment link for my store"
+• "Take me to mining"
+• "send to @openpay 25"
+
+Ask in plain language — I'll match your need to the right OpenPay feature.`;
   };
   
   // Handle command navigation confirmation
@@ -1647,17 +1842,31 @@ Please choose an option or let me know how you'd like to proceed!`;
             <ArrowLeft className="h-4 w-4" />
             Back to menu
           </button>
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paypal-blue text-xs font-semibold text-white">
-              {userProfile?.full_name?.charAt(0) || "U"}
-            </div>
+          <button
+            type="button"
+            onClick={() => navigate("/profile")}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-muted dark:hover:bg-white/10"
+          >
+            {userProfile?.avatar_url ? (
+              <img
+                src={userProfile.avatar_url}
+                alt=""
+                className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-black/10 dark:ring-white/15"
+              />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-paypal-blue text-xs font-semibold text-white">
+                {(userProfile?.full_name || userProfile?.username || "U").charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{userProfile?.full_name || "User"}</p>
               <p className="truncate text-xs text-muted-foreground dark:text-white/45">
+                {userProfile?.username ? `@${userProfile.username}` : null}
+                {userProfile?.username ? " · " : null}
                 ${userBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -1749,6 +1958,13 @@ Please choose an option or let me know how you'd like to proceed!`;
                           {fixMojibakeText(message.content)}
                         </p>
                       </div>
+                    </div>
+                  ) : message.type === "receipt" && message.receipt ? (
+                    <div key={message.id} className="w-full space-y-3">
+                      <p className="font-ai-serif text-[16.5px] leading-[1.7] text-foreground">
+                        {fixMojibakeText(message.content)}
+                      </p>
+                      <AiTransferReceipt receipt={message.receipt} />
                     </div>
                   ) : (
                     <div key={message.id} className="w-full">
@@ -1911,27 +2127,55 @@ Please choose an option or let me know how you'd like to proceed!`;
             )}
 
             {recommendations.length > 0 && (
-              <div className="rounded-xl border border-border/70 bg-white p-3">
+              <div className="rounded-xl border border-border/70 bg-white p-3 dark:bg-card">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
                   <Lightbulb className="h-4 w-4 text-amber-500" />
                   Recommendations
                 </div>
                 <div className="space-y-2">
                   {recommendations.map((rec) => (
-                    <div key={rec.id} className="rounded-lg border border-amber-200 bg-amber-50 p-2.5">
-                      <p className="text-xs font-medium text-amber-900">{rec.title}</p>
-                      <p className="mt-0.5 text-xs text-amber-800">{rec.description}</p>
+                    <div
+                      key={rec.id}
+                      className="rounded-lg border border-amber-200/80 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/10"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs font-semibold text-amber-950 dark:text-amber-100">{rec.title}</p>
+                        {rec.priority === "high" && (
+                          <span className="shrink-0 rounded bg-amber-600/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200">
+                            Priority
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-amber-900/90 dark:text-amber-100/80">
+                        {rec.description}
+                      </p>
+                      {rec.estimated_impact && (
+                        <p className="mt-1 text-[11px] text-amber-800/70 dark:text-amber-200/70">
+                          Impact: {rec.estimated_impact}
+                        </p>
+                      )}
                       {rec.actionable && (
-                        <button
-                          type="button"
-                          className="mt-2 rounded-md bg-amber-600 px-2 py-1 text-xs text-white hover:bg-amber-700"
-                          onClick={() => {
-                            handleSuggestionClick(rec.action_text);
-                            setShowInsightsPanel(false);
-                          }}
-                        >
-                          {rec.action_text}
-                        </button>
+                        <div className="mt-2.5 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            className="rounded-md bg-amber-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
+                            onClick={() => handleRecommendationAction(rec)}
+                          >
+                            {rec.action_text}
+                          </button>
+                          {rec.prompt && rec.route && (
+                            <button
+                              type="button"
+                              className="rounded-md border border-amber-300 bg-white/70 px-2.5 py-1.5 text-xs font-medium text-amber-900 hover:bg-white dark:border-amber-500/40 dark:bg-transparent dark:text-amber-100"
+                              onClick={() => {
+                                setShowInsightsPanel(false);
+                                handleSuggestionClick(rec.prompt!);
+                              }}
+                            >
+                              Ask AI
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
@@ -2067,7 +2311,7 @@ Please choose an option or let me know how you'd like to proceed!`;
           <div className="space-y-4">
             <Alert>
               <AlertDescription>
-                Please review the transfer details before confirming:
+                This sends from your signed-in OpenPay wallet (same secure path as Express Send). The transfer posts to OpenLedger.
               </AlertDescription>
             </Alert>
 

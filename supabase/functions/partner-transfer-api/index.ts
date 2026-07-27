@@ -41,11 +41,16 @@ serve(async (req) => {
   if (req.method === "GET" && (path === "/" || path === "/health")) {
     return ok({
       service: "OpenPay Partner Transfer API",
-      version: "1.3.1",
+      version: "1.4.0",
       docs: "https://openpy.space/partner-api",
+      auth: [
+        "Bearer opk_… — partner API key (debits key owner)",
+        "Bearer <OpenPay user JWT> — signed-in session (debits that user; same /me /balance /accounts /transfers routes)",
+        "Bearer opa_… — Connect grant (/user/* only)",
+      ],
       endpoints: [
         "GET  /health",
-        "GET  /me                              — partner app owner (opk_ key)",
+        "GET  /me                              — partner app owner (opk_) or signed-in user (JWT)",
         "GET  /accounts/:identifier",
         "GET  /balance",
         "POST /transfers",
@@ -163,10 +168,134 @@ serve(async (req) => {
     return err("Not found", 404);
   }
 
-  // Auth: partner API key
+  // Auth header for Partner API key OR connected OpenPay user session (JWT)
   const authHeader = req.headers.get("Authorization") || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-  if (!token || !token.startsWith("opk_")) {
+  if (!token) {
+    return err("Missing Authorization. Use `Bearer opk_...` or a signed-in OpenPay session.", 401);
+  }
+
+  // ----- Connected OpenPay account (user JWT) — same docs routes for in-app AI / Connect -----
+  if (!token.startsWith("opk_") && !token.startsWith("opa_")) {
+    const { data: userData, error: userErr } = await admin.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return err("Unauthorized. Use a valid OpenPay session or `Bearer opk_...` API key.", 401);
+    }
+    const userId = userData.user.id;
+
+    try {
+      if (req.method === "GET" && path === "/me") {
+        const { data: profile } = await admin
+          .from("profiles").select("id, full_name, username, avatar_url").eq("id", userId).maybeSingle();
+        const { data: wallet } = await admin.from("wallets").select("balance").eq("user_id", userId).maybeSingle();
+        return ok({
+          partner_app: null,
+          auth: "user_session",
+          account: profile ? {
+            user_id: profile.id,
+            account_number: "OP" + String(profile.id).replace(/-/g, "").toUpperCase(),
+            full_name: profile.full_name,
+            username: profile.username,
+            avatar_url: profile.avatar_url,
+            balance: Number(wallet?.balance ?? 0),
+            currency: "OUSD",
+          } : null,
+        });
+      }
+
+      if (req.method === "GET" && path === "/balance") {
+        const { data: wallet } = await admin.from("wallets").select("balance, updated_at").eq("user_id", userId).maybeSingle();
+        return ok({ balance: Number(wallet?.balance ?? 0), currency: "OUSD", updated_at: wallet?.updated_at ?? null });
+      }
+
+      const accountMatchUser = path.match(/^\/accounts\/(.+)$/);
+      if (req.method === "GET" && accountMatchUser) {
+        const identifier = decodeURIComponent(accountMatchUser[1]);
+        const { data, error } = await admin.rpc("partner_lookup_account", { p_identifier: identifier });
+        if (error) return err(error.message, 500);
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!row) return err("Account not found", 404);
+        return ok({
+          user_id: row.user_id,
+          account_number: row.account_number,
+          full_name: row.full_name,
+          username: row.username,
+          avatar_url: row.avatar_url,
+          currency: row.currency || "OUSD",
+        });
+      }
+
+      if (req.method === "POST" && path === "/transfers") {
+        const body = await req.json().catch(() => ({}));
+        const to = String(body?.to ?? body?.recipient ?? "").trim();
+        const amount = Number(body?.amount);
+        const note = String(body?.note ?? "OpenPay AI transfer").slice(0, 200);
+        const idem = req.headers.get("Idempotency-Key") || body?.idempotency_key || crypto.randomUUID();
+        if (!to) return err("`to` (account_number | @username | email) is required");
+        if (!Number.isFinite(amount) || amount <= 0) return err("`amount` must be > 0");
+
+        // Resolve recipient the same way as Partner API docs
+        const { data: lookup, error: lookupErr } = await admin.rpc("partner_lookup_account", { p_identifier: to });
+        if (lookupErr) return err(lookupErr.message, 500);
+        const recipient = Array.isArray(lookup) ? lookup[0] : lookup;
+        if (!recipient?.user_id) return err("Account not found", 404);
+        if (recipient.user_id === userId) return err("Cannot transfer to self", 400);
+
+        // Prefer rich transfer_funds, then 4-arg fallback (same as Express Send)
+        let txId: string | null = null;
+        let transferErr: string | null = null;
+
+        const rich = await admin.rpc("transfer_funds", {
+          p_sender_id: userId,
+          p_receiver_id: recipient.user_id,
+          p_amount: amount,
+          p_note: note,
+          p_currency_code: "OUSD",
+          p_sender_amount: amount,
+          p_sender_currency_code: "OUSD",
+          p_receiver_amount: amount,
+          p_receiver_currency_code: "OUSD",
+        });
+        if (!rich.error && rich.data) {
+          txId = String(rich.data);
+        } else {
+          const legacy = await admin.rpc("transfer_funds", {
+            p_sender_id: userId,
+            p_receiver_id: recipient.user_id,
+            p_amount: amount,
+            p_note: note,
+          });
+          if (legacy.error || !legacy.data) {
+            transferErr = legacy.error?.message || rich.error?.message || "Transfer failed";
+          } else {
+            txId = String(legacy.data);
+          }
+        }
+
+        if (!txId) return err(transferErr || "Transfer failed", 400);
+
+        const { data: wallet } = await admin.from("wallets").select("balance").eq("user_id", userId).maybeSingle();
+        return ok({
+          transfer_id: idem,
+          transaction_id: txId,
+          recipient_user_id: recipient.user_id,
+          recipient_username: recipient.username || null,
+          sender_balance: Number(wallet?.balance ?? 0),
+          currency: "OUSD",
+          status: "completed",
+          auth: "user_session",
+        }, 201);
+      }
+
+      return err("Not found", 404);
+    } catch (e) {
+      console.error("partner-transfer-api user session error", e);
+      return err(String((e as Error)?.message || e), 500);
+    }
+  }
+
+  // Auth: partner API key (opk_live_…)
+  if (!token.startsWith("opk_")) {
     return err("Missing or invalid API key. Use `Authorization: Bearer opk_...`", 401);
   }
   const hash = await sha256Hex(token);
