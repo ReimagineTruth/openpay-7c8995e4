@@ -479,7 +479,7 @@ const OpenPayAIPage = () => {
     else if (hour >= 18 || hour < 5) timeGreeting = "Good evening";
     
     const activityLevel = spendingCategories.length > 0 ? "active" : "new";
-    const greeting = `${timeGreeting}, ${userName}! Welcome back to your ${activityLevel} financial dashboard.`;
+    const greeting = `${timeGreeting}, ${userName}! Welcome back to your ${activityLevel} financial dashboard. What should we tackle first — balance, sending money, spending, or something else?`;
     setGreeting(greeting);
   };
 
@@ -1197,6 +1197,7 @@ const OpenPayAIPage = () => {
     }
 
     response += `\n\n💡 **Tip:** Send money with \`send to @username amount\` (example: \`send to @openpay 50\`).`;
+    response += `\n\nWant me to help you **send money**, look at **spending**, or check **financial health** next?`;
     return response;
   };
   
@@ -1283,7 +1284,7 @@ const OpenPayAIPage = () => {
       const confirmationMessage: Message = {
         id: (Date.now() + 2).toString(),
         role: "assistant",
-        content: `Payment of $${amount.toFixed(2)} to @${receipt.recipient} completed. View it on OpenLedger.`,
+        content: `Payment of $${amount.toFixed(2)} to @${receipt.recipient} completed. View it on OpenLedger.\n\nWant to **send another payment**, check your **balance**, or open **Activity** next?`,
         timestamp: new Date().toISOString(),
         type: "receipt",
         receipt,
@@ -1348,7 +1349,7 @@ const OpenPayAIPage = () => {
       setPendingPayment({ amount, recipient: recipient.replace(/^@/, "") });
       setShowPaymentConfirm(true);
 
-      return `💸 **Ready to Send Money**\n\n📋 **Transaction Details:**\n• Recipient: ${to}\n• Amount: $${amount.toFixed(2)}\n• Your Balance: $${currentBalance.toFixed(2)}\n• Remaining: $${(currentBalance - amount).toFixed(2)}\n\n⚠️ **Confirm below** — Partner Transfer API debits your OpenPay wallet and posts to OpenLedger.\n\n💡 Quick replies: \`confirm\` · \`cancel\``;
+      return `💸 **Ready to Send Money**\n\n📋 **Transaction Details:**\n• Recipient: ${to}\n• Amount: $${amount.toFixed(2)}\n• Your Balance: $${currentBalance.toFixed(2)}\n• Remaining: $${(currentBalance - amount).toFixed(2)}\n\nShould I go ahead? Reply \`confirm\` to send, or \`cancel\` to stop.`;
     } catch (error) {
       console.error("Transaction execution error:", error);
       return `❌ Failed to process transaction. Please try again or contact support.`;
@@ -1383,7 +1384,9 @@ const OpenPayAIPage = () => {
 • "Take me to mining"
 • "send to @openpay 25"
 
-Ask in plain language — I'll match your need to the right OpenPay feature.`;
+Ask in plain language — I'll match your need to the right OpenPay feature.
+
+What do you want to do first?`;
   };
   
   // Handle command navigation confirmation
@@ -1446,7 +1449,7 @@ Ask in plain language — I'll match your need to the right OpenPay feature.`;
       setPendingPayment(null);
       setPendingSendRecipient(null);
       setShowPaymentConfirm(false);
-      return `❌ Transfer cancelled. You can start again with \`send to @username amount\`.`;
+      return `❌ Transfer cancelled. Want to try a different amount, pick another recipient, or check your balance instead?`;
     }
 
     // If we asked for an amount, accept a bare number next
@@ -1491,13 +1494,12 @@ Ask in plain language — I'll match your need to the right OpenPay feature.`;
       setPendingUserMessage(message);
       setShowCommandModal(true);
       
-      // Return a temporary message while waiting for user decision
-      return `I can help you with **${featureName}**! Would you like me to:
+      return `I can help you with **${featureName}**!
 
-📋 **Option 1:** Take you directly to the ${featureName} page
-💬 **Option 2:** Answer your questions about ${featureName} here in chat
+📋 **Option 1:** Take you to the ${featureName} page  
+💬 **Option 2:** Stay here and I'll explain ${featureName} step by step
 
-Please choose an option or let me know how you'd like to proceed!`;
+Which do you prefer — **go there** or **ask here**?`;
     }
     
     // Help command
@@ -1538,7 +1540,8 @@ Please choose an option or let me know how you'd like to proceed!`;
       if (budgetAlerts.length > 0) {
         response += `\n⚠️ **Budget Alerts:** ${budgetAlerts.length} category(ies) need attention.\n`;
       }
-      
+
+      response += `\nWant a **budget tip** for your top category, or should we look at **how to top up**?`;
       return response;
     }
 
@@ -1566,6 +1569,7 @@ Please choose an option or let me know how you'd like to proceed!`;
       }
       
       advice += `🎯 **Goal:** Set up automatic savings for consistent growth.\n`;
+      advice += `\nWhat matters most right now — **saving more**, **spending less**, or **earning** (mining/staking)?`;
       
       return advice;
     }
@@ -1590,7 +1594,8 @@ Please choose an option or let me know how you'd like to proceed!`;
       if (balancePrediction && balancePrediction.days_until_zero < 30) {
         response += `⚠️ **Based on your spending pattern, consider adding $${Math.ceil(balancePrediction.spending_velocity * 30)} to last 30 days.`;
       }
-      
+
+      response += `\n\nWant me to open **Top-up** for you, or tell me how much you'd like to add?`;
       return response;
     }
 
@@ -1638,7 +1643,7 @@ Please choose an option or let me know how you'd like to proceed!`;
       let grade = score >= 80 ? "Excellent" : score >= 60 ? "Good" : score >= 40 ? "Fair" : "Needs Improvement";
       let emoji = score >= 80 ? "🟢" : score >= 60 ? "🟡" : score >= 40 ? "🟠" : "🔴";
       
-      return `${emoji} **Financial Health Score: ${score}/100 (${grade})**\n\n**Factors:**\n${factors.join('\n')}\n\n**Recommendations:**\n${score < 60 ? 'Focus on building savings and controlling expenses.' : score < 80 ? 'Continue good habits and consider investments.' : 'Excellent financial management! Consider diversification.'}`;
+      return `${emoji} **Financial Health Score: ${score}/100 (${grade})**\n\n**Factors:**\n${factors.join('\n')}\n\n**Recommendations:**\n${score < 60 ? 'Focus on building savings and controlling expenses.' : score < 80 ? 'Continue good habits and consider investments.' : 'Excellent financial management! Consider diversification.'}\n\nWant to dig into **spending**, **top-up**, or **earn options** (mining/staking) next?`;
     }
 
     // Try AI for complex queries
@@ -1649,7 +1654,7 @@ Please choose an option or let me know how you'd like to proceed!`;
       return aiResponse;
     } catch (error) {
       console.error("❌ AI fallback error:", error);
-      return "I'm here to help with advanced financial tasks. You can ask me to:\n\n• Check your balance with predictions\n• Analyze spending patterns with AI insights\n• Send money with smart suggestions\n• Get personalized financial advice\n• Optimize your financial health\n• Get smart top-up recommendations\n• Analyze your financial health score\n• Get help with any OpenPay feature\n\nFor advanced AI features, please check your connection and try again.";
+      return "I'm here to help. Want to check your **balance**, **send money**, review **spending**, or ask how a feature works?";
     }
   };
 
@@ -1931,6 +1936,9 @@ Please choose an option or let me know how you'd like to proceed!`;
                   ? greeting.replace(/^Good (morning|afternoon|evening),?\s*/i, "Hi, ").split(/[.!]/)[0]
                   : "How can I help with your finances today?"}
               </h2>
+              <p className="mt-3 max-w-md text-center font-ai-sans text-sm text-muted-foreground">
+                Ask me anything — I&apos;ll answer and ask what you want to do next.
+              </p>
               <div className="mt-10 grid w-full max-w-2xl grid-cols-1 gap-2.5 sm:grid-cols-2">
                 {suggestionPrompts.map((item) => (
                   <button
