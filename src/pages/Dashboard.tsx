@@ -2353,21 +2353,34 @@ const Dashboard = () => {
                 <Store className="h-3 w-3" /> Merchant
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setUiMode("web3")}
-              aria-label="Switch to Web3 mode"
-              className="ml-auto inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-            >
-              <Hexagon className="h-3 w-3" /> Web3
-            </button>
-            <button
-              type="button"
-              onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-              className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-            >
-              {amountFormat === "compact" ? "Compact" : "Comma"}
-            </button>
+            <div className="ml-auto flex items-start gap-2">
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => setUiMode("web3")}
+                  aria-label="Switch to Web3 mode"
+                  className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                >
+                  <Hexagon className="h-3 w-3" /> Web3
+                </button>
+                <a
+                  href="https://openpaypro.space/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open OpenPay Pro"
+                  className="inline-flex items-center justify-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                >
+                  <ExternalLink className="h-3 w-3" /> Pro
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+              >
+                {amountFormat === "compact" ? "Compact" : "Comma"}
+              </button>
+            </div>
           </div>
 
           {walletView === "merchant" && (
@@ -2441,14 +2454,25 @@ const Dashboard = () => {
               <p className="text-sm font-black text-white">Pay</p>
               <p className="mt-0.5 text-[10px] font-semibold text-white/65">OpenPay users</p>
             </button>
-            <button
-              type="button"
-              onClick={() => navigate("/send/pro")}
-              className="ios-active rounded-2xl bg-white px-3 py-3 text-center shadow-lg shadow-black/10 transition hover:bg-white/95"
-            >
-              <p className="text-sm font-black text-paypal-blue">Transfer</p>
-              <p className="mt-0.5 text-[10px] font-semibold text-paypal-blue/70">OpenPay Pro</p>
-            </button>
+            <div className="ios-active flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg shadow-black/10">
+              <button
+                type="button"
+                onClick={() => navigate("/send/pro")}
+                className="px-3 py-3 text-center transition hover:bg-white/95"
+              >
+                <p className="text-sm font-black text-paypal-blue">Transfer</p>
+                <p className="mt-0.5 text-[10px] font-semibold text-paypal-blue/70">OpenPay Pro</p>
+              </button>
+              <a
+                href="https://openpaypro.space/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1 border-t border-paypal-blue/10 bg-paypal-blue/[0.06] px-2 py-1.5 text-[10px] font-bold text-paypal-blue transition hover:bg-paypal-blue/10"
+                aria-label="Open OpenPay Pro wallet"
+              >
+                <ExternalLink className="h-3 w-3" /> Pro
+              </a>
+            </div>
             <button
               type="button"
               onClick={() => setShowReceiveOptions(true)}

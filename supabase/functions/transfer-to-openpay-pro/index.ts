@@ -9,8 +9,17 @@ const corsHeaders = {
 };
 
 const DEFAULT_PARTNER_USERNAME = "wainfoundation";
-const DEFAULT_INBOUND_URL = "https://openpaypromainnet.lovable.app/api/public/openpay/inbound";
+const DEFAULT_INBOUND_URLS = [
+  "https://openpaypro.space/api/public/openpay/inbound",
+  "https://openpaypromainnet.lovable.app/api/public/openpay/inbound",
+];
 const PRO_WALLET_RE = /^0x[a-fA-F0-9]{40}$/;
+
+const resolveInboundUrls = () => {
+  const configured = (Deno.env.get("OPENPAY_PRO_INBOUND_URL") || "").trim();
+  const list = configured ? [configured, ...DEFAULT_INBOUND_URLS] : [...DEFAULT_INBOUND_URLS];
+  return [...new Set(list.filter(Boolean))];
+};
 
 const isProWalletAddress = (raw: string) => PRO_WALLET_RE.test(String(raw || "").trim());
 
@@ -73,7 +82,6 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     if (!supabaseUrl || !supabaseServiceKey) throw new Error("Server configuration error");
 
-    const inboundUrl = (Deno.env.get("OPENPAY_PRO_INBOUND_URL") || DEFAULT_INBOUND_URL).trim();
     const partnerApiKey = (Deno.env.get("OPENPAY_PRO_PARTNER_API_KEY") || Deno.env.get("OPENPAY_PRO_API_KEY") || "").trim();
     const partnerUsername = (
       Deno.env.get("OPENPAY_PRO_PARTNER_USERNAME") || DEFAULT_PARTNER_USERNAME
@@ -126,44 +134,57 @@ serve(async (req: Request) => {
 
     const notifyPro = async (txId: string, routingNote: string, destination: string) => {
       if (!partnerApiKey) {
-        throw new Error("OpenPay Pro inbound is not configured (missing partner API key).");
+        throw new Error(
+          "OpenPay Pro inbound is not configured (missing OPENPAY_PRO_PARTNER_API_KEY secret).",
+        );
       }
       const proTo = formatProDestinationForApi(destination);
-      const response = await fetch(inboundUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${partnerApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          to: proTo,
-          amount: Number(amount.toFixed(2)),
-          openpay_tx_id: txId,
-          note: routingNote,
-          from_username: fromUsername,
-        }),
-      });
+      const urls = resolveInboundUrls();
+      let lastError = "OpenPay Pro inbound failed";
+      let lastPayload: Record<string, unknown> = {};
 
-      const rawText = await response.text();
-      let payload: Record<string, unknown> = {};
-      try {
-        payload = rawText ? JSON.parse(rawText) : {};
-      } catch {
-        payload = { raw: rawText };
+      for (const inboundUrl of urls) {
+        try {
+          const response = await fetch(inboundUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${partnerApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: proTo,
+              amount: Number(amount.toFixed(2)),
+              openpay_tx_id: txId,
+              note: routingNote,
+              from_username: fromUsername,
+            }),
+          });
+
+          const rawText = await response.text();
+          let payload: Record<string, unknown> = {};
+          try {
+            payload = rawText ? JSON.parse(rawText) : {};
+          } catch {
+            payload = { raw: rawText };
+          }
+          lastPayload = payload;
+
+          if (response.ok) {
+            return { ...payload, _inbound_url: inboundUrl };
+          }
+
+          lastError =
+            (typeof payload.error === "string" && payload.error) ||
+            (typeof payload.message === "string" && payload.message) ||
+            `OpenPay Pro inbound failed (${response.status})`;
+        } catch (e) {
+          lastError = e instanceof Error ? e.message : "OpenPay Pro inbound network error";
+        }
       }
 
-      if (!response.ok) {
-        const message =
-          (typeof payload.error === "string" && payload.error) ||
-          (typeof payload.message === "string" && payload.message) ||
-          `OpenPay Pro inbound failed (${response.status})`;
-        const err = new Error(message) as Error & { status?: number; payload?: unknown };
-        err.status = response.status;
-        err.payload = payload;
-        throw err;
-      }
-
-      return payload;
+      const err = new Error(lastError) as Error & { status?: number; payload?: unknown };
+      err.payload = lastPayload;
+      throw err;
     };
 
     // Notify-only path (hosted /pay link already debited OpenPay)

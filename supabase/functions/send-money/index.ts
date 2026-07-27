@@ -8,7 +8,71 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
-const DEFAULT_INBOUND_URL = "https://openpaypromainnet.lovable.app/api/public/openpay/inbound";
+const DEFAULT_INBOUND_URLS = [
+  "https://openpaypro.space/api/public/openpay/inbound",
+  "https://openpaypromainnet.lovable.app/api/public/openpay/inbound",
+];
+
+const resolveInboundUrls = () => {
+  const configured = (Deno.env.get("OPENPAY_PRO_INBOUND_URL") || "").trim();
+  const list = configured ? [configured, ...DEFAULT_INBOUND_URLS] : [...DEFAULT_INBOUND_URLS];
+  return [...new Set(list.filter(Boolean))];
+};
+
+const notifyOpenPayProInbound = async (opts: {
+  partnerApiKey: string;
+  to: string;
+  amount: number;
+  openpayTxId: string;
+  note: string;
+  fromUsername: string | null;
+}) => {
+  const urls = resolveInboundUrls();
+  let lastError = "OpenPay Pro inbound failed";
+  let lastPayload: Record<string, unknown> = {};
+
+  for (const inboundUrl of urls) {
+    try {
+      const notifyRes = await fetch(inboundUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${opts.partnerApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: opts.to,
+          amount: Number(opts.amount.toFixed(2)),
+          openpay_tx_id: opts.openpayTxId,
+          note: opts.note,
+          from_username: opts.fromUsername,
+        }),
+      });
+
+      const rawText = await notifyRes.text();
+      let payload: Record<string, unknown> = {};
+      try {
+        payload = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        payload = { raw: rawText };
+      }
+      lastPayload = payload;
+
+      if (notifyRes.ok) {
+        return { ok: true as const, payload, inboundUrl };
+      }
+
+      lastError =
+        (typeof payload.error === "string" && payload.error) ||
+        (typeof payload.message === "string" && payload.message) ||
+        `OpenPay Pro inbound failed (${notifyRes.status})`;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : "OpenPay Pro inbound network error";
+    }
+  }
+
+  return { ok: false as const, error: lastError, payload: lastPayload };
+};
+
 const PRO_XFER_RE =
   /^pro_xfer:(0x[a-fA-F0-9]{40}|@?[A-Za-z0-9_]+|uid_[a-f0-9-]+):([A-Za-z0-9_-]+)/i;
 
@@ -150,9 +214,9 @@ serve(async (req: Request) => {
     };
 
     // After debit, notify OpenPay Pro for pro_xfer routing notes (API key stays server-side).
+    // OAuth Connect (opa_) only reads balance — Pro credit requires this inbound call with opk_.
     const parsedPro = parseProXferNote(enrichedNote);
     if (parsedPro && txId) {
-      const inboundUrl = (Deno.env.get("OPENPAY_PRO_INBOUND_URL") || DEFAULT_INBOUND_URL).trim();
       const partnerApiKey = (
         Deno.env.get("OPENPAY_PRO_PARTNER_API_KEY") ||
         Deno.env.get("OPENPAY_PRO_API_KEY") ||
@@ -163,63 +227,37 @@ serve(async (req: Request) => {
         responseBody.partial = true;
         responseBody.pro_notified = false;
         responseBody.warning =
-          "OpenPay debit succeeded, but OpenPay Pro inbound is not configured (missing partner API key).";
+          "OpenPay debit succeeded, but OpenPay Pro inbound is not configured (missing OPENPAY_PRO_PARTNER_API_KEY secret).";
       } else {
-        try {
-          const { data: senderProfile } = await supabase
-            .from("profiles")
-            .select("username")
-            .eq("id", user.id)
-            .maybeSingle();
-          const fromUsername = String(senderProfile?.username || "").trim() || null;
-          const proTo = formatProDestinationForApi(parsedPro.to);
+        const { data: senderProfile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", user.id)
+          .maybeSingle();
+        const fromUsername = String(senderProfile?.username || "").trim() || null;
+        const proTo = formatProDestinationForApi(parsedPro.to);
 
-          const notifyRes = await fetch(inboundUrl, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${partnerApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              to: proTo,
-              amount: Number(parsedAmount.toFixed(2)),
-              openpay_tx_id: txId,
-              note: enrichedNote,
-              from_username: fromUsername,
-            }),
-          });
+        const notified = await notifyOpenPayProInbound({
+          partnerApiKey,
+          to: proTo,
+          amount: parsedAmount,
+          openpayTxId: txId,
+          note: enrichedNote,
+          fromUsername,
+        });
 
-          const rawText = await notifyRes.text();
-          let payload: Record<string, unknown> = {};
-          try {
-            payload = rawText ? JSON.parse(rawText) : {};
-          } catch {
-            payload = { raw: rawText };
-          }
-
-          if (!notifyRes.ok) {
-            const message =
-              (typeof payload.error === "string" && payload.error) ||
-              (typeof payload.message === "string" && payload.message) ||
-              `OpenPay Pro inbound failed (${notifyRes.status})`;
-            responseBody.partial = true;
-            responseBody.pro_notified = false;
-            responseBody.warning =
-              "OpenPay debit succeeded, but OpenPay Pro credit failed. Support can retry with the same openpay_tx_id.";
-            responseBody.error = message;
-            responseBody.pro = payload;
-          } else {
-            responseBody.pro_notified = true;
-            responseBody.to_pro = proTo;
-            responseBody.pro = payload;
-          }
-        } catch (notifyError) {
+        if (!notified.ok) {
           responseBody.partial = true;
           responseBody.pro_notified = false;
           responseBody.warning =
             "OpenPay debit succeeded, but OpenPay Pro credit failed. Support can retry with the same openpay_tx_id.";
-          responseBody.error =
-            notifyError instanceof Error ? notifyError.message : "OpenPay Pro credit failed";
+          responseBody.error = notified.error;
+          responseBody.pro = notified.payload;
+        } else {
+          responseBody.pro_notified = true;
+          responseBody.to_pro = proTo;
+          responseBody.pro = notified.payload;
+          responseBody.pro_inbound_url = notified.inboundUrl;
         }
       }
     }

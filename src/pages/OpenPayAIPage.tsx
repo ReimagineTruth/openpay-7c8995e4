@@ -965,7 +965,7 @@ const OpenPayAIPage = () => {
       home: "/dashboard",
       main: "/dashboard",
       wallet: "/dashboard",
-      balance page: "/dashboard",
+      "balance page": "/dashboard",
       savings: "/dashboard?section=savings",
       analytics: "/dashboard?section=analytics",
       profile: "/profile",

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, QrCode, Send } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, QrCode, Send } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "sonner";
 
@@ -233,6 +233,31 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
     };
   }, [showScanner]);
 
+  const transferViaDedicated = async (
+    note: string,
+    ref: string,
+  ): Promise<TransferPayload> => {
+    const { data, error } = await supabase.functions.invoke("transfer-to-openpay-pro", {
+      body: {
+        amount: Number(amountNum.toFixed(2)),
+        to: proTo,
+        note,
+        ref,
+        memo: memo.trim() || undefined,
+      },
+    });
+
+    if (error) {
+      throw new Error(await getFunctionErrorMessage(error, "Transfer to OpenPay Pro failed"));
+    }
+
+    const payload = (data || {}) as TransferPayload;
+    if (payload.error && !payload.partial && !payload.transaction_id) {
+      throw new Error(payload.error);
+    }
+    return payload;
+  };
+
   const transferViaSendMoney = async (note: string): Promise<TransferPayload> => {
     const { data: partner, error: partnerError } = await supabase
       .from("profiles")
@@ -278,6 +303,27 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
     };
   };
 
+  const retryProCredit = async (
+    openpayTxId: string,
+    note: string,
+    ref: string,
+  ): Promise<TransferPayload> => {
+    const { data, error } = await supabase.functions.invoke("transfer-to-openpay-pro", {
+      body: {
+        notify_only: true,
+        amount: amountNum,
+        to: proTo,
+        openpay_tx_id: openpayTxId,
+        note,
+        ref,
+      },
+    });
+    if (error) {
+      throw new Error(await getFunctionErrorMessage(error, "Pro credit retry failed"));
+    }
+    return (data || {}) as TransferPayload;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
@@ -296,29 +342,30 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
     try {
       const ref = makeProXferRef();
       const note = buildProXferNote(proTo, ref);
-      // Use live send-money (debits partner + notifies Pro when secrets are set).
-      // Dedicated transfer-to-openpay-pro is optional and may not be deployed yet.
-      let payload = await transferViaSendMoney(note);
 
-      // If the Pro-side credit failed (partial), retry via the dedicated notify endpoint
-      // so users don't end up debited-without-credit.
+      // Prefer dedicated transfer-to-openpay-pro (debit + Pro inbound).
+      // Fall back to send-money if that function is unavailable.
+      let payload: TransferPayload;
+      try {
+        payload = await transferViaDedicated(note, ref);
+      } catch (primaryError) {
+        console.warn("transfer-to-openpay-pro failed, falling back to send-money", primaryError);
+        payload = await transferViaSendMoney(note);
+      }
+
+      // If Pro-side credit failed (partial), retry notify-only (no second debit).
       if ((payload.partial || payload.warning) && payload.transaction_id) {
         try {
-          const retry = await supabase.functions.invoke("transfer-to-openpay-pro", {
-            body: {
-              notify_only: true,
-              amount: amountNum,
-              to: proTo,
-              openpay_tx_id: payload.transaction_id,
-              note: payload.note || note,
-              ref,
-            },
-          });
-          const retryData = (retry?.data ?? {}) as TransferPayload;
-          if (!retry?.error && !retryData.partial && !retryData.warning) {
+          const retryData = await retryProCredit(payload.transaction_id, payload.note || note, ref);
+          if (!retryData.partial && !retryData.warning && !retryData.error) {
             payload = { ...payload, ...retryData, partial: false, warning: undefined, error: undefined };
           } else if (retryData?.warning || retryData?.error) {
-            payload = { ...payload, warning: retryData.warning || retryData.error || payload.warning };
+            payload = {
+              ...payload,
+              warning: retryData.warning || retryData.error || payload.warning,
+              error: retryData.error || payload.error,
+              partial: true,
+            };
           }
         } catch (retryError) {
           console.warn("Pro credit retry failed", retryError);
@@ -326,10 +373,27 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
       }
 
       if (payload.partial || payload.warning) {
-        toast.error(payload.warning || payload.error || "OpenPay Pro credit failed — support has been notified.");
-      } else {
-        toast.success(`Sent to OpenPay Pro ${payload.to_pro || previewTarget}`);
+        toast.error(
+          payload.warning ||
+            payload.error ||
+            "OpenPay deducted your balance, but OpenPay Pro did not credit yet. Retry credit or contact support with your transaction id.",
+        );
+        // Still refresh balance — OpenPay debit did happen.
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          const { data: wallet } = await supabase
+            .from("wallets")
+            .select("balance")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          setBalance(Number(wallet?.balance || 0));
+        }
+        return;
       }
+
+      toast.success(`Sent to OpenPay Pro ${payload.to_pro || previewTarget}`);
 
       showThankYouModal({
         receiverName: payload.partner_name || "OpenPay Pro",
@@ -367,6 +431,10 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
         toast.error(message);
       } else if (/unknown.*destination|invalid openpay pro username/i.test(message)) {
         toast.error("Unknown OpenPay Pro destination. Check the @username or wallet address.");
+      } else if (/OPENPAY_PRO_PARTNER_API_KEY|inbound is not configured/i.test(message)) {
+        toast.error(
+          "OpenPay Pro credit is not configured on the server. Set OPENPAY_PRO_PARTNER_API_KEY and redeploy transfer functions.",
+        );
       } else {
         toast.error(message);
       }
@@ -383,7 +451,7 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
           {loadingBalance ? "…" : `${balance.toFixed(2)} OUSD`}
         </p>
         <p className="mt-2 text-xs text-white/70">
-          Funds settle to @{OPENPAY_PRO_PARTNER_USERNAME}, then OpenPay Pro credits the destination wallet.
+          Funds settle to @{OPENPAY_PRO_PARTNER_USERNAME}, then OpenPay Pro credits the destination wallet via Partner inbound (not OAuth).
         </p>
       </div>
 
@@ -477,6 +545,17 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
           </>
         )}
       </Button>
+
+      <a
+        href="https://openpaypro.space/authpi"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Open OpenPay Pro wallet"
+        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/15 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/25"
+      >
+        <ExternalLink className="h-4 w-4" />
+        Open OpenPay Pro
+      </a>
     </form>
   );
 
@@ -525,8 +604,8 @@ const SendToOpenPayProPanel = ({ embedded = false, onBack }: Props) => {
 
         <div className="rounded-[2rem] border border-white/15 bg-white/10 p-6 shadow-2xl shadow-black/10 backdrop-blur-xl">
           <div className="mb-5 flex items-center gap-3">
-            <AuthMark className="h-12 w-12" />
-            <div>
+            <AuthMark className="h-12 w-12 shrink-0" />
+            <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.25em] text-white/65">Transfer</p>
               <h1 className="text-2xl font-black tracking-tight">OpenPay Pro</h1>
             </div>
