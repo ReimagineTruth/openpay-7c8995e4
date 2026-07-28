@@ -11,8 +11,6 @@ import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [username, setUsername] = useState("");
   const [signupCode, setSignupCode] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -31,15 +29,15 @@ const SignUp = () => {
       return;
     }
     setLoading(true);
-    
-    const userData: any = { full_name: fullName, username };
+
+    const userData: any = {};
     if (signupCode.trim()) {
       userData.signup_code = signupCode.trim().toUpperCase();
     }
     if (referralParam) {
       userData.referral_code = referralParam;
     }
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -59,9 +57,10 @@ const SignUp = () => {
       }
 
       toast.success("Account created!");
-      navigate("/onboarding", { replace: true });
+      navigate("/setup-profile", { replace: true });
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-paypal-blue to-[#072a7a] px-6 py-10">
@@ -72,31 +71,19 @@ const SignUp = () => {
           <p className="text-sm font-medium text-white/85">Create your wallet</p>
         </div>
         <div className="paypal-surface w-full rounded-3xl p-7 shadow-2xl shadow-black/15">
-          <h1 className="paypal-heading mb-6 text-center">Sign Up</h1>
+          <h1 className="paypal-heading mb-2 text-center">Sign Up</h1>
+          <p className="mb-6 text-center text-xs text-muted-foreground">
+            We only collect the data necessary to provide our service.
+          </p>
           <form onSubmit={handleSignUp} className="space-y-4">
             <Input
               type="text"
-              placeholder="Full Name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              className="h-12 rounded-2xl border-white/70 bg-white"
-            />
-            <Input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="h-12 rounded-2xl border-white/70 bg-white"
-            />
-            <Input
-              type="text"
-              placeholder="Your Friend Affiliate Code (Optional)"
+              placeholder="Friend Affiliate Code (Optional)"
               value={signupCode}
               onChange={(e) => setSignupCode(e.target.value)}
               className="h-12 rounded-2xl border-white/70 bg-white"
             />
+
             <Input
               type="email"
               placeholder="Email"

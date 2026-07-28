@@ -1,205 +1,62 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { generateOpenPayAccountNumber } from "@/lib/openpayIdentity";
+import { supabase } from "@/integrations/supabase/client";
+import AuthMark from "@/components/AuthMark";
 
-const SetupProfilePage = () => {
+const WelcomePage = () => {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState<string | null>(null);
-  const [fullName, setFullName] = useState("");
-  const [username, setUsername] = useState("");
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        navigate("/auth", { replace: true });
-        return;
-      }
-
-      setUserId(user.id);
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, username")
-        .eq("id", user.id)
-        .single();
-
-      const loadedName = (profile?.full_name || "").trim();
-      const loadedUsername = (profile?.username || "").trim();
-
-      setFullName(loadedName);
-      setUsername(loadedUsername.startsWith("pi_") ? "" : loadedUsername);
-    };
-
-    load();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) navigate("/auth", { replace: true });
+    });
   }, [navigate]);
 
-  const normalizedUsername = useMemo(() => {
-    return username.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
-  }, [username]);
-
-  const handleSave = async () => {
-    if (!userId) return;
-
-    if (!fullName.trim()) {
-      toast.error("Full name is required");
-      return;
-    }
-
-    if (!/^[a-z0-9_]{3,20}$/i.test(normalizedUsername)) {
-      toast.error("Username must be 3-20 characters and use letters, numbers, or underscore");
-      return;
-    }
-
-    setSaving(true);
-
-    const trimmedName = fullName.trim();
-    const trimmedUsername = normalizedUsername;
-
-    try {
-      const { data: updatedRows, error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          full_name: trimmedName,
-          username: trimmedUsername,
-        })
-        .eq("id", userId)
-        .select("id");
-
-      if (profileError) {
-        throw new Error(profileError.message || "Failed to save profile");
-      }
-
-      if (!updatedRows || updatedRows.length === 0) {
-        const referralBase = trimmedUsername || `user_${userId.replace(/-/g, "").slice(0, 12)}`;
-        const fallbackReferral = `user_${userId.replace(/-/g, "").slice(0, 12)}`;
-        let created = false;
-        let lastInsertError = "";
-        const candidates = [
-          referralBase,
-          ...Array.from({ length: 24 }, (_, i) => `${referralBase}${i + 1}`),
-          fallbackReferral,
-        ];
-
-        for (const referral_code of candidates) {
-          const insertPayload = {
-            id: userId,
-            full_name: trimmedName,
-            username: trimmedUsername,
-            referral_code,
-          } as any;
-
-          const { error: insertError } = await supabase.from("profiles").insert(insertPayload);
-          if (!insertError) {
-            created = true;
-            break;
-          }
-
-          const msg = String(insertError.message || "");
-          lastInsertError = msg;
-          if (msg.toLowerCase().includes("column") && msg.toLowerCase().includes("referral_code")) {
-            const { error: retryError } = await supabase.from("profiles").insert({
-              id: userId,
-              full_name: trimmedName,
-              username: trimmedUsername,
-            } as any);
-            if (!retryError) {
-              created = true;
-              break;
-            }
-            lastInsertError = String(retryError.message || "");
-          }
-        }
-
-        if (!created) {
-          throw new Error(
-            `Profile record was missing and could not be created. ${lastInsertError ? `Last error: ${lastInsertError}` : "Apply the latest Supabase migrations then try again."}`,
-          );
-        }
-      }
-
-      const accountNumber = generateOpenPayAccountNumber(userId);
-      const { error: accountError } = await supabase.from("user_accounts").upsert(
-        {
-          user_id: userId,
-          account_number: accountNumber,
-          account_name: trimmedName,
-          account_username: trimmedUsername,
-        },
-        { onConflict: "user_id" },
-      );
-
-      if (accountError) {
-        try {
-          await (supabase as any).rpc("upsert_my_user_account");
-        } catch {
-          // ignore
-        }
-      }
-    } catch (err) {
-      setSaving(false);
-      toast.error(err instanceof Error ? err.message : "Failed to save profile");
-      return;
-    }
-
-    setSaving(false);
-
-    toast.success("Profile setup complete");
+  const handleContinue = () => {
     navigate("/dashboard", { replace: true });
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 pt-8 pb-10">
-      <div className="mx-auto max-w-md">
-        <h1 className="paypal-heading">Set up your profile</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Complete your name and username to start using OpenPay.
+    <div className="min-h-screen bg-gradient-to-b from-paypal-blue to-[#072a7a] px-6 py-10 flex items-center justify-center">
+      <div className="w-full max-w-sm text-center">
+        <AuthMark className="mx-auto mb-6 h-16 w-16" />
+        <h1 className="text-3xl font-bold tracking-tight text-white">
+          Welcome to OpenPay 👋
+        </h1>
+        <p className="mt-3 text-base text-white/85">
+          Start using the app instantly.
         </p>
 
-        <div className="paypal-surface mt-5 rounded-3xl p-5">
-          <div className="space-y-3">
-            <div>
-              <p className="mb-1 text-sm text-muted-foreground">Full Name</p>
-              <Input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Your full name"
-                className="h-12 rounded-2xl bg-white"
-              />
-            </div>
-            <div>
-              <p className="mb-1 text-sm text-muted-foreground">Username</p>
-              <Input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="your_username"
-                className="h-12 rounded-2xl bg-white"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Use 3-20 letters, numbers, or underscore.
-              </p>
-            </div>
-          </div>
+        <div className="paypal-surface mt-8 rounded-3xl p-6 text-left">
+          <p className="text-sm text-muted-foreground">
+            We only collect the data necessary to provide our service. You can
+            add your name, username, or profile picture later from Profile
+            Settings — all fields are optional.
+          </p>
 
           <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="mt-5 h-12 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]"
+            onClick={handleContinue}
+            className="mt-5 h-12 w-full rounded-2xl bg-paypal-blue text-white text-base font-semibold hover:bg-[#004dc5]"
           >
-            {saving ? "Saving..." : "Continue"}
+            Continue
           </Button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/profile")}
+            className="mt-3 w-full text-sm font-medium text-paypal-blue"
+          >
+            Set up profile later
+          </button>
         </div>
+
+        <p className="mt-6 text-xs text-white/70">
+          By continuing you agree to our Terms and Privacy Policy.
+        </p>
       </div>
     </div>
   );
 };
 
-export default SetupProfilePage;
+export default WelcomePage;

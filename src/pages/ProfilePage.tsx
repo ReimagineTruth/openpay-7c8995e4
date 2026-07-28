@@ -114,12 +114,8 @@ const ProfilePage = () => {
 
   const handleSave = async () => {
     if (!userId) return;
-    if (!fullName.trim()) {
-      toast.error("Full name is required");
-      return;
-    }
 
-    const trimmedName = fullName.trim();
+    const trimmedName = fullName.trim() || null;
     const trimmedUsername = username.trim() || null;
 
     setSaving(true);
@@ -143,7 +139,7 @@ const ProfilePage = () => {
       profile_username: trimmedUsername,
     }).catch(() => undefined);
 
-    if (trimmedUsername) {
+    if (trimmedUsername && trimmedName) {
       try {
         const accountNumber = generateOpenPayAccountNumber(userId);
         await supabase.from("user_accounts").upsert(
@@ -161,6 +157,7 @@ const ProfilePage = () => {
     }
     toast.success("Profile updated");
   };
+
 
   return (
     <div className="min-h-screen bg-background px-4 pt-4 pb-10">
@@ -219,19 +216,23 @@ const ProfilePage = () => {
         </button>
 
         <div className="space-y-3">
-          <div>
-            <p className="mb-1 text-sm text-muted-foreground">Full Name</p>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="h-12 rounded-2xl bg-white" />
+          <div className="rounded-2xl border border-paypal-light-blue/40 bg-paypal-light-blue/10 p-3 text-xs text-muted-foreground">
+            All fields below are <span className="font-semibold text-foreground">optional</span>. We only collect the data necessary to provide our service.
           </div>
           <div>
-            <p className="mb-1 text-sm text-muted-foreground">Username</p>
-            <Input value={username} onChange={(e) => setUsername(e.target.value)} className="h-12 rounded-2xl bg-white" />
+            <p className="mb-1 text-sm text-muted-foreground">Full Name <span className="text-xs">(optional)</span></p>
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="h-12 rounded-2xl bg-white" placeholder="Add your name" />
           </div>
           <div>
-            <p className="mb-1 text-sm text-muted-foreground">Profile Image</p>
+            <p className="mb-1 text-sm text-muted-foreground">Username <span className="text-xs">(optional)</span></p>
+            <Input value={username} onChange={(e) => setUsername(e.target.value)} className="h-12 rounded-2xl bg-white" placeholder="Choose a username" />
+          </div>
+          <div>
+            <p className="mb-1 text-sm text-muted-foreground">Profile Image <span className="text-xs">(optional)</span></p>
             <Input type="file" accept="image/*" onChange={handleAvatarUpload} className="h-12 rounded-2xl bg-white" />
             {uploadingAvatar && <p className="mt-1 text-xs text-muted-foreground">Uploading image...</p>}
           </div>
+
           <div>
             <p className="mb-1 text-sm text-muted-foreground">Email</p>
             <Input value={email} disabled className="h-12 rounded-2xl bg-white/70" />
