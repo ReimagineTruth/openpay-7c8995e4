@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  Brain,
   CircleDollarSign,
   CreditCard,
   HandCoins,
@@ -23,7 +24,7 @@ export type DashboardSection =
   | "mining"
   | "analytics";
 
-export type DashboardNavKey = DashboardSection | "opennft";
+export type DashboardNavKey = DashboardSection | "opennft" | "ai";
 
 export type DashboardSectionNavItem = {
   key: DashboardNavKey;
@@ -44,6 +45,7 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
   { key: "swap", label: "Swap", icon: ArrowLeftRight, description: "Withdraw OUSD" },
   { key: "mining", label: "Mining", icon: Pickaxe, description: "Earn OUSD rewards" },
   { key: "analytics", label: "Analytics", icon: TrendingUp, description: "Insights & trends" },
+  { key: "ai", label: "AI", icon: Brain, description: "Financial assistant", href: "/ai" },
   { key: "opennft", label: "OpenNFT", icon: Paintbrush, description: "NFT marketplace", href: "/web3/nft" },
 ];
 

@@ -173,10 +173,7 @@ import PageTransition from "./components/PageTransition";
 import { isSolanaPayEnabled } from "@/lib/solanaPayAccess";
 import {
   POST_AUTH_HOME,
-  claimAppBootRedirect,
-  isAllowedDirectOpenPath,
   isAuthLandingPath,
-  shouldHomeOnResume,
 } from "@/lib/postAuthLanding";
 
 const queryClient = new QueryClient();
@@ -195,45 +192,6 @@ const AppRoutes = () => {
   useEffect(() => {
     navigateRef.current = navigate;
   }, [navigate]);
-
-  // Cold start / reopen: signed-in users should land on dashboard, not resume a feature page.
-  useEffect(() => {
-    let cancelled = false;
-
-    const goHomeIfNeeded = async (reason: string) => {
-      const path = window.location.pathname;
-      if (isAllowedDirectOpenPath(path)) return;
-
-      const { data } = await supabase.auth.getSession();
-      if (cancelled || !data.session) return;
-      if (path === POST_AUTH_HOME) return;
-
-      console.log(`${reason} redirect to dashboard from:`, path);
-      navigateRef.current(POST_AUTH_HOME, { replace: true });
-    };
-
-    if (claimAppBootRedirect()) {
-      void goHomeIfNeeded("Boot");
-    }
-
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        shouldHomeOnResume(); // records hidden timestamp
-        return;
-      }
-      if (shouldHomeOnResume()) {
-        void goHomeIfNeeded("Resume");
-      }
-    };
-
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      cancelled = true;
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-    // Intentionally once on mount for this tab session.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Toggle a global `nft-scope` class on <body> while browsing NFT routes so
   // theme-aware CSS overrides can adapt hardcoded dark utilities to light mode.

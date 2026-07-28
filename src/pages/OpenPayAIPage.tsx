@@ -1,9 +1,10 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb, ChevronDown as ChevronIcon, Menu as MenuIcon, Compass, MessageCircle, Plus, PanelLeft, X, SquarePen, ArrowLeft, BarChart3, Sun, Moon } from "lucide-react";
+import { Send, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb, ChevronDown as ChevronIcon, Menu as MenuIcon, MessageCircle, Plus, PanelLeft, X, SquarePen, ArrowLeft, BarChart3, Sun, Moon, Volume2, Square, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getStoredAppTheme, persistAndApplyAppTheme, type AppThemeMode } from "@/lib/appTheme";
+import { applyStoredSpeechVoice, getStoredAiSpeechVoiceUri, loadSpeechVoices, previewSpeechVoice, setStoredAiSpeechVoiceUri, toSpeechVoiceOptions, type AiSpeechVoiceOption } from "@/lib/aiSpeechVoice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -141,6 +142,24 @@ const fixMojibakeText = (input: string): string => {
   return out;
 };
 
+/** Plain text suitable for browser speech synthesis. */
+const stripMarkdownForSpeech = (md: string): string => {
+  let text = fixMojibakeText(md || "");
+  text = text.replace(/```[\s\S]*?```/g, " ");
+  text = text.replace(/`([^`]+)`/g, "$1");
+  text = text.replace(/!\[[^\]]*]\([^)]+\)/g, " ");
+  text = text.replace(/\[([^\]]+)]\([^)]+\)/g, "$1");
+  text = text.replace(/^#{1,6}\s+/gm, "");
+  text = text.replace(/(\*\*|__)(.*?)\1/g, "$2");
+  text = text.replace(/(\*|_)(.*?)\1/g, "$2");
+  text = text.replace(/^>\s+/gm, "");
+  text = text.replace(/^[-*+]\s+/gm, "");
+  text = text.replace(/^\d+\.\s+/gm, "");
+  text = text.replace(/[💳💰🚀💡📋🎯💸🤖🔮🔔📊🔐🔴🟡🟢🟠💬📝💾⏳⚠️✅❌•]/gu, " ");
+  text = text.replace(/\s+/g, " ").trim();
+  return text;
+};
+
 const escapeHtml = (s: string) =>
   s
     .replace(/&/g, "&amp;")
@@ -258,15 +277,93 @@ const OpenPayAIPage = () => {
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [pageActive, setPageActive] = useState(true);
   const [userInteracted, setUserInteracted] = useState(false);
-  const [commandNavigation, setCommandNavigation] = useState<{ route: string; featureName: string } | null>(null);
-  const [showCommandModal, setShowCommandModal] = useState(false);
-  const [pendingUserMessage, setPendingUserMessage] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showInsightsPanel, setShowInsightsPanel] = useState(false);
   const [themeMode, setThemeMode] = useState<AppThemeMode>(() => getStoredAppTheme());
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [showAiSettings, setShowAiSettings] = useState(false);
+  const [speechVoiceUri, setSpeechVoiceUri] = useState(getStoredAiSpeechVoiceUri());
+  const [speechVoices, setSpeechVoices] = useState<AiSpeechVoiceOption[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const speechSupported =
+    typeof window !== "undefined" && typeof window.speechSynthesis !== "undefined";
 
   const isDarkTheme = themeMode === "dark";
+
+  const stopSpeaking = () => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeakingMessageId(null);
+  };
+
+  const speakMessage = (messageId: string, content: string) => {
+    if (!speechSupported) {
+      toast.error("Text to speech is not supported in this browser");
+      return;
+    }
+
+    if (speakingMessageId === messageId) {
+      stopSpeaking();
+      return;
+    }
+
+    const plain = stripMarkdownForSpeech(content);
+    if (!plain) {
+      toast.error("Nothing to read in this message");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(plain);
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    applyStoredSpeechVoice(utterance);
+    utterance.onend = () => setSpeakingMessageId(null);
+    utterance.onerror = () => setSpeakingMessageId(null);
+    setSpeakingMessageId(messageId);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleChangeSpeechVoice = (voiceUri: string) => {
+    setSpeechVoiceUri(voiceUri);
+    setStoredAiSpeechVoiceUri(voiceUri);
+    toast.success(voiceUri ? "Listen voice updated" : "Using browser default voice");
+  };
+
+  const handlePreviewSpeechVoice = () => {
+    if (!speechSupported) {
+      toast.error("Text to speech is not supported in this browser");
+      return;
+    }
+    if (!previewSpeechVoice(speechVoiceUri)) {
+      toast.error("Could not play voice preview");
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!speechSupported) return;
+
+    const refreshVoices = () => {
+      setSpeechVoices(toSpeechVoiceOptions(loadSpeechVoices()));
+    };
+
+    refreshVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", refreshVoices);
+    const timer = window.setTimeout(refreshVoices, 250);
+    return () => {
+      window.clearTimeout(timer);
+      window.speechSynthesis.removeEventListener("voiceschanged", refreshVoices);
+    };
+  }, [speechSupported]);
 
   const toggleTheme = () => {
     const next: AppThemeMode = isDarkTheme ? "light" : "dark";
@@ -286,6 +383,7 @@ const OpenPayAIPage = () => {
   ];
 
   const handleNewChat = () => {
+    stopSpeaking();
     setMessages([]);
     setInputMessage("");
     setPendingPayment(null);
@@ -956,176 +1054,6 @@ const OpenPayAIPage = () => {
     }
   };
   
-  // Feature command parser — avoid hijacking payment / balance intents
-  const parseFeatureCommand = (message: string): string | null => {
-    const commands: Record<string, string> = {
-      // Core
-      dashboard: "/dashboard",
-      menu: "/menu",
-      home: "/dashboard",
-      main: "/dashboard",
-      wallet: "/dashboard",
-      "balance page": "/dashboard",
-      savings: "/dashboard?section=savings",
-      analytics: "/dashboard?section=analytics",
-      profile: "/profile",
-      settings: "/settings",
-      // Cards & identity
-      cards: "/virtual-card",
-      "virtual card": "/virtual-card",
-      "virtual cards": "/virtual-card",
-      kyc: "/kyc",
-      verification: "/kyc",
-      verify: "/kyc",
-      "kyc status": "/kyc-status",
-      "two factor": "/two-factor",
-      "2fa": "/two-factor",
-      mpin: "/settings",
-      // Payments
-      transactions: "/activity",
-      history: "/activity",
-      activity: "/activity",
-      receipts: "/activity",
-      send: "/send",
-      transfer: "/send",
-      pay: "/send",
-      "send money": "/send",
-      "express send": "/send",
-      "transfer pro": "/send/pro",
-      "openpay pro": "/send/pro",
-      receive: "/receive",
-      "get paid": "/receive",
-      "my qr": "/receive",
-      request: "/request-payment",
-      "request money": "/request-payment",
-      invoices: "/send-invoice",
-      billing: "/send-invoice",
-      invoice: "/send-invoice",
-      "scan qr": "/scan-qr",
-      scan: "/scan-qr",
-      "qr scanner": "/scan-qr",
-      contacts: "/contacts",
-      disputes: "/disputes",
-      dispute: "/disputes",
-      // Funding
-      topup: "/topup",
-      "top up": "/topup",
-      "add funds": "/topup",
-      deposit: "/topup",
-      buy: "/topup",
-      "topup history": "/topup-history",
-      "top up history": "/topup-history",
-      swap: "/swap-withdrawal",
-      withdraw: "/swap-withdrawal",
-      withdrawal: "/swap-withdrawal",
-      "cash out": "/swap-withdrawal",
-      converter: "/currency-converter",
-      currency: "/currency-converter",
-      fx: "/currency-converter",
-      // Earn
-      mining: "/mining",
-      earn: "/mining",
-      mine: "/mining",
-      ads: "/pi-ads",
-      "watch ads": "/pi-ads",
-      "pi ads": "/pi-ads",
-      staking: "/staking",
-      stake: "/staking",
-      invest: "/staking",
-      affiliate: "/affiliate",
-      referral: "/affiliate",
-      rewards: "/affiliate",
-      invite: "/affiliate",
-      // Merchant
-      merchant: "/merchant-onboarding",
-      business: "/merchant-onboarding",
-      "merchant portal": "/merchant-onboarding",
-      store: "/merchant-products",
-      products: "/merchant-products",
-      catalog: "/merchant-products",
-      pos: "/merchant-pos",
-      "point of sale": "/merchant-pos",
-      "payment links": "/payment-links/create",
-      links: "/payment-links/create",
-      "qr pay": "/qr-pay",
-      buttons: "/buttons",
-      remittance: "/remittance-center",
-      // NFT / Web3
-      nft: "/web3/nft",
-      marketplace: "/web3/nft",
-      web3: "/web3/nft",
-      mint: "/web3/nft/create",
-      "nft store": "/web3/nft/store",
-      collectibles: "/web3/nft",
-      // Developer
-      developer: "/developer-dashboard",
-      "api docs": "/openpay-api-docs",
-      api: "/openpay-api-docs",
-      "partner api": "/partner-api",
-      oauth: "/openpay-auth",
-      // Help & account
-      support: "/help-center",
-      "help center": "/help-center",
-      contact: "/help-center",
-      wiki: "/help",
-      guide: "/openpay-guide",
-      ledger: "/ledger",
-      openledger: "/ledger",
-      feedback: "/feedback",
-      announcements: "/announcements",
-      blog: "/blog",
-      quest: "/feature-quest",
-      "feature quest": "/feature-quest",
-      security: "/settings",
-      privacy: "/privacy",
-      terms: "/terms",
-      notifications: "/notifications",
-      alerts: "/notifications",
-      logout: "/sign-in",
-      "sign out": "/sign-in",
-      ai: "/ai",
-      "openpay ai": "/ai",
-    };
-
-    const normalized = message.toLowerCase().trim();
-
-    // Exact matches first (longer keys preferred via Object order — sort by length)
-    if (commands[normalized]) {
-      return commands[normalized];
-    }
-
-    // Explicit navigation phrasing: "open wallet", "go to send", "take me to mining"
-    const openNav = normalized.match(/^(?:open|go to|take me to|navigate to|show(?:\s+me)?)\s+(.+)$/);
-    if (openNav) {
-      const target = openNav[1].trim();
-      if (commands[target]) return commands[target];
-      const sorted = Object.entries(commands).sort((a, b) => b[0].length - a[0].length);
-      for (const [cmd, route] of sorted) {
-        if (target === cmd || target.includes(cmd)) return route;
-      }
-    }
-
-    // Ambiguous payment verbs: only navigate when bare ("send" / "send money")
-    const paymentVerbs = new Set(["send", "transfer", "pay", "send money"]);
-
-    // Match longer aliases first so "payment links" wins over "links"
-    const sortedCmds = Object.entries(commands).sort((a, b) => b[0].length - a[0].length);
-    for (const [cmd, route] of sortedCmds) {
-      if (!normalized.includes(cmd)) continue;
-      if (paymentVerbs.has(cmd)) {
-        const isBare = /^(?:send|transfer|pay)(?:\s+money)?$/.test(normalized);
-        if (!isBare) continue;
-      }
-      // Don't steal balance/forecast queries when "wallet" isn't explicitly asked
-      if (cmd === "wallet" && /\bbalance\b|\bforecast\b|\bprediction\b/.test(normalized) && !/\bwallet\b/.test(normalized)) {
-        continue;
-      }
-      return route;
-    }
-
-    return null;
-  };
-
   const parseSendIntent = (message: string): { recipient: string; amount: number | null } | null => {
     const text = message.trim();
 
@@ -1388,54 +1316,6 @@ Ask in plain language — I'll match your need to the right OpenPay feature.
 
 What do you want to do first?`;
   };
-  
-  // Handle command navigation confirmation
-  const handleNavigateToFeature = () => {
-    if (commandNavigation) {
-      navigate(commandNavigation.route);
-      setShowCommandModal(false);
-      setCommandNavigation(null);
-      setPendingUserMessage("");
-      
-      // Add confirmation message
-      const confirmationMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: `🚀 **Navigating to ${commandNavigation.featureName}**\n\n✅ Taking you to the ${commandNavigation.featureName} page now.\n\n💡 You can always come back to this AI assistant by typing "ai" or "help".`,
-        timestamp: new Date().toISOString(),
-        type: "text"
-      };
-      
-      setMessages(prev => [...prev, confirmationMessage]);
-      saveMessage(confirmationMessage);
-    }
-  };
-  
-  // Handle AI fallback when user wants to stay in chat
-  const handleStayInChat = async () => {
-    setShowCommandModal(false);
-    const navigation = commandNavigation;
-    const originalMessage = pendingUserMessage;
-    
-    setCommandNavigation(null);
-    setPendingUserMessage("");
-    
-    if (navigation && originalMessage) {
-      // Process the original message with AI instead of navigating
-      const aiResponse = await callOpenPayAI(`Tell me about ${navigation.featureName}. ${originalMessage}`);
-      
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: `💬 **About ${navigation.featureName}:**\n\n${aiResponse}\n\n💡 If you'd like to go to the ${navigation.featureName} page later, just type "${navigation.route.replace('/', '')}" anytime!`,
-        timestamp: new Date().toISOString(),
-        type: "text"
-      };
-      
-      setMessages(prev => [...prev, aiMessage]);
-      saveMessage(aiMessage);
-    }
-  };
 
   const processUserMessage = async (message: string) => {
     const lowerMessage = message.toLowerCase().trim();
@@ -1474,7 +1354,7 @@ What do you want to do first?`;
       return await executeDirectTransaction(sendIntent.recipient, sendIntent.amount);
     }
 
-    // Balance / forecast — before feature routing so "balance" is never hijacked
+    // Balance / forecast — before other routing so "balance" is never hijacked
     if (
       /\bbalance\b/.test(lowerMessage) ||
       /\bforecast\b/.test(lowerMessage) ||
@@ -1485,23 +1365,6 @@ What do you want to do first?`;
       return await buildBalanceResponse();
     }
 
-    // Feature command recognition and routing - check AFTER payment / balance commands
-    const featureCommand = parseFeatureCommand(lowerMessage);
-    if (featureCommand) {
-      // Store the command info and show modal instead of direct navigation
-      const featureName = featureCommand.replace('/', '').charAt(0).toUpperCase() + featureCommand.replace('/', '').slice(1);
-      setCommandNavigation({ route: featureCommand, featureName });
-      setPendingUserMessage(message);
-      setShowCommandModal(true);
-      
-      return `I can help you with **${featureName}**!
-
-📋 **Option 1:** Take you to the ${featureName} page  
-💬 **Option 2:** Stay here and I'll explain ${featureName} step by step
-
-Which do you prefer — **go there** or **ask here**?`;
-    }
-    
     // Help command
     if (lowerMessage.includes('help') || lowerMessage.includes('commands') || lowerMessage.includes('features')) {
       return generateHelpResponse();
@@ -1839,6 +1702,69 @@ Which do you prefer — **go there** or **ask here**?`;
               </span>
             )}
           </button>
+
+          <div className="rounded-lg">
+            <button
+              type="button"
+              onClick={() => setShowAiSettings((open) => !open)}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
+              aria-expanded={showAiSettings}
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+              <ChevronDown className={`ml-auto h-4 w-4 transition ${showAiSettings ? "rotate-180" : ""}`} />
+            </button>
+            {showAiSettings && (
+              <div className="mx-1 mb-1 space-y-2 rounded-xl border border-border/70 bg-muted/40 p-2.5 dark:border-white/10 dark:bg-white/5">
+                <div className="flex items-center gap-1.5 px-1">
+                  <Volume2 className="h-3.5 w-3.5 text-paypal-blue" />
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground dark:text-white/55">
+                    AI Listen voice
+                  </p>
+                </div>
+                {speechSupported ? (
+                  <>
+                    <select
+                      value={speechVoiceUri}
+                      onChange={(e) => handleChangeSpeechVoice(e.target.value)}
+                      className="h-10 w-full rounded-lg border border-border bg-background px-2.5 text-xs text-foreground dark:border-white/15 dark:bg-black"
+                    >
+                      <option value="">Browser default</option>
+                      {speechVoices.map((voice) => (
+                        <option key={voice.uri} value={voice.uri}>
+                          {voice.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handlePreviewSpeechVoice}
+                        className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border text-xs font-medium transition hover:bg-background dark:border-white/15 dark:hover:bg-white/10"
+                      >
+                        <Volume2 className="h-3.5 w-3.5" />
+                        Preview
+                      </button>
+                      {speechVoiceUri ? (
+                        <button
+                          type="button"
+                          onClick={() => handleChangeSpeechVoice("")}
+                          className="h-9 rounded-lg border border-border px-3 text-xs font-medium transition hover:bg-background dark:border-white/15 dark:hover:bg-white/10"
+                        >
+                          Reset
+                        </button>
+                      ) : null}
+                    </div>
+                  </>
+                ) : (
+                  <p className="px-1 text-xs text-muted-foreground">
+                    Text to speech is not supported in this browser.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={() => navigate("/menu")}
@@ -1973,10 +1899,54 @@ Which do you prefer — **go there** or **ask here**?`;
                         {fixMojibakeText(message.content)}
                       </p>
                       <AiTransferReceipt receipt={message.receipt} />
+                      {speechSupported && (
+                        <div className="flex items-center gap-1 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => speakMessage(message.id, message.content)}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition ${
+                              speakingMessageId === message.id
+                                ? "bg-paypal-blue/15 text-paypal-blue"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                            aria-label={speakingMessageId === message.id ? "Stop listening" : "Listen to response"}
+                            title={speakingMessageId === message.id ? "Stop" : "Listen"}
+                          >
+                            {speakingMessageId === message.id ? (
+                              <Square className="h-3.5 w-3.5 fill-current" />
+                            ) : (
+                              <Volume2 className="h-3.5 w-3.5" />
+                            )}
+                            <span>{speakingMessageId === message.id ? "Stop" : "Listen"}</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div key={message.id} className="w-full">
+                    <div key={message.id} className="w-full space-y-2">
                       <div className="chat-md font-ai-serif">{renderChatMarkdown(message.content)}</div>
+                      {speechSupported && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => speakMessage(message.id, message.content)}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition ${
+                              speakingMessageId === message.id
+                                ? "bg-paypal-blue/15 text-paypal-blue"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                            aria-label={speakingMessageId === message.id ? "Stop listening" : "Listen to response"}
+                            title={speakingMessageId === message.id ? "Stop" : "Listen"}
+                          >
+                            {speakingMessageId === message.id ? (
+                              <Square className="h-3.5 w-3.5 fill-current" />
+                            ) : (
+                              <Volume2 className="h-3.5 w-3.5" />
+                            )}
+                            <span>{speakingMessageId === message.id ? "Stop" : "Listen"}</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )
                 )}
@@ -2356,58 +2326,6 @@ Which do you prefer — **go there** or **ask here**?`;
                 Confirm & Send
               </Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Command Navigation Confirmation Modal */}
-      <Dialog open={showCommandModal} onOpenChange={setShowCommandModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Compass className="h-5 w-5 text-paypal-blue" />
-              Feature Navigation
-            </DialogTitle>
-            <DialogDescription>
-              How would you like to proceed with {commandNavigation?.featureName}?
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <div className="flex items-start gap-3">
-                <Compass className="mt-0.5 h-5 w-5 text-paypal-blue" />
-                <div>
-                  <h4 className="font-semibold text-blue-900">Go to {commandNavigation?.featureName} Page</h4>
-                  <p className="mt-1 text-sm text-blue-700">
-                    Navigate directly to the {commandNavigation?.featureName} page for full functionality and features.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-              <div className="flex items-start gap-3">
-                <MessageCircle className="mt-0.5 h-5 w-5 text-green-600" />
-                <div>
-                  <h4 className="font-semibold text-green-900">Ask AI Assistant</h4>
-                  <p className="mt-1 text-sm text-green-700">
-                    Get information about {commandNavigation?.featureName} right here in the chat.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" onClick={handleStayInChat} className="flex-1">
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Ask AI
-            </Button>
-            <Button onClick={handleNavigateToFeature} className="flex-1 bg-paypal-blue hover:bg-[#004dc5]">
-              <Compass className="mr-2 h-4 w-4" />
-              Navigate
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -20,6 +20,14 @@ import {
 import { deleteAppCookie, loadUserPreferences, upsertUserPreferences } from "@/lib/userPreferences";
 import { APP_LANGUAGE_OPTIONS, applyStoredAppLanguage, getStoredAppLanguage } from "@/lib/appLanguage";
 import { AppThemeMode, getStoredAppTheme, persistAndApplyAppTheme } from "@/lib/appTheme";
+import {
+  getStoredAiSpeechVoiceUri,
+  loadSpeechVoices,
+  previewSpeechVoice,
+  setStoredAiSpeechVoiceUri,
+  toSpeechVoiceOptions,
+  type AiSpeechVoiceOption,
+} from "@/lib/aiSpeechVoice";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -41,6 +49,10 @@ const SettingsPage = () => {
   const [qrPrintSettings, setQrPrintSettings] = useState<Record<string, unknown>>({});
   const [themeMode, setThemeMode] = useState<AppThemeMode>(getStoredAppTheme());
   const [resettingOnboarding, setResettingOnboarding] = useState(false);
+  const [speechVoiceUri, setSpeechVoiceUri] = useState(getStoredAiSpeechVoiceUri());
+  const [speechVoices, setSpeechVoices] = useState<AiSpeechVoiceOption[]>([]);
+  const speechSupported =
+    typeof window !== "undefined" && typeof window.speechSynthesis !== "undefined";
 
   useEffect(() => {
     const load = async () => {
@@ -97,6 +109,23 @@ const SettingsPage = () => {
     };
     checkBiometricSupport();
   }, []);
+
+  useEffect(() => {
+    if (!speechSupported) return;
+
+    const refreshVoices = () => {
+      setSpeechVoices(toSpeechVoiceOptions(loadSpeechVoices()));
+    };
+
+    refreshVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", refreshVoices);
+    // Some browsers only populate voices after a short delay.
+    const timer = window.setTimeout(refreshVoices, 250);
+    return () => {
+      window.clearTimeout(timer);
+      window.speechSynthesis.removeEventListener("voiceschanged", refreshVoices);
+    };
+  }, [speechSupported]);
 
   const handleSave = async () => {
     if (!userId) return;
@@ -289,6 +318,21 @@ const SettingsPage = () => {
     toast.success(`${nextTheme === "dark" ? "Dark" : "Light"} mode enabled`);
   };
 
+  const handleChangeSpeechVoice = (voiceUri: string) => {
+    setSpeechVoiceUri(voiceUri);
+    setStoredAiSpeechVoiceUri(voiceUri);
+    toast.success(voiceUri ? "Listen voice updated" : "Using browser default voice");
+  };
+
+  const handlePreviewSpeechVoice = () => {
+    if (!speechSupported) {
+      toast.error("Text to speech is not supported in this browser");
+      return;
+    }
+    const ok = previewSpeechVoice(speechVoiceUri);
+    if (!ok) toast.error("Could not play voice preview");
+  };
+
   const handleResetOnboarding = async () => {
     if (!userId) return;
 
@@ -386,6 +430,47 @@ const SettingsPage = () => {
               Dark
             </button>
           </div>
+        </div>
+        <div className="mb-4">
+          <p className="mb-1 text-sm text-muted-foreground">AI Listen voice</p>
+          {speechSupported ? (
+            <>
+              <select
+                value={speechVoiceUri}
+                onChange={(e) => handleChangeSpeechVoice(e.target.value)}
+                className="h-12 w-full rounded-2xl border border-white/70 bg-white px-3 text-sm"
+              >
+                <option value="">Browser default</option>
+                {speechVoices.map((voice) => (
+                  <option key={voice.uri} value={voice.uri}>
+                    {voice.label}
+                  </option>
+                ))}
+              </select>
+              <div className="mt-2 flex gap-2">
+                <Button type="button" variant="outline" onClick={handlePreviewSpeechVoice} className="h-11 flex-1 rounded-2xl">
+                  Preview voice
+                </Button>
+                {speechVoiceUri ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleChangeSpeechVoice("")}
+                    className="h-11 rounded-2xl"
+                  >
+                    Reset
+                  </Button>
+                ) : null}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Used when you tap Listen on OpenPay AI replies. Voices depend on your device/browser.
+              </p>
+            </>
+          ) : (
+            <p className="rounded-2xl border border-border/70 bg-secondary/60 px-3 py-3 text-sm text-muted-foreground">
+              Text to speech is not supported in this browser.
+            </p>
+          )}
         </div>
         <div className="space-y-3">
           <div>
