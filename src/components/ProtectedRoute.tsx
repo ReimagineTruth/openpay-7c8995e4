@@ -27,27 +27,9 @@ const ProtectedRoute = ({ children, redirectTo = "/sign-in" }: ProtectedRoutePro
           return;
         }
 
-        // Require onboarding: real full_name + username before app access.
-        if (location.pathname !== "/setup-profile") {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name, username")
-            .eq("id", user.id)
-            .maybeSingle();
+        // Data minimization: no forced profile completion. Users can add
+        // optional profile data anytime from /profile.
 
-          const fullName = (profile?.full_name || "").trim();
-          const username = (profile?.username || "").trim();
-          const needsSetup =
-            !fullName ||
-            !username ||
-            username.toLowerCase().startsWith("pi_") ||
-            !/^[a-z0-9_]{3,20}$/i.test(username);
-
-          if (needsSetup) {
-            navigate("/setup-profile", { replace: true });
-            return;
-          }
-        }
 
         setIsAuthenticated(true);
       } catch (error) {

@@ -2,7 +2,164 @@
 // To take ownership, delete this banner line; the plugin then leaves the file alone.
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
+// src/lib/mcp/index.ts
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
+
+// src/lib/mcp/tools/get-wallet-balance.ts
+import { createClient } from "npm:@supabase/supabase-js@^2.108.2";
+import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
+function supabaseForUser(ctx) {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var get_wallet_balance_default = defineTool({
+  name: "get_wallet_balance",
+  title: "Get wallet balance",
+  description: "Return the signed-in OpenPay user's current wallet balance.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("wallets").select("balance, updated_at").eq("user_id", ctx.getUserId()).maybeSingle();
+    if (error) {
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    }
+    const balance = Number(data?.balance ?? 0);
+    return {
+      content: [{ type: "text", text: `Balance: ${balance.toFixed(2)}` }],
+      structuredContent: { balance, updated_at: data?.updated_at ?? null }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-transactions.ts
+import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.108.2";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z } from "npm:zod@^4.4.3";
+function supabaseForUser2(ctx) {
+  return createClient2(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var list_transactions_default = defineTool2({
+  name: "list_transactions",
+  title: "List recent transactions",
+  description: "List the signed-in user's most recent OpenPay transactions (sent or received).",
+  inputSchema: {
+    limit: z.number().int().min(1).max(50).default(10).describe("Max transactions to return (1-50).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const uid = ctx.getUserId();
+    const supabase = supabaseForUser2(ctx);
+    const { data, error } = await supabase.from("transactions").select("id, sender_id, receiver_id, amount, note, status, created_at").or(`sender_id.eq.${uid},receiver_id.eq.${uid}`).order("created_at", { ascending: false }).limit(limit ?? 10);
+    if (error) {
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    }
+    const rows = (data ?? []).map((r) => ({
+      ...r,
+      direction: r.sender_id === uid ? "sent" : "received"
+    }));
+    return {
+      content: [{ type: "text", text: JSON.stringify(rows, null, 2) }],
+      structuredContent: { transactions: rows }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-profile.ts
+import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.108.2";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.20.0";
+function supabaseForUser3(ctx) {
+  return createClient3(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var get_profile_default = defineTool3({
+  name: "get_profile",
+  title: "Get my OpenPay profile",
+  description: "Return the signed-in user's OpenPay profile (name, username, KYC status).",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const supabase = supabaseForUser3(ctx);
+    const { data, error } = await supabase.from("profiles").select("id, full_name, username, avatar_url, kyc_status, referral_code, created_at").eq("id", ctx.getUserId()).maybeSingle();
+    if (error) {
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      structuredContent: { profile: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/send-money.ts
+import { createClient as createClient4 } from "npm:@supabase/supabase-js@^2.108.2";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z2 } from "npm:zod@^4.4.3";
+function supabaseForUser4(ctx) {
+  return createClient4(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var send_money_default = defineTool4({
+  name: "send_money",
+  title: "Send money to an OpenPay user",
+  description: "Send funds from the signed-in user's OpenPay wallet to another user by their @username. Requires the sender's MPIN handled elsewhere in the app; the model must confirm with the user before invoking.",
+  inputSchema: {
+    recipient_username: z2.string().min(3).describe("Recipient's OpenPay @username (without @)."),
+    amount: z2.number().positive().describe("Amount to send in the sender's wallet currency."),
+    note: z2.string().max(200).optional().describe("Optional note for the recipient.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+  handler: async ({ recipient_username, amount, note }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const supabase = supabaseForUser4(ctx);
+    const { data, error } = await supabase.functions.invoke("send-money", {
+      body: { recipient_username, amount, note: note ?? "" },
+      headers: { Authorization: `Bearer ${ctx.getToken()}` }
+    });
+    if (error) {
+      return { content: [{ type: "text", text: error.message ?? "send-money failed" }], isError: true };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      structuredContent: { result: data }
+    };
+  }
+});
+
+// src/lib/mcp/index.ts
+var projectRef = "araojncyittkahvvpdrn";
+var mcp_default = defineMcp({
+  name: "openpay-mcp",
+  title: "OpenPay",
+  version: "0.1.0",
+  instructions: "OpenPay wallet tools for the signed-in user. Use `get_profile` and `get_wallet_balance` for read-only lookups, `list_transactions` to review recent activity, and `send_money` to transfer funds to another @username (always confirm amount and recipient with the user before sending).",
+  auth: auth.oauth.issuer({
+    issuer: `https://${projectRef}.supabase.co/auth/v1`,
+    acceptedAudiences: "authenticated"
+  }),
+  tools: [get_profile_default, get_wallet_balance_default, list_transactions_default, send_money_default]
+});
+
 // lovable-mcp-supabase-entry.ts
-import mcp from "npm:C:\\Users\\mrjay\\Downloads\\openpay-7c8995e4-8\\src\\lib\\mcp\\index.ts";
 import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.20.0/stacks/supabase";
-Deno.serve(createSupabaseHandler(mcp, { functionName: "mcp" }));
+Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));
