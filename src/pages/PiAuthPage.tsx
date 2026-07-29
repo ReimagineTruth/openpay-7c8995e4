@@ -268,17 +268,18 @@ const PiAuthPage = () => {
             )}
           </Button>
 
-          {false && !inPiBrowser && (
+          {!inPiBrowser && (
             <Button
               asChild
               variant="outline"
-              className="h-12 w-full rounded-2xl border-border/60 text-base font-semibold"
+              className="mb-3 h-12 w-full rounded-2xl border-border/60 text-base font-semibold"
             >
               <Link to={emailHref}>
                 <Mail className="mr-2 h-4 w-4" /> Sign In with Email
               </Link>
             </Button>
           )}
+
 
           {false && isPiOAuthEnabled() && (
             <Button
