@@ -80,6 +80,7 @@ import ButtonsEmbedsPage from "./pages/buttons/ButtonsEmbedsPage";
 import DownloadPage from "./pages/DownloadPage";
 import OpenPayGuidePage from "./pages/OpenPayGuidePage";
 import OpenPayAIPage from "./pages/OpenPayAIPage";
+import McpOAuthCallbackPage from "./pages/McpOAuthCallbackPage";
 import PublicLedgerPage from "./pages/PublicLedgerPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
 import TermsPage from "./pages/TermsPage";
