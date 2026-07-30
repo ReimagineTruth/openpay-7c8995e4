@@ -1536,6 +1536,7 @@ const Dashboard = () => {
       platformFee: tx.is_sent ? 0.01 : undefined, // Add platform fee for send transactions
       otherPartyName: tx.other_name,
       otherPartyUsername: tx.other_username || undefined,
+      otherPartyAvatar: tx.other_avatar_url || undefined,
       note: tx.note || undefined,
       date: new Date(tx.created_at),
     });
