@@ -322,17 +322,17 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
             {isCredit ? "+" : "-"}
             {formatCurrency(receipt.amount)}
           </p>
-          <p className="mt-2 text-sm font-medium text-muted-foreground">
+          <p className="mt-2 w-full truncate text-center text-sm font-medium text-muted-foreground">
             {receipt.otherPartyName || "OpenPay"}
             {receipt.otherPartyUsername ? ` · @${receipt.otherPartyUsername}` : ""}
           </p>
           {receipt.note && (
-            <p className="mt-2 max-w-full truncate px-2 text-xs text-muted-foreground/80">{toPreviewText(receipt.note)}</p>
+            <p className="mt-2 w-full truncate px-2 text-center text-xs text-muted-foreground/80">{toPreviewText(receipt.note)}</p>
           )}
         </div>
 
         {/* Details */}
-        <div className="px-4 pb-5 sm:px-5">
+        <div className="min-w-0 px-4 pb-5 sm:px-5">
           <div className="rounded-2xl border border-border bg-muted/40 p-1">
             {detailRows.map((row) => (
               <div
