@@ -95,13 +95,12 @@ export default function DashboardSwapPanel({
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex gap-2">
-        <SwapRateChip from="PI" to="OUSD" rate={piToOusd.toFixed(4)} />
         <SwapRateChip from="USD" to="OUSD" rate={usdToOusd.toFixed(4)} />
       </div>
 
       <div className="dash-panel overflow-hidden p-0">
         <div className="border-b border-border/40 px-4 py-3">
-          <p className="text-sm font-bold text-foreground">Swap Withdrawal</p>
+          <p className="text-sm font-bold text-foreground">Withdraw OUSD</p>
           <p className="text-xs text-muted-foreground">Convert OUSD to mainnet payout</p>
         </div>
 
