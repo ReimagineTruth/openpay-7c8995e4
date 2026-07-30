@@ -2,6 +2,7 @@ import { ArrowDownUp, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MRWN_SWAP_OUSD_PER_TOKEN } from "@/lib/mrwnRates";
 import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
+import { OUSD_TOKEN, getOusdUsdPrice } from "@/lib/ousdPrice";
 
 export type SwapWithdrawalType = "PI" | "MRWN" | "OUSD" | "OUSD_SOL";
 
