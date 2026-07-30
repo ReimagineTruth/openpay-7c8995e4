@@ -525,7 +525,7 @@ const NftMarketplacePage = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search Open NFT"
-                className="w-full bg-[#0f0f10] border border-white/10 rounded-xl pl-9 pr-9 py-2.5 text-sm outline-none focus:border-white/30 transition"
+                className="w-full bg-muted/40 border border-border/60 rounded-full pl-9 pr-9 py-2.5 text-sm outline-none transition"
               />
               {search && (
                 <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-white/10 flex items-center justify-center">
@@ -685,7 +685,7 @@ const NftMarketplacePage = () => {
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="font-extrabold text-base">Trending Tokens</h3>
+                      <h3 className="nft-section-title text-base">Trending Tokens</h3>
                       <p className="text-[11px] text-foreground/50">NFTs with momentum today</p>
                     </div>
                     <button onClick={() => nav("/web3/nft/auctions")} className="text-xs font-bold" style={{ color: ACCENT }}>View all →</button>
@@ -719,7 +719,7 @@ const NftMarketplacePage = () => {
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="font-extrabold text-base">Featured Collections</h3>
+                      <h3 className="nft-section-title text-base">Featured Collections</h3>
                       <p className="text-[11px] text-foreground/50">This week's curated collections</p>
                     </div>
                     <button onClick={() => nav("/web3/nft/stores")} className="text-xs font-bold" style={{ color: ACCENT }}>View all →</button>
@@ -729,7 +729,7 @@ const NftMarketplacePage = () => {
                       <button
                         key={s.user_id}
                         onClick={() => nav(`/web3/nft/store/${s.handle}`)}
-                        className="rounded-2xl overflow-hidden bg-[#0f0f10] border border-white/5 hover:border-white/20 hover:-translate-y-0.5 transition-all text-left"
+                        className="nft-card text-left"
                       >
                         <div
                           className="h-20 w-full"
@@ -770,7 +770,7 @@ const NftMarketplacePage = () => {
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="font-extrabold text-base flex items-center gap-2">
+                      <h3 className="nft-section-title text-base flex items-center gap-2">
                         Verified Creators
                         <BadgeCheck className="h-4 w-4" style={{ color: ACCENT }} />
                       </h3>
@@ -783,7 +783,7 @@ const NftMarketplacePage = () => {
                       <button
                         key={s.user_id}
                         onClick={() => nav(`/web3/nft/store/${s.handle}`)}
-                        className="snap-start shrink-0 w-[168px] rounded-2xl overflow-hidden bg-[#0f0f10] border border-white/5 hover:border-white/25 hover:-translate-y-0.5 transition-all text-left"
+                        className="nft-card snap-start shrink-0 w-[168px] text-left"
                       >
                         <div
                           className="h-16 w-full"
@@ -813,7 +813,7 @@ const NftMarketplacePage = () => {
               {/* All NFTs grid */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-extrabold text-base">
+                  <h3 className="nft-section-title text-base">
                     {category === "all" ? "All NFTs" : `${getCategoryMeta(category).emoji} ${getCategoryMeta(category).label}`}
                   </h3>
                   <span className="text-xs text-foreground/50">{filteredItems.length} result{filteredItems.length === 1 ? "" : "s"}</span>
@@ -821,7 +821,7 @@ const NftMarketplacePage = () => {
                 {loading ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="rounded-2xl overflow-hidden bg-[#0f0f10] border border-white/5">
+                      <div key={i} className="rounded-2xl overflow-hidden bg-card border border-border/50">
                         <div className="aspect-square bg-white/[0.04] animate-pulse" />
                         <div className="p-3 space-y-2">
                           <div className="h-3 w-3/4 rounded bg-white/10 animate-pulse" />
