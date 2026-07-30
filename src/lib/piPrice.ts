@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /** Last-resort PI/USD if CoinGecko and the cache are both unavailable. */
-export const FALLBACK_PI_USD = 1;
+export const FALLBACK_PI_USD = 0.079;
 
 const CACHE_KEY = "openpay_pi_usd_price";
 const CACHE_TTL_MS = 30_000;
