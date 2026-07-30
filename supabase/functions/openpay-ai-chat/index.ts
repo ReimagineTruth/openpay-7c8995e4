@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { discoverOAuth, mcpCallTool, mcpListTools, refreshToken } from "../_shared/mcp-client.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -456,7 +457,7 @@ Always ask one short follow-up question so the chat continues.`;
       {
         role: "system",
         content:
-          "You have live OpenPay tools (get_profile, get_wallet_balance, list_transactions, send_money) — the same tools this app exposes over MCP. Call them instead of guessing balances, profile details, or transaction history. send_money never moves funds: it only prepares a transfer, so always show the confirm link and tell the user to approve it in-app with their MPIN.",
+          "You have live OpenPay tools (get_profile, get_wallet_balance, list_transactions, send_money) — the same tools this app exposes over MCP. Call them instead of guessing balances, profile details, or transaction history. send_money never moves funds: it only prepares a transfer, so always show the confirm link and tell the user to approve it in-app with their MPIN." + remoteToolsNote,
       },
       ...messages.slice(-12),
     ];
@@ -505,7 +506,7 @@ Always ask one short follow-up question so the chat continues.`;
             args = {};
           }
           usedTools.push(name);
-          const result = await runTool(name, args);
+          const result = await runAnyTool(name, args);
           finalMessages.push({
             role: "tool",
             tool_call_id: call.id,
