@@ -255,13 +255,13 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-[calc(100vw-2rem)] max-w-[400px] overflow-hidden rounded-[28px] border border-border bg-card p-0 text-foreground shadow-2xl sm:max-w-[420px]"
+        className="w-[calc(100vw-2rem)] max-w-[400px] grid-cols-1 overflow-hidden rounded-[28px] border border-border bg-card p-0 text-foreground shadow-2xl sm:max-w-[420px]"
       >
         <DialogTitle className="sr-only">Transaction receipt</DialogTitle>
         <DialogDescription className="sr-only">Receipt details for the selected transaction.</DialogDescription>
 
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3 sm:px-5">
+        <div className="flex min-w-0 items-center justify-between gap-2 border-b border-border/60 px-4 py-3 sm:px-5">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
