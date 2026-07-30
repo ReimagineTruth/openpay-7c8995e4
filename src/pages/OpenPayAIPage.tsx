@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb, ChevronDown as ChevronIcon, Menu as MenuIcon, MessageCircle, Plus, PanelLeft, X, SquarePen, ArrowLeft, BarChart3, Sun, Moon, Volume2, Square, Settings } from "lucide-react";
+import { Send, TrendingUp, AlertTriangle, Wallet, PieChart, Shield, CreditCard, ArrowLeftRight, Users, Store, FileText, History, Coins, Pickaxe, TrendingDown, Clock, Target, Zap, Bell, Calendar, Award, AlertCircle, CheckCircle, Info, ChevronUp, ChevronDown, Brain, Lightbulb, ChevronDown as ChevronIcon, Menu as MenuIcon, MessageCircle, Plus, PanelLeft, X, SquarePen, ArrowLeft, BarChart3, Sun, Moon, Volume2, Square, Settings, Plug } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getStoredAppTheme, persistAndApplyAppTheme, type AppThemeMode } from "@/lib/appTheme";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import McpConnectionsDialog from "@/components/ai/McpConnectionsDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -282,6 +283,7 @@ const OpenPayAIPage = () => {
   const [themeMode, setThemeMode] = useState<AppThemeMode>(() => getStoredAppTheme());
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [showAiSettings, setShowAiSettings] = useState(false);
+  const [showMcpDialog, setShowMcpDialog] = useState(false);
   const [speechVoiceUri, setSpeechVoiceUri] = useState(getStoredAiSpeechVoiceUri());
   const [speechVoices, setSpeechVoices] = useState<AiSpeechVoiceOption[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -1703,6 +1705,15 @@ What do you want to do first?`;
             )}
           </button>
 
+          <button
+            type="button"
+            onClick={() => setShowMcpDialog(true)}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
+          >
+            <Plug className="h-4 w-4" />
+            MCP Actions
+          </button>
+
           <div className="rounded-lg">
             <button
               type="button"
@@ -2182,6 +2193,8 @@ What do you want to do first?`;
           </div>
         </DialogContent>
       </Dialog>
+
+      <McpConnectionsDialog open={showMcpDialog} onOpenChange={setShowMcpDialog} />
 
       {/* Quick Actions Dialog */}
       <Dialog open={showQuickMenu} onOpenChange={setShowQuickMenu}>

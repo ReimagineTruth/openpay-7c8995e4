@@ -80,6 +80,7 @@ import ButtonsEmbedsPage from "./pages/buttons/ButtonsEmbedsPage";
 import DownloadPage from "./pages/DownloadPage";
 import OpenPayGuidePage from "./pages/OpenPayGuidePage";
 import OpenPayAIPage from "./pages/OpenPayAIPage";
+import McpOAuthCallbackPage from "./pages/McpOAuthCallbackPage";
 import PublicLedgerPage from "./pages/PublicLedgerPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
 import TermsPage from "./pages/TermsPage";
@@ -471,6 +472,12 @@ const AppRoutes = () => {
             <OpenPayAIPage />
           </ProtectedRoute>
         } />
+        <Route path="/mcp/callback" element={
+          <ProtectedRoute>
+            <McpOAuthCallbackPage />
+          </ProtectedRoute>
+        } />
+
         <Route path="/request-payment" element={
           <ProtectedRoute>
             <RequestMoney />
