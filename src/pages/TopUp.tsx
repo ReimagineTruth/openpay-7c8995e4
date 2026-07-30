@@ -251,13 +251,17 @@ const TopUp = () => {
         window.Pi!.createPayment(
           {
             amount: livePiAmount,
-            memo: "OpenPay wallet top up (PI to USD)",
+            memo: quote.memo,
             metadata: {
+              product: "ousd_topup",
               feature: "top_up",
+              ousdAmount: quote.ousdAmount,
+              piUsdPrice: quote.piUsdPrice,
               amount_pi: livePiAmount,
-              amount_usd: safeAmount,
+              amount_usd: quote.ousdAmount,
               pi_usd_price: livePrice.price,
               pi_price_source: livePrice.source,
+              supabaseUserId: (await supabase.auth.getUser()).data.user?.id || null,
               requestedAt: new Date().toISOString(),
             },
           },
