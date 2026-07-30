@@ -2828,29 +2828,28 @@ const Dashboard = () => {
       )}
 
       <div className="dashboard-controls-enter mt-4 px-4">
-        <div className="relative">
-          <DashboardSectionTabs
-            activeSection={activeSection}
-            onChange={setActiveSection}
-            onNavigate={(href) => navigate(href)}
-          />
+        <DashboardSectionTabs
+          activeSection={activeSection}
+          onChange={setActiveSection}
+          onNavigate={(href) => navigate(href)}
+        />
+
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          {activeSectionMeta ? (
+            <p className="text-xs font-semibold text-white/70">{activeSectionMeta.description}</p>
+          ) : null}
           <button
             type="button"
             onClick={() => setShowRegulatory(true)}
-            className="absolute -top-2 -right-2 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-paypal-blue shadow-md ring-1 ring-paypal-blue/20 hover:bg-paypal-blue/5"
+            className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm transition hover:bg-white/25"
           >
             <Scale className="h-3 w-3" />
             Regulatory
             <Info className="h-2.5 w-2.5 opacity-70" />
           </button>
         </div>
-
-        {activeSectionMeta ? (
-          <p className="mt-2 text-center text-xs font-semibold text-white/70">
-            {activeSectionMeta.description}
-          </p>
-        ) : null}
       </div>
+
 
 
       <div key={activeSection} className="dashboard-section-enter">
