@@ -289,7 +289,7 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
         </div>
 
         {/* Hero */}
-        <div className="flex flex-col items-center px-5 pb-5 pt-5">
+        <div className="flex min-w-0 flex-col items-center px-5 pb-5 pt-5">
           <div className="relative">
             {providerLogo ? (
               <div className="flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-border">
