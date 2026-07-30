@@ -105,7 +105,9 @@ const SwapWithdrawalPage = () => {
   const [mrwnWalletAddress, setMrwnWalletAddress] = useState("");
   const [ousdWalletAddress, setOusdWalletAddress] = useState("");
   const [ousdSolWalletAddress, setOusdSolWalletAddress] = useState("");
-  const [withdrawalType, setWithdrawalType] = useState<WithdrawalType>("PI");
+  const [withdrawalType, setWithdrawalType] = useState<WithdrawalType>("OUSD");
+  const [destinationMode, setDestinationMode] = useState<"pro" | "external">("pro");
+  const [proDestination, setProDestination] = useState("");
   const mrwnComingSoon = false;
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [showAgreementModal, setShowAgreementModal] = useState(false);
@@ -263,8 +265,8 @@ const SwapWithdrawalPage = () => {
       setAmount((prev) => prev || formatted);
     }
     
-    if (typeParam && (typeParam === "PI" || typeParam === "MRWN" || typeParam === "OUSD" || typeParam === "OUSD_SOL")) {
-      setWithdrawalType(typeParam);
+    if (typeParam === "OUSD") {
+      setWithdrawalType("OUSD");
     }
   }, [searchParams]);
 
