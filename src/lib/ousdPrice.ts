@@ -18,7 +18,7 @@ export const OUSD_TOKEN = {
     "OUSD is OpenPay's dollar-pegged stablecoin. 1 OUSD \u2248 $1 USD and powers trading, swaps, and wallet transfers.",
   marketCap: null as number | null,
   volume24h: null as number | null,
-  source: "Internal peg (not CoinGecko)",
+  source: "Stablecoin",
 } as const;
 
 /** Realtime OUSD/USD price — fixed peg, always 1. */
