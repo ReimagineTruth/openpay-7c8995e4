@@ -357,6 +357,99 @@ Always ask one short follow-up question so the chat continues.`;
       }
     };
 
+    // ---- Remote MCP servers the user has connected (e.g. OpenPay Pro) ----
+    type RemoteTool = { connId: string; url: string; token: string | null; remoteName: string };
+    const remoteTools = new Map<string, RemoteTool>();
+    let remoteToolsNote = "";
+    try {
+      const { data: conns } = await supabase
+        .from("mcp_connections")
+        .select("id, name, url, access_token, refresh_token, client_id, client_secret, issuer, expires_at")
+        .eq("user_id", user.id)
+        .eq("state", "ready");
+
+      for (const conn of conns ?? []) {
+        let accessToken: string | null = conn.access_token ?? null;
+        const expired = conn.expires_at ? new Date(conn.expires_at).getTime() < Date.now() + 30_000 : false;
+        if (expired && conn.refresh_token && conn.issuer && conn.client_id) {
+          try {
+            const { metadata } = await discoverOAuth(conn.url);
+            if (metadata?.token_endpoint) {
+              const refreshed = await refreshToken({
+                tokenEndpoint: metadata.token_endpoint,
+                refreshToken: conn.refresh_token,
+                clientId: conn.client_id,
+                clientSecret: conn.client_secret,
+              });
+              accessToken = refreshed.access_token;
+              await supabase
+                .from("mcp_connections")
+                .update({
+                  access_token: refreshed.access_token,
+                  refresh_token: refreshed.refresh_token ?? conn.refresh_token,
+                  expires_at: refreshed.expires_in
+                    ? new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+                    : null,
+                })
+                .eq("id", conn.id);
+            }
+          } catch (e) {
+            console.error("MCP token refresh failed", conn.url, e);
+          }
+        }
+
+        const slug = String(conn.name || "mcp").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "mcp";
+        try {
+          const tools = await mcpListTools(conn.url, accessToken);
+          for (const tool of tools) {
+            const localName = `${slug}__${tool.name}`.slice(0, 60);
+            remoteTools.set(localName, { connId: conn.id, url: conn.url, token: accessToken, remoteName: tool.name });
+            toolDefs.push({
+              type: "function",
+              function: {
+                name: localName,
+                description: `[${conn.name}] ${tool.description ?? tool.name}`,
+                parameters: tool.inputSchema && typeof tool.inputSchema === "object"
+                  ? tool.inputSchema
+                  : { type: "object", properties: {} },
+              },
+            } as any);
+          }
+          if (tools.length) {
+            remoteToolsNote += `\nConnected MCP server "${conn.name}": ${tools.map((t) => `${slug}__${t.name}`).join(", ")}.`;
+          }
+        } catch (e) {
+          const message = (e as Error).message;
+          console.error("MCP tools/list failed", conn.url, message);
+          if (message === "unauthorized") {
+            await supabase
+              .from("mcp_connections")
+              .update({ state: "failed", last_error: "Authorization expired — reconnect required." })
+              .eq("id", conn.id);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("MCP connection load failed", e);
+    }
+
+    const runAnyTool = async (name: string, args: any) => {
+      const remote = remoteTools.get(name);
+      if (!remote) return await runTool(name, args);
+      try {
+        const result: any = await mcpCallTool(remote.url, remote.token, remote.remoteName, args ?? {});
+        if (result?.structuredContent) return result.structuredContent;
+        const text = (result?.content ?? [])
+          .filter((c: any) => c?.type === "text")
+          .map((c: any) => c.text)
+          .join("\n");
+        return { ok: !result?.isError, result: text || result };
+      } catch (e) {
+        return { ok: false, error: (e as Error).message };
+      }
+    };
+
+
     const finalMessages: any[] = [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "system", content: contextMessage },
