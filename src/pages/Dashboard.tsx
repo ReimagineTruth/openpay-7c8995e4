@@ -3227,10 +3227,18 @@ const Dashboard = () => {
                 },
                 disabled: !buyOpenUsdMeetsMinimum,
               }}
-              stats={[
-                { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
-                { label: "Provider", value: buyOnrampProvider },
-              ]}
+              stats={
+                buyPaymentMethod === "Pi Payment"
+                  ? [
+                      { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
+                      { label: "Live \u03c0 price", value: `$${livePiPriceLabel}${piPrice.isFallback ? " (est.)" : ""}` },
+                      { label: "Provider", value: buyOnrampProvider },
+                    ]
+                  : [
+                      { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
+                      { label: "Provider", value: buyOnrampProvider },
+                    ]
+              }
             />
           </div>
 
