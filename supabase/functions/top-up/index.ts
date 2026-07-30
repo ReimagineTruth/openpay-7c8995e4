@@ -169,7 +169,7 @@ serve(async (req: Request) => {
         sender_id: user.id,
         receiver_id: user.id,
         amount: parsedAmountUsd,
-        note: `Wallet top up (PI -> OPEN USD) | ${parsedAmountPi.toFixed(2)} PI = ${parsedAmountUsd.toFixed(2)} OPEN USD`,
+        note: `Wallet top up (PI -> OPEN USD) | ${parsedAmountPi.toFixed(6)} PI @ $${piPrice.price} = ${parsedAmountUsd.toFixed(8)} OPEN USD (${piPrice.source})`,
         status: "completed",
       })
       .select("id")
