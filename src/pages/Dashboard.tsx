@@ -3289,50 +3289,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (!buyOpenUsdMeetsMinimum) return;
-              handleBuyOpenUsd();
-            }}
-            disabled={!buyOpenUsdMeetsMinimum}
-            className="ios-active mt-4 h-12 w-full rounded-full bg-paypal-blue text-sm font-extrabold text-primary-foreground shadow-lg shadow-paypal-blue/25 transition disabled:opacity-50"
-          >
-            Confirm
-          </button>
 
-          <div key="buy-balance" className="dash-balance-wrap mt-4">
-            <DashboardSectionHero
-              badge="Buy OpenUSD"
-              badgeIcon={CircleDollarSign}
-              metricLabel="You get (OPEN USD)"
-              metricValue={buyOpenUsdDisplay}
-              metricSubtitle={buyOnrampProvider}
-              showBrandLogo
-              trailing={
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShowOnrampPicker(true)}
-                    className="ios-active inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25"
-                  >
-                    Onramper <ChevronDown className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-                    className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-                  >
-                    {amountFormat === "compact" ? "Compact" : "Comma"}
-                  </button>
-                </>
-              }
-              stats={[
-                { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
-                { label: "Provider", value: buyOnrampProvider },
-              ]}
-            />
-          </div>
         </div>
 
       )}
