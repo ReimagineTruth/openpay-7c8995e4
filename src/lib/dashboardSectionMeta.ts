@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  BadgeCheck,
   Brain,
   CircleDollarSign,
   CreditCard,
@@ -24,7 +25,7 @@ export type DashboardSection =
   | "mining"
   | "analytics";
 
-export type DashboardNavKey = DashboardSection | "opennft" | "ai";
+export type DashboardNavKey = DashboardSection | "opennft" | "ai" | "pro";
 
 export type DashboardSectionNavItem = {
   key: DashboardNavKey;
@@ -47,6 +48,13 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
   { key: "analytics", label: "Analytics", icon: TrendingUp, description: "Insights & trends" },
   { key: "ai", label: "AI", icon: Brain, description: "Financial assistant", href: "/ai" },
   { key: "opennft", label: "OpenNFT", icon: Paintbrush, description: "NFT marketplace", href: "/web3/nft" },
+  {
+    key: "pro",
+    label: "OpenPay Pro",
+    icon: BadgeCheck,
+    description: "Pro wallet",
+    href: "https://openpaypromainnet.lovable.app",
+  },
 ];
 
 export const DASHBOARD_SECTION_TITLES: Record<DashboardSection, string> = {
