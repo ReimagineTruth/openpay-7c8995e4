@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, HelpCircle, Copy, ExternalLink, LifeBuoy, FileText, CreditCard, Link2, MessageCircle, History } from "lucide-react";
 import { toast } from "sonner";
-import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import TransactionReceipt, { type ReceiptData } from "@/components/TransactionReceipt";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -156,6 +156,12 @@ const TopUp = () => {
 
     setLoading(true);
     try {
+      // Always quote with a freshly fetched live price.
+      const livePrice = await fetchPiUsdPrice({ force: true });
+      const livePiAmount = piAmountForOusd(parsedAmount, livePrice.price);
+      if (!(livePiAmount > 0)) {
+        throw new Error("PI price is unavailable right now. Please try again in a moment.");
+      }
       const auth = await window.Pi.authenticate(["username", "payments"], async (payment) => {
         const incompleteTxid = payment.transaction?.txid;
         if (!incompleteTxid) return;
@@ -234,12 +240,14 @@ const TopUp = () => {
         let completed = false;
         window.Pi!.createPayment(
           {
-            amount: piAmount,
+            amount: livePiAmount,
             memo: "OpenPay wallet top up (PI to USD)",
             metadata: {
               feature: "top_up",
-              amount_pi: piAmount,
+              amount_pi: livePiAmount,
               amount_usd: safeAmount,
+              pi_usd_price: livePrice.price,
+              pi_price_source: livePrice.source,
               requestedAt: new Date().toISOString(),
             },
           },
@@ -256,7 +264,7 @@ const TopUp = () => {
               const creditResult = await invokeTopUpAction(
                 {
                   action: "credit",
-                  amount: piAmount,
+                  amount: livePiAmount,
                   amountUsd: safeAmount,
                   paymentId,
                   txid,
