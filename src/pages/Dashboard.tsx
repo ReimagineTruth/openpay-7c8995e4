@@ -488,8 +488,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currency, currencies } = useCurrency();
+  // Realtime PI/USD (CoinGecko via the `pi-price` edge function), refreshed every 30s.
+  const piPrice = usePiUsdPrice(30_000);
+  const livePiToOusd = piPrice.price > 0 ? piPrice.price : PI_TO_OUSD;
+  const liveOusdToPi = 1 / livePiToOusd;
+  const livePiPriceLabel = livePiToOusd >= 0.01 ? livePiToOusd.toFixed(4) : livePiToOusd.toPrecision(4);
   const mrwnToOusd = currencies.find((c) => c.code === "MRWN")?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN;
-  const swapPayoutPiAmount = swapNetAmount > 0 ? swapNetAmount * OUSD_TO_PI : 0;
+  const swapPayoutPiAmount = swapNetAmount > 0 ? swapNetAmount * liveOusdToPi : 0;
   const swapPayoutMrwnAmount = swapNetAmount > 0 && mrwnToOusd > 0 ? swapNetAmount / mrwnToOusd : 0;
   const swapPayoutOusdAmount = swapNetAmount > 0 ? swapNetAmount : 0;
   const swapPayoutOusdSolAmount = swapNetAmount > 0 ? swapNetAmount : 0;
