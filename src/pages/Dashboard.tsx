@@ -2831,7 +2831,13 @@ const Dashboard = () => {
         <DashboardSectionTabs
           activeSection={activeSection}
           onChange={setActiveSection}
-          onNavigate={(href) => navigate(href)}
+          onNavigate={(href) => {
+            if (/^https?:\/\//i.test(href)) {
+              window.open(href, "_blank", "noopener,noreferrer");
+              return;
+            }
+            navigate(href);
+          }}
         />
 
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
