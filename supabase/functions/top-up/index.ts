@@ -182,7 +182,17 @@ serve(async (req: Request) => {
     }
 
     const txRow = transactionRow as any;
-    return jsonResponse({ success: true, paymentId, transaction_id: txRow?.id || null });
+    return jsonResponse({
+      success: true,
+      paymentId,
+      transaction_id: txRow?.id || null,
+      pi_amount: parsedAmountPi,
+      pi_usd_price: piPrice.price,
+      pi_price_source: piPrice.source,
+      ousd_credited: parsedAmountUsd,
+      client_quoted_usd: clientAmountUsd || null,
+    });
+
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unexpected error";
     return jsonResponse({ error: message }, 400);
