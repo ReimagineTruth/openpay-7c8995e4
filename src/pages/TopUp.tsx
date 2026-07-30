@@ -246,6 +246,8 @@ const TopUp = () => {
       let completedTxid = "";
       let creditedTransactionId = "";
 
+      const supabaseUserId = (await supabase.auth.getUser()).data.user?.id || null;
+
       await new Promise<void>((resolve, reject) => {
         let completed = false;
         window.Pi!.createPayment(
