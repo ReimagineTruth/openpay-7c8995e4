@@ -40,6 +40,8 @@ const MRWN_LOGO_URL = "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722
 const OUSD_LOGO_URL = "/openpay-o.svg";
 const WITHDRAWAL_FEE_RATE = 0.02;
 const PIN_ACTION_KEY = "openpay_pin_action_swap_v1";
+const PRO_DEST_KEY = "openpay_swap_pro_destination_v1";
+const PRO_APP_URL = "https://il.space/";
 const swapEnabled = String(import.meta.env.VITE_SWAP_ENABLED ?? "true").toLowerCase() !== "false";
 
 const swapTypeLogo = (type: WithdrawalType) => {
@@ -152,6 +154,36 @@ const SwapWithdrawalPage = () => {
     () => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 6 }).format(piPriceUsd),
     [piPriceUsd],
   );
+
+  // --- OpenPay Pro destination (receiving wallet) ---
+  const proTrimmed = proDestination.trim();
+  const isProWallet = /^0x[a-fA-F0-9]{40}$/.test(proTrimmed);
+  const isProUsername = /^@?[a-zA-Z0-9_.]{3,30}$/.test(proTrimmed) && !proTrimmed.toLowerCase().startsWith("0x");
+  const proDestinationValid = isProWallet || isProUsername;
+  const proDestinationFormatted = isProWallet
+    ? proTrimmed.toLowerCase()
+    : isProUsername
+      ? `@${proTrimmed.replace(/^@+/, "").toLowerCase()}`
+      : "";
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(PRO_DEST_KEY);
+      if (saved) setProDestination(saved);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (destinationMode !== "pro") return;
+    if (proDestinationValid) {
+      setOusdWalletAddress(proDestinationFormatted);
+      try { window.localStorage.setItem(PRO_DEST_KEY, proDestinationFormatted); } catch { /* ignore */ }
+    } else {
+      setOusdWalletAddress("");
+    }
+  }, [destinationMode, proDestinationValid, proDestinationFormatted]);
+
+
 
   const loadIdentity = async () => {
     const { data, error } = await supabase.rpc("upsert_my_user_account");
