@@ -135,7 +135,8 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Archivo', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 500;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
     min-height: 100vh;
@@ -143,9 +144,20 @@
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-    letter-spacing: -0.011em;
+    letter-spacing: -0.02em;
     touch-action: manipulation;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+
+  button, input, select, textarea {
+    font-family: inherit;
+  }
+
 
   #root {
     min-height: 100vh;
