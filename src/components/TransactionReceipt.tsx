@@ -5,6 +5,8 @@ import { format } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { playUiSound } from "@/lib/appSounds";
 
+const OPENPAY_LOGO = "/openpay-logo.jpg";
+
 const PROVIDER_LOGOS: Record<string, string> = {
   "Pi Payment": "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png",
   PayPal: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/1920px-PayPal.svg.png",
