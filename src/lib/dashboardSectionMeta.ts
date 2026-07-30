@@ -53,7 +53,7 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
     label: "OpenPay Pro",
     icon: BadgeCheck,
     description: "Pro wallet",
-    href: "https://openpaypromainnet.lovable.app",
+    href: "https://openpaypro.space/",
   },
 ];
 
