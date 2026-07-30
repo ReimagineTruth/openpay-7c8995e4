@@ -36,6 +36,7 @@ import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
 import { PI_ADS_DISABLED } from "@/lib/piAds";
 import { usePiUsdPrice } from "@/lib/piPrice";
 import PiTokenCard from "@/components/dashboard/PiTokenCard";
+import OusdTokenCard from "@/components/dashboard/OusdTokenCard";
 import {
   DASHBOARD_SECTION_NAV,
   DASHBOARD_SECTION_TITLES,
@@ -3353,11 +3354,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {buyPaymentMethod === "Pi Payment" && (
-            <div className="mt-4">
-              <PiTokenCard />
-            </div>
-          )}
+          <div className="mt-4 space-y-4">
+            <OusdTokenCard />
+            {buyPaymentMethod === "Pi Payment" && <PiTokenCard />}
+          </div>
         </div>
       )}
 
