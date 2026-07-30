@@ -3178,48 +3178,8 @@ const Dashboard = () => {
 
       {activeSection === "buy" && (
         <div className="mx-4 mt-4">
-          <div key="buy-balance" className="dash-balance-wrap">
-            <DashboardSectionHero
-              badge="Buy OpenUSD"
-              badgeIcon={CircleDollarSign}
-              metricLabel="You get (OPEN USD)"
-              metricValue={buyOpenUsdDisplay}
-              metricSubtitle={buyOnrampProvider}
-              showBrandLogo
-              trailing={
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShowOnrampPicker(true)}
-                    className="ios-active inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25"
-                  >
-                    Onramper <ChevronDown className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-                    className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-                  >
-                    {amountFormat === "compact" ? "Compact" : "Comma"}
-                  </button>
-                </>
-              }
-              action={{
-                label: "+ Confirm",
-                onClick: () => {
-                  if (!buyOpenUsdMeetsMinimum) return;
-                  handleBuyOpenUsd();
-                },
-                disabled: !buyOpenUsdMeetsMinimum,
-              }}
-              stats={[
-                { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
-                { label: "Provider", value: buyOnrampProvider },
-              ]}
-            />
-          </div>
-
           <div className="dash-panel space-y-4">
+
               <div className="dash-tile space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-foreground">Payment method</p>
