@@ -19,6 +19,7 @@ const GlobalThankYouModal = () => {
         amount: thankYouData.amount,
         otherPartyName: thankYouData.receiverName,
         otherPartyUsername: thankYouData.receiverUsername,
+        otherPartyAvatar: thankYouData.receiverAvatar,
         note: thankYouData.note,
         date: thankYouData.date,
       });
