@@ -508,82 +508,22 @@ const SwapWithdrawalPage = () => {
 
           <div>
             <p className="text-sm font-semibold text-foreground">Withdrawal details</p>
-            <p className="text-xs text-muted-foreground">Select withdrawal type and confirm your OpenPay identity and wallet address.</p>
+            <p className="text-xs text-muted-foreground">Confirm your OpenPay identity and the wallet that receives your OUSD.</p>
           </div>
 
           <div className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <span>Withdrawal type</span>
-                <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">Select one</span>
-              </label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <button
-                  type="button"
-                  onClick={() => setWithdrawalType("PI")}
-                  disabled={!swapEnabled}
-                  className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
-                    withdrawalType === "PI"
-                      ? "border-blue-400 bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl shadow-blue-500/25 scale-105"
-                      : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
-                  } ${!swapEnabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  {withdrawalType === "PI" && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
-                      <div className="h-2 w-2 rounded-full bg-white"></div>
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center justify-center gap-2 h-full">
-                    <div className={`relative transition-transform duration-300 ${
-                      withdrawalType === "PI" ? "scale-110" : "group-hover:scale-105"
-                    }`}>
-                      <img src={PI_LOGO_URL} alt="PI" className="h-6 w-6 drop-shadow-md" />
-                    </div>
-                    <div className="text-center">
-                      <span className={`text-xs font-bold transition-colors duration-300 ${
-                        withdrawalType === "PI" ? "text-blue-600" : "text-foreground group-hover:text-white"
-                      }`}>Pi Network</span>
-                      <div className={`text-[10px] transition-opacity duration-300 ${
-                        withdrawalType === "PI" ? "opacity-100 text-blue-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                      }`}>Fast & Secure</div>
-                    </div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWithdrawalType("OUSD")}
-                  disabled={!swapEnabled}
-                  className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
-                    withdrawalType === "OUSD"
-                      ? "border-green-400 bg-gradient-to-br from-green-50 to-green-100 shadow-xl shadow-green-500/25 scale-105"
-                      : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
-                  } ${!swapEnabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  {withdrawalType === "OUSD" && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
-                      <div className="h-2 w-2 rounded-full bg-white"></div>
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center justify-center gap-2 h-full">
-                    <div className={`relative transition-transform duration-300 ${
-                      withdrawalType === "OUSD" ? "scale-110" : "group-hover:scale-105"
-                    }`}>
-                      <img src={OUSD_LOGO_URL} alt="OUSD" className="h-6 w-6 drop-shadow-md" />
-                    </div>
-                    <div className="text-center">
-                      <span className={`text-xs font-bold transition-colors duration-300 ${
-                        withdrawalType === "OUSD" ? "text-green-600" : "text-foreground group-hover:text-white"
-                      }`}>OUSD</span>
-                      <div className={`text-[10px] transition-opacity duration-300 ${
-                        withdrawalType === "OUSD" ? "opacity-100 text-green-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                      }`}>1:1 Rate</div>
-                    </div>
-                  </div>
-                </button>
-                {/* OUSD_SOL and MRWN withdrawal options are temporarily hidden */}
-
+            {/* Payout asset — OUSD only */}
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-3">
+              <div className="flex items-center gap-3">
+                <img src={OUSD_LOGO_URL} alt="OUSD" className="h-8 w-8" />
+                <div>
+                  <p className="text-sm font-bold text-foreground">OUSD payout</p>
+                  <p className="text-[11px] text-muted-foreground">1 OUSD = 1.00 OPEN USD · Stablecoin</p>
+                </div>
               </div>
+              <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Selected</span>
             </div>
+
             <label className="space-y-1 text-xs text-muted-foreground">
               <span>OpenUSD amount (min 10)</span>
               <input
