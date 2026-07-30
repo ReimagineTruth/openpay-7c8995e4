@@ -411,27 +411,32 @@ const SwapWithdrawalPage = () => {
   return (
     <div className="min-h-screen bg-paypal-blue px-4 py-4 pb-10 text-white">
       <div className="mx-auto w-full max-w-3xl">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/dashboard")} aria-label="Back" className="bg-white flex h-10 w-10 items-center justify-center rounded-full">
-              <ArrowLeft className="h-6 w-6 text-paypal-blue" />
-            </button>
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/20">
-                  <BrandLogo className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white">OpenPay</h1>
-                  <p className="text-xs text-white/80">Swap Withdrawal</p>
-                </div>
-              </div>
-              <p className="text-xs text-white/80">OpenUSD to {swapTypeLabel(withdrawalType)} payout</p>
+        <div className="mb-4 flex items-center gap-3 rounded-3xl border border-white/15 bg-white/10 p-3 backdrop-blur-xl">
+          <button
+            onClick={() => navigate("/dashboard")}
+            aria-label="Back"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white transition-transform active:scale-95"
+          >
+            <ArrowLeft className="h-5 w-5 text-paypal-blue" />
+          </button>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20">
+              <BrandLogo className="h-6 w-6 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-black leading-tight text-white">Withdraw OUSD</h1>
+              <p className="truncate text-xs text-white/70">OpenUSD → OUSD payout · 1:1</p>
             </div>
           </div>
-          <Button variant="outline" onClick={loadHistory} disabled={refreshing} className="border-white/30 bg-white/10 text-white hover:bg-white/20">
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={loadHistory}
+            disabled={refreshing}
+            aria-label="Refresh"
+            className="h-10 w-10 shrink-0 rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
         </div>
 
