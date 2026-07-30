@@ -48,6 +48,8 @@ const TopUp = () => {
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
   const piPrice = usePiUsdPrice();
   const piAmount = piAmountForOusd(safeAmount, piPrice.price);
+  const piMemo = buildPiTopupMemo(safeAmount, piAmount, piPrice.price);
+
   const linkAccountNumber = (searchParams.get("account_number") || "").trim().toUpperCase();
   const linkUsername = (searchParams.get("username") || "")
     .trim()
