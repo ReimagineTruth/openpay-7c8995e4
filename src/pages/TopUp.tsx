@@ -165,9 +165,10 @@ const TopUp = () => {
 
     setLoading(true);
     try {
-      // Always quote with a freshly fetched live price.
-      const livePrice = await fetchPiUsdPrice({ force: true });
-      const livePiAmount = piAmountForOusd(parsedAmount, livePrice.price);
+      // Always quote with a freshly fetched live price right before createPayment.
+      const quote = await quotePiTopup(parsedAmount);
+      const livePrice = { price: quote.piUsdPrice, source: quote.priceSource };
+      const livePiAmount = quote.piAmount;
       if (!(livePiAmount > 0)) {
         throw new Error("PI price is unavailable right now. Please try again in a moment.");
       }
