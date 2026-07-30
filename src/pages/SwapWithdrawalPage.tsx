@@ -40,6 +40,8 @@ const MRWN_LOGO_URL = "https://i.ibb.co/tTZvkjmN/a078a5ec-3c63-4ec5-8ade-f270722
 const OUSD_LOGO_URL = "/openpay-o.svg";
 const WITHDRAWAL_FEE_RATE = 0.02;
 const PIN_ACTION_KEY = "openpay_pin_action_swap_v1";
+const PRO_DEST_KEY = "openpay_swap_pro_destination_v1";
+const PRO_APP_URL = "https://il.space/";
 const swapEnabled = String(import.meta.env.VITE_SWAP_ENABLED ?? "true").toLowerCase() !== "false";
 
 const swapTypeLogo = (type: WithdrawalType) => {
@@ -105,7 +107,9 @@ const SwapWithdrawalPage = () => {
   const [mrwnWalletAddress, setMrwnWalletAddress] = useState("");
   const [ousdWalletAddress, setOusdWalletAddress] = useState("");
   const [ousdSolWalletAddress, setOusdSolWalletAddress] = useState("");
-  const [withdrawalType, setWithdrawalType] = useState<WithdrawalType>("PI");
+  const [withdrawalType, setWithdrawalType] = useState<WithdrawalType>("OUSD");
+  const [destinationMode, setDestinationMode] = useState<"pro" | "external">("pro");
+  const [proDestination, setProDestination] = useState("");
   const mrwnComingSoon = false;
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [showAgreementModal, setShowAgreementModal] = useState(false);
@@ -150,6 +154,36 @@ const SwapWithdrawalPage = () => {
     () => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 6 }).format(piPriceUsd),
     [piPriceUsd],
   );
+
+  // --- OpenPay Pro destination (receiving wallet) ---
+  const proTrimmed = proDestination.trim();
+  const isProWallet = /^0x[a-fA-F0-9]{40}$/.test(proTrimmed);
+  const isProUsername = /^@?[a-zA-Z0-9_.]{3,30}$/.test(proTrimmed) && !proTrimmed.toLowerCase().startsWith("0x");
+  const proDestinationValid = isProWallet || isProUsername;
+  const proDestinationFormatted = isProWallet
+    ? proTrimmed.toLowerCase()
+    : isProUsername
+      ? `@${proTrimmed.replace(/^@+/, "").toLowerCase()}`
+      : "";
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(PRO_DEST_KEY);
+      if (saved) setProDestination(saved);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (destinationMode !== "pro") return;
+    if (proDestinationValid) {
+      setOusdWalletAddress(proDestinationFormatted);
+      try { window.localStorage.setItem(PRO_DEST_KEY, proDestinationFormatted); } catch { /* ignore */ }
+    } else {
+      setOusdWalletAddress("");
+    }
+  }, [destinationMode, proDestinationValid, proDestinationFormatted]);
+
+
 
   const loadIdentity = async () => {
     const { data, error } = await supabase.rpc("upsert_my_user_account");
@@ -263,8 +297,8 @@ const SwapWithdrawalPage = () => {
       setAmount((prev) => prev || formatted);
     }
     
-    if (typeParam && (typeParam === "PI" || typeParam === "MRWN" || typeParam === "OUSD" || typeParam === "OUSD_SOL")) {
-      setWithdrawalType(typeParam);
+    if (typeParam === "OUSD") {
+      setWithdrawalType("OUSD");
     }
   }, [searchParams]);
 
@@ -377,27 +411,32 @@ const SwapWithdrawalPage = () => {
   return (
     <div className="min-h-screen bg-paypal-blue px-4 py-4 pb-10 text-white">
       <div className="mx-auto w-full max-w-3xl">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/dashboard")} aria-label="Back" className="bg-white flex h-10 w-10 items-center justify-center rounded-full">
-              <ArrowLeft className="h-6 w-6 text-paypal-blue" />
-            </button>
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/20">
-                  <BrandLogo className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white">OpenPay</h1>
-                  <p className="text-xs text-white/80">Swap Withdrawal</p>
-                </div>
-              </div>
-              <p className="text-xs text-white/80">OpenUSD to {swapTypeLabel(withdrawalType)} payout</p>
+        <div className="mb-4 flex items-center gap-3 rounded-3xl border border-white/15 bg-white/10 p-3 backdrop-blur-xl">
+          <button
+            onClick={() => navigate("/dashboard")}
+            aria-label="Back"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white transition-transform active:scale-95"
+          >
+            <ArrowLeft className="h-5 w-5 text-paypal-blue" />
+          </button>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20">
+              <BrandLogo className="h-6 w-6 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-black leading-tight text-white">Withdraw OUSD</h1>
+              <p className="truncate text-xs text-white/70">OpenUSD → OUSD payout · 1:1</p>
             </div>
           </div>
-          <Button variant="outline" onClick={loadHistory} disabled={refreshing} className="border-white/30 bg-white/10 text-white hover:bg-white/20">
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={loadHistory}
+            disabled={refreshing}
+            aria-label="Refresh"
+            className="h-10 w-10 shrink-0 rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
         </div>
 
@@ -469,82 +508,22 @@ const SwapWithdrawalPage = () => {
 
           <div>
             <p className="text-sm font-semibold text-foreground">Withdrawal details</p>
-            <p className="text-xs text-muted-foreground">Select withdrawal type and confirm your OpenPay identity and wallet address.</p>
+            <p className="text-xs text-muted-foreground">Confirm your OpenPay identity and the wallet that receives your OUSD.</p>
           </div>
 
           <div className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <span>Withdrawal type</span>
-                <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">Select one</span>
-              </label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <button
-                  type="button"
-                  onClick={() => setWithdrawalType("PI")}
-                  disabled={!swapEnabled}
-                  className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
-                    withdrawalType === "PI"
-                      ? "border-blue-400 bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl shadow-blue-500/25 scale-105"
-                      : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
-                  } ${!swapEnabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  {withdrawalType === "PI" && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
-                      <div className="h-2 w-2 rounded-full bg-white"></div>
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center justify-center gap-2 h-full">
-                    <div className={`relative transition-transform duration-300 ${
-                      withdrawalType === "PI" ? "scale-110" : "group-hover:scale-105"
-                    }`}>
-                      <img src={PI_LOGO_URL} alt="PI" className="h-6 w-6 drop-shadow-md" />
-                    </div>
-                    <div className="text-center">
-                      <span className={`text-xs font-bold transition-colors duration-300 ${
-                        withdrawalType === "PI" ? "text-blue-600" : "text-foreground group-hover:text-white"
-                      }`}>Pi Network</span>
-                      <div className={`text-[10px] transition-opacity duration-300 ${
-                        withdrawalType === "PI" ? "opacity-100 text-blue-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                      }`}>Fast & Secure</div>
-                    </div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWithdrawalType("OUSD")}
-                  disabled={!swapEnabled}
-                  className={`group relative h-16 rounded-2xl border-2 transition-all duration-300 ease-out ${
-                    withdrawalType === "OUSD"
-                      ? "border-green-400 bg-gradient-to-br from-green-50 to-green-100 shadow-xl shadow-green-500/25 scale-105"
-                      : "border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10 hover:shadow-lg hover:scale-102 hover:-translate-y-1"
-                  } ${!swapEnabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  {withdrawalType === "OUSD" && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
-                      <div className="h-2 w-2 rounded-full bg-white"></div>
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center justify-center gap-2 h-full">
-                    <div className={`relative transition-transform duration-300 ${
-                      withdrawalType === "OUSD" ? "scale-110" : "group-hover:scale-105"
-                    }`}>
-                      <img src={OUSD_LOGO_URL} alt="OUSD" className="h-6 w-6 drop-shadow-md" />
-                    </div>
-                    <div className="text-center">
-                      <span className={`text-xs font-bold transition-colors duration-300 ${
-                        withdrawalType === "OUSD" ? "text-green-600" : "text-foreground group-hover:text-white"
-                      }`}>OUSD</span>
-                      <div className={`text-[10px] transition-opacity duration-300 ${
-                        withdrawalType === "OUSD" ? "opacity-100 text-green-500" : "opacity-0 group-hover:opacity-70 text-muted-foreground"
-                      }`}>1:1 Rate</div>
-                    </div>
-                  </div>
-                </button>
-                {/* OUSD_SOL and MRWN withdrawal options are temporarily hidden */}
-
+            {/* Payout asset — OUSD only */}
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-3">
+              <div className="flex items-center gap-3">
+                <img src={OUSD_LOGO_URL} alt="OUSD" className="h-8 w-8" />
+                <div>
+                  <p className="text-sm font-bold text-foreground">OUSD payout</p>
+                  <p className="text-[11px] text-muted-foreground">1 OUSD = 1.00 OPEN USD · Stablecoin</p>
+                </div>
               </div>
+              <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Selected</span>
             </div>
+
             <label className="space-y-1 text-xs text-muted-foreground">
               <span>OpenUSD amount (min 10)</span>
               <input
@@ -588,35 +567,78 @@ const SwapWithdrawalPage = () => {
                 className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-foreground placeholder:text-muted-foreground"
               />
             </label>
-            <label className="space-y-1 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-2">
-                <img src={swapTypeLogo(withdrawalType)} alt={swapTypeLabel(withdrawalType)} className="h-4 w-4" />
-                {withdrawalType === "OUSD_SOL" ? "Solana" : "Mainnet"} {swapTypeLabel(withdrawalType)} wallet address
-              </span>
-              <input
-                value={
-                  withdrawalType === "PI"
-                    ? piWalletAddress
-                    : withdrawalType === "OUSD"
-                      ? ousdWalletAddress
-                      : withdrawalType === "OUSD_SOL"
-                        ? ousdSolWalletAddress
-                        : mrwnWalletAddress
-                }
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (withdrawalType === "PI") setPiWalletAddress(v);
-                  else if (withdrawalType === "OUSD") setOusdWalletAddress(v);
-                  else if (withdrawalType === "OUSD_SOL") setOusdSolWalletAddress(v);
-                  else setMrwnWalletAddress(v);
-                }}
-                placeholder={`${swapTypeLabel(withdrawalType)} wallet address`}
-                readOnly={!swapEnabled}
-                aria-readonly={!swapEnabled ? "true" : undefined}
-                className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-foreground placeholder:text-muted-foreground"
-              />
-              <span className="text-[11px] text-muted-foreground">Make sure this is your {swapTypeLabel(withdrawalType)} {withdrawalType === "OUSD_SOL" ? "Solana" : "mainnet"} address.</span>
-            </label>
+            {/* Receiving wallet — OpenPay Pro or external */}
+            <div className="space-y-3 rounded-2xl border border-white/20 bg-white/5 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-bold text-foreground">Receiving wallet</p>
+                <div className="flex rounded-full bg-secondary/60 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setDestinationMode("pro")}
+                    className={`rounded-full px-3 py-1 text-[11px] font-bold transition-colors ${destinationMode === "pro" ? "bg-paypal-blue text-white" : "text-muted-foreground"}`}
+                  >
+                    OpenPay Pro
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDestinationMode("external")}
+                    className={`rounded-full px-3 py-1 text-[11px] font-bold transition-colors ${destinationMode === "external" ? "bg-paypal-blue text-white" : "text-muted-foreground"}`}
+                  >
+                    External
+                  </button>
+                </div>
+              </div>
+
+              {destinationMode === "pro" ? (
+                <>
+                  <label className="block space-y-1 text-xs text-muted-foreground">
+                    <span>OpenPay Pro @username or 0x wallet address</span>
+                    <input
+                      value={proDestination}
+                      onChange={(e) => setProDestination(e.target.value)}
+                      placeholder="@username or 0x…"
+                      readOnly={!swapEnabled}
+                      className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-foreground placeholder:text-muted-foreground"
+                    />
+                  </label>
+                  {proDestinationValid ? (
+                    <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                        OUSD will be received at
+                      </p>
+                      <p className="mt-1 break-all font-mono text-sm font-bold text-foreground">{proDestinationFormatted}</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {isProWallet ? "OpenPay Pro mainnet wallet address" : "OpenPay Pro account handle"}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      Enter your OpenPay Pro handle or wallet address. Find it in your{" "}
+                      <a href={PRO_APP_URL} target="_blank" rel="noreferrer" className="font-semibold text-paypal-blue underline">
+                        OpenPay Pro wallet
+                      </a>
+                      .
+                    </p>
+                  )}
+                </>
+              ) : (
+                <label className="block space-y-1 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-2">
+                    <img src={OUSD_LOGO_URL} alt="OUSD" className="h-4 w-4" />
+                    Mainnet OUSD wallet address
+                  </span>
+                  <input
+                    value={ousdWalletAddress}
+                    onChange={(e) => setOusdWalletAddress(e.target.value)}
+                    placeholder="OUSD wallet address"
+                    readOnly={!swapEnabled}
+                    className="h-11 w-full rounded-xl border border-white/30 bg-white/10 px-3 text-sm text-foreground placeholder:text-muted-foreground"
+                  />
+                  <span className="text-[11px] text-muted-foreground">Make sure this is your OUSD mainnet address.</span>
+                </label>
+              )}
+            </div>
+
           </div>
 
           <div className="mt-4 rounded-2xl border border-border/70 bg-secondary/30 p-3 text-sm text-foreground">
