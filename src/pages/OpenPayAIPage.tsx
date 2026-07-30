@@ -1825,9 +1825,10 @@ What do you want to do first?`;
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setSidebarOpen((v) => !v)}
               className="rounded-lg p-2 text-foreground/70 transition hover:bg-muted"
-              aria-label="Open sidebar"
+              aria-label="Toggle sidebar"
+
             >
               <PanelLeft className="h-5 w-5" />
             </button>
