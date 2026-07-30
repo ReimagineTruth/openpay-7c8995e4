@@ -2362,34 +2362,25 @@ const Dashboard = () => {
                 <Store className="h-3 w-3" /> Merchant
               </button>
             </div>
-            <div className="ml-auto flex items-start gap-2">
-              <div className="flex flex-col gap-1">
-                <button
-                  type="button"
-                  onClick={() => setUiMode("web3")}
-                  aria-label="Switch to Web3 mode"
-                  className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-                >
-                  <Hexagon className="h-3 w-3" /> Web3
-                </button>
-                <a
-                  href="https://openpaypro.space/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Open OpenPay Pro"
-                  className="inline-flex items-center justify-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-                >
-                  <ExternalLink className="h-3 w-3" /> Pro
-                </a>
-              </div>
+            <div className="ml-auto flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setUiMode("web3")}
+                aria-label="Switch to Web3 mode"
+                className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+              >
+                <Hexagon className="h-3 w-3" /> Web3
+              </button>
               <button
                 type="button"
                 onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-                className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                aria-label="Toggle amount format"
+                className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
               >
                 {amountFormat === "compact" ? "Compact" : "Comma"}
               </button>
             </div>
+
           </div>
 
           {walletView === "merchant" && (
