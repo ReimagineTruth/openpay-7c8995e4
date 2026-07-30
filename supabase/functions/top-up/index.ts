@@ -41,9 +41,12 @@ serve(async (req: Request) => {
     const targetAccountNumber = String((body as any).targetAccountNumber || "").trim().toUpperCase();
     const targetUsername = String((body as any).targetUsername || "").trim().replace(/^@+/, "").toLowerCase();
     const parsedAmountPi = Number(amount);
-    const parsedAmountUsd = Number.isFinite(Number(amountUsd)) && Number(amountUsd) > 0
+    // Client-sent USD is only used as a sanity reference; the credited amount is
+    // always recomputed on the server from the live CoinGecko PI/USD price.
+    const clientAmountUsd = Number.isFinite(Number(amountUsd)) && Number(amountUsd) > 0
       ? Number(amountUsd)
-      : parsedAmountPi;
+      : 0;
+
     if (!paymentId || typeof paymentId !== "string") throw new Error("Missing paymentId");
 
     const piApiKey = Deno.env.get("PI_API_KEY");
