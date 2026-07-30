@@ -135,7 +135,7 @@ const SwapWithdrawalPage = () => {
   const meetsMinimum = safeAmount >= 10;
   const feeAmount = safeAmount > 0 ? Number((safeAmount * WITHDRAWAL_FEE_RATE).toFixed(2)) : 0;
   const payoutAmount = safeAmount > 0 ? Number((safeAmount - feeAmount).toFixed(2)) : 0;
-  const payoutPiAmount = payoutAmount > 0 ? payoutAmount / PI_TO_USD : 0;
+  const payoutPiAmount = payoutAmount > 0 ? payoutAmount / piPriceUsd : 0;
   const payoutMrwnAmount = payoutAmount > 0 && selectedCurrency ? payoutAmount / selectedCurrency.rate : 0;
   const payoutOusdAmount = payoutAmount > 0 ? payoutAmount : 0;
   const payoutOusdSolAmount = payoutAmount > 0 ? payoutAmount : 0;
@@ -415,7 +415,7 @@ const SwapWithdrawalPage = () => {
             <p>2. When you submit, your OpenUSD is moved to the settlement account {SETTLEMENT_USERNAME} ({SETTLEMENT_ACCOUNT_NUMBER}).</p>
             {showPrice ? (
               <>
-                <p>3. After admin approval, you receive {swapTypeLabel(withdrawalType)} to your wallet. Rate is always 1 {swapTypeLabel(withdrawalType)} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : withdrawalType === "OUSD" || withdrawalType === "OUSD_SOL" ? "1.00" : (selectedCurrency?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN).toFixed(2)} OPEN USD.</p>
+                <p>3. After admin approval, you receive {swapTypeLabel(withdrawalType)} to your wallet. Rate is always 1 {swapTypeLabel(withdrawalType)} = {withdrawalType === "PI" ? piPriceUsd.toFixed(4) : withdrawalType === "OUSD" || withdrawalType === "OUSD_SOL" ? "1.00" : (selectedCurrency?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN).toFixed(2)} OPEN USD.</p>
                 <p>4. A 2% processing fee applies to withdrawals.</p>
               </>
             ) : (
@@ -439,7 +439,7 @@ const SwapWithdrawalPage = () => {
                 </div>
                   <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>Fixed</span>
-                    <span>1 {withdrawalType} = {withdrawalType === "PI" ? PI_TO_USD.toFixed(2) : withdrawalType === "OUSD" ? "1.00" : (selectedCurrency?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN).toFixed(2)} OPEN USD</span>
+                    <span>1 {withdrawalType} = {withdrawalType === "PI" ? piPriceUsd.toFixed(4) : withdrawalType === "OUSD" ? "1.00" : (selectedCurrency?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN).toFixed(2)} OPEN USD</span>
                   </div>
               </div>
             )}
