@@ -3776,42 +3776,8 @@ const Dashboard = () => {
       )}
       </div>
 
-      <div className={`fixed bottom-32 left-0 right-0 z-40 px-4 transition-all duration-300 ease-out ${hideFloating ? "translate-y-[220%] opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
-        <div className="mx-auto flex max-w-md items-center gap-2.5">
-          <button
-            onClick={() => navigate("/contacts")}
-            className="dash-cta dash-cta-outline flex h-[56px] w-[56px] flex-shrink-0"
-            aria-label="Open contacts"
-          >
-            <Users className="h-6 w-6" />
-          </button>
-          <button
-            onClick={() => navigate("/send")}
-            className="dash-cta dash-cta-primary min-w-0 flex-1 py-4 text-base"
-          >
-            Pay
-          </button>
-          <button
-            onClick={() => navigate("/send/pro")}
-            className="dash-cta dash-cta-outline min-w-0 flex-[0.9] py-4 text-sm font-bold"
-            aria-label="Transfer to OpenPay Pro"
-          >
-            Transfer
-          </button>
-          <button
-            onClick={() => setShowReceiveOptions(true)}
-            className="dash-cta dash-cta-outline min-w-0 flex-1 py-4 text-base"
-          >
-            Receive
-          </button>
-          <button
-            onClick={openBuyOptions}
-            className="dash-cta dash-cta-outline min-w-0 flex-1 py-4 text-base"
-          >
-            Buy
-          </button>
-        </div>
-      </div>
+      {null}
+
 
       
       <BottomNav active="home" />
