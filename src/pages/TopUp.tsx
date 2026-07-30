@@ -376,16 +376,23 @@ const TopUp = () => {
       </div>
 
       <div className="paypal-surface mt-8 rounded-3xl p-6">
-        <p className="text-center text-sm text-muted-foreground">Amount to pay</p>
+        <p className="text-center text-sm text-muted-foreground">You pay</p>
         <p className="mt-1 text-center text-5xl font-bold text-foreground">
           π{piAmount.toFixed(4)}
         </p>
-        <p className="mt-1 text-center text-xs text-muted-foreground">
-          You will receive {safeAmount.toFixed(2)} OPEN USD (1 PI = ${piPrice.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })})
-        </p>
         <p className="mt-2 text-center text-sm font-semibold text-foreground">
-          OPEN USD to receive: {safeAmount.toFixed(2)} OPEN USD
+          You receive: {safeAmount.toFixed(2)} OUSD
         </p>
+        <p className="mt-1 text-center text-xs text-muted-foreground">
+          Live π price: ${piPrice.price >= 0.01 ? piPrice.price.toFixed(4) : piPrice.price.toPrecision(4)} / π
+          {piPrice.isFallback ? " (estimate)" : ""} · 1 OUSD = $1
+        </p>
+        {safeAmount > 0 && (
+          <p className="mx-auto mt-3 max-w-md break-words rounded-2xl border border-border bg-muted/40 px-3 py-2 text-center text-[11px] font-medium text-muted-foreground">
+            Memo: {piMemo}
+          </p>
+        )}
+
         <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4 text-center">
           <p className="text-xs text-muted-foreground">Enter amount to add - OPEN USD</p>
           <div className="mt-3 flex justify-center">
