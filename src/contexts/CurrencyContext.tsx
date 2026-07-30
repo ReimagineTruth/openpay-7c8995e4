@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPiUsdPrice, getCachedPiUsdPrice } from "@/lib/piPrice";
 
 export interface Currency {
   code: string;
@@ -407,6 +408,11 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       }
       if (typeof navigator !== "undefined" && !navigator.onLine) return;
       await maybeSyncLiveRates();
+      // Live PI/USD (CoinGecko) drives the π display currency.
+      await fetchPiUsdPrice();
+      const livePiUsd = getCachedPiUsdPrice().price;
+      // 1 OUSD = $1, so 1 OUSD buys (1 / PI price) π.
+      const piDisplayRate = livePiUsd > 0 ? 1 / livePiUsd : 1;
 
       const { data, error } = await supabase
         .from("supported_currencies")
@@ -426,7 +432,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
             rate: fallback.rate,
           };
         }
-        const piRate = fallback.code === "PI" ? 1 : Number(usdRate || 1) * PI_TO_USD;
+        const piRate = fallback.code === "PI" ? piDisplayRate : Number(usdRate || 1) * PI_TO_USD;
         return {
           ...fallback,
           flag: normalizeCurrencyFlag(fallback.code, fallback.flag),
@@ -441,7 +447,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
           name: row.display_name,
           symbol: row.symbol,
           flag: normalizeCurrencyFlag(row.iso_code, row.flag),
-          rate: row.iso_code === "PI" ? 1 : Number(row.usd_rate || 1) * PI_TO_USD,
+          rate: row.iso_code === "PI" ? piDisplayRate : Number(row.usd_rate || 1) * PI_TO_USD,
         } satisfies Currency));
       const nextCurrencies = [...merged, ...extras];
       const latestUpdate = data
