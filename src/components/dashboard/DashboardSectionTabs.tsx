@@ -8,8 +8,9 @@ type DashboardSectionTabsProps = {
 };
 
 const DashboardSectionTabs = ({ activeSection, onChange, onNavigate }: DashboardSectionTabsProps) => (
-  <div className="dash-panel dash-panel-static p-2 hover-lift">
-    <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6">
+  <div className="dash-panel dash-panel-static p-2.5 hover-lift">
+    <div className="grid grid-cols-4 gap-2">
+
       {DASHBOARD_SECTION_NAV.map((item, index) => {
         const Icon = item.icon;
         const isActive = !item.href && activeSection === item.key;
@@ -26,30 +27,31 @@ const DashboardSectionTabs = ({ activeSection, onChange, onNavigate }: Dashboard
               onChange(item.key as DashboardSection);
             }}
             className={cn(
-              "dash-tab flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center",
+              "dash-tab flex flex-col items-center justify-center gap-1.5 rounded-2xl px-1 py-3 text-center",
               isActive ? "dash-tab-active" : "text-foreground hover:bg-secondary/70",
             )}
             aria-current={isActive ? "page" : undefined}
           >
             <span
               className={cn(
-                "flex h-8 w-8 items-center justify-center",
-                isActive ? "rounded-lg bg-white/20" : "rounded-full bg-paypal-blue/10",
+                "flex h-9 w-9 items-center justify-center",
+                isActive ? "rounded-xl bg-white/20" : "rounded-full bg-paypal-blue/10",
               )}
             >
               <Icon
                 className={cn(
-                  "dash-tab-icon h-4 w-4 shrink-0",
+                  "dash-tab-icon h-[22px] w-[22px] shrink-0",
                   isActive ? "text-white" : "text-paypal-blue",
                 )}
               />
             </span>
             <span
               className={cn(
-                "w-full truncate text-[10px] font-bold leading-tight",
+                "w-full truncate text-[11px] font-bold leading-tight",
                 isActive ? "text-white" : "text-foreground",
               )}
             >
+
               {item.label}
             </span>
           </button>

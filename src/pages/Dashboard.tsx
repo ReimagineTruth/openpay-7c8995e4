@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, useRef } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock, Hexagon, Brain } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock, Hexagon, Brain, Send, MoreHorizontal } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
@@ -2362,34 +2362,25 @@ const Dashboard = () => {
                 <Store className="h-3 w-3" /> Merchant
               </button>
             </div>
-            <div className="ml-auto flex items-start gap-2">
-              <div className="flex flex-col gap-1">
-                <button
-                  type="button"
-                  onClick={() => setUiMode("web3")}
-                  aria-label="Switch to Web3 mode"
-                  className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-                >
-                  <Hexagon className="h-3 w-3" /> Web3
-                </button>
-                <a
-                  href="https://openpaypro.space/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Open OpenPay Pro"
-                  className="inline-flex items-center justify-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-                >
-                  <ExternalLink className="h-3 w-3" /> Pro
-                </a>
-              </div>
+            <div className="ml-auto flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setUiMode("web3")}
+                aria-label="Switch to Web3 mode"
+                className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+              >
+                <Hexagon className="h-3 w-3" /> Web3
+              </button>
               <button
                 type="button"
                 onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-                className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                aria-label="Toggle amount format"
+                className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
               >
                 {amountFormat === "compact" ? "Compact" : "Comma"}
               </button>
             </div>
+
           </div>
 
           {walletView === "merchant" && (
@@ -2454,43 +2445,46 @@ const Dashboard = () => {
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => navigate("/send")}
-              className="ios-active rounded-2xl bg-white/15 px-3 py-3 text-center backdrop-blur-sm transition hover:bg-white/25"
-            >
-              <p className="text-sm font-black text-white">Pay</p>
-              <p className="mt-0.5 text-[10px] font-semibold text-white/65">OpenPay users</p>
-            </button>
-            <div className="ios-active flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg shadow-black/10">
-              <button
-                type="button"
-                onClick={() => navigate("/send/pro")}
-                className="px-3 py-3 text-center transition hover:bg-white/95"
-              >
-                <p className="text-sm font-black text-paypal-blue">Transfer</p>
-                <p className="mt-0.5 text-[10px] font-semibold text-paypal-blue/70">OpenPay Pro</p>
-              </button>
-              <a
-                href="https://openpaypro.space/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1 border-t border-paypal-blue/10 bg-paypal-blue/[0.06] px-2 py-1.5 text-[10px] font-bold text-paypal-blue transition hover:bg-paypal-blue/10"
-                aria-label="Open OpenPay Pro wallet"
-              >
-                <ExternalLink className="h-3 w-3" /> Pro
-              </a>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowReceiveOptions(true)}
-              className="ios-active rounded-2xl bg-white/15 px-3 py-3 text-center backdrop-blur-sm transition hover:bg-white/25"
-            >
-              <p className="text-sm font-black text-white">Receive</p>
-              <p className="mt-0.5 text-[10px] font-semibold text-white/65">Get paid</p>
-            </button>
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {[
+              { id: "pay", label: "Pay", icon: Send, onClick: () => navigate("/send") },
+              { id: "transfer", label: "Transfer", icon: ArrowLeftRight, onClick: () => navigate("/send/pro") },
+              { id: "receive", label: "Receive", icon: Download, onClick: () => setShowReceiveOptions(true) },
+              { id: "buy", label: "Buy", icon: CircleDollarSign, onClick: () => openBuyOptions() },
+            ].map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.id}
+                  type="button"
+                  onClick={action.onClick}
+                  className="ios-active flex h-[64px] flex-col items-center justify-center gap-1 rounded-2xl bg-white/15 backdrop-blur-sm transition hover:bg-white/25"
+                >
+                  <Icon className="h-[18px] w-[18px] text-white" />
+                  <span className="text-[11px] font-bold text-white">{action.label}</span>
+                </button>
+              );
+            })}
           </div>
+
+          <div className="mt-2 flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => navigate("/contacts")}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-white/75 transition hover:text-white"
+            >
+              <Users className="h-3 w-3" /> Contacts
+            </button>
+            <a
+              href="https://openpaypro.space/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-white/75 transition hover:text-white"
+            >
+              <ExternalLink className="h-3 w-3" /> OpenPay Pro
+            </a>
+          </div>
+
 
           {walletView === "merchant" && (
             <div className="mt-5 grid grid-cols-3 gap-2">
@@ -2834,29 +2828,28 @@ const Dashboard = () => {
       )}
 
       <div className="dashboard-controls-enter mt-4 px-4">
-        <div className="relative">
-          <DashboardSectionTabs
-            activeSection={activeSection}
-            onChange={setActiveSection}
-            onNavigate={(href) => navigate(href)}
-          />
+        <DashboardSectionTabs
+          activeSection={activeSection}
+          onChange={setActiveSection}
+          onNavigate={(href) => navigate(href)}
+        />
+
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          {activeSectionMeta ? (
+            <p className="text-xs font-semibold text-white/70">{activeSectionMeta.description}</p>
+          ) : null}
           <button
             type="button"
             onClick={() => setShowRegulatory(true)}
-            className="absolute -top-2 -right-2 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-paypal-blue shadow-md ring-1 ring-paypal-blue/20 hover:bg-paypal-blue/5"
+            className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm transition hover:bg-white/25"
           >
             <Scale className="h-3 w-3" />
             Regulatory
             <Info className="h-2.5 w-2.5 opacity-70" />
           </button>
         </div>
-
-        {activeSectionMeta ? (
-          <p className="mt-2 text-center text-xs font-semibold text-white/70">
-            {activeSectionMeta.description}
-          </p>
-        ) : null}
       </div>
+
 
 
       <div key={activeSection} className="dashboard-section-enter">
@@ -3783,42 +3776,8 @@ const Dashboard = () => {
       )}
       </div>
 
-      <div className={`fixed bottom-32 left-0 right-0 z-40 px-4 transition-all duration-300 ease-out ${hideFloating ? "translate-y-[220%] opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
-        <div className="mx-auto flex max-w-md items-center gap-2.5">
-          <button
-            onClick={() => navigate("/contacts")}
-            className="dash-cta dash-cta-outline flex h-[56px] w-[56px] flex-shrink-0"
-            aria-label="Open contacts"
-          >
-            <Users className="h-6 w-6" />
-          </button>
-          <button
-            onClick={() => navigate("/send")}
-            className="dash-cta dash-cta-primary min-w-0 flex-1 py-4 text-base"
-          >
-            Pay
-          </button>
-          <button
-            onClick={() => navigate("/send/pro")}
-            className="dash-cta dash-cta-outline min-w-0 flex-[0.9] py-4 text-sm font-bold"
-            aria-label="Transfer to OpenPay Pro"
-          >
-            Transfer
-          </button>
-          <button
-            onClick={() => setShowReceiveOptions(true)}
-            className="dash-cta dash-cta-outline min-w-0 flex-1 py-4 text-base"
-          >
-            Receive
-          </button>
-          <button
-            onClick={openBuyOptions}
-            className="dash-cta dash-cta-outline min-w-0 flex-1 py-4 text-base"
-          >
-            Buy
-          </button>
-        </div>
-      </div>
+      {null}
+
 
       
       <BottomNav active="home" />
