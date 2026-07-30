@@ -41,7 +41,7 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
   { key: "savings", label: "Savings", icon: PiggyBank, description: "Grow & move funds" },
   { key: "credit", label: "Credit", icon: Scale, description: "Score & trust" },
   { key: "loans", label: "Loans", icon: HandCoins, description: "Borrow & repay" },
-  { key: "cards", label: "Cards", icon: CreditCard, description: "Virtual checkout" },
+  
   { key: "buy", label: "Buy", icon: CircleDollarSign, description: "Add OpenUSD" },
   { key: "swap", label: "Withdraw OUSD", icon: ArrowLeftRight, description: "OUSD payout" },
   { key: "mining", label: "Mining", icon: Pickaxe, description: "Earn OUSD rewards" },

@@ -2281,28 +2281,31 @@ const Dashboard = () => {
   return (
     <div className="min-h-[100dvh] overflow-x-hidden bg-paypal-blue pb-64 text-white dashboard-page-enter">
       <div ref={dashboardTopRef} className="h-0 w-0" aria-hidden tabIndex={-1} />
-      <div className="flex items-center justify-between px-4 pt-5 dashboard-header-enter">
-        <div className="flex items-center gap-2">
+      <div className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-white/10 bg-paypal-blue/85 px-4 py-3 backdrop-blur-xl dashboard-header-enter">
+        <div className="flex min-w-0 items-center gap-2">
           <CurrencySelector />
-          
-          {/* Mining Header Info */}
-          <div 
-            onClick={() => navigate("/mining")}
-            className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 transition-all duration-300 hover:bg-white/15 cursor-pointer hover:scale-105 hover-lift"
-          >
-            <Pickaxe className="h-4 w-4 text-white animate-pulse-slow" />
-            <div className="flex flex-col leading-none">
-              <span className="text-[10px] font-black text-white/70 uppercase">Mining</span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-black text-white count-animation">{miningBalance.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
 
-        
+          {/* Mining Header Info */}
+          <button
+            type="button"
+            onClick={() => navigate("/mining")}
+            aria-label="Open mining"
+            className="group flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 transition-all duration-300 hover:bg-white/20 active:scale-95"
+          >
+            <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white/15">
+              <Pickaxe className="h-3.5 w-3.5 text-white" />
+              {activeMiningSession && (
+                <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-paypal-blue animate-pulse" />
+              )}
+            </span>
+            <div className="flex flex-col leading-none">
+              <span className="text-[9px] font-black uppercase tracking-wider text-white/60">Mining</span>
+              <span className="text-sm font-black text-white count-animation">{miningBalance.toFixed(2)}</span>
+            </div>
+          </button>
         </div>
 
-        <div className="flex gap-3 items-center">
+        <div className="flex items-center gap-2">
           <button
             onClick={loadDashboard}
             aria-label="Refresh dashboard"
