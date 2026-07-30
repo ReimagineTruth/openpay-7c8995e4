@@ -186,3 +186,108 @@ export const usePiUsdPrice = (pollMs = 30_000): PiUsdPrice => {
 
   return price;
 };
+
+/* ---------------------------------------------------------------------------
+ * Pi token details (CoinGecko `pi-network`) — price + 24h + mcap + volume + 7d
+ * ------------------------------------------------------------------------ */
+
+/** Canonical Pi Network token identity (same source OpenPay Pro uses). */
+export const PI_TOKEN = {
+  name: "Pi Network",
+  symbol: "PI",
+  coingeckoId: "pi-network",
+  logo: "https://coin-images.coingecko.com/coins/images/54342/large/pi_network.jpg",
+  website: "https://minepi.com/",
+} as const;
+
+export type PiMarket = {
+  price: number;
+  change24h: number;
+  marketCap: number;
+  volume24h: number;
+  circulatingSupply: number;
+  totalSupply: number;
+  ath: number;
+  atl: number;
+  sparkline: number[];
+  logo: string;
+  fetchedAt: number;
+  isFallback: boolean;
+};
+
+const emptyMarket = (price: number, isFallback: boolean): PiMarket => ({
+  price,
+  change24h: 0,
+  marketCap: 0,
+  volume24h: 0,
+  circulatingSupply: 0,
+  totalSupply: 0,
+  ath: 0,
+  atl: 0,
+  sparkline: [],
+  logo: PI_TOKEN.logo,
+  fetchedAt: Date.now(),
+  isFallback,
+});
+
+/** Fetch the full Pi market card via the `pi-price` edge function. */
+export const fetchPiMarket = async (): Promise<PiMarket> => {
+  try {
+    const { data, error } = await supabase.functions.invoke("pi-price");
+    if (error) throw error;
+    const payload = data as {
+      success?: boolean;
+      price_usd?: number | string;
+      logo?: string;
+      market?: Record<string, unknown> | null;
+    } | null;
+    const price = Number(payload?.price_usd);
+    if (!payload?.success || !Number.isFinite(price) || price <= 0) {
+      throw new Error("Invalid PI market payload");
+    }
+    setCachedPiUsdPrice(price, "coingecko");
+    const m = payload.market ?? null;
+    const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+    return {
+      price,
+      change24h: n(m?.["change_24h"]),
+      marketCap: n(m?.["market_cap"]),
+      volume24h: n(m?.["volume_24h"]),
+      circulatingSupply: n(m?.["circulating_supply"]),
+      totalSupply: n(m?.["total_supply"]),
+      ath: n(m?.["ath"]),
+      atl: n(m?.["atl"]),
+      sparkline: Array.isArray(m?.["sparkline"]) ? (m!["sparkline"] as unknown[]).map(n) : [],
+      logo: typeof payload.logo === "string" ? payload.logo : PI_TOKEN.logo,
+      fetchedAt: Date.now(),
+      isFallback: false,
+    };
+  } catch {
+    const cached = getCachedPiUsdPrice();
+    return emptyMarket(cached.price, true);
+  }
+};
+
+/** Pi token details with polling (default 45s, plus refresh on window focus). */
+export const usePiMarket = (pollMs = 45_000): PiMarket => {
+  const [market, setMarket] = useState<PiMarket>(() => emptyMarket(getCachedPiUsdPrice().price, true));
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const next = await fetchPiMarket();
+      if (mounted) setMarket(next);
+    };
+    void load();
+    const onFocus = () => void load();
+    window.addEventListener("focus", onFocus);
+    const interval = pollMs ? window.setInterval(() => void load(), pollMs) : 0;
+    return () => {
+      mounted = false;
+      window.removeEventListener("focus", onFocus);
+      if (interval) window.clearInterval(interval);
+    };
+  }, [pollMs]);
+
+  return market;
+};
