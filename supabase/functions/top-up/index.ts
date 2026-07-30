@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchPiUsdPriceServer, ousdFromPiAmount } from "../_shared/pi-price.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,9 +41,12 @@ serve(async (req: Request) => {
     const targetAccountNumber = String((body as any).targetAccountNumber || "").trim().toUpperCase();
     const targetUsername = String((body as any).targetUsername || "").trim().replace(/^@+/, "").toLowerCase();
     const parsedAmountPi = Number(amount);
-    const parsedAmountUsd = Number.isFinite(Number(amountUsd)) && Number(amountUsd) > 0
+    // Client-sent USD is only used as a sanity reference; the credited amount is
+    // always recomputed on the server from the live CoinGecko PI/USD price.
+    const clientAmountUsd = Number.isFinite(Number(amountUsd)) && Number(amountUsd) > 0
       ? Number(amountUsd)
-      : parsedAmountPi;
+      : 0;
+
     if (!paymentId || typeof paymentId !== "string") throw new Error("Missing paymentId");
 
     const piApiKey = Deno.env.get("PI_API_KEY");
@@ -100,6 +105,15 @@ serve(async (req: Request) => {
     }
     if (txid && piTxid && txid !== piTxid) throw new Error("Payment txid mismatch");
 
+    // Live PI/USD at credit time (never trust the browser-sent price).
+    const piPrice = await fetchPiUsdPriceServer({ force: true });
+    const parsedAmountUsd = Number(ousdFromPiAmount(piAmount, piPrice.price).toFixed(8));
+    if (!Number.isFinite(parsedAmountUsd) || parsedAmountUsd <= 0) {
+      throw new Error("Unable to price this Pi payment right now. Please retry.");
+    }
+
+
+
     const { data: authUserData } = await supabase.auth.admin.getUserById(user.id);
     const linkedPiUid = authUserData?.user?.user_metadata?.pi_uid as string | undefined;
     const paymentPiUid = piPayment?.user_uid ? String(piPayment.user_uid) : "";
@@ -155,7 +169,7 @@ serve(async (req: Request) => {
         sender_id: user.id,
         receiver_id: user.id,
         amount: parsedAmountUsd,
-        note: `Wallet top up (PI -> OPEN USD) | ${parsedAmountPi.toFixed(2)} PI = ${parsedAmountUsd.toFixed(2)} OPEN USD`,
+        note: `Wallet top up (PI -> OPEN USD) | ${parsedAmountPi.toFixed(6)} PI @ $${piPrice.price} = ${parsedAmountUsd.toFixed(8)} OPEN USD (${piPrice.source})`,
         status: "completed",
       })
       .select("id")
@@ -168,7 +182,17 @@ serve(async (req: Request) => {
     }
 
     const txRow = transactionRow as any;
-    return jsonResponse({ success: true, paymentId, transaction_id: txRow?.id || null });
+    return jsonResponse({
+      success: true,
+      paymentId,
+      transaction_id: txRow?.id || null,
+      pi_amount: parsedAmountPi,
+      pi_usd_price: piPrice.price,
+      pi_price_source: piPrice.source,
+      ousd_credited: parsedAmountUsd,
+      client_quoted_usd: clientAmountUsd || null,
+    });
+
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unexpected error";
     return jsonResponse({ error: message }, 400);
