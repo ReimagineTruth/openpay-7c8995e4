@@ -394,13 +394,13 @@ const OpenPayAIPage = () => {
     setPendingPayment(null);
     setPendingSendRecipient(null);
     setShowPaymentConfirm(false);
-    setSidebarOpen(false);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const handleSuggestionClick = (prompt: string) => {
     setInputMessage(prompt);
-    setSidebarOpen(false);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
@@ -1654,7 +1654,7 @@ What do you want to do first?`;
                   key={msg.id}
                   type="button"
                   onClick={() => {
-                    setSidebarOpen(false);
+                    if (window.innerWidth < 1024) setSidebarOpen(false);
                     scrollToBottom();
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
@@ -1698,7 +1698,7 @@ What do you want to do first?`;
             type="button"
             onClick={() => {
               setShowInsightsPanel(true);
-              setSidebarOpen(false);
+              if (window.innerWidth < 1024) setSidebarOpen(false);
             }}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
           >
@@ -1826,7 +1826,7 @@ What do you want to do first?`;
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="rounded-lg p-2 text-foreground/70 transition hover:bg-muted lg:hidden"
+              className="rounded-lg p-2 text-foreground/70 transition hover:bg-muted"
               aria-label="Open sidebar"
             >
               <PanelLeft className="h-5 w-5" />
