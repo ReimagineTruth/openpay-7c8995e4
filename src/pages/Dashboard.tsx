@@ -1888,7 +1888,7 @@ const Dashboard = () => {
             ? `${E_WALLET_PHP_PER_OUSD.toFixed(2)} PHP = 1 OPEN USD`
             : isUsdFiatBuyFlow
               ? "1 USD = 1 OPEN USD"
-              : `1 PI = ${PI_TO_OUSD.toFixed(2)} OPEN USD`;
+              : `1 PI = ${livePiToOusd.toFixed(4)} OPEN USD`;
   const buyOpenUsdRateText = isUsdtBuyFlow
     ? "1 USDT = 1 OPEN USD"
     : isUsdcBuyFlow
@@ -1897,9 +1897,9 @@ const Dashboard = () => {
         ? `${E_WALLET_PHP_PER_OUSD.toFixed(2)} PHP = 1 OPEN USD`
         : isUsdFiatBuyFlow
           ? "1 USD = 1 OPEN USD"
-          : `1 OPEN USD = ${OUSD_TO_PI.toFixed(5)} PI`;
+          : `1 OPEN USD = ${liveOusdToPi.toFixed(5)} PI`;
   const onrampRates: Record<BuyOnrampProvider, number> = {
-    "Pi Payment": OUSD_TO_PI,
+    "Pi Payment": liveOusdToPi,
     "Ewallet QR PH": 1,
     "USDT": 1,
     "USDC": 1,
@@ -1988,7 +1988,7 @@ const Dashboard = () => {
       : isEwalletBuyFlow
         ? safeBuySpend / E_WALLET_PHP_PER_OUSD
         : buyPaymentMethod === "Pi Payment"
-          ? safeBuySpend * PI_TO_OUSD
+          ? safeBuySpend * livePiToOusd
           : safeBuySpend;
   const buyOpenUsdDisplay =
     buyOpenUsdAmount > 0
@@ -3348,7 +3348,7 @@ const Dashboard = () => {
             feeAmount={swapFeeAmount}
             meetsMinimum={swapMeetsMinimum}
             showPrice
-            piToOusd={PI_TO_OUSD}
+            piToOusd={livePiToOusd}
             payoutLabel={
               swapWithdrawalType === "PI"
                 ? `${swapPayoutPiAmount.toFixed(4)} PI`
@@ -3363,7 +3363,7 @@ const Dashboard = () => {
                 Rate: 1{" "}
                 {swapWithdrawalType === "OUSD_SOL" ? OUSD_SOL_LABEL : swapWithdrawalType} ={" "}
                 {swapWithdrawalType === "PI"
-                  ? PI_TO_OUSD.toFixed(2)
+                  ? livePiToOusd.toFixed(4)
                   : swapWithdrawalType === "OUSD" || swapWithdrawalType === "OUSD_SOL"
                     ? "1.00"
                     : mrwnToOusd.toFixed(2)}{" "}
@@ -4024,7 +4024,7 @@ const Dashboard = () => {
             Select the provider for your OpenUSD buy quote.
           </DialogDescription>
           <p className="mt-1 text-center text-xs font-medium text-foreground">
-            Conversion: 1 OPEN USD = {OUSD_TO_PI.toFixed(5)} PI
+            Conversion: 1 OPEN USD = {liveOusdToPi.toFixed(5)} PI
           </p>
           <div className="mt-3 space-y-3">
             {onrampRows.map((row) => {
@@ -4055,7 +4055,7 @@ const Dashboard = () => {
                             ? `${targetOpenUsdAmount.toFixed(2)} USDC`
                             : usdOnrampProviders.includes(row.key)
                               ? `${targetOpenUsdAmount.toFixed(2)} USD`
-                              : `${(targetOpenUsdAmount * OUSD_TO_PI).toFixed(5)} PI`;
+                              : `${(targetOpenUsdAmount * liveOusdToPi).toFixed(5)} PI`;
               const selected = buyOnrampProvider === row.key;
               return (
                 <button
@@ -4279,7 +4279,7 @@ const Dashboard = () => {
                             ? `${targetOpenUsdAmount.toFixed(2)} USDC`
                             : usdPaymentMethods.includes(row.key)
                               ? `${targetOpenUsdAmount.toFixed(2)} USD`
-                              : `${(targetOpenUsdAmount * OUSD_TO_PI).toFixed(5)} PI`;
+                              : `${(targetOpenUsdAmount * liveOusdToPi).toFixed(5)} PI`;
               return (
                 <button
                   key={row.key}
