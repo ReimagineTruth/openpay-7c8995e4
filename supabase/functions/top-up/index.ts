@@ -66,6 +66,26 @@ serve(async (req: Request) => {
     };
 
     if (action === "approve") {
+      // Verify the payment belongs to this user and is an OUSD top-up before approving.
+      const pending = await callPi(`/payments/${paymentId}`, "GET") as {
+        metadata?: Record<string, unknown>;
+        user_uid?: string;
+        direction?: string;
+      };
+      const product = String(pending?.metadata?.product || pending?.metadata?.feature || "");
+      if (product !== "ousd_topup" && product !== "top_up") {
+        throw new Error("Payment is not an OUSD top-up");
+      }
+      if (String(pending?.direction || "user_to_app") !== "user_to_app") {
+        throw new Error("Invalid payment direction");
+      }
+      const { data: approveAuthUser } = await supabase.auth.admin.getUserById(user.id);
+      const linkedUid = approveAuthUser?.user?.user_metadata?.pi_uid as string | undefined;
+      const metaUserId = String(pending?.metadata?.supabaseUserId || "");
+      if (metaUserId && metaUserId !== user.id) throw new Error("Payment does not belong to this user");
+      if (linkedUid && pending?.user_uid && String(pending.user_uid) !== linkedUid) {
+        throw new Error("Payment does not belong to this user");
+      }
       await callPi(`/payments/${paymentId}/approve`, "POST");
       return jsonResponse({ success: true, action, paymentId });
     }
