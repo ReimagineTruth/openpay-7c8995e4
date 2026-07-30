@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plug, Loader2, Plus, Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Plug, Loader2, Plus, Trash2, ShieldCheck, AlertTriangle, Sparkles, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -42,8 +42,22 @@ export default function McpConnectionsDialog({
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [unauthenticated, setUnauthenticated] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [url, setUrl] = useState(SUGGESTED[0].url);
+
+  const hasReady = items.some((i) => i.state === "ready");
+
+  const copyPrompt = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(text);
+      setTimeout(() => setCopied((c) => (c === text ? null : c)), 1500);
+    } catch {
+      toast({ title: "Copy failed", description: "Copy the prompt manually.", variant: "destructive" });
+    }
+  };
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -153,6 +167,46 @@ export default function McpConnectionsDialog({
                 </div>
               ))}
             </div>
+
+            {hasReady && (
+              <div className="space-y-2 rounded-xl border border-paypal-blue/30 bg-paypal-blue/5 p-3">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-paypal-blue">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  How to use it in AI
+                </p>
+                <ol className="list-decimal space-y-1 pl-4 text-[12px] text-muted-foreground">
+                  <li>Close this dialog and go back to the OpenPay AI chat.</li>
+                  <li>Ask in plain language — the AI picks the right tool automatically.</li>
+                  <li>Confirm when it asks before any action that moves money.</li>
+                </ol>
+                <div className="space-y-1.5 pt-1">
+                  {[
+                    "Show my OpenPay Pro wallets and balances",
+                    "List my last 10 ledger entries",
+                    "Summarize my recent transactions this week",
+                  ].map((prompt) => (
+                    <button
+                      key={prompt}
+                      type="button"
+                      onClick={() => copyPrompt(prompt)}
+                      className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/70 bg-background/70 px-2.5 py-2 text-left text-[12px] transition hover:bg-muted"
+                    >
+                      <span className="truncate">“{prompt}”</span>
+                      {copied === prompt ? (
+                        <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Tools appear as <span className="font-mono">server__tool_name</span> in the chat while running.
+                </p>
+              </div>
+            )}
+
+
 
             <div className="space-y-2 rounded-xl border border-border/70 p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Add a server</p>
