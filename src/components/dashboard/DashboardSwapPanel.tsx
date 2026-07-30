@@ -14,15 +14,6 @@ const WITHDRAWAL_OPTIONS: {
   ring: string;
 }[] = [
   {
-    id: "PI",
-    label: "Pi Network",
-    sublabel: "OUSD → PI payout",
-    iconUrl:
-      "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png",
-    accent: "from-blue-500/15 to-sky-500/10",
-    ring: "ring-paypal-blue/70",
-  },
-  {
     id: "OUSD",
     label: "OUSD",
     sublabel: "1:1 rate",
@@ -30,7 +21,7 @@ const WITHDRAWAL_OPTIONS: {
     accent: "from-emerald-500/15 to-teal-500/10",
     ring: "ring-paypal-blue/70",
   },
-  // OUSD_SOL and MRWN withdrawals are temporarily hidden
+  // PI, OUSD_SOL and MRWN withdrawals are temporarily hidden
 ];
 
 
