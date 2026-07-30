@@ -166,7 +166,7 @@ export const quotePiTopup = async (ousdAmount: number): Promise<PiTopupQuote> =>
 
 
 /** Live PI/USD price with polling, for wallet / top-up / quote screens. */
-export const usePiUsdPrice = (pollMs = 45_000): PiUsdPrice => {
+export const usePiUsdPrice = (pollMs = 30_000): PiUsdPrice => {
   const [price, setPrice] = useState<PiUsdPrice>(() => getCachedPiUsdPrice());
 
   useEffect(() => {
