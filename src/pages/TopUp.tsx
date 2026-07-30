@@ -263,7 +263,7 @@ const TopUp = () => {
               amount_usd: quote.ousdAmount,
               pi_usd_price: livePrice.price,
               pi_price_source: livePrice.source,
-              supabaseUserId: (await supabase.auth.getUser()).data.user?.id || null,
+              supabaseUserId,
               requestedAt: new Date().toISOString(),
             },
           },
