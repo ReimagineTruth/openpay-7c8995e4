@@ -81,7 +81,7 @@ serve(async (req: Request) => {
       try { await callPi(`/payments/${paymentId}/complete`, "POST", { txid }); } catch { /* idempotent */ }
     }
 
-    type PiPayment = { amount?: number | string; direction?: string; user_uid?: string; status?: any; transaction?: { txid?: string } };
+    type PiPayment = { amount?: number | string; direction?: string; user_uid?: string; memo?: string; metadata?: Record<string, unknown>; status?: any; transaction?: { txid?: string } };
     let piPayment: PiPayment | null = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       piPayment = await callPi(`/payments/${paymentId}`, "GET") as PiPayment;
