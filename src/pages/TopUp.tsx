@@ -631,6 +631,23 @@ const TopUp = () => {
           <DialogDescription className="text-sm text-muted-foreground">
             Please review and accept before proceeding with your top-up transaction.
           </DialogDescription>
+          <div className="rounded-2xl border border-paypal-light-blue/40 bg-paypal-light-blue/10 p-3 text-sm text-foreground">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">You pay</span>
+              <span className="font-bold">π{piAmount.toFixed(4)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-muted-foreground">You receive</span>
+              <span className="font-bold">{safeAmount.toFixed(2)} OUSD</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-muted-foreground">Live π price</span>
+              <span className="font-semibold">
+                ${piPrice.price >= 0.01 ? piPrice.price.toFixed(4) : piPrice.price.toPrecision(4)}
+              </span>
+            </div>
+            <p className="mt-2 break-words text-[11px] text-muted-foreground">Memo: {piMemo}</p>
+          </div>
           <div className="rounded-2xl border border-border p-3 text-sm text-foreground">
             <p className="font-semibold">1. Nature of Service</p>
             <p className="mt-1">
