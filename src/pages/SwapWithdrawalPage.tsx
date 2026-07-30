@@ -429,7 +429,7 @@ const SwapWithdrawalPage = () => {
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-2">
                     <img src={withdrawalType === "PI" ? PI_LOGO_URL : withdrawalType === "OUSD" ? OUSD_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-4 w-4" />
-                    {withdrawalType} fixed rate
+                    {withdrawalType === "PI" ? (livePi.isFallback ? "PI estimated rate" : "PI live rate") : `${withdrawalType} fixed rate`}
                   </span>
                   <span className="inline-flex items-center gap-1 font-semibold">
                     <img src={withdrawalType === "PI" ? PI_LOGO_URL : withdrawalType === "OUSD" ? OUSD_LOGO_URL : MRWN_LOGO_URL} alt={withdrawalType} className="h-4 w-4" />
