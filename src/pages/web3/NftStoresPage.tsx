@@ -370,7 +370,7 @@ const NftStoresPage = () => {
                 <button
                   key={s.store.user_id}
                   onClick={() => nav(`/web3/nft/store/${s.store.handle}`)}
-                  className="rounded-2xl bg-[#0f0f0f] border border-border/10 p-3 text-left hover:border-border/30 transition"
+                  className="nft-card nft-fade-in p-3 text-left"
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-foreground/40">#{idx + 1}</span>

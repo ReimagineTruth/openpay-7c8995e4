@@ -458,9 +458,9 @@ const NftStorePage = () => {
               return (
                 <div key={it.id} className="relative group">
                   <button onClick={() => nav(`/web3/nft/${it.id}`)}
-                    className="w-full text-left rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/5 hover:border-white/20 transition">
-                    <div className="aspect-square bg-[#161616] overflow-hidden relative">
-                      {it.image_url && <img src={it.image_url} className="h-full w-full object-cover" alt={it.name} />}
+                    className="w-full text-left nft-card nft-fade-in">
+                    <div className="nft-media aspect-square bg-muted/50 overflow-hidden relative">
+                      {it.image_url && <img src={it.image_url} loading="lazy" decoding="async" className="h-full w-full object-cover" alt={it.name} />}
                       {it.pinned && (
                         <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/70 backdrop-blur border border-white/20">
                           <Pin className="h-3 w-3" /> Pinned

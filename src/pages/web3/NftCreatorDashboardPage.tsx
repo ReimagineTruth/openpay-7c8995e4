@@ -96,9 +96,9 @@ const NftCreatorDashboardPage = () => {
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
               {myItems.map((it) => (
-                <button key={it.id} onClick={() => nav(`/web3/nft/${it.id}`)} className="rounded-xl overflow-hidden bg-slate-50 dark:bg-[#161616] border border-slate-200 dark:border-white/5 hover:border-blue-400">
-                  <div className="aspect-square">
-                    {it.image_url ? <img src={it.image_url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-slate-200 dark:bg-white/5" />}
+                <button key={it.id} onClick={() => nav(`/web3/nft/${it.id}`)} className="nft-card nft-fade-in !rounded-xl">
+                  <div className="nft-media aspect-square">
+                    {it.image_url ? <img src={it.image_url} loading="lazy" decoding="async" className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-slate-200 dark:bg-white/5" />}
                   </div>
                   <div className="p-2 text-left">
                     <p className="text-xs font-semibold truncate">{it.name}</p>
