@@ -278,7 +278,10 @@ const OpenPayAIPage = () => {
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [pageActive, setPageActive] = useState(true);
   const [userInteracted, setUserInteracted] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : false,
+  );
+
   const [showInsightsPanel, setShowInsightsPanel] = useState(false);
   const [themeMode, setThemeMode] = useState<AppThemeMode>(() => getStoredAppTheme());
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
