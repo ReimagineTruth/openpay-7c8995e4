@@ -12,7 +12,14 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import TopUpAccountDetails from "@/components/TopUpAccountDetails";
 import RegulatoryStatusModal from "@/components/RegulatoryStatusModal";
 import TopUpActionGrid from "@/components/TopUpActionGrid";
-import { fetchPiUsdPrice, ousdFromPiAmount, piAmountForOusd, usePiUsdPrice } from "@/lib/piPrice";
+import {
+  buildPiTopupMemo,
+  fetchPiUsdPrice,
+  ousdFromPiAmount,
+  piAmountForOusd,
+  quotePiTopup,
+  usePiUsdPrice,
+} from "@/lib/piPrice";
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const PI_PAYMENT_ICON_URL = "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
