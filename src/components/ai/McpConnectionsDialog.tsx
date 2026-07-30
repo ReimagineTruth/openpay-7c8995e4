@@ -42,8 +42,22 @@ export default function McpConnectionsDialog({
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [unauthenticated, setUnauthenticated] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [url, setUrl] = useState(SUGGESTED[0].url);
+
+  const hasReady = items.some((i) => i.state === "ready");
+
+  const copyPrompt = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(text);
+      setTimeout(() => setCopied((c) => (c === text ? null : c)), 1500);
+    } catch {
+      toast({ title: "Copy failed", description: "Copy the prompt manually.", variant: "destructive" });
+    }
+  };
+
 
   const load = useCallback(async () => {
     setLoading(true);
