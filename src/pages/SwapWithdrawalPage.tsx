@@ -12,6 +12,7 @@ import { PI_TO_USD } from "@/contexts/CurrencyContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { MRWN_SWAP_OUSD_PER_TOKEN } from "@/lib/mrwnRates";
 import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
+import { usePiUsdPrice } from "@/lib/piPrice";
 
 type WithdrawalType = "PI" | "MRWN" | "OUSD" | "OUSD_SOL";
 
