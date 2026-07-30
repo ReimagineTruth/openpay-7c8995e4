@@ -2454,43 +2454,46 @@ const Dashboard = () => {
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => navigate("/send")}
-              className="ios-active rounded-2xl bg-white/15 px-3 py-3 text-center backdrop-blur-sm transition hover:bg-white/25"
-            >
-              <p className="text-sm font-black text-white">Pay</p>
-              <p className="mt-0.5 text-[10px] font-semibold text-white/65">OpenPay users</p>
-            </button>
-            <div className="ios-active flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg shadow-black/10">
-              <button
-                type="button"
-                onClick={() => navigate("/send/pro")}
-                className="px-3 py-3 text-center transition hover:bg-white/95"
-              >
-                <p className="text-sm font-black text-paypal-blue">Transfer</p>
-                <p className="mt-0.5 text-[10px] font-semibold text-paypal-blue/70">OpenPay Pro</p>
-              </button>
-              <a
-                href="https://openpaypro.space/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1 border-t border-paypal-blue/10 bg-paypal-blue/[0.06] px-2 py-1.5 text-[10px] font-bold text-paypal-blue transition hover:bg-paypal-blue/10"
-                aria-label="Open OpenPay Pro wallet"
-              >
-                <ExternalLink className="h-3 w-3" /> Pro
-              </a>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowReceiveOptions(true)}
-              className="ios-active rounded-2xl bg-white/15 px-3 py-3 text-center backdrop-blur-sm transition hover:bg-white/25"
-            >
-              <p className="text-sm font-black text-white">Receive</p>
-              <p className="mt-0.5 text-[10px] font-semibold text-white/65">Get paid</p>
-            </button>
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {[
+              { id: "pay", label: "Pay", icon: Send, onClick: () => navigate("/send") },
+              { id: "transfer", label: "Transfer", icon: ArrowLeftRight, onClick: () => navigate("/send/pro") },
+              { id: "receive", label: "Receive", icon: Download, onClick: () => setShowReceiveOptions(true) },
+              { id: "buy", label: "Buy", icon: CircleDollarSign, onClick: () => openBuyOptions() },
+            ].map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.id}
+                  type="button"
+                  onClick={action.onClick}
+                  className="ios-active flex h-[64px] flex-col items-center justify-center gap-1 rounded-2xl bg-white/15 backdrop-blur-sm transition hover:bg-white/25"
+                >
+                  <Icon className="h-[18px] w-[18px] text-white" />
+                  <span className="text-[11px] font-bold text-white">{action.label}</span>
+                </button>
+              );
+            })}
           </div>
+
+          <div className="mt-2 flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => navigate("/contacts")}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-white/75 transition hover:text-white"
+            >
+              <Users className="h-3 w-3" /> Contacts
+            </button>
+            <a
+              href="https://openpaypro.space/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-white/75 transition hover:text-white"
+            >
+              <ExternalLink className="h-3 w-3" /> OpenPay Pro
+            </a>
+          </div>
+
 
           {walletView === "merchant" && (
             <div className="mt-5 grid grid-cols-3 gap-2">
