@@ -471,6 +471,12 @@ const AppRoutes = () => {
             <OpenPayAIPage />
           </ProtectedRoute>
         } />
+        <Route path="/mcp/callback" element={
+          <ProtectedRoute>
+            <McpOAuthCallbackPage />
+          </ProtectedRoute>
+        } />
+
         <Route path="/request-payment" element={
           <ProtectedRoute>
             <RequestMoney />
