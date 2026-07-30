@@ -3351,6 +3351,12 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+
+          {buyPaymentMethod === "Pi Payment" && (
+            <div className="mt-4">
+              <PiTokenCard />
+            </div>
+          )}
         </div>
       )}
 
