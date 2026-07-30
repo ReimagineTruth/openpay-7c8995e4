@@ -2045,3 +2045,108 @@ html:not(.dark) .nft-store-banner :where(svg) { color: #ffffff !important; }
 
 
 
+
+/* =========================================================
+   OpenSea-grade polish layer for every NFT page (.nft-scope)
+   Presentation only — classes are opt-in plus a few safe
+   element-level upgrades scoped to the NFT surface.
+   ========================================================= */
+
+/* Sticky headers become frosted glass on every NFT page */
+.nft-scope header.sticky {
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  background-color: hsl(var(--background) / 0.72) !important;
+  border-bottom: 1px solid hsl(var(--border) / 0.6) !important;
+}
+
+/* Card surface: subtle lift, ring and shadow like OpenSea tiles */
+.nft-card {
+  position: relative;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.55);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: transform .25s cubic-bezier(.2,.8,.2,1),
+              box-shadow .25s ease,
+              border-color .25s ease;
+  will-change: transform;
+}
+.nft-card:hover {
+  transform: translateY(-4px);
+  border-color: hsl(var(--primary) / 0.45);
+  box-shadow: 0 18px 34px -18px hsl(217 91% 40% / 0.55), 0 2px 10px -4px hsl(0 0% 0% / 0.35);
+}
+.nft-card:active { transform: translateY(-1px) scale(.995); }
+.nft-card:focus-visible {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.35);
+}
+
+/* Media zoom + gradient scrim */
+.nft-card .nft-media { overflow: hidden; position: relative; }
+.nft-card .nft-media img {
+  transition: transform .6s cubic-bezier(.2,.8,.2,1), filter .3s ease;
+}
+.nft-card:hover .nft-media img { transform: scale(1.07); }
+.nft-card .nft-media::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, hsl(0 0% 0% / 0.35), transparent 45%);
+  opacity: 0; transition: opacity .25s ease; pointer-events: none;
+}
+.nft-card:hover .nft-media::after { opacity: 1; }
+
+/* Hover CTA bar that slides up over the media (OpenSea "Buy now") */
+.nft-cta-slide {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  transform: translateY(105%);
+  transition: transform .28s cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+}
+.nft-card:hover .nft-cta-slide { transform: translateY(0); }
+@media (hover: none) { .nft-cta-slide { display: none; } }
+
+/* Floating pills / chips */
+.nft-chip {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background-color: hsl(0 0% 0% / 0.55);
+  color: #fff;
+  border: 1px solid hsl(0 0% 100% / 0.14);
+}
+
+/* Section headings */
+.nft-section-title {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Staggered entrance for grid items */
+.nft-fade-in { animation: nft-fade-up .45s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes nft-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nft-fade-in, .nft-card, .nft-card .nft-media img, .nft-cta-slide { animation: none !important; transition: none !important; }
+}
+
+/* Slim scrollbars for the horizontal rails */
+.nft-scope .no-scrollbar::-webkit-scrollbar { display: none; }
+.nft-scope .no-scrollbar { scrollbar-width: none; }
+.nft-scope ::-webkit-scrollbar { height: 6px; width: 6px; }
+.nft-scope ::-webkit-scrollbar-thumb { background: hsl(var(--foreground) / 0.18); border-radius: 999px; }
+.nft-scope ::-webkit-scrollbar-thumb:hover { background: hsl(var(--foreground) / 0.3); }
+
+/* Inputs and buttons inside the NFT surface */
+.nft-scope input:focus-visible,
+.nft-scope textarea:focus-visible,
+.nft-scope select:focus-visible {
+  outline: none;
+  border-color: hsl(var(--primary) / 0.7) !important;
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.18);
+}
+.nft-scope button { transition: transform .15s ease, background-color .2s ease, color .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.nft-scope button:active:not(:disabled) { transform: scale(.97); }
