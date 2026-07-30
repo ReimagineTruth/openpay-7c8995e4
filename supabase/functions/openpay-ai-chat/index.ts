@@ -238,40 +238,196 @@ If KYC is not verified and the user asks about higher limits, merchant, remittan
 If they ask about referrals, their invite flow is /affiliate (link uses their referral code).
 Always ask one short follow-up question so the chat continues.`;
 
-    const finalMessages = [
+    // ---- OpenPay MCP tools (same tool set exposed by /functions/v1/mcp) ----
+    const toolDefs = [
+      {
+        type: "function",
+        function: {
+          name: "get_profile",
+          description: "Return the signed-in user's OpenPay profile (name, username, KYC status).",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_wallet_balance",
+          description: "Return the signed-in OpenPay user's current wallet balance.",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "list_transactions",
+          description: "List the signed-in user's most recent OpenPay transactions (sent or received).",
+          parameters: {
+            type: "object",
+            properties: {
+              limit: { type: "integer", description: "Max transactions to return (1-50)." },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "send_money",
+          description:
+            "Prepare a transfer from the signed-in user's OpenPay wallet to another user by @username. This does NOT move funds — it validates the recipient and balance and returns a confirmation link the user must approve in-app with their MPIN.",
+          parameters: {
+            type: "object",
+            properties: {
+              recipient_username: { type: "string", description: "Recipient's OpenPay @username (without @)." },
+              amount: { type: "number", description: "Amount to send in OUSD." },
+              note: { type: "string", description: "Optional note for the recipient." },
+            },
+            required: ["recipient_username", "amount"],
+            additionalProperties: false,
+          },
+        },
+      },
+    ];
+
+    const runTool = async (name: string, args: any) => {
+      try {
+        if (name === "get_profile") {
+          const { data } = await supabase
+            .from("profiles")
+            .select("id, full_name, username, avatar_url, kyc_status, referral_code, created_at")
+            .eq("id", user.id)
+            .maybeSingle();
+          return { profile: data ?? null };
+        }
+        if (name === "get_wallet_balance") {
+          const { data } = await supabase
+            .from("wallets")
+            .select("balance, updated_at")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          return { balance: Number(data?.balance ?? 0), updated_at: data?.updated_at ?? null };
+        }
+        if (name === "list_transactions") {
+          const limit = Math.min(Math.max(Number(args?.limit ?? 10) || 10, 1), 50);
+          const { data } = await supabase
+            .from("transactions")
+            .select("id, sender_id, receiver_id, amount, note, status, created_at")
+            .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+            .order("created_at", { ascending: false })
+            .limit(limit);
+          return {
+            transactions: (data ?? []).map((t: any) => ({
+              id: t.id,
+              amount: t.amount,
+              status: t.status,
+              note: t.note,
+              created_at: t.created_at,
+              direction: t.sender_id === user.id ? "sent" : "received",
+            })),
+          };
+        }
+        if (name === "send_money") {
+          const username = String(args?.recipient_username ?? "").replace(/^@/, "").trim();
+          const amount = Number(args?.amount);
+          if (!username || !(amount > 0)) return { ok: false, error: "recipient_username and a positive amount are required" };
+          const { data: recipient } = await supabase
+            .from("profiles")
+            .select("id, full_name, username")
+            .eq("username", username)
+            .maybeSingle();
+          if (!recipient) return { ok: false, error: `No OpenPay user found with @${username}` };
+          if (recipient.id === user.id) return { ok: false, error: "You cannot send money to yourself." };
+          const { data: w } = await supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle();
+          const balance = Number(w?.balance ?? 0);
+          if (balance < amount) return { ok: false, error: `Insufficient balance. You have $${balance.toFixed(2)}.` };
+          return {
+            ok: true,
+            requires_confirmation: true,
+            recipient: { username: recipient.username, name: recipient.full_name },
+            amount,
+            note: args?.note ?? "",
+            confirm_url: `/send?to=${encodeURIComponent(username)}&amount=${amount}${args?.note ? `&note=${encodeURIComponent(String(args.note))}` : ""}`,
+            message: "Transfer prepared. The user must approve it in the app with their MPIN — funds have NOT moved yet.",
+          };
+        }
+        return { error: `Unknown tool ${name}` };
+      } catch (e) {
+        return { error: String((e as any)?.message ?? e) };
+      }
+    };
+
+    const finalMessages: any[] = [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "system", content: contextMessage },
+      {
+        role: "system",
+        content:
+          "You have live OpenPay tools (get_profile, get_wallet_balance, list_transactions, send_money) — the same tools this app exposes over MCP. Call them instead of guessing balances, profile details, or transaction history. send_money never moves funds: it only prepares a transfer, so always show the confirm link and tell the user to approve it in-app with their MPIN.",
+      },
       ...messages.slice(-12),
     ];
     if (userMessage.trim()) {
       finalMessages.push({ role: "user", content: userMessage });
     }
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: finalMessages,
-        temperature: 0.4,
-      }),
-    });
+    let reply = "";
+    const usedTools: string[] = [];
 
-    if (aiRes.status === 429) return json({ error: "Rate limit exceeded. Try again shortly." }, 429);
-    if (aiRes.status === 402) return json({ error: "AI credits exhausted. Please add funds to your workspace." }, 402);
-    if (!aiRes.ok) {
-      const text = await aiRes.text();
-      console.error("Lovable AI error", aiRes.status, text);
-      return json({ error: "AI service error", detail: text }, 500);
+    for (let step = 0; step < 4; step++) {
+      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: finalMessages,
+          temperature: 0.4,
+          tools: toolDefs,
+        }),
+      });
+
+      if (aiRes.status === 429) return json({ error: "Rate limit exceeded. Try again shortly." }, 429);
+      if (aiRes.status === 402) return json({ error: "AI credits exhausted. Please add funds to your workspace." }, 402);
+      if (!aiRes.ok) {
+        const text = await aiRes.text();
+        console.error("Lovable AI error", aiRes.status, text);
+        return json({ error: "AI service error", detail: text }, 500);
+      }
+
+      const payload = await aiRes.json();
+      const choice = payload?.choices?.[0]?.message;
+      const toolCalls = choice?.tool_calls;
+
+      if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+        finalMessages.push(choice);
+        for (const call of toolCalls) {
+          const name = call?.function?.name;
+          let args: any = {};
+          try {
+            args = JSON.parse(call?.function?.arguments || "{}");
+          } catch (_) {
+            args = {};
+          }
+          usedTools.push(name);
+          const result = await runTool(name, args);
+          finalMessages.push({
+            role: "tool",
+            tool_call_id: call.id,
+            content: JSON.stringify(result),
+          });
+        }
+        continue;
+      }
+
+      reply = choice?.content ?? "";
+      break;
     }
 
-    const payload = await aiRes.json();
-    const reply = payload?.choices?.[0]?.message?.content ?? "";
+    return json({ reply, context: ctx, tools_used: usedTools });
 
-    return json({ reply, context: ctx });
   } catch (e) {
     console.error("openpay-ai-chat fatal", e);
     return json({ error: String((e as any)?.message ?? e) }, 500);
