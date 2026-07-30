@@ -832,9 +832,16 @@ const NftMarketplacePage = () => {
                     ))}
                   </div>
                 ) : filteredItems.length === 0 ? (
-                  <div className="text-center py-12 rounded-2xl border border-dashed border-border/10">
-                    <p className="text-sm text-foreground/60">No NFTs match your search.</p>
-                    <button onClick={() => { setSearch(""); setCategory("all"); }} className="mt-3 text-xs font-bold" style={{ color: ACCENT }}>Clear filters</button>
+                  <div className="text-center py-16 rounded-2xl border border-dashed border-border/50 bg-card/40">
+                    <div className="mx-auto h-12 w-12 rounded-2xl bg-muted flex items-center justify-center">
+                      <Search className="h-5 w-5 text-foreground/40" />
+                    </div>
+                    <p className="mt-3 font-bold text-sm">Nothing here yet</p>
+                    <p className="text-xs text-foreground/55 mt-1">No NFTs match your search or filters.</p>
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                      <button onClick={() => { setSearch(""); setCategory("all"); }} className="px-4 py-2 rounded-full text-xs font-bold bg-muted hover:bg-muted/70">Clear filters</button>
+                      <button onClick={() => nav("/web3/nft/create")} className="px-4 py-2 rounded-full text-xs font-extrabold text-white" style={{ background: ACCENT }}>Mint an NFT</button>
+                    </div>
                   </div>
                 ) : (
                   <>
