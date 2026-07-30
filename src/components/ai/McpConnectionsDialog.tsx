@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plug, Loader2, Plus, Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Plug, Loader2, Plus, Trash2, ShieldCheck, AlertTriangle, Sparkles, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
