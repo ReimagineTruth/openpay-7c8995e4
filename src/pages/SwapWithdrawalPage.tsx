@@ -438,7 +438,7 @@ const SwapWithdrawalPage = () => {
                   </span>
                 </div>
                   <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>Fixed</span>
+                    <span>{withdrawalType === "PI" ? (livePi.isFallback ? "Estimated" : "Live · CoinGecko") : "Fixed"}</span>
                     <span>1 {withdrawalType} = {withdrawalType === "PI" ? piPriceUsd.toFixed(4) : withdrawalType === "OUSD" ? "1.00" : (selectedCurrency?.rate ?? MRWN_SWAP_OUSD_PER_TOKEN).toFixed(2)} OPEN USD</span>
                   </div>
               </div>
