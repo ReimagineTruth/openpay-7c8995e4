@@ -113,7 +113,8 @@ const SwapWithdrawalPage = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [history, setHistory] = useState<SwapWithdrawalRow[]>([]);
-  const [piPriceUsd] = useState<number>(PI_TO_USD);
+  const livePi = usePiUsdPrice(30_000);
+  const piPriceUsd = livePi.price > 0 ? livePi.price : PI_TO_USD;
 
   const { currencies } = useCurrency();
   const piCurrency = currencies.find(c => c.code === "PI");
