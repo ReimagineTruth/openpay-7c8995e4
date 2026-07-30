@@ -255,13 +255,13 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-[calc(100vw-2rem)] max-w-[400px] overflow-hidden rounded-[28px] border border-border bg-card p-0 text-foreground shadow-2xl sm:max-w-[420px]"
+        className="w-[calc(100vw-2rem)] max-w-[400px] grid-cols-1 overflow-hidden rounded-[28px] border border-border bg-card p-0 text-foreground shadow-2xl sm:max-w-[420px]"
       >
         <DialogTitle className="sr-only">Transaction receipt</DialogTitle>
         <DialogDescription className="sr-only">Receipt details for the selected transaction.</DialogDescription>
 
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3 sm:px-5">
+        <div className="flex min-w-0 items-center justify-between gap-2 border-b border-border/60 px-4 py-3 sm:px-5">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -289,7 +289,7 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
         </div>
 
         {/* Hero */}
-        <div className="flex flex-col items-center px-5 pb-5 pt-5">
+        <div className="flex min-w-0 flex-col items-center px-5 pb-5 pt-5">
           <div className="relative">
             {providerLogo ? (
               <div className="flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-border">
@@ -322,17 +322,17 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
             {isCredit ? "+" : "-"}
             {formatCurrency(receipt.amount)}
           </p>
-          <p className="mt-2 text-sm font-medium text-muted-foreground">
+          <p className="mt-2 w-full truncate text-center text-sm font-medium text-muted-foreground">
             {receipt.otherPartyName || "OpenPay"}
             {receipt.otherPartyUsername ? ` · @${receipt.otherPartyUsername}` : ""}
           </p>
           {receipt.note && (
-            <p className="mt-2 max-w-full truncate px-2 text-xs text-muted-foreground/80">{toPreviewText(receipt.note)}</p>
+            <p className="mt-2 w-full truncate px-2 text-center text-xs text-muted-foreground/80">{toPreviewText(receipt.note)}</p>
           )}
         </div>
 
         {/* Details */}
-        <div className="px-4 pb-5 sm:px-5">
+        <div className="min-w-0 px-4 pb-5 sm:px-5">
           <div className="rounded-2xl border border-border bg-muted/40 p-1">
             {detailRows.map((row) => (
               <div
