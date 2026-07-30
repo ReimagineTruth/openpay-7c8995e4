@@ -36,6 +36,7 @@ import { OUSD_SOL_LABEL, OUSD_SOL_LOGO_URL } from "@/lib/ousdSol";
 import { PI_ADS_DISABLED } from "@/lib/piAds";
 import { usePiUsdPrice } from "@/lib/piPrice";
 import PiTokenCard from "@/components/dashboard/PiTokenCard";
+import OusdTokenCard from "@/components/dashboard/OusdTokenCard";
 import {
   DASHBOARD_SECTION_NAV,
   DASHBOARD_SECTION_TITLES,
