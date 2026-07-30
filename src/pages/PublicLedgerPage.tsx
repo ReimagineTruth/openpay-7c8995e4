@@ -356,88 +356,98 @@ const PublicLedgerPage = () => {
   }, [transactionId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-paypal-blue to-[#0073e6] px-4 py-8 text-white animate-fadeInUp">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8 animate-slideInDown">
-          <h1 className="text-3xl font-bold mb-2 animate-float">OpenLedger</h1>
-          <p className="text-white/80">Transparent financial records for all transactions</p>
-        </div>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/")} aria-label="Back to home" className="hover-lift">
-              <ArrowLeft className="h-6 w-6 text-foreground" />
+    <div className="min-h-screen bg-background pb-16">
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-paypal-blue to-[#0073e6] text-white">
+        <div className="mx-auto max-w-4xl px-4 pb-8 pt-6">
+          <div className="flex items-start gap-3">
+            <button
+              onClick={() => navigate("/")}
+              aria-label="Back to home"
+              className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 border border-white/20 backdrop-blur transition-colors hover:bg-white/25"
+            >
+              <ArrowLeft className="h-5 w-5 text-white" />
             </button>
-            <div>
-              <h1 className="text-xl font-bold text-white">OpenLedger</h1>
-              <p className="text-xs text-white/80">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">OpenLedger</h1>
+              <p className="mt-1 text-sm text-white/75">
                 {transactionId
-                  ? `OpenLedger record for transaction ${transactionId.slice(0, 8)}...`
-                  : "OpenLedger transaction history. User IDs are not shown."}
+                  ? `Record for transaction ${transactionId.slice(0, 8)}…`
+                  : "Transparent financial records. User IDs are never shown."}
               </p>
             </div>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 border border-white/20 text-white backdrop-blur transition-colors hover:bg-white/25"
+              title="API Settings"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
           </div>
-          <button
-            onClick={() => {
-              if (loading) return;
-              if (transactionId) {
-                loadTransaction(transactionId);
-              } else {
-                loadPage(0);
-              }
-            }}
-            className="bg-blue-600 hover:bg-blue-700 flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-          <a
-            href="https://www.openpyledger.space/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-9 items-center gap-2 rounded-full bg-white/15 hover:bg-white/25 px-3 text-sm font-semibold text-white transition-colors border border-white/30 backdrop-blur"
-          >
-            <Blocks className="h-4 w-4" />
-            Blockchain
-          </a>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="bg-white/10 hover:bg-white/20 flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-white transition-colors"
-            title="API Settings"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
-        </div>
 
+          {/* Actions */}
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                if (loading) return;
+                if (transactionId) {
+                  loadTransaction(transactionId);
+                } else {
+                  loadPage(0);
+                }
+              }}
+              className="flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-paypal-blue transition-transform active:scale-95 disabled:opacity-60"
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              {loading ? "Refreshing" : "Refresh"}
+            </button>
+            <a
+              href="https://www.openpyledger.space/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-10 items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/25"
+            >
+              <Blocks className="h-4 w-4" />
+              Blockchain
+            </a>
+            {!transactionId && (
+              <span className="ml-auto rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/80">
+                {filteredEntries.length} shown
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-4xl px-4">
         {/* Search and Filter */}
         {!transactionId && (
-          <div className="mb-6 space-y-4">
-            {/* Search */}
+          <div className="-mt-5 space-y-3 rounded-3xl border border-border/60 bg-card p-3 shadow-lg">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search by username or transaction details..."
+                placeholder="Search username or transaction…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-2xl border border-border bg-secondary/40 py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-transparent focus:outline-none focus:ring-2 focus:ring-paypal-blue"
               />
             </div>
 
-            {/* Category Filter Dropdown */}
             <div className="relative" id="category-dropdown">
               <button
                 onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors"
+                className="flex items-center gap-2 rounded-full border border-border bg-secondary/40 px-4 py-2 text-foreground transition-colors hover:bg-secondary"
               >
-                <span className="text-sm font-medium">
+                <span className="text-sm font-semibold">
                   {selectedCategory === "all" ? "All Transactions" : categoryLabels[selectedCategory]}
                 </span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${showCategoryDropdown ? "rotate-180" : ""}`} />
               </button>
 
               {showCategoryDropdown && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                <div className="absolute left-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-border bg-popover shadow-xl">
                   {Object.entries(categoryLabels).map(([key, label]) => (
                     <button
                       key={key}
@@ -447,8 +457,8 @@ const PublicLedgerPage = () => {
                       }}
                       className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${
                         selectedCategory === key
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-700 hover:bg-gray-100"
+                          ? "bg-paypal-blue text-white"
+                          : "text-foreground hover:bg-secondary"
                       }`}
                     >
                       {label}
@@ -459,16 +469,30 @@ const PublicLedgerPage = () => {
             </div>
           </div>
         )}
-      </div>
 
-      {filteredEntries.length === 0 && !loading ? (
-        <p className="py-12 text-center text-muted-foreground">
-          {searchQuery || selectedCategory !== "all" 
-            ? "No transactions match your search or filter." 
-            : "No ledger transactions yet."}
-        </p>
+      {loading && filteredEntries.length === 0 ? (
+        <div className="mt-4 space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-3xl border border-border/60 bg-card p-4">
+              <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-secondary" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-1/3 animate-pulse rounded bg-secondary" />
+                <div className="h-3 w-2/3 animate-pulse rounded bg-secondary" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredEntries.length === 0 ? (
+        <div className="mt-6 rounded-3xl border border-dashed border-border bg-card/60 py-16 text-center">
+          <p className="text-sm font-semibold text-foreground">Nothing here yet</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {searchQuery || selectedCategory !== "all"
+              ? "No transactions match your search or filter."
+              : "No ledger transactions have been recorded."}
+          </p>
+        </div>
       ) : (
-        <div className="paypal-surface divide-y divide-border/70 rounded-3xl">
+        <div className="mt-4 space-y-3">
           {filteredEntries.map((row, index) => {
             const evt = (row.event_type || "").toLowerCase();
             const isTopup = evt.includes("topup") || evt.includes("deposit") || evt.includes("receive") || evt.includes("incoming");
@@ -579,8 +603,11 @@ const PublicLedgerPage = () => {
                       : "text-foreground";
             
             return (
-              <div key={`${row.occurred_at}-${index}`} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div
+                key={`${row.occurred_at}-${index}`}
+                className="rounded-3xl border border-border/60 bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+              >
+                <div className="flex items-start gap-3">
                   {(isTopup || isWithdraw) && methodLogo ? (
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/50 overflow-hidden border border-border/50">
                       <img
@@ -609,35 +636,47 @@ const PublicLedgerPage = () => {
                       </div>
                     )
                   )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-foreground">{categoryLabels[category] || "Transaction"}</p>
-                      <span className={`rounded-md ${categoryColors[category] || categoryColors.other} px-1.5 py-0.5 text-[10px] font-bold text-white uppercase`}>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-bold text-foreground">{categoryLabels[category] || "Transaction"}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {format(new Date(row.occurred_at), "MMM d, yyyy HH:mm")} • {(row.event_type || "").replace(/_/g, " ")}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className={`text-base font-extrabold tracking-tight ${amountClass}`}>
+                          {displayCurrencySymbol}{displayAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          {currencyFlag} {currencyLabel}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className={`rounded-full ${categoryColors[category] || categoryColors.other} px-2 py-0.5 text-[10px] font-bold uppercase text-white`}>
                         {category}
                       </span>
-                      {currencyCode && (
-                        <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground uppercase">
-                          {currencyFlag} {currencyLabel}
-                        </span>
-                      )}
-                      {(row.sender_name || row.sender_username || row.receiver_name || row.receiver_username) && (
-                        <span className="text-[11px] font-semibold text-muted-foreground">
-                          • {(row.sender_name || row.sender_username || "Sender")}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                          row.status === "completed"
+                            ? "bg-green-500/10 text-green-600"
+                            : "bg-amber-500/10 text-amber-600"
+                        }`}
+                      >
+                        {row.status || "unknown"}
+                      </span>
+                      {showTransferAmounts && (
+                        <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                          {senderSymbol}{senderAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {senderLabel}
                           {" → "}
-                          {(row.receiver_name || row.receiver_username || "Receiver")}
+                          {receiverSymbol}{receiverAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {receiverLabel}
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
-                      {format(new Date(row.occurred_at), "MMM d, yyyy HH:mm")} • {(row.event_type || "").replace(/_/g, " ")}
-                    </p>
-                    {showTransferAmounts && (
-                      <p className="text-[11px] text-muted-foreground mt-1">
-                        Sender: {senderFlag} {senderLabel} {senderSymbol}{senderAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → Receiver: {receiverFlag} {receiverLabel} {receiverSymbol}{receiverAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                    )}
-                    
-                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2 rounded-2xl bg-secondary/40 p-2">
                       {(row.sender_name || row.sender_username) && renderProfile(
                         row.sender_name,
                         row.sender_avatar,
@@ -646,7 +685,7 @@ const PublicLedgerPage = () => {
                         senderCurrencyCode
                       )}
                       {(row.sender_name || row.sender_username) && (row.receiver_name || row.receiver_username) && (
-                        <span className="text-muted-foreground text-[10px]">→</span>
+                        <span className="text-[10px] text-muted-foreground">→</span>
                       )}
                       {(row.receiver_name || row.receiver_username) && renderProfile(
                         row.receiver_name,
@@ -658,25 +697,16 @@ const PublicLedgerPage = () => {
                     </div>
 
                     {row.note && (
-                      <p className="text-[11px] text-muted-foreground mt-1.5 italic line-clamp-2">
+                      <p className="mt-2 line-clamp-2 text-[11px] italic text-muted-foreground">
                         {privateView ? row.note : redactLedgerNote(row.note)}
                       </p>
                     )}
                     {row.note && row.note.includes('Platform fee') && (
-                      <p className="text-[10px] text-blue-600 font-medium mt-1">
-                        📋 Platform Fee Transaction
+                      <p className="mt-1 text-[10px] font-medium text-paypal-blue">
+                        Platform fee transaction
                       </p>
                     )}
-                    <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mt-1">
-                      Status: <span className={row.status === "completed" ? "text-green-600" : "text-amber-600"}>{row.status || "unknown"}</span>
-                    </p>
                   </div>
-                </div>
-                <div className="text-right sm:ml-4">
-                  <p className={`font-bold ${amountClass}`}>
-                    {displayCurrencySymbol}{displayAmountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">{categoryLabels[category] || "Transaction"}</p>
                 </div>
               </div>
             );
@@ -684,22 +714,24 @@ const PublicLedgerPage = () => {
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-end gap-2">
+      <div className="mt-6 flex items-center justify-center gap-2">
         <button
-          className="paypal-surface h-9 rounded-full px-4 text-sm font-semibold text-foreground disabled:opacity-50"
+          className="h-10 rounded-full border border-border bg-card px-5 text-sm font-bold text-foreground transition-transform active:scale-95 disabled:opacity-50"
           onClick={() => loadPage(Math.max(0, offset - PAGE_SIZE))}
           disabled={loading || offset === 0 || !!transactionId}
         >
           Previous
         </button>
         <button
-          className="paypal-surface h-9 rounded-full px-4 text-sm font-semibold text-foreground disabled:opacity-50"
+          className="h-10 rounded-full bg-paypal-blue px-5 text-sm font-bold text-white transition-transform active:scale-95 disabled:opacity-50"
           onClick={() => loadPage(offset + PAGE_SIZE)}
           disabled={loading || !hasMore || !!transactionId}
         >
           Next
         </button>
       </div>
+      </div>
+
 
       {/* API Settings Modal */}
       {showSettings && (
