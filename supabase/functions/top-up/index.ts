@@ -105,6 +105,15 @@ serve(async (req: Request) => {
     }
     if (txid && piTxid && txid !== piTxid) throw new Error("Payment txid mismatch");
 
+    // Live PI/USD at credit time (never trust the browser-sent price).
+    const piPrice = await fetchPiUsdPriceServer({ force: true });
+    const parsedAmountUsd = Number(ousdFromPiAmount(piAmount, piPrice.price).toFixed(8));
+    if (!Number.isFinite(parsedAmountUsd) || parsedAmountUsd <= 0) {
+      throw new Error("Unable to price this Pi payment right now. Please retry.");
+    }
+
+
+
     const { data: authUserData } = await supabase.auth.admin.getUserById(user.id);
     const linkedPiUid = authUserData?.user?.user_metadata?.pi_uid as string | undefined;
     const paymentPiUid = piPayment?.user_uid ? String(piPayment.user_uid) : "";
