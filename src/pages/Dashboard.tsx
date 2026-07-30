@@ -2369,6 +2369,15 @@ const Dashboard = () => {
               </button>
             </div>
             <div className="ml-auto flex items-center gap-1.5">
+              <span
+                title={piPrice.isFallback ? "Estimated price (live feed unavailable)" : "Live CoinGecko PI/USD"}
+                className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm"
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${piPrice.isFallback ? "bg-amber-300" : "bg-emerald-300 animate-pulse"}`}
+                />
+                PI ${livePiPriceLabel}
+              </span>
               <button
                 type="button"
                 onClick={() => setUiMode("web3")}
