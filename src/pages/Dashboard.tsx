@@ -2241,7 +2241,7 @@ const Dashboard = () => {
     {
       id: "swap",
       title: "Swap",
-      description: "Withdraw OUSD to PI, OUSD, or MRWN.",
+      description: "Withdraw OUSD to your mainnet wallet.",
       stat: swapMeetsMinimum ? `${safeSwapAmount.toFixed(2)} OUSD` : "Min 10 OUSD",
       badge: `${swapWithdrawalType} payout`,
       icon: ArrowLeftRight,
