@@ -9,7 +9,7 @@ const COINGECKO_URL =
   "https://api.coingecko.com/api/v3/simple/price?ids=pi-network&vs_currencies=usd";
 
 /** Last-resort PI/USD if CoinGecko is unavailable (matches client policy). */
-export const FALLBACK_PI_USD = 1;
+export const FALLBACK_PI_USD = 0.079;
 
 const CACHE_TTL_MS = 20_000;
 let cache: { price: number; fetchedAt: number } | null = null;

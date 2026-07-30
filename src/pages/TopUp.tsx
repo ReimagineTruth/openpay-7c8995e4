@@ -12,7 +12,14 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import TopUpAccountDetails from "@/components/TopUpAccountDetails";
 import RegulatoryStatusModal from "@/components/RegulatoryStatusModal";
 import TopUpActionGrid from "@/components/TopUpActionGrid";
-import { fetchPiUsdPrice, ousdFromPiAmount, piAmountForOusd, usePiUsdPrice } from "@/lib/piPrice";
+import {
+  buildPiTopupMemo,
+  fetchPiUsdPrice,
+  ousdFromPiAmount,
+  piAmountForOusd,
+  quotePiTopup,
+  usePiUsdPrice,
+} from "@/lib/piPrice";
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const PI_PAYMENT_ICON_URL = "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
@@ -41,6 +48,8 @@ const TopUp = () => {
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
   const piPrice = usePiUsdPrice();
   const piAmount = piAmountForOusd(safeAmount, piPrice.price);
+  const piMemo = buildPiTopupMemo(safeAmount, piAmount, piPrice.price);
+
   const linkAccountNumber = (searchParams.get("account_number") || "").trim().toUpperCase();
   const linkUsername = (searchParams.get("username") || "")
     .trim()
@@ -156,9 +165,10 @@ const TopUp = () => {
 
     setLoading(true);
     try {
-      // Always quote with a freshly fetched live price.
-      const livePrice = await fetchPiUsdPrice({ force: true });
-      const livePiAmount = piAmountForOusd(parsedAmount, livePrice.price);
+      // Always quote with a freshly fetched live price right before createPayment.
+      const quote = await quotePiTopup(parsedAmount);
+      const livePrice = { price: quote.piUsdPrice, source: quote.priceSource };
+      const livePiAmount = quote.piAmount;
       if (!(livePiAmount > 0)) {
         throw new Error("PI price is unavailable right now. Please try again in a moment.");
       }
@@ -236,18 +246,24 @@ const TopUp = () => {
       let completedTxid = "";
       let creditedTransactionId = "";
 
+      const supabaseUserId = (await supabase.auth.getUser()).data.user?.id || null;
+
       await new Promise<void>((resolve, reject) => {
         let completed = false;
         window.Pi!.createPayment(
           {
             amount: livePiAmount,
-            memo: "OpenPay wallet top up (PI to USD)",
+            memo: quote.memo,
             metadata: {
+              product: "ousd_topup",
               feature: "top_up",
+              ousdAmount: quote.ousdAmount,
+              piUsdPrice: quote.piUsdPrice,
               amount_pi: livePiAmount,
-              amount_usd: safeAmount,
+              amount_usd: quote.ousdAmount,
               pi_usd_price: livePrice.price,
               pi_price_source: livePrice.source,
+              supabaseUserId,
               requestedAt: new Date().toISOString(),
             },
           },
@@ -360,16 +376,23 @@ const TopUp = () => {
       </div>
 
       <div className="paypal-surface mt-8 rounded-3xl p-6">
-        <p className="text-center text-sm text-muted-foreground">Amount to pay</p>
+        <p className="text-center text-sm text-muted-foreground">You pay</p>
         <p className="mt-1 text-center text-5xl font-bold text-foreground">
           π{piAmount.toFixed(4)}
         </p>
-        <p className="mt-1 text-center text-xs text-muted-foreground">
-          You will receive {safeAmount.toFixed(2)} OPEN USD (1 PI = ${piPrice.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })})
-        </p>
         <p className="mt-2 text-center text-sm font-semibold text-foreground">
-          OPEN USD to receive: {safeAmount.toFixed(2)} OPEN USD
+          You receive: {safeAmount.toFixed(2)} OUSD
         </p>
+        <p className="mt-1 text-center text-xs text-muted-foreground">
+          Live π price: ${piPrice.price >= 0.01 ? piPrice.price.toFixed(4) : piPrice.price.toPrecision(4)} / π
+          {piPrice.isFallback ? " (estimate)" : ""} · 1 OUSD = $1
+        </p>
+        {safeAmount > 0 && (
+          <p className="mx-auto mt-3 max-w-md break-words rounded-2xl border border-border bg-muted/40 px-3 py-2 text-center text-[11px] font-medium text-muted-foreground">
+            Memo: {piMemo}
+          </p>
+        )}
+
         <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4 text-center">
           <p className="text-xs text-muted-foreground">Enter amount to add - OPEN USD</p>
           <div className="mt-3 flex justify-center">
@@ -608,6 +631,23 @@ const TopUp = () => {
           <DialogDescription className="text-sm text-muted-foreground">
             Please review and accept before proceeding with your top-up transaction.
           </DialogDescription>
+          <div className="rounded-2xl border border-paypal-light-blue/40 bg-paypal-light-blue/10 p-3 text-sm text-foreground">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">You pay</span>
+              <span className="font-bold">π{piAmount.toFixed(4)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-muted-foreground">You receive</span>
+              <span className="font-bold">{safeAmount.toFixed(2)} OUSD</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-muted-foreground">Live π price</span>
+              <span className="font-semibold">
+                ${piPrice.price >= 0.01 ? piPrice.price.toFixed(4) : piPrice.price.toPrecision(4)}
+              </span>
+            </div>
+            <p className="mt-2 break-words text-[11px] text-muted-foreground">Memo: {piMemo}</p>
+          </div>
           <div className="rounded-2xl border border-border p-3 text-sm text-foreground">
             <p className="font-semibold">1. Nature of Service</p>
             <p className="mt-1">

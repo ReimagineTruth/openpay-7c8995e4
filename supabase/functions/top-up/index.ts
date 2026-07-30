@@ -66,6 +66,26 @@ serve(async (req: Request) => {
     };
 
     if (action === "approve") {
+      // Verify the payment belongs to this user and is an OUSD top-up before approving.
+      const pending = await callPi(`/payments/${paymentId}`, "GET") as {
+        metadata?: Record<string, unknown>;
+        user_uid?: string;
+        direction?: string;
+      };
+      const product = String(pending?.metadata?.product || pending?.metadata?.feature || "");
+      if (product !== "ousd_topup" && product !== "top_up") {
+        throw new Error("Payment is not an OUSD top-up");
+      }
+      if (String(pending?.direction || "user_to_app") !== "user_to_app") {
+        throw new Error("Invalid payment direction");
+      }
+      const { data: approveAuthUser } = await supabase.auth.admin.getUserById(user.id);
+      const linkedUid = approveAuthUser?.user?.user_metadata?.pi_uid as string | undefined;
+      const metaUserId = String(pending?.metadata?.supabaseUserId || "");
+      if (metaUserId && metaUserId !== user.id) throw new Error("Payment does not belong to this user");
+      if (linkedUid && pending?.user_uid && String(pending.user_uid) !== linkedUid) {
+        throw new Error("Payment does not belong to this user");
+      }
       await callPi(`/payments/${paymentId}/approve`, "POST");
       return jsonResponse({ success: true, action, paymentId });
     }
@@ -81,7 +101,7 @@ serve(async (req: Request) => {
       try { await callPi(`/payments/${paymentId}/complete`, "POST", { txid }); } catch { /* idempotent */ }
     }
 
-    type PiPayment = { amount?: number | string; direction?: string; user_uid?: string; status?: any; transaction?: { txid?: string } };
+    type PiPayment = { amount?: number | string; direction?: string; user_uid?: string; memo?: string; metadata?: Record<string, unknown>; status?: any; transaction?: { txid?: string } };
     let piPayment: PiPayment | null = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       piPayment = await callPi(`/payments/${paymentId}`, "GET") as PiPayment;
@@ -169,7 +189,7 @@ serve(async (req: Request) => {
         sender_id: user.id,
         receiver_id: user.id,
         amount: parsedAmountUsd,
-        note: `Wallet top up (PI -> OPEN USD) | ${parsedAmountPi.toFixed(6)} PI @ $${piPrice.price} = ${parsedAmountUsd.toFixed(8)} OPEN USD (${piPrice.source})`,
+        note: `Pi Network top-up · ${parsedAmountPi.toFixed(6)} π @ $${piPrice.price} → ${parsedAmountUsd.toFixed(8)} OUSD${piPayment?.memo ? ` · ${piPayment.memo}` : ""} (${piPrice.source})`,
         status: "completed",
       })
       .select("id")

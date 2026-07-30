@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /** Last-resort PI/USD if CoinGecko and the cache are both unavailable. */
-export const FALLBACK_PI_USD = 1;
+export const FALLBACK_PI_USD = 0.079;
 
 const CACHE_KEY = "openpay_pi_usd_price";
 const CACHE_TTL_MS = 30_000;
@@ -105,26 +105,68 @@ export const fetchPiUsdPrice = async (options?: { force?: boolean }): Promise<Pi
   return inflight;
 };
 
-/** $ / OUSD amount -> π needed. */
+/** $ / OUSD amount -> π needed (rounded to 6 decimals, matching OpenPay Pro). */
 export const piAmountForOusd = (ousd: number, piUsd: number): number => {
   const amount = Number(ousd);
   const price = Number(piUsd);
   if (!Number.isFinite(amount) || amount <= 0) return 0;
   if (!Number.isFinite(price) || price <= 0) return 0;
-  return amount / price;
+  return Math.round((amount / price) * 1e6) / 1e6;
 };
 
-/** π paid -> OUSD credited. */
+/** π paid -> OUSD credited (rounded to 8 decimals). */
 export const ousdFromPiAmount = (pi: number, piUsd: number): number => {
   const amount = Number(pi);
   const price = Number(piUsd);
   if (!Number.isFinite(amount) || amount <= 0) return 0;
   if (!Number.isFinite(price) || price <= 0) return 0;
-  return amount * price;
+  return Math.round(amount * price * 1e8) / 1e8;
 };
 
+/** Memo shown in the Pi wallet — must be identical in UI and in createPayment. */
+export const buildPiTopupMemo = (ousdAmount: number, piAmount: number, piUsdPrice: number): string => {
+  const ousd = Number(Number(ousdAmount).toFixed(2));
+  const pi = piAmount >= 1 ? piAmount.toFixed(4) : Number(piAmount || 0).toPrecision(6);
+  const price = piUsdPrice >= 0.01 ? piUsdPrice.toFixed(4) : Number(piUsdPrice || 0).toPrecision(4);
+  return `OpenPay: ${ousd} OUSD (~${pi} π @ $${price})`;
+};
+
+export type PiTopupQuote = {
+  /** What the user typed (USD / OUSD, 1 OUSD = $1). */
+  ousdAmount: number;
+  /** π to charge in Pi.createPayment. */
+  piAmount: number;
+  /** Live $/π used for the quote. */
+  piUsdPrice: number;
+  /** True when the price is a cached/fallback estimate. */
+  isFallback: boolean;
+  priceSource: PiUsdPrice["source"];
+  /** Memo shown in the Pi wallet. */
+  memo: string;
+};
+
+/** Build a quote from a known price (sync, for rendering). */
+export const buildPiTopupQuote = (ousdAmount: number, price: PiUsdPrice): PiTopupQuote => {
+  const piAmount = piAmountForOusd(ousdAmount, price.price);
+  return {
+    ousdAmount: Number(ousdAmount) || 0,
+    piAmount,
+    piUsdPrice: price.price,
+    isFallback: price.isFallback,
+    priceSource: price.source,
+    memo: buildPiTopupMemo(Number(ousdAmount) || 0, piAmount, price.price),
+  };
+};
+
+/** Fetch a fresh live price and build the quote used for Pi.createPayment. */
+export const quotePiTopup = async (ousdAmount: number): Promise<PiTopupQuote> => {
+  const price = await fetchPiUsdPrice({ force: true });
+  return buildPiTopupQuote(ousdAmount, price);
+};
+
+
 /** Live PI/USD price with polling, for wallet / top-up / quote screens. */
-export const usePiUsdPrice = (pollMs = 45_000): PiUsdPrice => {
+export const usePiUsdPrice = (pollMs = 30_000): PiUsdPrice => {
   const [price, setPrice] = useState<PiUsdPrice>(() => getCachedPiUsdPrice());
 
   useEffect(() => {
