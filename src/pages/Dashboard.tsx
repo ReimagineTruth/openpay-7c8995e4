@@ -3190,6 +3190,25 @@ const Dashboard = () => {
                 className="mt-1 h-10 w-full bg-transparent text-3xl font-bold text-foreground outline-none"
               />
               <p className="mt-1 text-xs font-medium text-muted-foreground">{buySpendRateText}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(isEwalletBuyFlow ? ["100", "300", "500", "1000", "3000"] : ["1", "5", "10", "25", "50", "100"]).map((preset) => {
+                  const isActive = normalizeAmountInput(buySpendAmount) === preset;
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setBuySpendAmount(preset)}
+                      className={`ios-active rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                        isActive
+                          ? "bg-paypal-blue text-primary-foreground shadow-md shadow-paypal-blue/25"
+                          : "bg-muted text-foreground ring-1 ring-border/60"
+                      }`}
+                    >
+                      {preset} {buySpendUnit}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
               <div className="dash-tile space-y-3">
