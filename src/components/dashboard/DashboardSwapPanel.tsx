@@ -14,15 +14,6 @@ const WITHDRAWAL_OPTIONS: {
   ring: string;
 }[] = [
   {
-    id: "PI",
-    label: "Pi Network",
-    sublabel: "OUSD → PI payout",
-    iconUrl:
-      "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png",
-    accent: "from-blue-500/15 to-sky-500/10",
-    ring: "ring-paypal-blue/70",
-  },
-  {
     id: "OUSD",
     label: "OUSD",
     sublabel: "1:1 rate",
@@ -30,7 +21,7 @@ const WITHDRAWAL_OPTIONS: {
     accent: "from-emerald-500/15 to-teal-500/10",
     ring: "ring-paypal-blue/70",
   },
-  // OUSD_SOL and MRWN withdrawals are temporarily hidden
+  // PI, OUSD_SOL and MRWN withdrawals are temporarily hidden
 ];
 
 
@@ -104,13 +95,12 @@ export default function DashboardSwapPanel({
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex gap-2">
-        <SwapRateChip from="PI" to="OUSD" rate={piToOusd.toFixed(4)} />
         <SwapRateChip from="USD" to="OUSD" rate={usdToOusd.toFixed(4)} />
       </div>
 
       <div className="dash-panel overflow-hidden p-0">
         <div className="border-b border-border/40 px-4 py-3">
-          <p className="text-sm font-bold text-foreground">Swap Withdrawal</p>
+          <p className="text-sm font-bold text-foreground">Withdraw OUSD</p>
           <p className="text-xs text-muted-foreground">Convert OUSD to mainnet payout</p>
         </div>
 

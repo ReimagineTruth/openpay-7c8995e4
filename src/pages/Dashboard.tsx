@@ -393,7 +393,7 @@ const Dashboard = () => {
   const [showRegulatory, setShowRegulatory] = useState(false);
 
   const [swapAmount, setSwapAmount] = useState("");
-  const [swapWithdrawalType, setSwapWithdrawalType] = useState<WithdrawalType>("PI");
+  const [swapWithdrawalType, setSwapWithdrawalType] = useState<WithdrawalType>("OUSD");
   const parsedSwapAmount = Number(swapAmount);
   const safeSwapAmount = Number.isFinite(parsedSwapAmount) && parsedSwapAmount > 0 ? parsedSwapAmount : 0;
   const swapMeetsMinimum = safeSwapAmount >= 10;
@@ -2241,7 +2241,7 @@ const Dashboard = () => {
     {
       id: "swap",
       title: "Swap",
-      description: "Withdraw OUSD to PI, OUSD, or MRWN.",
+      description: "Withdraw OUSD to your mainnet wallet.",
       stat: swapMeetsMinimum ? `${safeSwapAmount.toFixed(2)} OUSD` : "Min 10 OUSD",
       badge: `${swapWithdrawalType} payout`,
       icon: ArrowLeftRight,
