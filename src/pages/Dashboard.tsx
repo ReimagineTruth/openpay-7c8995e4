@@ -3204,6 +3204,14 @@ const Dashboard = () => {
                   </button>
                 </>
               }
+              action={{
+                label: "+ Confirm",
+                onClick: () => {
+                  if (!buyOpenUsdMeetsMinimum) return;
+                  handleBuyOpenUsd();
+                },
+                disabled: !buyOpenUsdMeetsMinimum,
+              }}
               stats={[
                 { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
                 { label: "Provider", value: buyOnrampProvider },
@@ -3211,21 +3219,7 @@ const Dashboard = () => {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (!buyOpenUsdMeetsMinimum) return;
-              handleBuyOpenUsd();
-            }}
-            disabled={!buyOpenUsdMeetsMinimum}
-            className="ios-active mt-4 h-12 w-full rounded-full bg-paypal-blue text-sm font-extrabold text-primary-foreground shadow-lg shadow-paypal-blue/25 transition disabled:opacity-50"
-          >
-            Confirm
-          </button>
-
-          <div className="dash-panel mt-4 space-y-4">
-
-
+          <div className="dash-panel space-y-4">
               <div className="dash-tile space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-foreground">Payment method</p>
@@ -3334,10 +3328,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-
-
         </div>
-
       )}
 
       {activeSection === "swap" && (
