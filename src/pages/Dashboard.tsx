@@ -3353,11 +3353,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {buyPaymentMethod === "Pi Payment" && (
-            <div className="mt-4">
-              <PiTokenCard />
-            </div>
-          )}
+          <div className="mt-4 space-y-4">
+            <OusdTokenCard />
+            {buyPaymentMethod === "Pi Payment" && <PiTokenCard />}
+          </div>
         </div>
       )}
 
