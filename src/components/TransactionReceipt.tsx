@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, ExternalLink } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Download, ExternalLink, X } from "lucide-react";
 import { format } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { playUiSound } from "@/lib/appSounds";
@@ -227,144 +227,135 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
 
   const getInitials = (name: string) => (name || "U").split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
+  const isCredit = receipt.type !== "send";
+  const providerLogo =
+    receipt.type === "topup" && receipt.provider
+      ? PROVIDER_LOGOS[receipt.provider] ||
+        PROVIDER_LOGOS[receipt.provider?.toUpperCase()] ||
+        PROVIDER_LOGOS[receipt.provider?.toLowerCase()]
+      : undefined;
+
+  const detailRows: Array<{ label: string; value: string; mono?: boolean }> = [
+    { label: "Status", value: "Confirmed" },
+    { label: "Type", value: typeLabel },
+    { label: "Date", value: format(receipt.date, "MMM d, yyyy h:mm a") },
+    ...(receipt.platformFee && receipt.type === "send"
+      ? [{ label: "Network fee", value: formatCurrency(receipt.platformFee) }]
+      : []),
+    ...(receipt.otherPartyName
+      ? [{ label: receipt.type === "send" ? "To" : "From", value: receipt.otherPartyName }]
+      : []),
+    ...(receipt.otherPartyUsername ? [{ label: "Username", value: `@${receipt.otherPartyUsername}` }] : []),
+    { label: "Transaction ID", value: transactionIdPreview, mono: true },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="max-w-md rounded-3xl p-0 overflow-hidden">
+      <DialogContent
+        showCloseButton={false}
+        className="w-[calc(100vw-2rem)] max-w-[400px] overflow-hidden rounded-[28px] border border-white/10 bg-[#181a20] p-0 text-white shadow-2xl"
+      >
         <DialogTitle className="sr-only">Transaction receipt</DialogTitle>
         <DialogDescription className="sr-only">Receipt details for the selected transaction.</DialogDescription>
-        
-        {/* Blue Background Header */}
-        <div className="bg-gradient-to-br from-paypal-blue via-blue-600 to-[#0073e6] px-4 py-4">
-          <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => onOpenChange(false)}
-                className="text-white"
-                aria-label="Close receipt"
-              >
-                <ArrowLeft className="h-6 w-6" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-white">Transaction Receipt</h1>
-                <p className="text-xs text-white/80">Transaction details</p>
-              </div>
-          </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/80 transition hover:bg-white/10"
+            aria-label="Close receipt"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <p className="text-sm font-semibold text-white/90">{typeLabel}</p>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/80 transition hover:bg-white/10"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* White Card Content */}
-        <div className="bg-white p-4 space-y-4">
-          {/* Transaction Header with Profile */}
-          <div className="flex items-start gap-3">
-            {/* Avatar/Provider Logo */}
-            {receipt.type === "topup" && receipt.provider && (PROVIDER_LOGOS[receipt.provider] || PROVIDER_LOGOS[receipt.provider?.toUpperCase()] || PROVIDER_LOGOS[receipt.provider?.toLowerCase()]) ? (
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary/50 overflow-hidden border border-border/50">
-                <img
-                  src={PROVIDER_LOGOS[receipt.provider] || PROVIDER_LOGOS[receipt.provider?.toUpperCase()] || PROVIDER_LOGOS[receipt.provider?.toLowerCase()] || ''}
-                  alt={receipt.provider}
-                  className="h-8 w-8 object-contain"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
+        {/* Hero */}
+        <div className="flex flex-col items-center px-5 pb-5 pt-4">
+          <div className="relative">
+            {providerLogo ? (
+              <div className="flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-full bg-white/10">
+                <img src={providerLogo} alt={receipt.provider} className="h-10 w-10 object-contain" />
               </div>
             ) : receipt.otherPartyAvatar ? (
-              <img 
-                src={receipt.otherPartyAvatar} 
-                alt={receipt.otherPartyName || receipt.otherPartyUsername || "Profile"} 
-                className="h-12 w-12 shrink-0 rounded-full object-cover border border-border/50" 
+              <img
+                src={receipt.otherPartyAvatar}
+                alt={receipt.otherPartyName || "Profile"}
+                className="h-[68px] w-[68px] rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-paypal-blue/10 text-paypal-blue font-bold border border-border/50">
+              <div className="flex h-[68px] w-[68px] items-center justify-center rounded-full bg-gradient-to-br from-[#ab9ff2] to-[#5f4bd8] text-xl font-bold text-white">
                 {getInitials(receipt.otherPartyName || receipt.otherPartyUsername || "?")}
               </div>
             )}
-
-            {/* Transaction Details */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-foreground">{receipt.otherPartyName || "OpenPay"}</p>
-                  {receipt.otherPartyUsername && (
-                    <p className="text-sm text-muted-foreground">@{receipt.otherPartyUsername}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">{format(receipt.date, "MMM d, yyyy h:mm a")}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {receipt.type === "topup" ? "Top up" : receipt.type === "send" ? "Payment Sent" : "Payment Received"}
-                  </p>
-                  {receipt.note && <p className="text-xs text-muted-foreground mt-1 [overflow-wrap:anywhere] break-all line-clamp-2">{toPreviewText(receipt.note)}</p>}
-                </div>
-                <div className="text-right">
-                  <p className={`font-bold text-lg ${receipt.type === "send" ? "text-red-600" : "text-green-600"}`}>
-                    {receipt.type === "topup" ? "+" : receipt.type === "send" ? "-" : "+"}
-                    {formatCurrency(receipt.amount)}
-                  </p>
-                  {receipt.platformFee && receipt.type === "send" && (
-                    <p className="text-xs text-muted-foreground">Fee: {formatCurrency(receipt.platformFee)}</p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#181a20] bg-[#21c17a]">
+              <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+            </span>
           </div>
 
-          {/* Transaction Details Card */}
-          <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-            <h3 className="font-semibold text-foreground">Transaction Details</h3>
-            
-            <div className="grid gap-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Transaction ID:</span>
-                <span className="font-mono text-xs">{transactionIdPreview}</span>
+          <p
+            className={`mt-4 text-[30px] font-extrabold leading-none tracking-tight ${
+              isCredit ? "text-[#21c17a]" : "text-white"
+            }`}
+          >
+            {isCredit ? "+" : "-"}
+            {formatCurrency(receipt.amount)}
+          </p>
+          <p className="mt-2 text-sm text-white/50">
+            {receipt.otherPartyName || "OpenPay"}
+            {receipt.otherPartyUsername ? ` · @${receipt.otherPartyUsername}` : ""}
+          </p>
+          {receipt.note && (
+            <p className="mt-2 max-w-full truncate px-2 text-xs text-white/40">{toPreviewText(receipt.note)}</p>
+          )}
+        </div>
+
+        {/* Details */}
+        <div className="px-5 pb-5">
+          <div className="rounded-2xl bg-white/[0.04] p-1">
+            {detailRows.map((row) => (
+              <div
+                key={row.label}
+                className="flex items-center justify-between gap-4 border-b border-white/5 px-4 py-3 last:border-b-0"
+              >
+                <span className="shrink-0 text-[13px] text-white/45">{row.label}</span>
+                <span
+                  className={`min-w-0 truncate text-right text-[13px] font-medium ${
+                    row.mono ? "font-mono text-white/70" : "text-white"
+                  } ${row.label === "Status" ? "text-[#21c17a]" : ""}`}
+                >
+                  {row.value}
+                </span>
               </div>
-              
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Type:</span>
-                <span className="font-medium">{typeLabel}</span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Amount:</span>
-                <span className="font-medium">{formatCurrency(receipt.amount)}</span>
-              </div>
-              
-              {receipt.platformFee && receipt.type === "send" && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Platform Fee:</span>
-                  <span className="font-medium">{formatCurrency(receipt.platformFee)}</span>
-                </div>
-              )}
-              
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Date:</span>
-                <span className="font-medium">{format(receipt.date, "MMM d, yyyy h:mm a")}</span>
-              </div>
-              
-              {receipt.otherPartyName && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{receipt.type === "send" ? "Recipient" : "Sender"}:</span>
-                  <span className="font-medium">{receipt.otherPartyName}</span>
-                </div>
-              )}
-              
-              {receipt.otherPartyUsername && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Username:</span>
-                  <span className="font-medium">@{receipt.otherPartyUsername}</span>
-                </div>
-              )}
-            </div>
+            ))}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
+          {/* Actions */}
+          <div className="mt-4 flex gap-2">
             {!!ledgerTransactionId && (
-              <Button variant="outline" onClick={openLedgerTransaction} className="flex-1">
+              <Button
+                onClick={openLedgerTransaction}
+                className="h-12 flex-1 rounded-full bg-white/[0.07] text-white hover:bg-white/[0.12]"
+              >
                 <ExternalLink className="mr-2 h-4 w-4" />
-                View on OpenLedger
+                OpenLedger
               </Button>
             )}
-            <Button onClick={handleSave} className="flex-1">
+            <Button
+              onClick={handleSave}
+              className="h-12 flex-1 rounded-full bg-[#ab9ff2] font-semibold text-[#1c1436] hover:bg-[#9d8ef0]"
+            >
               <Download className="mr-2 h-4 w-4" />
-              Save Receipt
+              Save
             </Button>
           </div>
         </div>
@@ -372,6 +363,7 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
     </Dialog>
   );
 };
+
 
 export type { ReceiptData };
 export default TransactionReceipt;

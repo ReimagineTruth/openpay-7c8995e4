@@ -278,7 +278,10 @@ const OpenPayAIPage = () => {
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [pageActive, setPageActive] = useState(true);
   const [userInteracted, setUserInteracted] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : false,
+  );
+
   const [showInsightsPanel, setShowInsightsPanel] = useState(false);
   const [themeMode, setThemeMode] = useState<AppThemeMode>(() => getStoredAppTheme());
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
@@ -391,13 +394,13 @@ const OpenPayAIPage = () => {
     setPendingPayment(null);
     setPendingSendRecipient(null);
     setShowPaymentConfirm(false);
-    setSidebarOpen(false);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const handleSuggestionClick = (prompt: string) => {
     setInputMessage(prompt);
-    setSidebarOpen(false);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
@@ -1612,11 +1615,13 @@ What do you want to do first?`;
 
       {/* Theme-aware sidebar (matches dashboard light/dark) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-border bg-card text-foreground transition-transform duration-200 dark:border-white/10 dark:bg-black dark:text-white lg:static lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col overflow-hidden border-r border-border bg-card text-foreground transition-all duration-300 ease-out dark:border-white/10 dark:bg-black dark:text-white lg:static ${
+          sidebarOpen
+            ? "translate-x-0 lg:w-[280px] lg:opacity-100"
+            : "-translate-x-full lg:w-0 lg:translate-x-0 lg:border-r-0 lg:opacity-0"
         }`}
       >
-        <div className="flex items-center gap-2 p-3">
+        <div className="flex min-w-[280px] items-center gap-2 p-3">
           <button
             type="button"
             onClick={handleNewChat}
@@ -1627,7 +1632,7 @@ What do you want to do first?`;
           </button>
           <button
             type="button"
-            className="rounded-lg p-2.5 text-muted-foreground transition hover:bg-muted dark:text-white/70 dark:hover:bg-white/10 lg:hidden"
+            className="rounded-lg p-2.5 text-muted-foreground transition hover:bg-muted dark:text-white/70 dark:hover:bg-white/10"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close menu"
           >
@@ -1635,7 +1640,8 @@ What do you want to do first?`;
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 pb-3">
+
+        <div className="min-w-[280px] flex-1 overflow-y-auto px-2 pb-3">
           <p className="px-2 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground dark:text-white/40">
             Recent
           </p>
@@ -1648,7 +1654,7 @@ What do you want to do first?`;
                   key={msg.id}
                   type="button"
                   onClick={() => {
-                    setSidebarOpen(false);
+                    if (window.innerWidth < 1024) setSidebarOpen(false);
                     scrollToBottom();
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
@@ -1692,7 +1698,7 @@ What do you want to do first?`;
             type="button"
             onClick={() => {
               setShowInsightsPanel(true);
-              setSidebarOpen(false);
+              if (window.innerWidth < 1024) setSidebarOpen(false);
             }}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground/80 transition hover:bg-muted dark:text-white/80 dark:hover:bg-white/10"
           >
@@ -1819,9 +1825,10 @@ What do you want to do first?`;
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="rounded-lg p-2 text-foreground/70 transition hover:bg-muted lg:hidden"
-              aria-label="Open sidebar"
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="rounded-lg p-2 text-foreground/70 transition hover:bg-muted"
+              aria-label="Toggle sidebar"
+
             >
               <PanelLeft className="h-5 w-5" />
             </button>
