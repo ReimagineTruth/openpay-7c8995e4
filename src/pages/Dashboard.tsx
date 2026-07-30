@@ -3178,39 +3178,48 @@ const Dashboard = () => {
 
       {activeSection === "buy" && (
         <div className="mx-4 mt-4">
-          <div className="dash-panel space-y-4">
-            <div className="dash-tile">
-              <p className="text-sm text-muted-foreground">You spend ({buySpendUnit})</p>
-              <input
-                value={formatAmountInput(buySpendAmount)}
-                onChange={(e) => setBuySpendAmount(normalizeAmountInput(e.target.value))}
-                type="text"
-                inputMode="decimal"
-                placeholder={isEwalletBuyFlow ? "Min 57 PHP" : "Min 1"}
-                className="mt-1 h-10 w-full bg-transparent text-3xl font-bold text-foreground outline-none"
-              />
-              <p className="mt-1 text-xs font-medium text-muted-foreground">{buySpendRateText}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {(isEwalletBuyFlow ? ["100", "300", "500", "1000", "3000"] : ["1", "5", "10", "25", "50", "100"]).map((preset) => {
-                  const isActive = normalizeAmountInput(buySpendAmount) === preset;
-                  return (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setBuySpendAmount(preset)}
-                      className={`ios-active rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
-                        isActive
-                          ? "bg-paypal-blue text-primary-foreground shadow-md shadow-paypal-blue/25"
-                          : "bg-muted text-foreground ring-1 ring-border/60"
-                      }`}
-                    >
-                      {preset} {buySpendUnit}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+          <div key="buy-balance" className="dash-balance-wrap">
+            <DashboardSectionHero
+              badge="Buy OpenUSD"
+              badgeIcon={CircleDollarSign}
+              metricLabel="You get (OPEN USD)"
+              metricValue={buyOpenUsdDisplay}
+              metricSubtitle={buyOnrampProvider}
+              showBrandLogo
+              trailing={
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowOnrampPicker(true)}
+                    className="ios-active inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25"
+                  >
+                    Onramper <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
+                    className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
+                  >
+                    {amountFormat === "compact" ? "Compact" : "Comma"}
+                  </button>
+                </>
+              }
+              action={{
+                label: "+ Confirm",
+                onClick: () => {
+                  if (!buyOpenUsdMeetsMinimum) return;
+                  handleBuyOpenUsd();
+                },
+                disabled: !buyOpenUsdMeetsMinimum,
+              }}
+              stats={[
+                { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
+                { label: "Provider", value: buyOnrampProvider },
+              ]}
+            />
+          </div>
 
+          <div className="dash-panel space-y-4">
               <div className="dash-tile space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-foreground">Payment method</p>
@@ -3286,47 +3295,38 @@ const Dashboard = () => {
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
-          </div>
 
-          <div key="buy-balance" className="dash-balance-wrap mt-4">
-            <DashboardSectionHero
-              badge="Buy OpenUSD"
-              badgeIcon={CircleDollarSign}
-              metricLabel="You get (OPEN USD)"
-              metricValue={buyOpenUsdDisplay}
-              metricSubtitle={buyOnrampProvider}
-              showBrandLogo
-              trailing={
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShowOnrampPicker(true)}
-                    className="ios-active inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm hover:bg-white/25"
-                  >
-                    Onramper <ChevronDown className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAmountFormat((prev) => (prev === "compact" ? "comma" : "compact"))}
-                    className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-white/25 ios-active"
-                  >
-                    {amountFormat === "compact" ? "Compact" : "Comma"}
-                  </button>
-                </>
-              }
-              action={{
-                label: "+ Confirm",
-                onClick: () => {
-                  if (!buyOpenUsdMeetsMinimum) return;
-                  handleBuyOpenUsd();
-                },
-                disabled: !buyOpenUsdMeetsMinimum,
-              }}
-              stats={[
-                { label: "You spend", value: `${buySpendAmount || "0"} ${buySpendUnit}` },
-                { label: "Provider", value: buyOnrampProvider },
-              ]}
-            />
+            <div className="dash-tile">
+              <p className="text-sm text-muted-foreground">You spend ({buySpendUnit})</p>
+              <input
+                value={formatAmountInput(buySpendAmount)}
+                onChange={(e) => setBuySpendAmount(normalizeAmountInput(e.target.value))}
+                type="text"
+                inputMode="decimal"
+                placeholder={isEwalletBuyFlow ? "Min 57 PHP" : "Min 1"}
+                className="mt-1 h-10 w-full bg-transparent text-3xl font-bold text-foreground outline-none"
+              />
+              <p className="mt-1 text-xs font-medium text-muted-foreground">{buySpendRateText}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(isEwalletBuyFlow ? ["100", "300", "500", "1000", "3000"] : ["1", "5", "10", "25", "50", "100"]).map((preset) => {
+                  const isActive = normalizeAmountInput(buySpendAmount) === preset;
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setBuySpendAmount(preset)}
+                      className={`ios-active rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                        isActive
+                          ? "bg-paypal-blue text-primary-foreground shadow-md shadow-paypal-blue/25"
+                          : "bg-muted text-foreground ring-1 ring-border/60"
+                      }`}
+                    >
+                      {preset} {buySpendUnit}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
