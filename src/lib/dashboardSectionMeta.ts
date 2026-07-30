@@ -4,7 +4,7 @@ import {
   BadgeCheck,
   Brain,
   CircleDollarSign,
-  CreditCard,
+  
   HandCoins,
   Paintbrush,
   Pickaxe,
