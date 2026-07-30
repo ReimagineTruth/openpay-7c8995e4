@@ -92,11 +92,31 @@ export default function DashboardSwapPanel({
 }: DashboardSwapPanelProps) {
   const selected = WITHDRAWAL_OPTIONS.find((o) => o.id === withdrawalType) ?? WITHDRAWAL_OPTIONS[0];
 
+  const ousdUsd = getOusdUsdPrice();
+
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="flex gap-2">
-        <SwapRateChip from="USD" to="OUSD" rate={usdToOusd.toFixed(4)} />
+      <div className="dash-tile flex min-w-0 items-center justify-between gap-3 !p-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <img src={OUSD_TOKEN.logoUrl} alt="OUSD" className="h-7 w-7 rounded-full object-contain" />
+          <div className="min-w-0">
+            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              OUSD rate · used in top-up
+            </p>
+            <p className="truncate text-sm font-bold text-foreground">
+              1 OUSD = ${ousdUsd.toFixed(2)} USD
+            </p>
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+            Live · {OUSD_TOKEN.source}
+          </span>
+          <p className="mt-1 text-[10px] text-muted-foreground">1 USD = {usdToOusd.toFixed(4)} OUSD</p>
+        </div>
       </div>
+
 
       <div className="dash-panel overflow-hidden p-0">
         <div className="border-b border-border/40 px-4 py-3">
