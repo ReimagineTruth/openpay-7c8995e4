@@ -393,7 +393,7 @@ const Dashboard = () => {
   const [showRegulatory, setShowRegulatory] = useState(false);
 
   const [swapAmount, setSwapAmount] = useState("");
-  const [swapWithdrawalType, setSwapWithdrawalType] = useState<WithdrawalType>("PI");
+  const [swapWithdrawalType, setSwapWithdrawalType] = useState<WithdrawalType>("OUSD");
   const parsedSwapAmount = Number(swapAmount);
   const safeSwapAmount = Number.isFinite(parsedSwapAmount) && parsedSwapAmount > 0 ? parsedSwapAmount : 0;
   const swapMeetsMinimum = safeSwapAmount >= 10;

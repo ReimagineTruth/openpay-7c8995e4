@@ -43,7 +43,7 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
   { key: "loans", label: "Loans", icon: HandCoins, description: "Borrow & repay" },
   { key: "cards", label: "Cards", icon: CreditCard, description: "Virtual checkout" },
   { key: "buy", label: "Buy", icon: CircleDollarSign, description: "Add OpenUSD" },
-  { key: "swap", label: "Swap", icon: ArrowLeftRight, description: "Withdraw OUSD" },
+  { key: "swap", label: "Withdraw OUSD", icon: ArrowLeftRight, description: "OUSD payout" },
   { key: "mining", label: "Mining", icon: Pickaxe, description: "Earn OUSD rewards" },
   { key: "analytics", label: "Analytics", icon: TrendingUp, description: "Insights & trends" },
   { key: "ai", label: "AI", icon: Brain, description: "Financial assistant", href: "/ai" },
@@ -64,7 +64,7 @@ export const DASHBOARD_SECTION_TITLES: Record<DashboardSection, string> = {
   loans: "Loans",
   cards: "OpenPay Cards",
   buy: "Buy OpenUSD",
-  swap: "Swap & Withdraw",
+  swap: "Withdraw OUSD",
   mining: "Mining",
   analytics: "Analytics",
 };
