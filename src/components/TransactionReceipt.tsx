@@ -253,26 +253,33 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-[calc(100vw-2rem)] max-w-[400px] overflow-hidden rounded-[28px] border border-white/10 bg-[#181a20] p-0 text-white shadow-2xl"
+        className="w-[calc(100vw-2rem)] max-w-[400px] overflow-hidden rounded-[28px] border border-border bg-card p-0 text-foreground shadow-2xl sm:max-w-[420px]"
       >
         <DialogTitle className="sr-only">Transaction receipt</DialogTitle>
         <DialogDescription className="sr-only">Receipt details for the selected transaction.</DialogDescription>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5">
+        <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3 sm:px-5">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/80 transition hover:bg-white/10"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition hover:bg-muted/70"
             aria-label="Close receipt"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <p className="text-sm font-semibold text-white/90">{typeLabel}</p>
+          <div className="flex min-w-0 items-center gap-2">
+            <img
+              src={OPENPAY_LOGO}
+              alt="OpenPay"
+              className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-border"
+            />
+            <p className="truncate text-sm font-bold text-foreground">{typeLabel}</p>
+          </div>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/80 transition hover:bg-white/10"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition hover:bg-muted/70"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -280,58 +287,61 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
         </div>
 
         {/* Hero */}
-        <div className="flex flex-col items-center px-5 pb-5 pt-4">
+        <div className="flex flex-col items-center px-5 pb-5 pt-5">
           <div className="relative">
             {providerLogo ? (
-              <div className="flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-full bg-white/10">
+              <div className="flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-border">
                 <img src={providerLogo} alt={receipt.provider} className="h-10 w-10 object-contain" />
               </div>
             ) : receipt.otherPartyAvatar ? (
               <img
                 src={receipt.otherPartyAvatar}
                 alt={receipt.otherPartyName || "Profile"}
-                className="h-[68px] w-[68px] rounded-full object-cover"
+                className="h-[68px] w-[68px] rounded-full object-cover ring-1 ring-border"
+                onError={(event) => {
+                  event.currentTarget.src = OPENPAY_LOGO;
+                }}
               />
             ) : (
-              <div className="flex h-[68px] w-[68px] items-center justify-center rounded-full bg-gradient-to-br from-[#ab9ff2] to-[#5f4bd8] text-xl font-bold text-white">
-                {getInitials(receipt.otherPartyName || receipt.otherPartyUsername || "?")}
+              <div className="flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-full bg-paypal-blue ring-1 ring-border">
+                <img src={OPENPAY_LOGO} alt="OpenPay" className="h-full w-full object-cover" />
               </div>
             )}
-            <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#181a20] bg-[#21c17a]">
+            <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-card bg-paypal-success">
               <CheckCircle2 className="h-3.5 w-3.5 text-white" />
             </span>
           </div>
 
           <p
             className={`mt-4 text-[30px] font-extrabold leading-none tracking-tight ${
-              isCredit ? "text-[#21c17a]" : "text-white"
+              isCredit ? "text-paypal-success" : "text-foreground"
             }`}
           >
             {isCredit ? "+" : "-"}
             {formatCurrency(receipt.amount)}
           </p>
-          <p className="mt-2 text-sm text-white/50">
+          <p className="mt-2 text-sm font-medium text-muted-foreground">
             {receipt.otherPartyName || "OpenPay"}
             {receipt.otherPartyUsername ? ` · @${receipt.otherPartyUsername}` : ""}
           </p>
           {receipt.note && (
-            <p className="mt-2 max-w-full truncate px-2 text-xs text-white/40">{toPreviewText(receipt.note)}</p>
+            <p className="mt-2 max-w-full truncate px-2 text-xs text-muted-foreground/80">{toPreviewText(receipt.note)}</p>
           )}
         </div>
 
         {/* Details */}
-        <div className="px-5 pb-5">
-          <div className="rounded-2xl bg-white/[0.04] p-1">
+        <div className="px-4 pb-5 sm:px-5">
+          <div className="rounded-2xl border border-border bg-muted/40 p-1">
             {detailRows.map((row) => (
               <div
                 key={row.label}
-                className="flex items-center justify-between gap-4 border-b border-white/5 px-4 py-3 last:border-b-0"
+                className="flex items-center justify-between gap-4 border-b border-border/60 px-4 py-3 last:border-b-0"
               >
-                <span className="shrink-0 text-[13px] text-white/45">{row.label}</span>
+                <span className="shrink-0 text-[13px] font-medium text-muted-foreground">{row.label}</span>
                 <span
-                  className={`min-w-0 truncate text-right text-[13px] font-medium ${
-                    row.mono ? "font-mono text-white/70" : "text-white"
-                  } ${row.label === "Status" ? "text-[#21c17a]" : ""}`}
+                  className={`min-w-0 truncate text-right text-[13px] font-semibold ${
+                    row.mono ? "font-mono text-muted-foreground" : "text-foreground"
+                  } ${row.label === "Status" ? "text-paypal-success" : ""}`}
                 >
                   {row.value}
                 </span>
@@ -340,11 +350,12 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
           </div>
 
           {/* Actions */}
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             {!!ledgerTransactionId && (
               <Button
+                variant="outline"
                 onClick={openLedgerTransaction}
-                className="h-12 flex-1 rounded-full bg-white/[0.07] text-white hover:bg-white/[0.12]"
+                className="h-12 flex-1 rounded-full border-paypal-blue/30 bg-transparent font-bold text-paypal-blue hover:bg-paypal-blue/10 hover:text-paypal-blue"
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
                 OpenLedger
@@ -352,7 +363,7 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
             )}
             <Button
               onClick={handleSave}
-              className="h-12 flex-1 rounded-full bg-[#ab9ff2] font-semibold text-[#1c1436] hover:bg-[#9d8ef0]"
+              className="h-12 flex-1 rounded-full bg-paypal-blue font-bold text-white hover:bg-paypal-blue/90"
             >
               <Download className="mr-2 h-4 w-4" />
               Save
