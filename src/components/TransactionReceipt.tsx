@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, ExternalLink } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Download, ExternalLink, X } from "lucide-react";
 import { format } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { playUiSound } from "@/lib/appSounds";
