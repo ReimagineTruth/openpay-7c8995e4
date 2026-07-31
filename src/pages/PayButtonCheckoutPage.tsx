@@ -171,19 +171,67 @@ export default function PayButtonCheckoutPage() {
                     <Button className="w-full" onClick={() => navigate("/top-up")}>Top up OpenPay</Button>
                   </>
                 ) : (
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={paying} onClick={pay}>
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={paying || done === "paid"}
+                    onClick={() => setConfirmOpen(true)}
+                  >
                     {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : `Pay ${Number(charge.amount).toFixed(2)} ${charge.currency}`}
                   </Button>
                 )}
-                <Button variant="ghost" className="w-full text-muted-foreground" onClick={cancel}>Cancel</Button>
+                <Button variant="ghost" className="w-full text-muted-foreground" disabled={paying} onClick={cancel}>Cancel</Button>
               </>
             )}
           </CardContent>
         </Card>
 
+        <Dialog open={confirmOpen} onOpenChange={(o) => { if (!paying) setConfirmOpen(o); }}>
+          <DialogContent className="max-w-sm rounded-3xl">
+            <DialogHeader>
+              <DialogTitle>Confirm payment</DialogTitle>
+              <DialogDescription>
+                Review the details before paying. This charge can only be paid once.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 rounded-2xl border border-border bg-muted/40 p-4 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground">Pay to</span>
+                <span className="truncate font-semibold">{charge.partner_app_name}</span>
+              </div>
+              {charge.description && (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">For</span>
+                  <span className="truncate font-medium">{charge.description}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground">Amount</span>
+                <span className="font-bold">{Number(charge.amount).toFixed(2)} {charge.currency}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t border-border pt-2">
+                <span className="text-muted-foreground">Balance after</span>
+                <span className="font-semibold">{Math.max(0, (balance ?? 0) - Number(charge.amount)).toFixed(2)} OUSD</span>
+              </div>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button variant="outline" className="w-full sm:w-auto" disabled={paying} onClick={() => setConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={paying || done === "paid"}
+                onClick={pay}
+              >
+                {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : `Confirm & pay`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <p className="text-[10px] text-center text-muted-foreground mt-4">
           Powered by OpenPay · Charges expire {new Date(charge.expires_at).toLocaleString()}
         </p>
+
       </main>
     </div>
   );
