@@ -139,15 +139,16 @@ const CookieConsentDialog = ({ open, onOpenChange }: CookieConsentDialogProps) =
             return (
               <div
                 key={category.key}
-                className="flex items-start gap-4 rounded-2xl border border-border p-4 transition-colors hover:bg-secondary/50"
+                className="flex items-start gap-3 rounded-2xl border border-border p-3 transition-colors hover:bg-secondary/50 sm:gap-4 sm:p-4"
               >
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-paypal-blue/10">
                   <Icon className="h-5 w-5 text-paypal-blue" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-semibold text-foreground">{category.title}</h3>
-                    <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="min-w-0 font-semibold text-foreground">{category.title}</h3>
+                    <div className="flex shrink-0 items-center gap-2">
+
                       {category.required && (
                         <span className="text-xs font-medium text-paypal-blue">Required</span>
                       )}
