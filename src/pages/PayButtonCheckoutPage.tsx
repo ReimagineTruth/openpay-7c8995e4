@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ShieldCheck, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
+
 
 type Charge = {
   id: string;
@@ -33,6 +35,8 @@ export default function PayButtonCheckoutPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [charge, setCharge] = useState<Charge | null>(null);
   const [done, setDone] = useState<null | "paid" | "canceled">(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
 
   async function loadAll() {
     if (!chargeId) return;
@@ -62,17 +66,30 @@ export default function PayButtonCheckoutPage() {
   }
 
   async function pay() {
-    if (!chargeId) return;
+    // Idempotency guard: block double submits / already-settled charges
+    if (!chargeId || paying || done === "paid" || charge?.status !== "created") return;
     setPaying(true);
+    setConfirmOpen(false);
     const { data, error } = await supabase.rpc("partner_charge_approve", { p_charge_id: chargeId });
-    setPaying(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      setPaying(false);
+      // If the charge was already settled, reflect that instead of retrying
+      if (/cannot be paid|paid/i.test(error.message)) {
+        setDone("paid");
+        await loadAll();
+        return toast.info("This charge was already paid — no new charge was made.");
+      }
+      return toast.error(error.message);
+    }
     const row = Array.isArray(data) ? data[0] : data;
     toast.success("Payment successful");
     setDone("paid");
+    if (typeof (row as any)?.buyer_balance === "number") setBalance(Number((row as any).buyer_balance));
+    setPaying(false);
     const successUrl = (row as any)?.success_url || charge?.success_url;
     if (successUrl) setTimeout(() => { window.location.href = successUrl; }, 1400);
   }
+
 
   async function cancel() {
     if (!chargeId) return;
