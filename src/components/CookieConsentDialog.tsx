@@ -109,7 +109,7 @@ const CookieConsentDialog = ({ open, onOpenChange }: CookieConsentDialogProps) =
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent showCloseButton={false} className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
+      <DialogContent showCloseButton={false} className="w-[calc(100%-1.5rem)] max-w-2xl min-w-0 overflow-x-hidden rounded-3xl">
         <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex items-center gap-3">
             <Cookie className="h-6 w-6 text-paypal-blue" />

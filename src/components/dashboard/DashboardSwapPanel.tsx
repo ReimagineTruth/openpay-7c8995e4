@@ -97,14 +97,14 @@ export default function DashboardSwapPanel({
 
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="dash-tile flex min-w-0 items-center justify-between gap-3 !p-3">
+      <div className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
         <div className="flex min-w-0 items-center gap-2">
           <img src={OUSD_TOKEN.logoUrl} alt="OUSD" className="h-7 w-7 rounded-full object-contain" />
           <div className="min-w-0">
             <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               OUSD rate · used in top-up
             </p>
-            <p className="truncate text-sm font-bold text-foreground">
+            <p className="truncate text-sm font-bold text-card-foreground">
               1 OUSD = ${ousdUsd.toFixed(2)} USD
             </p>
           </div>
@@ -117,6 +117,7 @@ export default function DashboardSwapPanel({
           <p className="mt-1 text-[10px] text-muted-foreground">1 USD = {usdToOusd.toFixed(4)} OUSD</p>
         </div>
       </div>
+
 
 
       <div className="dash-panel overflow-hidden p-0">
