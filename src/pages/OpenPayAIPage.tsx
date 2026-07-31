@@ -1827,7 +1827,7 @@ What do you want to do first?`;
                       </option>
                     ))}
                   </optgroup>
-                  {speechSupported && (
+                  {(speechSupported || usingLovableVoice) && (
                     <optgroup label="Device voices">
                       <option value="">Browser default</option>
                       {speechVoices.map((voice) => (
@@ -2003,7 +2003,7 @@ What do you want to do first?`;
                         {fixMojibakeText(message.content)}
                       </p>
                       <AiTransferReceipt receipt={message.receipt} />
-                      {speechSupported && (
+                      {(speechSupported || usingLovableVoice) && (
                         <div className="flex items-center gap-1 pt-1">
                           <button
                             type="button"
@@ -2021,7 +2021,7 @@ What do you want to do first?`;
                             ) : (
                               <Volume2 className="h-3.5 w-3.5" />
                             )}
-                            <span>{speakingMessageId === message.id ? "Stop" : "Listen"}</span>
+                            <span>{speechLoadingId === message.id ? "Loading…" : speakingMessageId === message.id ? "Stop" : "Listen"}</span>
                           </button>
                         </div>
                       )}
@@ -2029,7 +2029,7 @@ What do you want to do first?`;
                   ) : (
                     <div key={message.id} className="w-full space-y-2">
                       <div className="chat-md font-ai-serif">{renderChatMarkdown(message.content)}</div>
-                      {speechSupported && (
+                      {(speechSupported || usingLovableVoice) && (
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
@@ -2047,7 +2047,7 @@ What do you want to do first?`;
                             ) : (
                               <Volume2 className="h-3.5 w-3.5" />
                             )}
-                            <span>{speakingMessageId === message.id ? "Stop" : "Listen"}</span>
+                            <span>{speechLoadingId === message.id ? "Loading…" : speakingMessageId === message.id ? "Stop" : "Listen"}</span>
                           </button>
                         </div>
                       )}
