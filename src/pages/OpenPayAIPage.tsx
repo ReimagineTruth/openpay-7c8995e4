@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getStoredAppTheme, persistAndApplyAppTheme, type AppThemeMode } from "@/lib/appTheme";
 import { applyStoredSpeechVoice, getStoredAiSpeechVoiceUri, loadSpeechVoices, previewSpeechVoice, setStoredAiSpeechVoiceUri, toSpeechVoiceOptions, type AiSpeechVoiceOption } from "@/lib/aiSpeechVoice";
+import { DEFAULT_LOVABLE_VOICE, LOVABLE_VOICES, fetchLovableSpeech, isLovableVoiceUri, parseLovableVoiceId, toLovableVoiceUri } from "@/lib/aiVoiceLovable";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -285,40 +287,77 @@ const OpenPayAIPage = () => {
   const [showInsightsPanel, setShowInsightsPanel] = useState(false);
   const [themeMode, setThemeMode] = useState<AppThemeMode>(() => getStoredAppTheme());
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [speechLoadingId, setSpeechLoadingId] = useState<string | null>(null);
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [showMcpDialog, setShowMcpDialog] = useState(false);
-  const [speechVoiceUri, setSpeechVoiceUri] = useState(getStoredAiSpeechVoiceUri());
+  const [speechVoiceUri, setSpeechVoiceUri] = useState(
+    () => getStoredAiSpeechVoiceUri() || toLovableVoiceUri(DEFAULT_LOVABLE_VOICE),
+  );
   const [speechVoices, setSpeechVoices] = useState<AiSpeechVoiceOption[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
   const speechSupported =
     typeof window !== "undefined" && typeof window.speechSynthesis !== "undefined";
+  const usingLovableVoice = isLovableVoiceUri(speechVoiceUri);
 
   const isDarkTheme = themeMode === "dark";
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+  };
 
   const stopSpeaking = () => {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
+    stopAudio();
     setSpeakingMessageId(null);
+    setSpeechLoadingId(null);
   };
 
-  const speakMessage = (messageId: string, content: string) => {
+  /** Play text with the premium Lovable AI voice; returns false to fall back. */
+  const playWithLovableVoice = async (messageId: string, plain: string) => {
+    setSpeechLoadingId(messageId);
+    try {
+      const url = await fetchLovableSpeech(plain, parseLovableVoiceId(speechVoiceUri));
+      stopAudio();
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audioUrlRef.current = url;
+      audio.onended = () => {
+        stopAudio();
+        setSpeakingMessageId(null);
+      };
+      audio.onerror = () => {
+        stopAudio();
+        setSpeakingMessageId(null);
+      };
+      setSpeakingMessageId(messageId);
+      await audio.play();
+      return true;
+    } catch (err) {
+      toast.error((err as Error).message || "Could not play AI voice");
+      setSpeakingMessageId(null);
+      return false;
+    } finally {
+      setSpeechLoadingId(null);
+    }
+  };
+
+  const speakWithBrowser = (messageId: string, plain: string) => {
     if (!speechSupported) {
       toast.error("Text to speech is not supported in this browser");
       return;
     }
-
-    if (speakingMessageId === messageId) {
-      stopSpeaking();
-      return;
-    }
-
-    const plain = stripMarkdownForSpeech(content);
-    if (!plain) {
-      toast.error("Nothing to read in this message");
-      return;
-    }
-
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(plain);
     utterance.rate = 1;
@@ -330,13 +369,49 @@ const OpenPayAIPage = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleChangeSpeechVoice = (voiceUri: string) => {
-    setSpeechVoiceUri(voiceUri);
-    setStoredAiSpeechVoiceUri(voiceUri);
-    toast.success(voiceUri ? "Listen voice updated" : "Using browser default voice");
+  const speakMessage = async (messageId: string, content: string) => {
+    if (speakingMessageId === messageId || speechLoadingId === messageId) {
+      stopSpeaking();
+      return;
+    }
+
+    const plain = stripMarkdownForSpeech(content);
+    if (!plain) {
+      toast.error("Nothing to read in this message");
+      return;
+    }
+
+    stopSpeaking();
+
+    if (usingLovableVoice) {
+      const ok = await playWithLovableVoice(messageId, plain);
+      if (ok) return;
+      if (speechSupported) speakWithBrowser(messageId, plain);
+      return;
+    }
+
+    speakWithBrowser(messageId, plain);
   };
 
-  const handlePreviewSpeechVoice = () => {
+  const handleChangeSpeechVoice = (voiceUri: string) => {
+    stopSpeaking();
+    setSpeechVoiceUri(voiceUri);
+    setStoredAiSpeechVoiceUri(voiceUri);
+    toast.success(
+      isLovableVoiceUri(voiceUri)
+        ? "Premium AI voice updated"
+        : voiceUri
+          ? "Listen voice updated"
+          : "Using browser default voice",
+    );
+  };
+
+  const handlePreviewSpeechVoice = async () => {
+    const sample = "Hi, I'm OpenPay AI. I can check your balance, send money and explain your transactions.";
+    if (isLovableVoiceUri(speechVoiceUri)) {
+      await playWithLovableVoice("__preview__", sample);
+      return;
+    }
     if (!speechSupported) {
       toast.error("Text to speech is not supported in this browser");
       return;
@@ -345,6 +420,7 @@ const OpenPayAIPage = () => {
       toast.error("Could not play voice preview");
     }
   };
+
 
   useEffect(() => {
     return () => {
@@ -1739,45 +1815,55 @@ What do you want to do first?`;
                     AI Listen voice
                   </p>
                 </div>
-                {speechSupported ? (
-                  <>
-                    <select
-                      value={speechVoiceUri}
-                      onChange={(e) => handleChangeSpeechVoice(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-border bg-background px-2.5 text-xs text-foreground dark:border-white/15 dark:bg-black"
-                    >
+                <select
+                  value={speechVoiceUri}
+                  onChange={(e) => handleChangeSpeechVoice(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-border bg-background px-2.5 text-xs text-foreground dark:border-white/15 dark:bg-black"
+                >
+                  <optgroup label="Premium AI voices (Lovable)">
+                    {LOVABLE_VOICES.map((voice) => (
+                      <option key={voice.id} value={toLovableVoiceUri(voice.id)}>
+                        {voice.label} · {voice.description}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {(speechSupported || usingLovableVoice) && (
+                    <optgroup label="Device voices">
                       <option value="">Browser default</option>
                       {speechVoices.map((voice) => (
                         <option key={voice.uri} value={voice.uri}>
                           {voice.label}
                         </option>
                       ))}
-                    </select>
-                    <div className="flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={handlePreviewSpeechVoice}
-                        className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border text-xs font-medium transition hover:bg-background dark:border-white/15 dark:hover:bg-white/10"
-                      >
-                        <Volume2 className="h-3.5 w-3.5" />
-                        Preview
-                      </button>
-                      {speechVoiceUri ? (
-                        <button
-                          type="button"
-                          onClick={() => handleChangeSpeechVoice("")}
-                          className="h-9 rounded-lg border border-border px-3 text-xs font-medium transition hover:bg-background dark:border-white/15 dark:hover:bg-white/10"
-                        >
-                          Reset
-                        </button>
-                      ) : null}
-                    </div>
-                  </>
-                ) : (
-                  <p className="px-1 text-xs text-muted-foreground">
-                    Text to speech is not supported in this browser.
-                  </p>
-                )}
+                    </optgroup>
+                  )}
+                </select>
+                <p className="px-1 text-[11px] leading-relaxed text-muted-foreground dark:text-white/50">
+                  {usingLovableVoice
+                    ? "Natural studio-quality voice generated by Lovable AI."
+                    : "Uses your device's built-in speech engine."}
+                </p>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handlePreviewSpeechVoice}
+                    disabled={speechLoadingId === "__preview__"}
+                    className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border text-xs font-medium transition hover:bg-background disabled:opacity-60 dark:border-white/15 dark:hover:bg-white/10"
+                  >
+                    <Volume2 className="h-3.5 w-3.5" />
+                    {speechLoadingId === "__preview__" ? "Loading…" : "Preview"}
+                  </button>
+                  {speechVoiceUri !== toLovableVoiceUri(DEFAULT_LOVABLE_VOICE) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleChangeSpeechVoice(toLovableVoiceUri(DEFAULT_LOVABLE_VOICE))}
+                      className="h-9 rounded-lg border border-border px-3 text-xs font-medium transition hover:bg-background dark:border-white/15 dark:hover:bg-white/10"
+                    >
+                      Reset
+                    </button>
+                  ) : null}
+                </div>
+
               </div>
             )}
           </div>
@@ -1917,7 +2003,7 @@ What do you want to do first?`;
                         {fixMojibakeText(message.content)}
                       </p>
                       <AiTransferReceipt receipt={message.receipt} />
-                      {speechSupported && (
+                      {(speechSupported || usingLovableVoice) && (
                         <div className="flex items-center gap-1 pt-1">
                           <button
                             type="button"
@@ -1935,7 +2021,7 @@ What do you want to do first?`;
                             ) : (
                               <Volume2 className="h-3.5 w-3.5" />
                             )}
-                            <span>{speakingMessageId === message.id ? "Stop" : "Listen"}</span>
+                            <span>{speechLoadingId === message.id ? "Loading…" : speakingMessageId === message.id ? "Stop" : "Listen"}</span>
                           </button>
                         </div>
                       )}
@@ -1943,7 +2029,7 @@ What do you want to do first?`;
                   ) : (
                     <div key={message.id} className="w-full space-y-2">
                       <div className="chat-md font-ai-serif">{renderChatMarkdown(message.content)}</div>
-                      {speechSupported && (
+                      {(speechSupported || usingLovableVoice) && (
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
@@ -1961,7 +2047,7 @@ What do you want to do first?`;
                             ) : (
                               <Volume2 className="h-3.5 w-3.5" />
                             )}
-                            <span>{speakingMessageId === message.id ? "Stop" : "Listen"}</span>
+                            <span>{speechLoadingId === message.id ? "Loading…" : speakingMessageId === message.id ? "Stop" : "Listen"}</span>
                           </button>
                         </div>
                       )}
