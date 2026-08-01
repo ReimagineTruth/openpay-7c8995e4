@@ -2,8 +2,11 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { applyAppTheme, getStoredAppTheme } from "./lib/appTheme";
+import { installExternalLinkHandler } from "./lib/externalLink";
 
 applyAppTheme(getStoredAppTheme());
+installExternalLinkHandler();
+
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/notifications-sw.js").catch(() => {
