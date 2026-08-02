@@ -208,7 +208,7 @@ const AdminKycReview = () => {
     try {
       const { data, error } = await (supabase as any).rpc("update_kyc_status", {
         application_id: selectedApplication.id,
-        new_status: reviewMode,
+        new_status: reviewMode === "reject" ? "rejected" : reviewMode,
         rejection_reason_text: reviewMode === "reject" ? decisionReason.trim() : null,
         admin_notes_text: [adminNotes.trim(), reviewMode === "additional_info_required" ? decisionReason.trim() : ""].filter(Boolean).join("\n\n") || null,
       });
@@ -224,7 +224,9 @@ const AdminKycReview = () => {
       setReviewMode(null);
       setDecisionReason("");
       setAdminNotes("");
+      await notifyPartner(selectedApplication.id);
       await loadApplications();
+
     } catch (error) {
       console.error("Review KYC failed:", error);
       toast.error(error instanceof Error ? error.message : "Failed to update application");
