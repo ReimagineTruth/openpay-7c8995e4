@@ -85,14 +85,22 @@ const AdminKycReview = () => {
         profilesMap = new Map((profiles || []).map((row) => [row.id, row as ProfileRow]));
       }
 
-      const merged = normalized.map((row) => {
+      const rawRows = Array.isArray(data) ? data : [];
+      const merged = normalized.map((row, index) => {
         const profileRow = profilesMap.get(row.user_id);
+        const raw = (rawRows[index] || {}) as any;
         return {
           ...row,
+          source: raw.source || "openpay",
+          partner_app_id: raw.partner_app_id || null,
+          external_user_id: raw.external_user_id || null,
+          external_ref: raw.external_ref || null,
+          callback_url: raw.callback_url || null,
           profile_username: profileRow?.username || null,
           profile_avatar_url: profileRow?.avatar_url || null,
         };
       });
+
 
       setApplications(merged);
       setSelectedApplication((current) => {
