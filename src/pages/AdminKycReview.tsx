@@ -85,14 +85,22 @@ const AdminKycReview = () => {
         profilesMap = new Map((profiles || []).map((row) => [row.id, row as ProfileRow]));
       }
 
-      const merged = normalized.map((row) => {
+      const rawRows = Array.isArray(data) ? data : [];
+      const merged = normalized.map((row, index) => {
         const profileRow = profilesMap.get(row.user_id);
+        const raw = (rawRows[index] || {}) as any;
         return {
           ...row,
+          source: raw.source || "openpay",
+          partner_app_id: raw.partner_app_id || null,
+          external_user_id: raw.external_user_id || null,
+          external_ref: raw.external_ref || null,
+          callback_url: raw.callback_url || null,
           profile_username: profileRow?.username || null,
           profile_avatar_url: profileRow?.avatar_url || null,
         };
       });
+
 
       setApplications(merged);
       setSelectedApplication((current) => {
@@ -145,7 +153,18 @@ const AdminKycReview = () => {
     void loadSignedDocs();
   }, [selectedApplication]);
 
+  const notifyPartner = async (applicationId: string) => {
+    try {
+      await supabase.functions.invoke("kyc-partner-api/internal/notify", {
+        body: { application_id: applicationId },
+      });
+    } catch (error) {
+      console.warn("Partner KYC webhook notify failed:", error);
+    }
+  };
+
   const handleApprove = async (applicationId: string) => {
+
     setActionLoading(true);
     try {
       const { data, error } = await (supabase as any).rpc("update_kyc_status", {
@@ -163,7 +182,9 @@ const AdminKycReview = () => {
 
       toast.success("KYC application approved successfully");
       setAdminNotes("");
+      await notifyPartner(applicationId);
       await loadApplications();
+
     } catch (error) {
       console.error("Approve KYC failed:", error);
       toast.error(error instanceof Error ? error.message : "Failed to approve application");
@@ -187,7 +208,7 @@ const AdminKycReview = () => {
     try {
       const { data, error } = await (supabase as any).rpc("update_kyc_status", {
         application_id: selectedApplication.id,
-        new_status: reviewMode,
+        new_status: reviewMode === "reject" ? "rejected" : reviewMode,
         rejection_reason_text: reviewMode === "reject" ? decisionReason.trim() : null,
         admin_notes_text: [adminNotes.trim(), reviewMode === "additional_info_required" ? decisionReason.trim() : ""].filter(Boolean).join("\n\n") || null,
       });
@@ -203,7 +224,9 @@ const AdminKycReview = () => {
       setReviewMode(null);
       setDecisionReason("");
       setAdminNotes("");
+      await notifyPartner(selectedApplication.id);
       await loadApplications();
+
     } catch (error) {
       console.error("Review KYC failed:", error);
       toast.error(error instanceof Error ? error.message : "Failed to update application");
@@ -358,9 +381,21 @@ const AdminKycReview = () => {
                           {getStatusIcon(application.status)}
                           {application.status.replace(/_/g, " ").toUpperCase()}
                         </span>
+                        {application.source === "partner" && (
+                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                            PARTNER
+                          </span>
+                        )}
                       </div>
                       <p className="truncate text-sm text-gray-600">{application.email}</p>
-                      <p className="text-sm text-gray-600">{application.profile_username ? `@${application.profile_username}` : application.user_id.slice(0, 8)}</p>
+                      <p className="truncate text-sm text-gray-600">
+                        {application.source === "partner"
+                          ? `ext: ${application.external_user_id || application.external_ref || "—"}`
+                          : application.profile_username
+                            ? `@${application.profile_username}`
+                            : String(application.user_id || "").slice(0, 8)}
+                      </p>
+
                       <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                         <span>{application.id_document_type.replace(/_/g, " ")}</span>
                         <span>{new Date(application.submitted_at).toLocaleDateString()}</span>

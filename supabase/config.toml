@@ -17,6 +17,9 @@ project_id = "araojncyittkahvvpdrn"
     verify_jwt = false
   [functions.kyc-metrics-api]
     verify_jwt = false
+  [functions.kyc-partner-api]
+    verify_jwt = false
+
   [functions.partner-transfer-api]
     verify_jwt = false
   [functions.transfer-to-openpay-pro]
