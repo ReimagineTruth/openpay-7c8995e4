@@ -57,8 +57,10 @@ export const CookieConsentProvider = ({ children }: CookieConsentProviderProps) 
 
   useEffect(() => {
     const hasConsent = refreshConsentState();
+    const onAuthRoute =
+      typeof window !== "undefined" && window.location.pathname.startsWith("/auth");
 
-    if (!hasConsent) {
+    if (!hasConsent && !onAuthRoute) {
       const timer = setTimeout(() => {
         setShowCookieDialog(true);
       }, 2000);
