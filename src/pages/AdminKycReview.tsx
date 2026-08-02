@@ -153,7 +153,18 @@ const AdminKycReview = () => {
     void loadSignedDocs();
   }, [selectedApplication]);
 
+  const notifyPartner = async (applicationId: string) => {
+    try {
+      await supabase.functions.invoke("kyc-partner-api/internal/notify", {
+        body: { application_id: applicationId },
+      });
+    } catch (error) {
+      console.warn("Partner KYC webhook notify failed:", error);
+    }
+  };
+
   const handleApprove = async (applicationId: string) => {
+
     setActionLoading(true);
     try {
       const { data, error } = await (supabase as any).rpc("update_kyc_status", {
