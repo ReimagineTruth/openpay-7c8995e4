@@ -381,9 +381,21 @@ const AdminKycReview = () => {
                           {getStatusIcon(application.status)}
                           {application.status.replace(/_/g, " ").toUpperCase()}
                         </span>
+                        {application.source === "partner" && (
+                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                            PARTNER
+                          </span>
+                        )}
                       </div>
                       <p className="truncate text-sm text-gray-600">{application.email}</p>
-                      <p className="text-sm text-gray-600">{application.profile_username ? `@${application.profile_username}` : application.user_id.slice(0, 8)}</p>
+                      <p className="truncate text-sm text-gray-600">
+                        {application.source === "partner"
+                          ? `ext: ${application.external_user_id || application.external_ref || "—"}`
+                          : application.profile_username
+                            ? `@${application.profile_username}`
+                            : String(application.user_id || "").slice(0, 8)}
+                      </p>
+
                       <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                         <span>{application.id_document_type.replace(/_/g, " ")}</span>
                         <span>{new Date(application.submitted_at).toLocaleDateString()}</span>
