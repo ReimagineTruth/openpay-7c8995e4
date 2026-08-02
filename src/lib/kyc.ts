@@ -88,7 +88,13 @@ export interface KycApplicationRecord {
 export interface AdminKycApplicationRecord extends KycApplicationRecord {
   profile_username?: string | null;
   profile_avatar_url?: string | null;
+  source?: string | null;
+  partner_app_id?: string | null;
+  external_user_id?: string | null;
+  external_ref?: string | null;
+  callback_url?: string | null;
 }
+
 
 export const KYC_SOURCE_OF_FUNDS_OPTIONS = [
   { value: "employment", label: "Employment Income" },
