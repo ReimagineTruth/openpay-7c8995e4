@@ -182,7 +182,9 @@ const AdminKycReview = () => {
 
       toast.success("KYC application approved successfully");
       setAdminNotes("");
+      await notifyPartner(applicationId);
       await loadApplications();
+
     } catch (error) {
       console.error("Approve KYC failed:", error);
       toast.error(error instanceof Error ? error.message : "Failed to approve application");
