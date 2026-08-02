@@ -1128,9 +1128,12 @@ export type Database = {
         Row: {
           admin_notes: string | null
           annual_income_range: string
+          callback_url: string | null
           date_of_birth: string
           email: string
           employer_name: string | null
+          external_ref: string | null
+          external_user_id: string | null
           face_verification_metadata: Json
           full_name: string
           id: string
@@ -1144,6 +1147,8 @@ export type Database = {
           liveness_score: number | null
           nationality: string
           occupation: string
+          partner_app_id: string | null
+          partner_metadata: Json
           phone_number: string
           political_exposure: boolean
           proof_of_address_url: string | null
@@ -1153,18 +1158,24 @@ export type Database = {
           reviewed_by: string | null
           selfie_captured_at: string | null
           selfie_url: string | null
+          source: string
           source_of_funds: string
           status: string
           submitted_at: string
           updated_at: string
-          user_id: string
+          user_id: string | null
+          webhook_last_at: string | null
+          webhook_last_status: number | null
         }
         Insert: {
           admin_notes?: string | null
           annual_income_range: string
+          callback_url?: string | null
           date_of_birth: string
           email: string
           employer_name?: string | null
+          external_ref?: string | null
+          external_user_id?: string | null
           face_verification_metadata?: Json
           full_name: string
           id?: string
@@ -1178,6 +1189,8 @@ export type Database = {
           liveness_score?: number | null
           nationality: string
           occupation: string
+          partner_app_id?: string | null
+          partner_metadata?: Json
           phone_number: string
           political_exposure?: boolean
           proof_of_address_url?: string | null
@@ -1187,18 +1200,24 @@ export type Database = {
           reviewed_by?: string | null
           selfie_captured_at?: string | null
           selfie_url?: string | null
+          source?: string
           source_of_funds: string
           status?: string
           submitted_at?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
+          webhook_last_at?: string | null
+          webhook_last_status?: number | null
         }
         Update: {
           admin_notes?: string | null
           annual_income_range?: string
+          callback_url?: string | null
           date_of_birth?: string
           email?: string
           employer_name?: string | null
+          external_ref?: string | null
+          external_user_id?: string | null
           face_verification_metadata?: Json
           full_name?: string
           id?: string
@@ -1212,6 +1231,8 @@ export type Database = {
           liveness_score?: number | null
           nationality?: string
           occupation?: string
+          partner_app_id?: string | null
+          partner_metadata?: Json
           phone_number?: string
           political_exposure?: boolean
           proof_of_address_url?: string | null
@@ -1221,13 +1242,75 @@ export type Database = {
           reviewed_by?: string | null
           selfie_captured_at?: string | null
           selfie_url?: string | null
+          source?: string
           source_of_funds?: string
           status?: string
           submitted_at?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
+          webhook_last_at?: string | null
+          webhook_last_status?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kyc_applications_partner_app_id_fkey"
+            columns: ["partner_app_id"]
+            isOneToOne: false
+            referencedRelation: "partner_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kyc_partner_events: {
+        Row: {
+          application_id: string
+          created_at: string
+          delivered: boolean
+          event_type: string
+          id: string
+          partner_app_id: string | null
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          delivered?: boolean
+          event_type: string
+          id?: string
+          partner_app_id?: string | null
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          delivered?: boolean
+          event_type?: string
+          id?: string
+          partner_app_id?: string | null
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_partner_events_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "kyc_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kyc_partner_events_partner_app_id_fkey"
+            columns: ["partner_app_id"]
+            isOneToOne: false
+            referencedRelation: "partner_apps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ledger_api_keys: {
         Row: {
