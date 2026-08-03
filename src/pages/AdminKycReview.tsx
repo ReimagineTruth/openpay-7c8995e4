@@ -55,6 +55,8 @@ const AdminKycReview = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [channelFilter, setChannelFilter] = useState<"all" | KycChannel>("all");
+  const piPrice = usePiUsdPrice();
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewMode, setReviewMode] = useState<"reject" | "additional_info_required" | null>(null);
   const [decisionReason, setDecisionReason] = useState("");
