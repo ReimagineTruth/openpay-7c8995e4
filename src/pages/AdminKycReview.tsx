@@ -503,10 +503,15 @@ const AdminKycReview = () => {
                   <h2 className="text-lg font-semibold text-gray-900">Applicant Details</h2>
                   <p className="text-sm text-gray-500">Full compliance review for this user</p>
                 </div>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(selectedApplication.status)}`}>
-                  {getStatusIcon(selectedApplication.status)}
-                  {selectedApplication.status.replace(/_/g, " ").toUpperCase()}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ${channelBadgeClass(selectedApplication.channel)}`}>
+                    {KYC_CHANNEL_LABELS[selectedApplication.channel || "openpay"]}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(selectedApplication.status)}`}>
+                    {getStatusIcon(selectedApplication.status)}
+                    {selectedApplication.status.replace(/_/g, " ").toUpperCase()}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -525,6 +530,15 @@ const AdminKycReview = () => {
                     <p className="text-gray-600">OpenPay Username</p>
                     <p className="font-medium">{selectedApplication.profile_username ? `@${selectedApplication.profile_username}` : "Not set"}</p>
                   </div>
+                  <div>
+                    <p className="text-gray-600">Pi Username</p>
+                    <p className="font-medium">{selectedApplication.pi_username ? `@${selectedApplication.pi_username}` : "Not linked"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Partner App</p>
+                    <p className="font-medium">{selectedApplication.partner_app_id || (selectedApplication.channel === "pro" ? "OpenPay Pro" : "—")}</p>
+                  </div>
+
                   <div>
                     <p className="text-gray-600">User ID</p>
                     <p className="font-mono text-xs font-medium break-all">{selectedApplication.user_id}</p>
