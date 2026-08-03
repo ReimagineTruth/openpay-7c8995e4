@@ -93,21 +93,30 @@ const AdminKycReview = () => {
       const userIds = [...new Set(normalized.map((row) => row.user_id).filter(Boolean))];
 
       let profilesMap = new Map<string, ProfileRow>();
+      const piMap = new Map<string, string>();
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, username, avatar_url")
-          .in("id", userIds);
+        const [{ data: profiles }, { data: piAccounts }] = await Promise.all([
+          supabase.from("profiles").select("id, username, avatar_url").in("id", userIds),
+          (supabase as any).from("pi_accounts").select("user_id, pi_username").in("user_id", userIds),
+        ]);
         profilesMap = new Map((profiles || []).map((row) => [row.id, row as ProfileRow]));
+        (Array.isArray(piAccounts) ? piAccounts : []).forEach((row: any) => {
+          if (row?.user_id && row?.pi_username) piMap.set(String(row.user_id), String(row.pi_username));
+        });
       }
 
       const rawRows = Array.isArray(data) ? data : [];
       const merged = normalized.map((row, index) => {
         const profileRow = profilesMap.get(row.user_id);
         const raw = (rawRows[index] || {}) as any;
+        const source = raw.source || "openpay";
+        const piUsername = piMap.get(row.user_id) || null;
+        const channel: KycChannel = source === "partner" ? "pro" : piUsername ? "pi" : "openpay";
         return {
           ...row,
-          source: raw.source || "openpay",
+          source,
+          channel,
+          pi_username: piUsername,
           partner_app_id: raw.partner_app_id || null,
           external_user_id: raw.external_user_id || null,
           external_ref: raw.external_ref || null,
@@ -116,6 +125,7 @@ const AdminKycReview = () => {
           profile_avatar_url: profileRow?.avatar_url || null,
         };
       });
+
 
 
       setApplications(merged);
