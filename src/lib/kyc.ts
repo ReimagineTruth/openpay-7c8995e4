@@ -85,6 +85,14 @@ export interface KycApplicationRecord {
   selfie_captured_at?: string | null;
 }
 
+export type KycChannel = "openpay" | "pro" | "pi";
+
+export const KYC_CHANNEL_LABELS: Record<KycChannel, string> = {
+  openpay: "OpenPay",
+  pro: "OpenPay Pro",
+  pi: "Pure Pi",
+};
+
 export interface AdminKycApplicationRecord extends KycApplicationRecord {
   profile_username?: string | null;
   profile_avatar_url?: string | null;
@@ -93,6 +101,8 @@ export interface AdminKycApplicationRecord extends KycApplicationRecord {
   external_user_id?: string | null;
   external_ref?: string | null;
   callback_url?: string | null;
+  pi_username?: string | null;
+  channel?: KycChannel;
 }
 
 
