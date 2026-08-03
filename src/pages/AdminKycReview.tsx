@@ -19,12 +19,26 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
+import { usePiUsdPrice } from "@/lib/piPrice";
 import {
   ADMIN_PROFILE_USERNAMES,
+  KYC_CHANNEL_LABELS,
   type AdminKycApplicationRecord,
+  type KycChannel,
   isLikelyStoragePath,
   normalizeKycApplication,
 } from "@/lib/kyc";
+
+const channelBadgeClass = (channel?: KycChannel) => {
+  switch (channel) {
+    case "pro":
+      return "bg-indigo-100 text-indigo-800";
+    case "pi":
+      return "bg-amber-100 text-amber-900";
+    default:
+      return "bg-blue-100 text-blue-800";
+  }
+};
 
 type ProfileRow = {
   id: string;
@@ -41,6 +55,8 @@ const AdminKycReview = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [channelFilter, setChannelFilter] = useState<"all" | KycChannel>("all");
+  const piPrice = usePiUsdPrice();
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewMode, setReviewMode] = useState<"reject" | "additional_info_required" | null>(null);
   const [decisionReason, setDecisionReason] = useState("");
@@ -77,21 +93,30 @@ const AdminKycReview = () => {
       const userIds = [...new Set(normalized.map((row) => row.user_id).filter(Boolean))];
 
       let profilesMap = new Map<string, ProfileRow>();
+      const piMap = new Map<string, string>();
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, username, avatar_url")
-          .in("id", userIds);
+        const [{ data: profiles }, { data: piAccounts }] = await Promise.all([
+          supabase.from("profiles").select("id, username, avatar_url").in("id", userIds),
+          (supabase as any).from("pi_accounts").select("user_id, pi_username").in("user_id", userIds),
+        ]);
         profilesMap = new Map((profiles || []).map((row) => [row.id, row as ProfileRow]));
+        (Array.isArray(piAccounts) ? piAccounts : []).forEach((row: any) => {
+          if (row?.user_id && row?.pi_username) piMap.set(String(row.user_id), String(row.pi_username));
+        });
       }
 
       const rawRows = Array.isArray(data) ? data : [];
       const merged = normalized.map((row, index) => {
         const profileRow = profilesMap.get(row.user_id);
         const raw = (rawRows[index] || {}) as any;
+        const source = raw.source || "openpay";
+        const piUsername = piMap.get(row.user_id) || null;
+        const channel: KycChannel = source === "partner" ? "pro" : piUsername ? "pi" : "openpay";
         return {
           ...row,
-          source: raw.source || "openpay",
+          source,
+          channel,
+          pi_username: piUsername,
           partner_app_id: raw.partner_app_id || null,
           external_user_id: raw.external_user_id || null,
           external_ref: raw.external_ref || null,
@@ -100,6 +125,7 @@ const AdminKycReview = () => {
           profile_avatar_url: profileRow?.avatar_url || null,
         };
       });
+
 
 
       setApplications(merged);
@@ -265,6 +291,26 @@ const AdminKycReview = () => {
     }
   };
 
+  const channelStats = useMemo(() => {
+    const base: Record<"all" | KycChannel, { total: number; pending: number; approved: number }> = {
+      all: { total: 0, pending: 0, approved: 0 },
+      openpay: { total: 0, pending: 0, approved: 0 },
+      pro: { total: 0, pending: 0, approved: 0 },
+      pi: { total: 0, pending: 0, approved: 0 },
+    };
+    applications.forEach((app) => {
+      const key = app.channel || "openpay";
+      const pending = app.status === "pending" || app.status === "under_review";
+      const approved = app.status === "approved";
+      [base.all, base[key]].forEach((bucket) => {
+        bucket.total += 1;
+        if (pending) bucket.pending += 1;
+        if (approved) bucket.approved += 1;
+      });
+    });
+    return base;
+  }, [applications]);
+
   const filteredApplications = useMemo(
     () =>
       applications.filter((app) => {
@@ -275,12 +321,15 @@ const AdminKycReview = () => {
           app.email.toLowerCase().includes(searchValue) ||
           app.id_document_number.toLowerCase().includes(searchValue) ||
           String(app.profile_username || "").toLowerCase().includes(searchValue) ||
+          String(app.pi_username || "").toLowerCase().includes(searchValue) ||
           app.user_id.toLowerCase().includes(searchValue);
         const matchesStatus = statusFilter === "all" || app.status === statusFilter;
-        return matchesSearch && matchesStatus;
+        const matchesChannel = channelFilter === "all" || (app.channel || "openpay") === channelFilter;
+        return matchesSearch && matchesStatus && matchesChannel;
       }),
-    [applications, searchTerm, statusFilter],
+    [applications, searchTerm, statusFilter, channelFilter],
   );
+
 
   const openDecisionModal = (mode: "reject" | "additional_info_required") => {
     setReviewMode(mode);
@@ -300,7 +349,7 @@ const AdminKycReview = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="border-b border-gray-200 bg-white">
         <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <button onClick={() => navigate("/admin-dashboard")} className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200">
                 <ArrowLeft className="h-5 w-5" />
@@ -309,15 +358,51 @@ const AdminKycReview = () => {
                 <BrandLogo className="h-8 w-8" />
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">KYC Review</h1>
-                  <p className="text-sm text-gray-500">Review identity verification details for all applicants</p>
+                  <p className="text-sm text-gray-500">Separated by OpenPay, OpenPay Pro and Pure Pi applicants</p>
                 </div>
               </div>
             </div>
-            <Button onClick={() => void loadApplications()} disabled={loading} variant="outline" className="flex items-center gap-2">
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+                </span>
+                π ${piPrice.price < 0.01 ? piPrice.price.toPrecision(3) : piPrice.price.toFixed(4)}
+                <span className="font-normal text-amber-700">{piPrice.isFallback ? "est." : "live"}</span>
+              </div>
+              <Button onClick={() => void loadApplications()} disabled={loading} variant="outline" className="flex items-center gap-2">
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <div className="border-b border-gray-200 bg-white px-4 pb-3 pt-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {(["all", "openpay", "pro", "pi"] as const).map((tab) => {
+            const active = channelFilter === tab;
+            const label = tab === "all" ? "All channels" : KYC_CHANNEL_LABELS[tab];
+            return (
+              <button
+                key={tab}
+                onClick={() => setChannelFilter(tab)}
+                className={`rounded-xl border px-3 py-2.5 text-left transition-all ${
+                  active
+                    ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+                }`}
+              >
+                <p className="text-[11px] font-medium uppercase tracking-wide opacity-80">{label}</p>
+                <p className="text-lg font-bold leading-tight">{channelStats[tab].total}</p>
+                <p className={`text-[11px] ${active ? "text-white/80" : "text-gray-500"}`}>
+                  {channelStats[tab].pending} pending · {channelStats[tab].approved} approved
+                </p>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -327,7 +412,7 @@ const AdminKycReview = () => {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name, email, username, user ID, or document number..."
+              placeholder="Search by name, email, username, Pi username, user ID, or document number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -369,8 +454,8 @@ const AdminKycReview = () => {
                 <div
                   key={application.id}
                   onClick={() => setSelectedApplication(application)}
-                  className={`cursor-pointer p-4 transition-colors hover:bg-gray-50 ${
-                    selectedApplication?.id === application.id ? "bg-blue-50" : ""
+                  className={`cursor-pointer border-l-4 p-4 transition-colors hover:bg-gray-50 ${
+                    selectedApplication?.id === application.id ? "border-l-blue-600 bg-blue-50" : "border-l-transparent"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -381,19 +466,19 @@ const AdminKycReview = () => {
                           {getStatusIcon(application.status)}
                           {application.status.replace(/_/g, " ").toUpperCase()}
                         </span>
-                        {application.source === "partner" && (
-                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                            PARTNER
-                          </span>
-                        )}
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ${channelBadgeClass(application.channel)}`}>
+                          {KYC_CHANNEL_LABELS[application.channel || "openpay"]}
+                        </span>
                       </div>
                       <p className="truncate text-sm text-gray-600">{application.email}</p>
                       <p className="truncate text-sm text-gray-600">
-                        {application.source === "partner"
+                        {application.channel === "pro"
                           ? `ext: ${application.external_user_id || application.external_ref || "—"}`
-                          : application.profile_username
-                            ? `@${application.profile_username}`
-                            : String(application.user_id || "").slice(0, 8)}
+                          : application.channel === "pi"
+                            ? `π @${application.pi_username}`
+                            : application.profile_username
+                              ? `@${application.profile_username}`
+                              : String(application.user_id || "").slice(0, 8)}
                       </p>
 
                       <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
@@ -409,6 +494,7 @@ const AdminKycReview = () => {
           </div>
         </div>
 
+
         {selectedApplication ? (
           <div className="flex-1 bg-white">
             <div className="border-b border-gray-200 p-4">
@@ -417,10 +503,15 @@ const AdminKycReview = () => {
                   <h2 className="text-lg font-semibold text-gray-900">Applicant Details</h2>
                   <p className="text-sm text-gray-500">Full compliance review for this user</p>
                 </div>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(selectedApplication.status)}`}>
-                  {getStatusIcon(selectedApplication.status)}
-                  {selectedApplication.status.replace(/_/g, " ").toUpperCase()}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ${channelBadgeClass(selectedApplication.channel)}`}>
+                    {KYC_CHANNEL_LABELS[selectedApplication.channel || "openpay"]}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(selectedApplication.status)}`}>
+                    {getStatusIcon(selectedApplication.status)}
+                    {selectedApplication.status.replace(/_/g, " ").toUpperCase()}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -439,6 +530,15 @@ const AdminKycReview = () => {
                     <p className="text-gray-600">OpenPay Username</p>
                     <p className="font-medium">{selectedApplication.profile_username ? `@${selectedApplication.profile_username}` : "Not set"}</p>
                   </div>
+                  <div>
+                    <p className="text-gray-600">Pi Username</p>
+                    <p className="font-medium">{selectedApplication.pi_username ? `@${selectedApplication.pi_username}` : "Not linked"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Partner App</p>
+                    <p className="font-medium">{selectedApplication.partner_app_id || (selectedApplication.channel === "pro" ? "OpenPay Pro" : "—")}</p>
+                  </div>
+
                   <div>
                     <p className="text-gray-600">User ID</p>
                     <p className="font-mono text-xs font-medium break-all">{selectedApplication.user_id}</p>
