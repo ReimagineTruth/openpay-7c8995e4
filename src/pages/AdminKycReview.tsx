@@ -279,6 +279,26 @@ const AdminKycReview = () => {
     }
   };
 
+  const channelStats = useMemo(() => {
+    const base: Record<"all" | KycChannel, { total: number; pending: number; approved: number }> = {
+      all: { total: 0, pending: 0, approved: 0 },
+      openpay: { total: 0, pending: 0, approved: 0 },
+      pro: { total: 0, pending: 0, approved: 0 },
+      pi: { total: 0, pending: 0, approved: 0 },
+    };
+    applications.forEach((app) => {
+      const key = app.channel || "openpay";
+      const pending = app.status === "pending" || app.status === "under_review";
+      const approved = app.status === "approved";
+      [base.all, base[key]].forEach((bucket) => {
+        bucket.total += 1;
+        if (pending) bucket.pending += 1;
+        if (approved) bucket.approved += 1;
+      });
+    });
+    return base;
+  }, [applications]);
+
   const filteredApplications = useMemo(
     () =>
       applications.filter((app) => {
@@ -289,12 +309,15 @@ const AdminKycReview = () => {
           app.email.toLowerCase().includes(searchValue) ||
           app.id_document_number.toLowerCase().includes(searchValue) ||
           String(app.profile_username || "").toLowerCase().includes(searchValue) ||
+          String(app.pi_username || "").toLowerCase().includes(searchValue) ||
           app.user_id.toLowerCase().includes(searchValue);
         const matchesStatus = statusFilter === "all" || app.status === statusFilter;
-        return matchesSearch && matchesStatus;
+        const matchesChannel = channelFilter === "all" || (app.channel || "openpay") === channelFilter;
+        return matchesSearch && matchesStatus && matchesChannel;
       }),
-    [applications, searchTerm, statusFilter],
+    [applications, searchTerm, statusFilter, channelFilter],
   );
+
 
   const openDecisionModal = (mode: "reject" | "additional_info_required") => {
     setReviewMode(mode);
