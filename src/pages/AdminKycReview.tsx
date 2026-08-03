@@ -19,12 +19,26 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
+import { usePiUsdPrice } from "@/lib/piPrice";
 import {
   ADMIN_PROFILE_USERNAMES,
+  KYC_CHANNEL_LABELS,
   type AdminKycApplicationRecord,
+  type KycChannel,
   isLikelyStoragePath,
   normalizeKycApplication,
 } from "@/lib/kyc";
+
+const channelBadgeClass = (channel?: KycChannel) => {
+  switch (channel) {
+    case "pro":
+      return "bg-indigo-100 text-indigo-800";
+    case "pi":
+      return "bg-amber-100 text-amber-900";
+    default:
+      return "bg-blue-100 text-blue-800";
+  }
+};
 
 type ProfileRow = {
   id: string;
