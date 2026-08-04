@@ -2054,7 +2054,7 @@ const Dashboard = () => {
           cta: "Complete setup",
           badge: "Setup",
           icon: ShieldCheck,
-          onClick: () => navigate("/setup-profile"),
+          onClick: () => navigate("/profile"),
         }
       : null,
     {
