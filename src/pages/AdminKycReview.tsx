@@ -496,14 +496,24 @@ const AdminKycReview = () => {
 
 
         {selectedApplication ? (
-          <div className="flex-1 bg-white">
-            <div className="border-b border-gray-200 p-4">
+          <div className="fixed inset-0 z-50 flex flex-col bg-white lg:static lg:z-auto lg:flex-1 lg:sticky lg:top-0 lg:max-h-screen">
+            <div className="flex-shrink-0 border-b border-gray-200 p-4">
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Applicant Details</h2>
-                  <p className="text-sm text-gray-500">Full compliance review for this user</p>
+                <div className="flex min-w-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedApplication(null)}
+                    aria-label="Close applicant details"
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </button>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-semibold text-gray-900">{selectedApplication.full_name}</h2>
+                    <p className="truncate text-sm text-gray-500">Full compliance review</p>
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ${channelBadgeClass(selectedApplication.channel)}`}>
                     {KYC_CHANNEL_LABELS[selectedApplication.channel || "openpay"]}
                   </span>
@@ -515,7 +525,8 @@ const AdminKycReview = () => {
               </div>
             </div>
 
-            <div className="max-h-[calc(100vh-200px)] space-y-6 overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4">
+
               <div>
                 <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
                   <User className="h-4 w-4" />
@@ -701,7 +712,7 @@ const AdminKycReview = () => {
               </div>
             </div>
 
-            <div className="border-t border-gray-200 p-4">
+            <div className="flex-shrink-0 border-t border-gray-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <div className="flex flex-col gap-3 sm:flex-row">
                 {selectedApplication.status !== "approved" ? (
                   <Button onClick={() => void handleApprove(selectedApplication.id)} disabled={actionLoading} className="flex-1 bg-green-600 hover:bg-green-700">
@@ -728,7 +739,7 @@ const AdminKycReview = () => {
       </div>
 
       {showReviewModal && reviewMode ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-900">
               {reviewMode === "reject" ? "Reject Application" : "Request Additional Information"}
