@@ -1184,17 +1184,10 @@ const Dashboard = () => {
         hasRealAccountIdentity,
       );
 
-      if (!hasProfile && !hasAccountProfileFallback && !hasCompletedOnboardingLocally) {
-        setRefreshing(false);
-        navigate("/onboarding", { replace: true });
-        return;
-      }
+      // Data-minimization: never force new users into the onboarding form.
+      // Profile details (name, username, avatar) stay optional and can be
+      // completed anytime from Profile settings.
 
-      if (!hasProfile && !hasAccountProfileFallback && hasCompletedOnboardingLocally) {
-        setRefreshing(false);
-        navigate("/onboarding?reset=1", { replace: true });
-        return;
-      }
 
       const savingsTransferRows = savingsTransfersRes.data;
       if (Array.isArray(savingsTransferRows)) {
