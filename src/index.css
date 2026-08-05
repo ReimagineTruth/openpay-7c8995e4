@@ -457,9 +457,10 @@
     overflow: hidden;
     color: #fff;
     background:
-      radial-gradient(120% 140% at 88% -20%, rgba(120, 190, 255, 0.55) 0%, transparent 55%),
-      radial-gradient(90% 120% at 0% 110%, rgba(0, 200, 255, 0.28) 0%, transparent 60%),
-      linear-gradient(135deg, hsl(219 100% 21%) 0%, hsl(213 100% 33%) 52%, hsl(205 100% 45%) 100%);
+      radial-gradient(120% 140% at 88% -20%, rgba(88, 130, 200, 0.22) 0%, transparent 55%),
+      radial-gradient(90% 120% at 0% 110%, rgba(60, 110, 190, 0.18) 0%, transparent 60%),
+      linear-gradient(135deg, #131b2b 0%, #1a2334 55%, #212b3f 100%);
+
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
 
