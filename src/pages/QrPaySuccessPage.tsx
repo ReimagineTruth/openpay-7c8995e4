@@ -57,7 +57,7 @@ export default function QrPaySuccessPage() {
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
-      <div className="qrp-hero-v2 px-6 pb-10 pt-[max(2rem,env(safe-area-inset-top))] text-center">
+      <div className="qrp-hero-v2 px-6 pb-8 pt-[max(2rem,env(safe-area-inset-top))] text-center">
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">OpenPay · QR Pay</div>
         <div className="qrp-pop mx-auto mb-3 inline-flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-md ring-4 ring-white/30">
           <CheckCircle2 className="h-12 w-12"/>
@@ -67,7 +67,7 @@ export default function QrPaySuccessPage() {
       </div>
 
 
-      <div className="max-w-md mx-auto p-4 w-full space-y-3 -mt-4 qrp-pop">
+      <div className="max-w-md mx-auto p-4 w-full space-y-3 mt-4 qrp-pop">
 
         <Card><CardContent className="p-4 space-y-2">
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">Transaction ID</span><span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{ref}</span></div>

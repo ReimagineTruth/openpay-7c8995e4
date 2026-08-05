@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import QrPayHeader from "@/components/qrpay/QrPayHeader";
+import CurrencyPicker from "@/components/CurrencyPicker";
+
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -176,7 +178,7 @@ export default function QrPayCreatePage() {
           backLabel="Back to QR Pay"
         />
 
-        <div className="p-4 max-w-md mx-auto space-y-4 -mt-4 qrp-pop">
+        <div className="p-4 max-w-md mx-auto space-y-4 mt-4 qrp-pop">
           <div className="qrp-card p-6 flex flex-col items-center">
             <div className="bg-white p-4 rounded-2xl shadow-inner ring-1 ring-black/5"><QRCodeSVG value={url} size={220} /></div>
             <div className="mt-4 text-center">
@@ -212,7 +214,7 @@ export default function QrPayCreatePage() {
       />
 
 
-      <div className="mx-auto -mt-6 grid w-full max-w-5xl grid-cols-1 gap-6 p-4 lg:grid-cols-12">
+      <div className="mx-auto mt-4 grid w-full max-w-5xl grid-cols-1 gap-6 p-4 lg:grid-cols-12">
         {/* ── Left: setup form ───────────────────────────── */}
         <div className="space-y-5 lg:col-span-7">
 
@@ -265,12 +267,8 @@ export default function QrPayCreatePage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Currency</Label>
-                <Select value={cur} onValueChange={setCur}>
-                  <SelectTrigger className="qrp-input h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {currencies.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <CurrencyPicker value={cur} onChange={setCur} className="qrp-input h-12" />
+
               </div>
             </div>
 

@@ -192,7 +192,7 @@ export default function QrPayDashboardPage() {
       />
 
 
-      <div className="p-4 space-y-4 -mt-4">
+      <div className="p-4 space-y-4">
         {/* Top KPI cards */}
         <div className="grid grid-cols-2 gap-3 qrp-pop">
           <div className="qrp-card-blue p-4">
