@@ -214,26 +214,20 @@ Style it with Tailwind, primary color #0070BA (PayPal blue). Include error + loa
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="bg-gradient-to-br from-[#003087] to-[#0070BA] text-white">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <button onClick={() => nav("/qr-pay")} className="inline-flex items-center text-white/80 hover:text-white text-sm mb-3">
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back to QR Pay
-          </button>
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-                <Code2 className="h-7 w-7" /> QR Pay API
-              </h1>
-              <p className="text-white/80 text-sm mt-1">
-                Smart-contract style API to let Stripe, PayPal, Instapay or any app read &amp; pay your QR codes.
-              </p>
-            </div>
-            <Button onClick={() => setShowCreate(true)} className="bg-white text-[#003087] hover:bg-white/90">
-              <Plus className="h-4 w-4 mr-1" /> New API key
-            </Button>
-          </div>
-        </div>
-      </div>
+      <QrPayHeader
+        eyebrow="OpenPay · Developers"
+        title="QR Pay API"
+        subtitle="Smart-contract style API to let Stripe, PayPal, Instapay or any app read & pay your QR codes."
+        icon={Code2}
+        backTo="/qr-pay"
+        backLabel="Back to QR Pay"
+        actions={
+          <Button onClick={() => setShowCreate(true)} className="qrp-hero-cta rounded-full h-9 px-4">
+            <Plus className="h-4 w-4 mr-1" /> New API key
+          </Button>
+        }
+      />
+
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* KPIs */}
