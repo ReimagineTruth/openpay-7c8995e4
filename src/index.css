@@ -659,6 +659,18 @@
   .qrp-card-btn:hover { box-shadow: 0 12px 24px -8px rgba(0,112,186,0.65); }
   .qrp-card-btn:active { transform: scale(0.98); }
 
+  .qrp-pro-btn {
+    background: linear-gradient(135deg, #ab9ff2, #8c7cf0) !important;
+    color: #16112e !important;
+    border-radius: 14px !important;
+    font-weight: 700;
+    height: 48px;
+    box-shadow: 0 10px 24px -10px rgba(140,124,240,0.75);
+  }
+  .qrp-pro-btn:hover { box-shadow: 0 14px 28px -10px rgba(140,124,240,0.85); }
+  .qrp-pro-btn:active { transform: scale(0.98); }
+
+
   /* ── Success animation (green check) ─────────────────────────── */
   @keyframes qrp-check-pop {
     0% { transform: scale(0.2); opacity: 0 }
