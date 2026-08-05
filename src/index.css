@@ -580,6 +580,38 @@
   }
   .qrp-kpi:hover { transform: translateY(-1px); background: hsl(var(--muted) / 0.4); }
 
+  /* Shopify-admin style section nav */
+  .qrp-subnav {
+    display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+    padding: 5px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.26);
+    backdrop-filter: blur(10px);
+  }
+  .qrp-subnav::-webkit-scrollbar { display: none; }
+  .qrp-subnav-tab {
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    padding: 8px 14px; border-radius: 12px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: .01em;
+    color: rgba(255,255,255,0.9);
+    transition: background .18s ease, color .18s ease, transform .18s ease;
+  }
+  .qrp-subnav-tab:hover { background: rgba(255,255,255,0.14); }
+  .qrp-subnav-tab.is-active {
+    background: #fff; color: #0b2d6b;
+    box-shadow: 0 8px 20px -12px rgba(0,20,60,0.7);
+  }
+  .qrp-subnav-tab:active { transform: scale(0.97); }
+  .qrp-subnav-count {
+    min-width: 20px; padding: 1px 6px; border-radius: 999px;
+    font-size: 10px; font-weight: 800;
+    background: rgba(255,255,255,0.22); color: inherit;
+  }
+  .qrp-subnav-tab.is-active .qrp-subnav-count { background: rgba(11,45,107,0.1); }
+
+
+
   .qrp-pay-tab {
     border-radius: 14px !important;
     font-weight: 600;
