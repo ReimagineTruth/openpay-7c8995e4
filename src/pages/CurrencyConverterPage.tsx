@@ -58,7 +58,7 @@ const CurrencyConverterPage = () => {
 
         <div className="paypal-surface rounded-3xl p-5">
           <p className="mb-3 text-xs font-semibold text-muted-foreground">
-            Live rate: 1 PI = ${livePiUsd.toFixed(4)} (CoinGecko)
+            {`Live rate: 1 PI = $${livePiUsd.toFixed(4)} (CoinGecko)`}
           </p>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amount</p>
           <Input
@@ -133,7 +133,7 @@ const CurrencyConverterPage = () => {
               1 {fromCurrency?.code} = {unitRate.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} {toCurrency?.code}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Rates are PI-based. Pure Pi uses the live CoinGecko price (1 PI = ${livePiUsd.toFixed(4)}); 1 OUSD = $1.00.
+              {`Rates are PI-based. Pure Pi uses the live CoinGecko price (1 PI = $${livePiUsd.toFixed(4)}); 1 OUSD = $1.00.`}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Last updated: {formattedUpdatedAt}
