@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import QrPayHeader from "@/components/qrpay/QrPayHeader";
+import CurrencyPicker from "@/components/CurrencyPicker";
+
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
