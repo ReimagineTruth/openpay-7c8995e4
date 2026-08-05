@@ -21,6 +21,12 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import QrPayIntegrations from "@/components/qr-pay/QrPayIntegrations";
+import {
+  getProDestinationError,
+  formatProDestinationPreview,
+  formatProDestinationForApi,
+} from "@/lib/openpayProTransfer";
+
 
 interface Item { name: string; description?: string; quantity: number; unit_price: number; image_url?: string }
 
@@ -92,8 +98,13 @@ export default function QrPayCreatePage() {
   const [minAmount, setMinAmount] = useState<string>("");
   const [coverImage, setCoverImage] = useState<string>("");
   const [uploading, setUploading] = useState<number | "cover" | null>(null);
+  const [proEnabled, setProEnabled] = useState(false);
+  const [proTo, setProTo] = useState("");
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState<{ token: string; total: number } | null>(null);
+
+  const proError = proEnabled ? getProDestinationError(proTo) : null;
+
 
   const isFlexible = paymentType === "donation" || paymentType === "tip";
   const total = isFlexible
@@ -136,6 +147,7 @@ export default function QrPayCreatePage() {
     }
     if (afterAction === "download" && !downloadUrl.trim()) { toast.error("Add a download URL"); return; }
     if (afterAction === "redirect" && !redirectUrl.trim()) { toast.error("Add a redirect URL"); return; }
+    if (proEnabled && proError) { toast.error(proError); return; }
 
     setLoading(true);
     const { data, error } = await (supabase as any).rpc("qr_pay_create", {
@@ -160,10 +172,20 @@ export default function QrPayCreatePage() {
       p_collect_delivery: collectDelivery,
       p_delivery_fields: collectDelivery ? deliveryFields : ["name", "email", "address"],
     });
+    if (error) { setLoading(false); toast.error(error.message); return; }
+
+    if (proEnabled && proTo.trim()) {
+      const { error: proErr } = await (supabase as any).rpc("qr_pay_set_pro_settlement", {
+        p_token: data.token,
+        p_to: formatProDestinationForApi(proTo),
+      });
+      if (proErr) toast.error(`QR created, but Pro settlement wasn't saved: ${proErr.message}`);
+    }
+
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
     setCreated({ token: data.token, total: Number(data.total) });
     toast.success("QR payment created");
+
   };
 
   if (created) {
@@ -464,10 +486,37 @@ export default function QrPayCreatePage() {
                       <Switch checked={reusable} onCheckedChange={setReusable} />
                     </div>
                   )}
+                  <div className="space-y-2 rounded-xl border border-paypal-blue/20 bg-paypal-blue/5 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Settle to OpenPay Pro</p>
+                        <p className="text-xs text-muted-foreground">Credit earnings to your Pro wallet</p>
+                      </div>
+                      <Switch checked={proEnabled} onCheckedChange={setProEnabled} />
+                    </div>
+                    {proEnabled && (
+                      <div className="space-y-1.5">
+                        <Input
+                          className="qrp-input h-11 rounded-xl"
+                          value={proTo}
+                          onChange={e => setProTo(e.target.value)}
+                          placeholder="@username or 0x wallet address"
+                        />
+                        {proError ? (
+                          <p className="text-xs font-medium text-destructive">{proError}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            Paid orders are credited to {proTo.trim() ? formatProDestinationPreview(proTo) : "your OpenPay Pro wallet"} automatically.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expires in (minutes)</Label>
                     <Input className="qrp-input h-11 rounded-xl" type="number" min={1} value={expiresMin} onChange={e => setExpiresMin(e.target.value)} placeholder="Never" />
                   </div>
+
                 </AccordionContent>
               </AccordionItem>
 

@@ -3749,6 +3749,10 @@ export type Database = {
           payer_username: string | null
           pi_payment_id: string | null
           pi_txid: string | null
+          pro_settled_at: string | null
+          pro_settlement_error: string | null
+          pro_settlement_status: string | null
+          pro_settlement_to: string | null
           provider_payload: Json
           qr_payment_id: string
           status: string
@@ -3771,6 +3775,10 @@ export type Database = {
           payer_username?: string | null
           pi_payment_id?: string | null
           pi_txid?: string | null
+          pro_settled_at?: string | null
+          pro_settlement_error?: string | null
+          pro_settlement_status?: string | null
+          pro_settlement_to?: string | null
           provider_payload?: Json
           qr_payment_id: string
           status?: string
@@ -3793,6 +3801,10 @@ export type Database = {
           payer_username?: string | null
           pi_payment_id?: string | null
           pi_txid?: string | null
+          pro_settled_at?: string | null
+          pro_settlement_error?: string | null
+          pro_settlement_status?: string | null
+          pro_settlement_to?: string | null
           provider_payload?: Json
           qr_payment_id?: string
           status?: string
@@ -3829,6 +3841,7 @@ export type Database = {
           metadata: Json
           min_amount: number | null
           payment_type: string
+          pro_settlement_to: string | null
           redirect_url: string | null
           reusable: boolean
           status: string
@@ -3859,6 +3872,7 @@ export type Database = {
           metadata?: Json
           min_amount?: number | null
           payment_type?: string
+          pro_settlement_to?: string | null
           redirect_url?: string | null
           reusable?: boolean
           status?: string
@@ -3889,6 +3903,7 @@ export type Database = {
           metadata?: Json
           min_amount?: number | null
           payment_type?: string
+          pro_settlement_to?: string | null
           redirect_url?: string | null
           reusable?: boolean
           status?: string
@@ -6161,6 +6176,14 @@ export type Database = {
       qr_pay_gen_token: { Args: never; Returns: string }
       qr_pay_get_by_token: { Args: { p_token: string }; Returns: Json }
       qr_pay_merchant_stats: { Args: never; Returns: Json }
+      qr_pay_normalize_pro_destination: {
+        Args: { p_to: string }
+        Returns: string
+      }
+      qr_pay_set_pro_settlement: {
+        Args: { p_to: string; p_token: string }
+        Returns: Json
+      }
       random_token_hex: { Args: { p_bytes?: number }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }

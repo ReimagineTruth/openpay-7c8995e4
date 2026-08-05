@@ -37,6 +37,8 @@ interface QrPayData {
   cover_image_url?: string | null;
   collect_delivery?: boolean;
   delivery_fields?: string[];
+  pro_settlement_to?: string | null;
+
   merchant: { id: string; full_name?: string; username?: string; avatar_url?: string };
   items: Array<{ id: string; name: string; description?: string; image_url?: string; quantity: number; unit_price: number; line_total: number }>;
 }
@@ -123,7 +125,19 @@ export default function QrPayCheckoutPage() {
     navigate(`/auth?return=/qr-pay/${token}`);
   };
 
-  const goAfterPayment = (ref: string, method: string) => {
+  const settleToPro = async (ref: string) => {
+    if (!data?.pro_settlement_to) return;
+    try {
+      await supabase.functions.invoke("qr-pay-pro-settle", {
+        body: { token: data.token, transaction_ref: ref },
+      });
+    } catch (e) {
+      console.error("OpenPay Pro settlement failed:", e);
+    }
+  };
+
+  const goAfterPayment = async (ref: string, method: string) => {
+    await settleToPro(ref);
     const receipt = {
       transactionRef: ref, method, paidAt: new Date().toISOString(),
       amount: chargeAmount, currency: data!.currency,
@@ -132,6 +146,7 @@ export default function QrPayCheckoutPage() {
       after_payment_action: data!.after_payment_action,
       download_url: data!.download_url,
       redirect_url: data!.redirect_url,
+      pro_settlement_to: data!.pro_settlement_to || null,
     };
     sessionStorage.setItem(`qrp_receipt_${ref}`, JSON.stringify(receipt));
     if (data!.after_payment_action === "redirect" && data!.redirect_url) {
@@ -139,6 +154,7 @@ export default function QrPayCheckoutPage() {
     }
     navigate(`/qr-pay/${token}/success?ref=${ref}`);
   };
+
 
   const payWallet = async () => {
     if (!validateAmount() || !validateDelivery()) return;
@@ -285,6 +301,18 @@ export default function QrPayCheckoutPage() {
                 <ShieldCheck className="h-3 w-3" /> Verified
               </span>
             </div>
+            {data.pro_settlement_to && (
+              <div className="flex items-center gap-2 border-t border-border/60 px-4 py-2.5 text-xs text-muted-foreground">
+                <span
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black text-white"
+                  style={{ background: "#ab9ff2" }}
+                >
+                  P
+                </span>
+                Settles to OpenPay Pro · <span className="font-semibold text-foreground">{data.pro_settlement_to}</span>
+              </div>
+            )}
+
           </div>
 
           {/* Order summary */}
