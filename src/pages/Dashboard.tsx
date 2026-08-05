@@ -1123,8 +1123,42 @@ const Dashboard = () => {
       const profile = profileRes.data;
       setUserName(profile?.full_name || "");
       setUsername(profile?.username || null);
-      const normalizedFullName = String(profile?.full_name || "").trim();
-      const normalizedUsername = String(profile?.username || "").trim();
+      let normalizedFullName = String(profile?.full_name || "").trim();
+      let normalizedUsername = String(profile?.username || "").trim();
+
+      // Auto-adopt the Pi Network username when the profile has none yet, so
+      // the account is searchable/receivable without any extra setup step.
+      if (!normalizedUsername) {
+        const { data: piLink } = await supabase
+          .from("pi_accounts")
+          .select("pi_username")
+          .eq("user_id", userIdLocal)
+          .maybeSingle();
+        const piUsername = String(piLink?.pi_username || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/g, "");
+        if (piUsername) {
+          const candidates = [piUsername, `${piUsername}_${userIdLocal.slice(0, 4)}`];
+          for (const candidate of candidates) {
+            const { error: setErr } = await supabase
+              .from("profiles")
+              .update({
+                username: candidate,
+                full_name: normalizedFullName || piUsername,
+              })
+              .eq("id", userIdLocal);
+            if (!setErr) {
+              normalizedUsername = candidate;
+              normalizedFullName = normalizedFullName || piUsername;
+              setUsername(candidate);
+              setUserName(normalizedFullName);
+              break;
+            }
+          }
+        }
+      }
+
       const hasProfile = Boolean(
         normalizedFullName &&
         normalizedUsername &&
