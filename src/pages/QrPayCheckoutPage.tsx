@@ -392,3 +392,26 @@ export default function QrPayCheckoutPage() {
     </div>
   );
 }
+
+const PayOpt = ({ active, onClick, icon, label, hint }: any) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-left transition ${
+      active
+        ? "border-paypal-blue bg-paypal-blue/10 text-paypal-blue"
+        : "border-border hover:border-paypal-blue/40 bg-background"
+    }`}
+  >
+    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${active ? "bg-paypal-blue/15" : "bg-muted"}`}>
+      {icon}
+    </span>
+    <span className="min-w-0 flex-1">
+      <span className="block text-sm font-semibold">{label}</span>
+      {hint && <span className="block truncate text-[11px] text-muted-foreground">{hint}</span>}
+    </span>
+    <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${active ? "border-paypal-blue bg-paypal-blue" : "border-muted-foreground/40"}`} />
+  </button>
+);
+
+}
