@@ -37,6 +37,8 @@ interface QrPayData {
   cover_image_url?: string | null;
   collect_delivery?: boolean;
   delivery_fields?: string[];
+  pro_settlement_to?: string | null;
+
   merchant: { id: string; full_name?: string; username?: string; avatar_url?: string };
   items: Array<{ id: string; name: string; description?: string; image_url?: string; quantity: number; unit_price: number; line_total: number }>;
 }
