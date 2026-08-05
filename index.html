@@ -12,7 +12,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="format-detection" content="telephone=no, email=no, address=no" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="light" />
+    <script>
+      (function () {
+        try {
+          var theme = "light";
+          var raw = localStorage.getItem("openpay_user_preferences");
+          if (raw) { var p = JSON.parse(raw); if (p && p.theme) theme = p.theme; }
+          else {
+            var legacy = localStorage.getItem("openpay_app_theme") || localStorage.getItem("openpay_theme");
+            if (legacy) theme = legacy;
+          }
+          var isDark = theme === "dark";
+          document.documentElement.classList.toggle("dark", isDark);
+          document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+        } catch (e) {
+          document.documentElement.classList.remove("dark");
+        }
+      })();
+    </script>
     <link rel="icon" type="image/jpeg" href="/openpay-logo.jpg" />
     <link rel="apple-touch-icon" href="/openpay-logo.jpg" />
     <link rel="manifest" href="/manifest.webmanifest" />
