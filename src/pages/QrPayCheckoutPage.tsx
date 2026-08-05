@@ -219,7 +219,8 @@ export default function QrPayCheckoutPage() {
     data.allow_wallet ? "wallet" : null,
     data.allow_virtual_card ? "card" : null,
   ].filter(Boolean) as string[];
-  const defaultTab = tabs[0] || "wallet";
+  const activeMethod = method && tabs.includes(method) ? method : (tabs[0] || "wallet");
+
   const TypeIcon = data.payment_type === "donation" ? Heart : data.payment_type === "tip" ? Coffee : null;
 
   return (
