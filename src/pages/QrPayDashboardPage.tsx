@@ -520,6 +520,8 @@ export default function QrPayDashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <QrPayGuideDialog open={guideOpen} onOpenChange={setGuideOpen} onCreate={() => navigate("/qr-pay/new")} />
+
       <BottomNav active="menu" />
     </div>
   );
