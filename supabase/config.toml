@@ -25,10 +25,4 @@ project_id = "araojncyittkahvvpdrn"
   [functions.transfer-to-openpay-pro]
     verify_jwt = true
 
-  [functions.pi-platform]
-    verify_jwt = false
-  [functions.pi-oauth-signin]
-    verify_jwt = false
-  [functions.pi-price]
-    verify_jwt = false
 
