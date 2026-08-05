@@ -12,8 +12,18 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
 import BrandLogo from "@/components/BrandLogo";
+import { openExternalUrl } from "@/lib/externalLink";
+import {
+  PRO_PAY_ASSETS,
+  PRO_TOPUP_URL,
+  buildProPayUrl,
+  buildProXferNote,
+  makeProXferRef,
+  formatProDestinationPreview,
+} from "@/lib/openpayProTransfer";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
+
 
 interface QrPayData {
   id: string;
@@ -57,6 +67,7 @@ export default function QrPayCheckoutPage() {
   const [savedCard, setSavedCard] = useState<any>(null);
   const [showCard, setShowCard] = useState(false);
   const [method, setMethod] = useState<string | null>(null);
+  const [proAsset, setProAsset] = useState<string>("OUSD");
 
   const [customAmount, setCustomAmount] = useState<string>("");
   const [payerPhone, setPayerPhone] = useState("");
@@ -246,6 +257,20 @@ export default function QrPayCheckoutPage() {
     }
   };
 
+  const payPro = () => {
+    if (!validateAmount() || !validateDelivery()) return;
+    const dest = data?.pro_settlement_to || "";
+    const url = buildProPayUrl({
+      to: dest,
+      amount: chargeAmount,
+      asset: proAsset,
+      note: buildProXferNote(dest, makeProXferRef()),
+    });
+    if (!url) { toast.error("Merchant has no OpenPay Pro destination"); return; }
+    toast.success("Opening OpenPay Pro to complete your payment");
+    openExternalUrl(url);
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin"/></div>;
   if (!data) return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center"><h1 className="text-xl font-bold mb-2">Payment not found</h1><p className="text-muted-foreground">This QR code is invalid or no longer available.</p></div>;
   if (data.status !== "active") return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center"><Badge variant="secondary" className="mb-3">{data.status}</Badge><h1 className="text-xl font-bold mb-2">This payment is no longer active</h1></div>;
@@ -255,6 +280,7 @@ export default function QrPayCheckoutPage() {
     data.allow_pi && (piInPi || (window as any).Pi) ? "pi" : null,
     data.allow_wallet ? "wallet" : null,
     data.allow_virtual_card ? "card" : null,
+    data.pro_settlement_to ? "pro" : null,
   ].filter(Boolean) as string[];
   const activeMethod = method && tabs.includes(method) ? method : (tabs[0] || "wallet");
 
@@ -265,8 +291,14 @@ export default function QrPayCheckoutPage() {
     ? "Processing…"
     : activeMethod === "pi"
       ? `Pay ${chargeAmount.toFixed(2)} π`
-      : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`;
-  const onPay = activeMethod === "pi" ? payPi : activeMethod === "card" ? payCard : payWallet;
+      : activeMethod === "pro"
+        ? `Pay ${chargeAmount.toFixed(2)} with Pro ${proAsset}`
+        : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`;
+  const onPay =
+    activeMethod === "pi" ? payPi
+    : activeMethod === "card" ? payCard
+    : activeMethod === "pro" ? payPro
+    : payWallet;
 
   return (
     <div className="min-h-screen qrp-page-bg">
@@ -456,7 +488,38 @@ export default function QrPayCheckoutPage() {
                     label="Virtual Card"
                     hint={savedCard ? `OpenPay card •••• ${String(savedCard.card_number).slice(-4)}` : "Pay with your OpenPay virtual card"} />
                 )}
+                {tabs.includes("pro") && (
+                  <PayOpt active={activeMethod === "pro"} onClick={() => setMethod("pro")}
+                    logo={
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black text-white" style={{ background: "#ab9ff2" }}>P</span>
+                    }
+                    label="OpenPay Pro"
+                    hint={`Pay from your Pro wallet · ${formatProDestinationPreview(data.pro_settlement_to || "")}`} />
+                )}
               </div>
+
+              {activeMethod === "pro" && (
+                <div className="space-y-2 rounded-2xl border border-border/70 bg-muted/40 p-3 qrp-rise">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Pay with</div>
+                  <div className="flex flex-wrap gap-2">
+                    {PRO_PAY_ASSETS.map(a => (
+                      <button key={a.key} type="button" onClick={() => setProAsset(a.key)}
+                        className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all active:scale-95 ${
+                          proAsset === a.key
+                            ? "border-[#8c7cf0] bg-[#ab9ff2]/20 text-[#5b4bc4]"
+                            : "border-border bg-background text-foreground hover:border-[#ab9ff2]"
+                        }`}>{a.label}</button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {PRO_PAY_ASSETS.find(a => a.key === proAsset)?.hint} · credited to the merchant as OUSD.
+                  </p>
+                  <button type="button" onClick={() => openExternalUrl(PRO_TOPUP_URL)}
+                    className="text-[11px] font-semibold text-[#5b4bc4] underline underline-offset-2">
+                    No Pro balance? Top up on OpenPay Pro
+                  </button>
+                </div>
+              )}
 
               {activeMethod === "card" && (
                 <div className="space-y-2 pt-1 qrp-rise">
@@ -521,7 +584,7 @@ export default function QrPayCheckoutPage() {
 
               <div className="qrp-paybar lg:static lg:m-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
                 <Button
-                  className={`h-12 w-full gap-2 text-base ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : "qrp-primary-btn"}`}
+                  className={`h-12 w-full gap-2 text-base ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : activeMethod === "pro" ? "qrp-pro-btn" : "qrp-primary-btn"}`}
                   disabled={paying}
                   onClick={onPay}
                 >
@@ -529,6 +592,8 @@ export default function QrPayCheckoutPage() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : activeMethod === "pi" ? (
                     <img src={PURE_PI_ICON_URL} alt="" className="h-5 w-5 rounded-full object-cover" />
+                  ) : activeMethod === "pro" ? (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#16112e] text-[10px] font-black text-[#ab9ff2]">P</span>
                   ) : activeMethod === "card" ? (
                     <span className="flex h-5 w-7 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba]">
                       <BrandLogo className="h-3 w-3 text-white" />
@@ -540,7 +605,9 @@ export default function QrPayCheckoutPage() {
                   <Lock className="h-3.5 w-3.5 opacity-70" />
                 </Button>
                 <p className="mt-2 text-center text-[11px] text-muted-foreground">
-                  {activeMethod === "wallet" && !session ? "You'll be asked to sign in." : "Encrypted payment · instant receipt"}
+                  {activeMethod === "pro"
+                    ? "You'll finish this payment securely on OpenPay Pro."
+                    : activeMethod === "wallet" && !session ? "You'll be asked to sign in." : "Encrypted payment · instant receipt"}
                 </p>
               </div>
 

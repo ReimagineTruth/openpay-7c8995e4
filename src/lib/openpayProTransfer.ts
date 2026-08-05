@@ -141,3 +141,32 @@ export const extractProDestinationFromQr = (raw: string): string | null => {
 
   return null;
 };
+
+/** Assets a buyer can pay with from their OpenPay Pro wallet. */
+export const PRO_PAY_ASSETS = [
+  { key: "OUSD", label: "OUSD", hint: "OpenPay Pro balance" },
+  { key: "USDT", label: "USDT", hint: "Pro wallet USDT → OUSD 1:1" },
+  { key: "USDC", label: "USDC", hint: "Pro wallet USDC → OUSD 1:1" },
+  { key: "SOL", label: "SOL", hint: "Live Solana price → OUSD" },
+  { key: "PI", label: "Pi (π)", hint: "Live π price → OUSD" },
+] as const;
+
+export type ProPayAsset = (typeof PRO_PAY_ASSETS)[number]["key"];
+
+export const PRO_TOPUP_URL = "https://openpaypro.space/topup";
+
+/** Hosted OpenPay Pro pay link the buyer opens to pay a merchant destination. */
+export const buildProPayUrl = (opts: {
+  to: string;
+  amount: number;
+  asset?: ProPayAsset | string;
+  note?: string;
+}) => {
+  const dest = formatProDestinationForApi(opts.to);
+  if (!dest) return "";
+  const url = new URL(`https://openpaypro.space/pay/${encodeURIComponent(dest)}`);
+  url.searchParams.set("amount", String(Number(opts.amount || 0).toFixed(2)));
+  url.searchParams.set("asset", String(opts.asset || "OUSD"));
+  if (opts.note) url.searchParams.set("note", opts.note);
+  return url.toString();
+};

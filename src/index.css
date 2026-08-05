@@ -440,9 +440,9 @@
   .qrp-page-bg input::placeholder,
   .qrp-page-bg textarea::placeholder { color: hsl(var(--muted-foreground)); opacity: 1; }
   /* Buttons keep their variant colors instead of inheriting white */
-  .qrp-page-bg .qrp-card button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn),
-  .qrp-page-bg .qrp-sheet button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn),
-  .qrp-page-bg [data-slot="card"] button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn) {
+  .qrp-page-bg .qrp-card button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn):not(.qrp-pro-btn),
+  .qrp-page-bg .qrp-sheet button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn):not(.qrp-pro-btn),
+  .qrp-page-bg [data-slot="card"] button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn):not(.qrp-pro-btn) {
     color: inherit;
   }
   /* Dark preview surfaces keep white text */
@@ -658,6 +658,18 @@
   }
   .qrp-card-btn:hover { box-shadow: 0 12px 24px -8px rgba(0,112,186,0.65); }
   .qrp-card-btn:active { transform: scale(0.98); }
+
+  .qrp-pro-btn {
+    background: linear-gradient(135deg, #ab9ff2, #8c7cf0) !important;
+    color: #16112e !important;
+    border-radius: 14px !important;
+    font-weight: 700;
+    height: 48px;
+    box-shadow: 0 10px 24px -10px rgba(140,124,240,0.75);
+  }
+  .qrp-pro-btn:hover { box-shadow: 0 14px 28px -10px rgba(140,124,240,0.85); }
+  .qrp-pro-btn:active { transform: scale(0.98); }
+
 
   /* ── Success animation (green check) ─────────────────────────── */
   @keyframes qrp-check-pop {
