@@ -224,17 +224,21 @@ export default function QrPayCheckoutPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <div className="qrp-hero-v2 px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="max-w-md mx-auto flex items-center gap-3">
-          <img src="/openpay-logo.jpg" alt="OpenPay" className="h-10 w-10 rounded-xl ring-2 ring-white/40"/>
-          <div className="flex-1">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">OpenPay Checkout</div>
-            <div className="font-bold flex items-center gap-1.5 text-[17px]"><ShieldCheck className="h-4 w-4"/>Secure QR Payment</div>
-          </div>
+      <QrPayHeader
+        eyebrow="OpenPay Checkout"
+        title="Secure QR Payment"
+        subtitle={`You're paying ${data.merchant.full_name || "a merchant"} · protected by OpenPay dispute resolution`}
+        icon={ShieldCheck}
+      >
+        <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-white/85">
+          <span className="rounded-full border border-white/25 bg-white/10 px-2.5 py-1">Encrypted</span>
+          <span className="rounded-full border border-white/25 bg-white/10 px-2.5 py-1">Pi · Wallet · Virtual Card</span>
+          <span className="rounded-full border border-white/25 bg-white/10 px-2.5 py-1">Instant receipt</span>
         </div>
-      </div>
+      </QrPayHeader>
 
       <div className="max-w-md mx-auto p-4 space-y-3 qrp-pop">
+
 
 
         {data.cover_image_url && (
