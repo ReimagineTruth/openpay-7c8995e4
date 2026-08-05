@@ -77,6 +77,14 @@ export default function QrPayDashboardPage() {
   const [itemsCache, setItemsCache] = useState<Record<string, QrItem[]>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [section, setSection] = useState<"overview" | "links" | "orders">("overview");
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem("qrpay_guide_seen")) {
+      setGuideOpen(true);
+      localStorage.setItem("qrpay_guide_seen", "1");
+    }
+  }, []);
 
   const rangeLabel = useMemo(() => ({
     today: "today", week: "this week", month: "last 30 days", year: "this year", all: "all time"
