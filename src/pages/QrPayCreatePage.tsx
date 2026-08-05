@@ -265,12 +265,8 @@ export default function QrPayCreatePage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Currency</Label>
-                <Select value={cur} onValueChange={setCur}>
-                  <SelectTrigger className="qrp-input h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {currencies.map(c => <SelectItem key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <CurrencyPicker value={cur} onChange={setCur} className="qrp-input h-12" />
+
               </div>
             </div>
 
