@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, ShieldCheck, Wallet, CreditCard, User, Heart, Coffee } from "lucide-react";
+import { Loader2, ShieldCheck, Wallet, CreditCard, User, Heart, Coffee, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import QrPayHeader from "@/components/qrpay/QrPayHeader";
+import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
