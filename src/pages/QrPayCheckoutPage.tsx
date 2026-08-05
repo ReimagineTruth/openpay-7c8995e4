@@ -265,7 +265,7 @@ export default function QrPayCheckoutPage() {
 
       <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 p-4 lg:grid-cols-12 qrp-pop">
         {/* ── Order column ─────────────────────────────── */}
-        <div className="space-y-4 lg:col-span-7">
+        <div className="space-y-4 lg:col-span-7 qrp-stagger">
           <div className="qrp-sheet">
             {data.cover_image_url && (
               <img src={data.cover_image_url} alt={data.title} className="h-44 w-full object-cover" />
