@@ -39,7 +39,7 @@ export default function QrPayHeader({
 
   return (
     <header className={`qrp-hero-v2 ${className}`}>
-      <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-[max(1rem,env(safe-area-inset-top))]">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))]">
         <div className="flex items-start gap-3">
           {backTo && (
             <Button
