@@ -147,6 +147,7 @@ export default function QrPayCreatePage() {
     }
     if (afterAction === "download" && !downloadUrl.trim()) { toast.error("Add a download URL"); return; }
     if (afterAction === "redirect" && !redirectUrl.trim()) { toast.error("Add a redirect URL"); return; }
+    if (proEnabled && proError) { toast.error(proError); return; }
 
     setLoading(true);
     const { data, error } = await (supabase as any).rpc("qr_pay_create", {
@@ -171,10 +172,20 @@ export default function QrPayCreatePage() {
       p_collect_delivery: collectDelivery,
       p_delivery_fields: collectDelivery ? deliveryFields : ["name", "email", "address"],
     });
+    if (error) { setLoading(false); toast.error(error.message); return; }
+
+    if (proEnabled && proTo.trim()) {
+      const { error: proErr } = await (supabase as any).rpc("qr_pay_set_pro_settlement", {
+        p_token: data.token,
+        p_to: formatProDestinationForApi(proTo),
+      });
+      if (proErr) toast.error(`QR created, but Pro settlement wasn't saved: ${proErr.message}`);
+    }
+
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
     setCreated({ token: data.token, total: Number(data.total) });
     toast.success("QR payment created");
+
   };
 
   if (created) {
