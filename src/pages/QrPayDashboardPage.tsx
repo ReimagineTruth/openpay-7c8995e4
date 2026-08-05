@@ -192,81 +192,96 @@ export default function QrPayDashboardPage() {
       />
 
 
-      <div className="p-4 space-y-4">
+      <div className="mx-auto max-w-6xl space-y-5 p-4">
+        {/* ── Section nav (Shopify admin style) ─────────────────── */}
+        <div className="qrp-subnav qrp-rise">
+          {([["overview", "Overview", BarChart3], ["links", "Payment links", QrCode], ["orders", "Orders", Package]] as const).map(([k, label, Icon]) => (
+            <button key={k} type="button" onClick={() => setSection(k)}
+              className={`qrp-subnav-tab ${section === k ? "is-active" : ""}`}>
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+              {k === "links" && <span className="qrp-subnav-count">{payments.length}</span>}
+              {k === "orders" && <span className="qrp-subnav-count">{recentTx.length}</span>}
+            </button>
+          ))}
+        </div>
+
+        {section === "overview" && (
+        <div className="space-y-5 qrp-stagger">
         {/* Top KPI cards */}
-        <div className="grid grid-cols-2 gap-3 qrp-pop">
-          <div className="qrp-card-blue p-4">
-            <div className="text-[11px] uppercase tracking-wide opacity-90 flex items-center gap-1"><Wallet className="h-3 w-3"/>Available balance</div>
-            <div className="text-[28px] font-bold mt-1 leading-none">{format(stats?.available_balance || 0)}</div>
-            <div className="text-[11px] opacity-80 mt-2">Updates in realtime</div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="qrp-card-blue p-5">
+            <div className="text-[11px] uppercase tracking-[0.14em] opacity-90 flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5"/>Available balance</div>
+            <div className="text-[32px] font-bold mt-1.5 leading-none">{format(stats?.available_balance || 0)}</div>
+            <div className="text-[11px] opacity-80 mt-2.5">Updates in realtime</div>
           </div>
-          <div className="qrp-card p-4">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3"/>Total revenue</div>
-            <div className="text-[28px] font-bold mt-1 leading-none text-foreground">{format(stats?.total || 0)}</div>
-            <div className="text-xs text-muted-foreground mt-2">{stats?.count || 0} payments</div>
+          <div className="qrp-sheet p-5">
+            <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5"/>Total revenue</div>
+            <div className="text-[32px] font-bold mt-1.5 leading-none text-foreground">{format(stats?.total || 0)}</div>
+            <div className="text-xs text-muted-foreground mt-2.5">{stats?.count || 0} payments settled</div>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-2">
+
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {([["today","Today",stats?.today],["week","Week",stats?.week],["month","Month",stats?.month],["year","Year",stats?.year]] as const).map(([k,label,val]) => (
             <div key={k} className="qrp-kpi">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-              <div className="text-sm font-semibold text-foreground mt-0.5">{format(Number(val) || 0)}</div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</div>
+              <div className="text-base font-bold text-foreground mt-1">{format(Number(val) || 0)}</div>
             </div>
           ))}
         </div>
 
-
         {/* Method breakdown */}
-        <Card><CardContent className="p-4">
-          <div className="text-sm font-semibold mb-3 text-foreground">By method</div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div><div className="text-xs text-muted-foreground">Pi</div><div className="font-semibold text-foreground">{format(stats?.by_method?.pi || 0)}</div></div>
-            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Wallet className="h-3 w-3"/>Wallet</div><div className="font-semibold text-foreground">{format(stats?.by_method?.wallet || 0)}</div></div>
-            <div><div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><CreditCard className="h-3 w-3"/>Card</div><div className="font-semibold text-foreground">{format(stats?.by_method?.virtual_card || 0)}</div></div>
+        <div className="qrp-sheet">
+          <div className="qrp-sheet-head"><span>Revenue by method</span><span className="normal-case tracking-normal">All time</span></div>
+          <div className="grid grid-cols-3 divide-x divide-border/70">
+            {([["Pi", stats?.by_method?.pi, "bg-violet-500/10 text-violet-600"], ["Wallet", stats?.by_method?.wallet, "bg-paypal-blue/10 text-paypal-blue"], ["Card", stats?.by_method?.virtual_card, "bg-slate-500/10 text-slate-600"]] as const).map(([label, val, tone], i) => (
+              <div key={label} className="p-4 text-center">
+                <span className={`mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full ${tone}`}>
+                  {i === 0 ? <span className="text-sm font-bold">π</span> : i === 1 ? <Wallet className="h-4 w-4"/> : <CreditCard className="h-4 w-4"/>}
+                </span>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+                <div className="mt-0.5 font-bold text-foreground">{format(Number(val) || 0)}</div>
+              </div>
+            ))}
           </div>
-        </CardContent></Card>
+        </div>
 
         {/* Analytics */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-paypal-blue" />
-                <h2 className="text-sm font-semibold text-foreground">Analytics — {rangeLabel}</h2>
-              </div>
-              <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
-                <TabsList className="h-8">
-                  <TabsTrigger value="today" className="text-[11px] px-2 h-6">Today</TabsTrigger>
-                  <TabsTrigger value="week" className="text-[11px] px-2 h-6">Week</TabsTrigger>
-                  <TabsTrigger value="month" className="text-[11px] px-2 h-6">Month</TabsTrigger>
-                  <TabsTrigger value="year" className="text-[11px] px-2 h-6">Year</TabsTrigger>
-                  <TabsTrigger value="all" className="text-[11px] px-2 h-6">All</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
+        <div className="qrp-sheet">
+          <div className="qrp-sheet-head">
+            <span className="inline-flex items-center gap-1.5"><BarChart3 className="h-3.5 w-3.5 text-paypal-blue" /> Analytics — <span className="normal-case tracking-normal">{rangeLabel}</span></span>
+            <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
+              <TabsList className="h-8">
+                {(["today","week","month","year","all"] as Range[]).map(r => (
+                  <TabsTrigger key={r} value={r} className="h-6 px-2 text-[11px] capitalize">{r}</TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+          <div className="p-4">
             {analytics?.totals && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <div className="text-[10px] text-muted-foreground">Revenue</div>
-                  <div className="font-semibold text-sm">{format(Number(analytics.totals.total_revenue) || 0)}</div>
+              <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                <div className="rounded-xl border border-border/70 bg-muted/40 p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Revenue</div>
+                  <div className="text-sm font-bold">{format(Number(analytics.totals.total_revenue) || 0)}</div>
                 </div>
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <div className="text-[10px] text-muted-foreground">Payments</div>
-                  <div className="font-semibold text-sm">{analytics.totals.total_payments}</div>
+                <div className="rounded-xl border border-border/70 bg-muted/40 p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Payments</div>
+                  <div className="text-sm font-bold">{analytics.totals.total_payments}</div>
                 </div>
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <div className="text-[10px] text-muted-foreground">Avg payment</div>
-                  <div className="font-semibold text-sm">{format(Number(analytics.totals.avg_payment) || 0)}</div>
+                <div className="rounded-xl border border-border/70 bg-muted/40 p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Avg payment</div>
+                  <div className="text-sm font-bold">{format(Number(analytics.totals.avg_payment) || 0)}</div>
                 </div>
-                <div className="rounded-lg bg-muted/40 p-2">
-                  <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3"/>Customers</div>
-                  <div className="font-semibold text-sm">{analytics.totals.unique_customers}</div>
+                <div className="rounded-xl border border-border/70 bg-muted/40 p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3"/>Customers</div>
+                  <div className="text-sm font-bold">{analytics.totals.unique_customers}</div>
                 </div>
               </div>
             )}
 
-            <div className="h-40 -mx-2">
+            <div className="h-44 -mx-2">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={analytics?.daily || []} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
                   <defs>
@@ -286,112 +301,121 @@ export default function QrPayDashboardPage() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+          </div>
 
-            {analytics?.top && analytics.top.length > 0 && (
-              <div className="mt-4">
-                <div className="text-xs font-semibold mb-2 text-muted-foreground">Top performing</div>
-                <div className="space-y-1">
+          {analytics?.top && analytics.top.length > 0 && (
+            <div className="border-t border-border/70">
+              <div className="qrp-sheet-head border-b-0"><span>Top performing</span></div>
+              <div className="px-4 pb-4">
+                <div className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/70">
                   {analytics.top.map((t, i) => (
-                    <div key={t.id} className="flex items-center justify-between text-xs bg-muted/30 rounded-md p-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono text-muted-foreground">#{i+1}</span>
-                        <span className="truncate font-medium">{t.title || "Untitled"}</span>
+                    <div key={t.id} className="flex items-center justify-between gap-3 bg-card px-3 py-2.5 text-xs">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-paypal-blue/10 font-mono text-[10px] font-bold text-paypal-blue">{i+1}</span>
+                        <span className="truncate font-semibold text-foreground">{t.title || "Untitled"}</span>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex shrink-0 items-center gap-3">
                         <span className="text-muted-foreground">{t.payments}×</span>
-                        <span className="font-semibold">{t.currency} {Number(t.revenue).toFixed(2)}</span>
+                        <span className="font-bold text-foreground">{t.currency} {Number(t.revenue).toFixed(2)}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+        </div>
+        </div>
+        )}
 
-        {/* Your QR payments */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold">Your QR payments</h2>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/qr-pay/new")}><Plus className="h-4 w-4 mr-1"/>Create</Button>
+        {/* ── Payment links ─────────────────────────────────────── */}
+        {section === "links" && (
+        <div className="qrp-sheet qrp-rise">
+          <div className="qrp-sheet-head">
+            <span>Payment links</span>
+            <Button variant="ghost" size="sm" className="h-7 text-xs normal-case tracking-normal text-paypal-blue" onClick={() => navigate("/qr-pay/new")}>
+              <Plus className="mr-1 h-3.5 w-3.5"/>Create
+            </Button>
           </div>
-          {loading ? <p className="text-sm text-muted-foreground">Loading…</p> :
+          {loading ? <p className="p-4 text-sm text-muted-foreground">Loading…</p> :
             payments.length === 0 ? (
-              <Card><CardContent className="p-6 text-center">
-                <QrCode className="h-10 w-10 mx-auto text-muted-foreground mb-2"/>
-                <p className="text-sm text-muted-foreground mb-3">No QR payments yet</p>
-                <Button onClick={() => navigate("/qr-pay/new")}>Create your first</Button>
-              </CardContent></Card>
+              <div className="p-8 text-center">
+                <QrCode className="mx-auto mb-2 h-10 w-10 text-muted-foreground"/>
+                <p className="mb-3 text-sm text-muted-foreground">No QR payments yet</p>
+                <Button className="qrp-primary-btn" onClick={() => navigate("/qr-pay/new")}>Create your first</Button>
+              </div>
             ) : (
-              <div className="space-y-2">
+              <div className="divide-y divide-border/60">
                 {payments.map(p => (
-                  <Card key={p.id}><CardContent className="p-3 flex items-center gap-2">
-                    <div className="bg-muted rounded-lg p-2 shrink-0"><QrCode className="h-5 w-5"/></div>
-                    <div className="flex-1 min-w-0">
+                  <div key={p.id} className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/40">
+                    <div className="shrink-0 rounded-xl bg-muted p-2.5"><QrCode className="h-5 w-5"/></div>
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <div className="font-medium truncate">{p.title || "Untitled"}</div>
-                        <Badge variant={p.status === "active" ? "default" : "secondary"} className="text-[10px]">{p.status}</Badge>
+                        <div className="truncate text-sm font-semibold text-foreground">{p.title || "Untitled"}</div>
+                        <Badge variant={p.status === "active" ? "default" : "secondary"} className="text-[10px] capitalize">{p.status}</Badge>
                       </div>
-                      <div className="text-xs text-muted-foreground">{p.currency} {Number(p.total).toFixed(2)}</div>
+                      <div className="text-xs text-muted-foreground">{p.currency} {Number(p.total).toFixed(2)} · {new Date(p.created_at).toLocaleDateString()}</div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => setPreviewToken(p.token)} title="Preview"><Eye className="h-4 w-4"/></Button>
-                    <Button variant="ghost" size="icon" onClick={() => copy(p.token)} title="Copy link"><Copy className="h-4 w-4"/></Button>
-                    <Button variant="ghost" size="icon" onClick={() => window.open(`/qr-pay/${p.token}`, "_blank")} title="Open"><ExternalLink className="h-4 w-4"/></Button>
-                    <Button variant="ghost" size="icon" onClick={() => setConfirmDelete(p)} title="Delete" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                  </CardContent></Card>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewToken(p.token)} title="Preview"><Eye className="h-4 w-4"/></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copy(p.token)} title="Copy link"><Copy className="h-4 w-4"/></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => window.open(`/qr-pay/${p.token}`, "_blank")} title="Open"><ExternalLink className="h-4 w-4"/></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setConfirmDelete(p)} title="Delete"><Trash2 className="h-4 w-4"/></Button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )
           }
         </div>
+        )}
 
-        {/* Recent transactions — Shopify-style expandable orders */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-foreground">Orders & customer details</h2>
-            <span className="text-[11px] text-muted-foreground">{recentTx.length} recent</span>
+        {/* ── Orders ───────────────────────────────────────────── */}
+        {section === "orders" && (
+        <div className="qrp-sheet qrp-rise">
+          <div className="qrp-sheet-head">
+            <span>Orders &amp; customer details</span>
+            <span className="normal-case tracking-normal">{recentTx.length} recent</span>
           </div>
-          {recentTx.length === 0 ? <p className="text-xs text-muted-foreground">No orders received yet.</p> : (
-            <div className="space-y-2">
+          {recentTx.length === 0 ? <p className="p-6 text-center text-xs text-muted-foreground">No orders received yet.</p> : (
+            <div className="divide-y divide-border/60">
               {recentTx.map(t => {
                 const open = expanded === t.id;
                 const items = itemsCache[t.qr_payment_id] || [];
                 const linked = payments.find(p => p.id === t.qr_payment_id);
                 return (
-                  <Card key={t.id} className="overflow-hidden">
-                    <button type="button" onClick={() => toggleExpand(t)} className="w-full text-left">
-                      <CardContent className="p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <Package className="h-4 w-4 text-paypal-blue shrink-0" />
-                              <div className="text-sm font-semibold truncate text-foreground">{t.payer_name || "Customer"}</div>
-                              <Badge variant={t.status === "succeeded" ? "default" : "secondary"} className="text-[10px]">{t.status}</Badge>
-                            </div>
-                            <div className="text-xs text-muted-foreground capitalize mt-0.5">
-                              {linked?.title || "QR payment"} · {t.method.replace("_"," ")} · #{t.transaction_ref}
-                            </div>
+                  <div key={t.id}>
+                    <button type="button" onClick={() => toggleExpand(t)} className="w-full px-3 py-3 text-left transition-colors hover:bg-muted/40">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 shrink-0 text-paypal-blue" />
+                            <div className="truncate text-sm font-semibold text-foreground">{t.payer_name || "Customer"}</div>
+                            <Badge variant={t.status === "succeeded" ? "default" : "secondary"} className="text-[10px] capitalize">{t.status}</Badge>
                           </div>
-                          <div className="text-right shrink-0">
-                            <div className="font-semibold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</div>
-                            <div className="text-[11px] text-muted-foreground">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
-                            <div className="text-[11px] text-paypal-blue flex items-center justify-end gap-0.5 mt-0.5">
-                              {open ? <>Hide<ChevronUp className="h-3 w-3"/></> : <>Details<ChevronDown className="h-3 w-3"/></>}
-                            </div>
+                          <div className="mt-0.5 truncate text-xs capitalize text-muted-foreground">
+                            {linked?.title || "QR payment"} · {t.method.replace("_"," ")} · #{t.transaction_ref}
                           </div>
                         </div>
-                      </CardContent>
+                        <div className="shrink-0 text-right">
+                          <div className="font-bold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</div>
+                          <div className="text-[11px] text-muted-foreground">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
+                          <div className="mt-0.5 flex items-center justify-end gap-0.5 text-[11px] font-semibold text-paypal-blue">
+                            {open ? <>Hide<ChevronUp className="h-3 w-3"/></> : <>Details<ChevronDown className="h-3 w-3"/></>}
+                          </div>
+                        </div>
+                      </div>
                     </button>
                     {open && (
-                      <div className="border-t bg-muted/30 px-3 py-3 space-y-3">
+                      <div className="space-y-3 border-t border-border/60 bg-muted/30 px-3 py-3 qrp-rise">
                         {/* Customer */}
                         <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Customer</div>
+                          <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Customer</div>
                           <div className="space-y-1 text-xs text-foreground">
                             {t.payer_email && <div className="flex items-center gap-2"><Mail className="h-3 w-3 text-muted-foreground"/>{t.payer_email}</div>}
                             {t.payer_phone && <div className="flex items-center gap-2"><Phone className="h-3 w-3 text-muted-foreground"/>{t.payer_phone}</div>}
-                            {t.delivery_address && <div className="flex items-start gap-2"><MapPin className="h-3 w-3 text-muted-foreground mt-0.5"/><span className="whitespace-pre-line">{t.delivery_address}</span></div>}
-                            {t.delivery_notes && <div className="flex items-start gap-2"><StickyNote className="h-3 w-3 text-muted-foreground mt-0.5"/><span className="italic">{t.delivery_notes}</span></div>}
+                            {t.delivery_address && <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-3 w-3 text-muted-foreground"/><span className="whitespace-pre-line">{t.delivery_address}</span></div>}
+                            {t.delivery_notes && <div className="flex items-start gap-2"><StickyNote className="mt-0.5 h-3 w-3 text-muted-foreground"/><span className="italic">{t.delivery_notes}</span></div>}
                             {!t.payer_email && !t.payer_phone && !t.delivery_address && !t.delivery_notes && (
                               <div className="text-muted-foreground">No customer details captured.</div>
                             )}
@@ -399,7 +423,7 @@ export default function QrPayDashboardPage() {
                         </div>
                         {/* Items */}
                         <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Items</div>
+                          <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Items</div>
                           {items.length === 0 ? (
                             <div className="text-xs text-muted-foreground">No itemized line items.</div>
                           ) : (
@@ -407,18 +431,18 @@ export default function QrPayDashboardPage() {
                               {items.map(it => (
                                 <div key={it.id} className="flex items-center gap-2 text-xs">
                                   {it.image_url ? (
-                                    <img src={it.image_url} alt={it.name} className="h-8 w-8 rounded object-cover border" />
+                                    <img src={it.image_url} alt={it.name} className="h-8 w-8 rounded border object-cover" />
                                   ) : (
-                                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center"><Package className="h-3 w-3 text-muted-foreground"/></div>
+                                    <div className="flex h-8 w-8 items-center justify-center rounded bg-muted"><Package className="h-3 w-3 text-muted-foreground"/></div>
                                   )}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium truncate text-foreground">{it.name}</div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="truncate font-medium text-foreground">{it.name}</div>
                                     <div className="text-muted-foreground">{it.quantity} × {t.currency} {Number(it.unit_price).toFixed(2)}</div>
                                   </div>
                                   <div className="font-semibold text-foreground">{t.currency} {Number(it.line_total).toFixed(2)}</div>
                                 </div>
                               ))}
-                              <div className="flex justify-between border-t pt-1 mt-1 text-xs">
+                              <div className="mt-1 flex justify-between border-t pt-1 text-xs">
                                 <span className="text-muted-foreground">Total</span>
                                 <span className="font-bold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</span>
                               </div>
@@ -428,24 +452,26 @@ export default function QrPayDashboardPage() {
                         <div className="flex gap-2 pt-1">
                           {linked && (
                             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/qr-pay/${linked.token}`, "_blank"); }}>
-                              <ExternalLink className="h-3 w-3 mr-1"/>View checkout
+                              <ExternalLink className="mr-1 h-3 w-3"/>View checkout
                             </Button>
                           )}
                           {t.payer_email && (
                             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${t.payer_email}?subject=Your order ${t.transaction_ref}`; }}>
-                              <Mail className="h-3 w-3 mr-1"/>Email customer
+                              <Mail className="mr-1 h-3 w-3"/>Email customer
                             </Button>
                           )}
                         </div>
                       </div>
                     )}
-                  </Card>
+                  </div>
                 );
               })}
             </div>
           )}
         </div>
+        )}
       </div>
+
 
       {/* Preview dialog */}
       <Dialog open={!!previewToken} onOpenChange={(o) => !o && setPreviewToken(null)}>
