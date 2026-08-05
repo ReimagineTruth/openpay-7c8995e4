@@ -105,6 +105,8 @@ const SendMoney = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [contacts, setContacts] = useState<UserProfile[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [remoteResults, setRemoteResults] = useState<UserProfile[]>([]);
+  const [remoteSearching, setRemoteSearching] = useState(false);
   const [recentRecipients, setRecentRecipients] = useState<RecentRecipient[]>([]);
   const [contactIds, setContactIds] = useState<string[]>([]);
   const [balance, setBalance] = useState(0);
@@ -878,16 +880,48 @@ const SendMoney = () => {
     ? normalizedSearch.slice(1)
     : normalizedSearch;
 
+  // Server-side search: the local `allUsers` cache is capped by the API row
+  // limit, so any account beyond that page was previously unsearchable.
+  useEffect(() => {
+    const term = normalizedUsernameSearch.replace(/[,()%]/g, "").trim();
+    if (term.length < 2 || isAccountNumberSearch) {
+      setRemoteResults([]);
+      setRemoteSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setRemoteSearching(true);
+    const timer = window.setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, username, avatar_url")
+        .or(`full_name.ilike.%${term}%,username.ilike.%${term}%`)
+        .limit(40);
+      if (cancelled) return;
+      setRemoteResults(((data as UserProfile[] | null) || []).filter((p) => p.id !== userId));
+      setRemoteSearching(false);
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [normalizedUsernameSearch, isAccountNumberSearch, userId]);
+
   const filtered = normalizedSearch
-    ? allUsers.filter((u) => {
-        const fullName = u.full_name.toLowerCase();
-        const username = (u.username || "").toLowerCase();
-        return (
-          fullName.includes(normalizedSearch) ||
-          username.includes(normalizedSearch) ||
-          (normalizedUsernameSearch.length > 0 && username.includes(normalizedUsernameSearch))
-        );
-      })
+    ? (() => {
+        const local = allUsers.filter((u) => {
+          const fullName = (u.full_name || "").toLowerCase();
+          const username = (u.username || "").toLowerCase();
+          return (
+            fullName.includes(normalizedSearch) ||
+            username.includes(normalizedSearch) ||
+            (normalizedUsernameSearch.length > 0 &&
+              (username.includes(normalizedUsernameSearch) || fullName.includes(normalizedUsernameSearch)))
+          );
+        });
+        const seen = new Set(local.map((u) => u.id));
+        return [...local, ...remoteResults.filter((u) => !seen.has(u.id))];
+      })()
     : contacts;
   const filteredWithoutAccountMatch = accountLookupResult
     ? filtered.filter((user) => user.id !== accountLookupResult.id)
@@ -1679,7 +1713,13 @@ const SendMoney = () => {
               <Info className="w-5 h-5 text-muted-foreground/30" />
             </div>
           ))}
-          {filteredWithoutAccountMatch.length === 0 && !accountLookupResult && !accountLookupLoading && (
+          {remoteSearching && filteredWithoutAccountMatch.length === 0 && (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Searching accounts...</span>
+            </div>
+          )}
+          {filteredWithoutAccountMatch.length === 0 && !remoteSearching && !accountLookupResult && !accountLookupLoading && (
             <p className="text-center text-muted-foreground py-8">No users found</p>
           )}
         </div>

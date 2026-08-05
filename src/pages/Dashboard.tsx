@@ -1123,8 +1123,42 @@ const Dashboard = () => {
       const profile = profileRes.data;
       setUserName(profile?.full_name || "");
       setUsername(profile?.username || null);
-      const normalizedFullName = String(profile?.full_name || "").trim();
-      const normalizedUsername = String(profile?.username || "").trim();
+      let normalizedFullName = String(profile?.full_name || "").trim();
+      let normalizedUsername = String(profile?.username || "").trim();
+
+      // Auto-adopt the Pi Network username when the profile has none yet, so
+      // the account is searchable/receivable without any extra setup step.
+      if (!normalizedUsername) {
+        const { data: piLink } = await supabase
+          .from("pi_accounts")
+          .select("pi_username")
+          .eq("user_id", userIdLocal)
+          .maybeSingle();
+        const piUsername = String(piLink?.pi_username || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/g, "");
+        if (piUsername) {
+          const candidates = [piUsername, `${piUsername}_${userIdLocal.slice(0, 4)}`];
+          for (const candidate of candidates) {
+            const { error: setErr } = await supabase
+              .from("profiles")
+              .update({
+                username: candidate,
+                full_name: normalizedFullName || piUsername,
+              })
+              .eq("id", userIdLocal);
+            if (!setErr) {
+              normalizedUsername = candidate;
+              normalizedFullName = normalizedFullName || piUsername;
+              setUsername(candidate);
+              setUserName(normalizedFullName);
+              break;
+            }
+          }
+        }
+      }
+
       const hasProfile = Boolean(
         normalizedFullName &&
         normalizedUsername &&
@@ -2340,7 +2374,23 @@ const Dashboard = () => {
         <p className="mt-1 text-sm text-white/80">
           {getDashboardSectionSubtitle(activeSection, username)}
         </p>
+        {activeSection === "wallet" && username && (
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard?.writeText(`@${username}`);
+              toast.success(`Copied @${username} — share it to get paid`);
+            }}
+            className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm transition active:scale-95"
+            aria-label="Copy your username"
+          >
+            <span className="text-white/70 text-xs font-bold uppercase tracking-wide">Your username</span>
+            <span>@{username}</span>
+            <Copy className="h-3.5 w-3.5 text-white/80" />
+          </button>
+        )}
       </div>
+
 
       {activeSection === "wallet" && (
       <div key="wallet-balance" className="dash-balance-wrap mx-4 mt-4">
