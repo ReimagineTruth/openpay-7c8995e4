@@ -168,7 +168,7 @@ export default function QrPayDashboardPage() {
   const previewUrl = previewToken ? `${window.location.origin}/qr-pay/${previewToken}` : "";
 
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen qrp-page-bg pb-28">
       <QrPayHeader
         eyebrow="OpenPay · Merchant tools"
         title="QR Pay"

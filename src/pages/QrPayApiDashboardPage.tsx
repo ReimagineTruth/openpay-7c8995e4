@@ -215,7 +215,7 @@ Style it with Tailwind, primary color #0070BA (PayPal blue). Include error + loa
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen qrp-page-bg pb-24">
       <QrPayHeader
         eyebrow="OpenPay · Developers"
         title="QR Pay API"

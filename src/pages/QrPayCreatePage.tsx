@@ -168,7 +168,7 @@ export default function QrPayCreatePage() {
   if (created) {
     const url = `${window.location.origin}/qr-pay/${created.token}`;
     return (
-      <div className="min-h-screen bg-muted/30">
+      <div className="min-h-screen qrp-page-bg">
         <QrPayHeader
           eyebrow="OpenPay · QR Pay"
           title="Share QR Payment"
@@ -203,7 +203,7 @@ export default function QrPayCreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-32">
+    <div className="min-h-screen qrp-page-bg pb-32">
       <QrPayHeader
         eyebrow="OpenPay · QR Pay"
         title="New QR Payment"
