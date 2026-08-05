@@ -62,7 +62,7 @@ const ThankYouModal = ({ open, onOpenChange, data, onViewReceipt }: ThankYouModa
           <p className="text-sm opacity-90">Payment sent successfully</p>
         </div>
 
-        <div className="p-5 space-y-3">
+        <div className="w-full min-w-0 p-5 space-y-3">
           {/* Receiver Info */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl min-w-0">
             <div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold overflow-hidden">
@@ -111,7 +111,7 @@ const ThankYouModal = ({ open, onOpenChange, data, onViewReceipt }: ThankYouModa
           )}
 
           {/* Action Buttons */}
-          <div className="pt-2 flex flex-col-reverse sm:flex-row gap-2">
+          <div className="pt-2 flex w-full min-w-0 flex-col-reverse sm:flex-row gap-2">
             {onViewReceipt && (
               <Button
                 onClick={() => {
