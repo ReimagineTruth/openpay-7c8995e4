@@ -392,19 +392,22 @@
   }
 
   /* ============ QR Pay — iOS-style design system ============ */
-  /* Page background matching the OpenPay dashboard */
+  /* Page background matching the OpenPay classic dashboard (solid PayPal blue) */
   .qrp-page-bg {
-    background-color: hsl(var(--background));
+    background-color: hsl(var(--paypal-blue));
     background-image:
-      radial-gradient(120% 60% at 100% 0%, rgba(120, 190, 255, 0.35) 0%, transparent 60%),
-      linear-gradient(
-        180deg,
-        hsl(var(--paypal-blue)) 0%,
-        hsl(var(--paypal-blue) / 0.55) 24%,
-        hsl(var(--background)) 46%,
-        hsl(var(--background)) 100%
-      );
+      radial-gradient(120% 55% at 100% 0%, rgba(150, 205, 255, 0.28) 0%, transparent 60%),
+      radial-gradient(90% 45% at 0% 100%, rgba(0, 40, 100, 0.35) 0%, transparent 65%);
     background-attachment: fixed;
+    color: #fff;
+  }
+  /* Bare text on the blue canvas stays readable; cards keep their own colors */
+  .qrp-page-bg .text-muted-foreground { color: rgba(255, 255, 255, 0.72); }
+  .qrp-page-bg [class*="bg-card"] .text-muted-foreground,
+  .qrp-page-bg .bg-background .text-muted-foreground,
+  .qrp-page-bg [data-slot="card"] .text-muted-foreground,
+  .qrp-page-bg .rounded-lg.border.bg-card .text-muted-foreground {
+    color: hsl(var(--muted-foreground));
   }
 
   /* Unified premium header (QrPayHeader) */
