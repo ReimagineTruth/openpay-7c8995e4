@@ -180,6 +180,9 @@ export default function QrPayDashboardPage() {
         backLabel="Back to dashboard"
         actions={
           <>
+            <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={() => setGuideOpen(true)} title="How QR Pay works">
+              <HelpCircle className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={refresh} title="Refresh">
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
