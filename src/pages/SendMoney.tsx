@@ -880,16 +880,49 @@ const SendMoney = () => {
     ? normalizedSearch.slice(1)
     : normalizedSearch;
 
+  // Server-side search: the local `allUsers` cache is capped by the API row
+  // limit, so any account beyond that page was previously unsearchable.
+  useEffect(() => {
+    const term = normalizedUsernameSearch.replace(/[,()%]/g, "").trim();
+    if (term.length < 2 || isAccountNumberSearch) {
+      setRemoteResults([]);
+      setRemoteSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setRemoteSearching(true);
+    const timer = window.setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, username, avatar_url")
+        .or(`full_name.ilike.%${term}%,username.ilike.%${term}%`)
+        .limit(40);
+      if (cancelled) return;
+      setRemoteResults(((data as UserProfile[] | null) || []).filter((p) => p.id !== userId));
+      setRemoteSearching(false);
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      window.clearTimeout(timer);
+    };
+  }, [normalizedUsernameSearch, isAccountNumberSearch, userId]);
+
   const filtered = normalizedSearch
-    ? allUsers.filter((u) => {
-        const fullName = u.full_name.toLowerCase();
-        const username = (u.username || "").toLowerCase();
-        return (
-          fullName.includes(normalizedSearch) ||
-          username.includes(normalizedSearch) ||
-          (normalizedUsernameSearch.length > 0 && username.includes(normalizedUsernameSearch))
-        );
-      })
+    ? (() => {
+        const local = allUsers.filter((u) => {
+          const fullName = (u.full_name || "").toLowerCase();
+          const username = (u.username || "").toLowerCase();
+          return (
+            fullName.includes(normalizedSearch) ||
+            username.includes(normalizedSearch) ||
+            (normalizedUsernameSearch.length > 0 &&
+              (username.includes(normalizedUsernameSearch) || fullName.includes(normalizedUsernameSearch)))
+          );
+        });
+        const seen = new Set(local.map((u) => u.id));
+        return [...local, ...remoteResults.filter((u) => !seen.has(u.id))];
+      })()
     : contacts;
   const filteredWithoutAccountMatch = accountLookupResult
     ? filtered.filter((user) => user.id !== accountLookupResult.id)
