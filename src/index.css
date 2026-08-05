@@ -403,12 +403,52 @@
   }
   /* Bare text on the blue canvas stays readable; cards keep their own colors */
   .qrp-page-bg .text-muted-foreground { color: rgba(255, 255, 255, 0.72); }
+
+  /* Any light surface inside the blue canvas resets to normal foreground colors
+     so labels, inputs, headings and helper text stay visible. */
+  .qrp-page-bg .qrp-card,
+  .qrp-page-bg .qrp-sheet,
+  .qrp-page-bg .qrp-kpi,
+  .qrp-page-bg [data-slot="card"],
+  .qrp-page-bg [class*="bg-card"],
+  .qrp-page-bg .bg-background,
+  .qrp-page-bg .bg-popover,
+  .qrp-page-bg .bg-muted,
+  .qrp-page-bg [role="dialog"] {
+    color: hsl(var(--foreground));
+  }
+  .qrp-page-bg .qrp-card .text-muted-foreground,
+  .qrp-page-bg .qrp-sheet .text-muted-foreground,
+  .qrp-page-bg .qrp-kpi .text-muted-foreground,
+  .qrp-page-bg [data-slot="card"] .text-muted-foreground,
   .qrp-page-bg [class*="bg-card"] .text-muted-foreground,
   .qrp-page-bg .bg-background .text-muted-foreground,
-  .qrp-page-bg [data-slot="card"] .text-muted-foreground,
-  .qrp-page-bg .rounded-lg.border.bg-card .text-muted-foreground {
+  .qrp-page-bg .bg-popover .text-muted-foreground,
+  .qrp-page-bg .bg-muted .text-muted-foreground,
+  .qrp-page-bg [role="dialog"] .text-muted-foreground {
     color: hsl(var(--muted-foreground));
   }
+  /* Form controls always readable on their own white background */
+  .qrp-page-bg input,
+  .qrp-page-bg textarea,
+  .qrp-page-bg select,
+  .qrp-page-bg .qrp-input,
+  .qrp-page-bg [role="combobox"],
+  .qrp-page-bg button[data-slot="select-trigger"] {
+    color: hsl(var(--foreground));
+  }
+  .qrp-page-bg input::placeholder,
+  .qrp-page-bg textarea::placeholder { color: hsl(var(--muted-foreground)); opacity: 1; }
+  /* Buttons keep their variant colors instead of inheriting white */
+  .qrp-page-bg .qrp-card button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn),
+  .qrp-page-bg .qrp-sheet button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn),
+  .qrp-page-bg [data-slot="card"] button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn) {
+    color: inherit;
+  }
+  /* Dark preview surfaces keep white text */
+  .qrp-page-bg .qrp-dark-panel,
+  .qrp-page-bg .qrp-dark-panel .text-muted-foreground { color: #fff; }
+
 
   /* Unified premium header (QrPayHeader) */
 
