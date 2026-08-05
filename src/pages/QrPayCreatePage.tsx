@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import QrPayHeader from "@/components/qrpay/QrPayHeader";
+import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import CurrencyPicker from "@/components/CurrencyPicker";
 
 
@@ -176,7 +177,9 @@ export default function QrPayCreatePage() {
           icon={Share2}
           backTo="/qr-pay"
           backLabel="Back to QR Pay"
-        />
+        >
+          <QrPaySteps current="share" />
+        </QrPayHeader>
 
         <div className="p-4 max-w-md mx-auto space-y-4 mt-4 qrp-pop">
           <div className="qrp-card p-6 flex flex-col items-center">
