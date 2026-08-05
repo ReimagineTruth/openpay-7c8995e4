@@ -464,10 +464,37 @@ export default function QrPayCreatePage() {
                       <Switch checked={reusable} onCheckedChange={setReusable} />
                     </div>
                   )}
+                  <div className="space-y-2 rounded-xl border border-paypal-blue/20 bg-paypal-blue/5 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Settle to OpenPay Pro</p>
+                        <p className="text-xs text-muted-foreground">Credit earnings to your Pro wallet</p>
+                      </div>
+                      <Switch checked={proEnabled} onCheckedChange={setProEnabled} />
+                    </div>
+                    {proEnabled && (
+                      <div className="space-y-1.5">
+                        <Input
+                          className="qrp-input h-11 rounded-xl"
+                          value={proTo}
+                          onChange={e => setProTo(e.target.value)}
+                          placeholder="@username or 0x wallet address"
+                        />
+                        {proError ? (
+                          <p className="text-xs font-medium text-destructive">{proError}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            Paid orders are credited to {proTo.trim() ? formatProDestinationPreview(proTo) : "your OpenPay Pro wallet"} automatically.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expires in (minutes)</Label>
                     <Input className="qrp-input h-11 rounded-xl" type="number" min={1} value={expiresMin} onChange={e => setExpiresMin(e.target.value)} placeholder="Never" />
                   </div>
+
                 </AccordionContent>
               </AccordionItem>
 
