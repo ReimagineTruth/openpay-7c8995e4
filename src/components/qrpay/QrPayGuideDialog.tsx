@@ -55,11 +55,11 @@ export default function QrPayGuideDialog({ open, onOpenChange, onCreate }: Props
               <span className="inline-block h-1 w-1 rounded-full bg-white/70" />
               OpenPay · QR Pay
             </div>
-            <DialogTitle className="flex items-center gap-2 text-xl text-white">
-              <span className="qrp-hero-icon"><QrCode className="h-4 w-4" /></span>
+            <DialogTitle className="flex items-center gap-2 text-2xl text-white">
+              <span className="qrp-hero-icon"><QrCode className="h-5 w-5" /></span>
               How QR Pay works
             </DialogTitle>
-            <DialogDescription className="text-white/80">
+            <DialogDescription className="text-[15px] leading-relaxed text-white/85">
               A complete step-by-step guide, from setting up a product to getting paid.
             </DialogDescription>
           </DialogHeader>
