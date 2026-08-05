@@ -8,6 +8,7 @@ import {
   HandCoins,
   Paintbrush,
   Pickaxe,
+  QrCode,
   PiggyBank,
   Scale,
   TrendingUp,
@@ -25,7 +26,7 @@ export type DashboardSection =
   | "mining"
   | "analytics";
 
-export type DashboardNavKey = DashboardSection | "opennft" | "ai" | "pro";
+export type DashboardNavKey = DashboardSection | "opennft" | "ai" | "pro" | "qrpay";
 
 export type DashboardSectionNavItem = {
   key: DashboardNavKey;
@@ -47,6 +48,7 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
   { key: "mining", label: "Mining", icon: Pickaxe, description: "Earn OUSD rewards" },
   { key: "analytics", label: "Analytics", icon: TrendingUp, description: "Insights & trends" },
   { key: "ai", label: "AI", icon: Brain, description: "Financial assistant", href: "/ai" },
+  { key: "qrpay", label: "QR Pay", icon: QrCode, description: "Scan & get paid", href: "/qr-pay" },
   { key: "opennft", label: "OpenNFT", icon: Paintbrush, description: "NFT marketplace", href: "/web3/nft" },
   {
     key: "pro",
