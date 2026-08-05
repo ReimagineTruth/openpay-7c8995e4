@@ -12,8 +12,18 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
 import BrandLogo from "@/components/BrandLogo";
+import { openExternalUrl } from "@/lib/externalLink";
+import {
+  PRO_PAY_ASSETS,
+  PRO_TOPUP_URL,
+  buildProPayUrl,
+  buildProXferNote,
+  makeProXferRef,
+  formatProDestinationPreview,
+} from "@/lib/openpayProTransfer";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
+
 
 interface QrPayData {
   id: string;
