@@ -69,16 +69,16 @@ export default function QrPayGuideDialog({ open, onOpenChange, onCreate }: Props
           {STEPS.map((s) => (
             <div key={s.title} className="qrp-sheet rounded-2xl p-4">
               <div className="flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <s.icon className="h-4.5 w-4.5" />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <s.icon className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{s.title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{s.body}</p>
-                  <ul className="mt-2 space-y-1">
+                  <p className="text-base font-semibold text-foreground">{s.title}</p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
+                  <ul className="mt-2.5 space-y-1.5">
                     {s.tips.map((t) => (
-                      <li key={t} className="flex gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
-                        <span className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                      <li key={t} className="flex gap-2 text-[13px] leading-relaxed text-muted-foreground">
+                        <span className="mt-[7px] inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
                         <span>{t}</span>
                       </li>
                     ))}
@@ -90,11 +90,11 @@ export default function QrPayGuideDialog({ open, onOpenChange, onCreate }: Props
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {EXTRAS.map((e) => (
-              <div key={e.title} className="rounded-xl border border-border bg-muted/40 p-3">
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                  <e.icon className="h-3.5 w-3.5 text-primary" /> {e.title}
+              <div key={e.title} className="rounded-xl border border-border bg-muted/40 p-3.5">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <e.icon className="h-4 w-4 text-primary" /> {e.title}
                 </p>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{e.body}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{e.body}</p>
               </div>
             ))}
           </div>
