@@ -123,7 +123,19 @@ export default function QrPayCheckoutPage() {
     navigate(`/auth?return=/qr-pay/${token}`);
   };
 
-  const goAfterPayment = (ref: string, method: string) => {
+  const settleToPro = async (ref: string) => {
+    if (!data?.pro_settlement_to) return;
+    try {
+      await supabase.functions.invoke("qr-pay-pro-settle", {
+        body: { token: data.token, transaction_ref: ref },
+      });
+    } catch (e) {
+      console.error("OpenPay Pro settlement failed:", e);
+    }
+  };
+
+  const goAfterPayment = async (ref: string, method: string) => {
+    await settleToPro(ref);
     const receipt = {
       transactionRef: ref, method, paidAt: new Date().toISOString(),
       amount: chargeAmount, currency: data!.currency,
@@ -132,6 +144,7 @@ export default function QrPayCheckoutPage() {
       after_payment_action: data!.after_payment_action,
       download_url: data!.download_url,
       redirect_url: data!.redirect_url,
+      pro_settlement_to: data!.pro_settlement_to || null,
     };
     sessionStorage.setItem(`qrp_receipt_${ref}`, JSON.stringify(receipt));
     if (data!.after_payment_action === "redirect" && data!.redirect_url) {
@@ -139,6 +152,7 @@ export default function QrPayCheckoutPage() {
     }
     navigate(`/qr-pay/${token}/success?ref=${ref}`);
   };
+
 
   const payWallet = async () => {
     if (!validateAmount() || !validateDelivery()) return;
