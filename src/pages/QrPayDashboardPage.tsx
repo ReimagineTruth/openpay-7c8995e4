@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Copy, ExternalLink, QrCode, TrendingUp, Wallet, CreditCard, Eye, Trash2, BarChart3, Users, ChevronDown, ChevronUp, Package, Mail, Phone, MapPin, StickyNote, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import QrPayHeader from "@/components/qrpay/QrPayHeader";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -167,24 +169,28 @@ export default function QrPayDashboardPage() {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="qrp-hero">
-        <div className="flex items-center gap-2 p-4 pb-6">
-          <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-5 w-5" /></Button>
-          <div className="flex-1 pl-1">
-            <h1 className="text-[22px] font-bold tracking-tight">QR Pay</h1>
-            <p className="text-[13px] opacity-90">Accept payments with sharable QR codes</p>
-          </div>
-          <Button size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={refresh} title="Refresh">
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          </Button>
-          <Button size="sm" className="qrp-hero-btn rounded-full h-9 px-3 text-xs" onClick={() => navigate("/qr-pay/api")} title="QR Pay API">
-            API
-          </Button>
-          <Button size="sm" className="qrp-hero-cta rounded-full h-9 px-4" onClick={() => navigate("/qr-pay/new")}>
-            <Plus className="h-4 w-4 mr-1" /> New
-          </Button>
-        </div>
-      </div>
+      <QrPayHeader
+        eyebrow="OpenPay · Merchant tools"
+        title="QR Pay"
+        subtitle="Accept payments with sharable QR codes, links and buttons."
+        icon={QrCode}
+        backTo="/dashboard"
+        backLabel="Back to dashboard"
+        actions={
+          <>
+            <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={refresh} title="Refresh">
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            </Button>
+            <Button size="sm" className="qrp-hero-btn rounded-full h-9 px-3 text-xs" onClick={() => navigate("/qr-pay/api")} title="QR Pay API">
+              API
+            </Button>
+            <Button size="sm" className="qrp-hero-cta rounded-full h-9 px-4" onClick={() => navigate("/qr-pay/new")}>
+              <Plus className="h-4 w-4 mr-1" /> New
+            </Button>
+          </>
+        }
+      />
+
 
       <div className="p-4 space-y-4 -mt-4">
         {/* Top KPI cards */}

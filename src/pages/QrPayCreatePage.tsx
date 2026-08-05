@@ -5,6 +5,8 @@ import {
   Package, Download, HeartHandshake, Coffee, ShieldCheck, Sparkles, X, Settings2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import QrPayHeader from "@/components/qrpay/QrPayHeader";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -165,13 +167,15 @@ export default function QrPayCreatePage() {
     const url = `${window.location.origin}/qr-pay/${created.token}`;
     return (
       <div className="min-h-screen bg-muted/30">
-        <div className="qrp-hero p-4 pb-8 flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={() => navigate("/qr-pay")}><ArrowLeft className="h-5 w-5" /></Button>
-          <div>
-            <h1 className="text-[22px] font-bold tracking-tight">Share QR Payment</h1>
-            <p className="text-[13px] opacity-90">Your payment link is ready</p>
-          </div>
-        </div>
+        <QrPayHeader
+          eyebrow="OpenPay · QR Pay"
+          title="Share QR Payment"
+          subtitle="Your payment link is ready — share it anywhere."
+          icon={Share2}
+          backTo="/qr-pay"
+          backLabel="Back to QR Pay"
+        />
+
         <div className="p-4 max-w-md mx-auto space-y-4 -mt-4 qrp-pop">
           <div className="qrp-card p-6 flex flex-col items-center">
             <div className="bg-white p-4 rounded-2xl shadow-inner ring-1 ring-black/5"><QRCodeSVG value={url} size={220} /></div>
@@ -198,13 +202,15 @@ export default function QrPayCreatePage() {
 
   return (
     <div className="min-h-screen bg-muted/30 pb-32">
-      <div className="qrp-hero p-4 pb-10 flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={() => navigate("/qr-pay")}><ArrowLeft className="h-5 w-5" /></Button>
-        <div>
-          <h1 className="text-[22px] font-bold tracking-tight">New QR Payment</h1>
-          <p className="text-[13px] opacity-90">Configure your checkout experience</p>
-        </div>
-      </div>
+      <QrPayHeader
+        eyebrow="OpenPay · QR Pay"
+        title="New QR Payment"
+        subtitle="Configure your checkout experience, then generate a sharable QR code."
+        icon={QrCode}
+        backTo="/qr-pay"
+        backLabel="Back to QR Pay"
+      />
+
 
       <div className="mx-auto -mt-6 grid w-full max-w-5xl grid-cols-1 gap-6 p-4 lg:grid-cols-12">
         {/* ── Left: setup form ───────────────────────────── */}
