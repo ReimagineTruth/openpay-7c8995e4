@@ -242,209 +242,248 @@ export default function QrPayCheckoutPage() {
 
   const TypeIcon = data.payment_type === "donation" ? Heart : data.payment_type === "tip" ? Coffee : null;
 
+  const subtotal = isFlexible ? chargeAmount : Number(data.total);
+  const payLabel = paying
+    ? "Processing…"
+    : activeMethod === "pi"
+      ? `Pay ${chargeAmount.toFixed(2)} π`
+      : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`;
+  const onPay = activeMethod === "pi" ? payPi : activeMethod === "card" ? payCard : payWallet;
+
   return (
     <div className="min-h-screen qrp-page-bg">
       <QrPayHeader
         eyebrow="OpenPay Checkout"
-        title="Secure QR Payment"
+        title="Secure checkout"
         subtitle={`You're paying ${data.merchant.full_name || "a merchant"} · protected by OpenPay dispute resolution`}
         icon={ShieldCheck}
       >
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-white/85">
-          <span className="rounded-full border border-white/25 bg-white/10 px-2.5 py-1">Encrypted</span>
-          <span className="rounded-full border border-white/25 bg-white/10 px-2.5 py-1">Pi · Wallet · Virtual Card</span>
-          <span className="rounded-full border border-white/25 bg-white/10 px-2.5 py-1">Instant receipt</span>
-        </div>
+        <QrPaySteps current="pay" />
       </QrPayHeader>
 
-      <div className="max-w-md mx-auto p-4 space-y-3 qrp-pop">
-
-
-
-        {data.cover_image_url && (
-          <Card><CardContent className="p-0"><img src={data.cover_image_url} className="w-full h-44 object-cover rounded-lg"/></CardContent></Card>
-        )}
-
-        {/* Merchant */}
-        <Card><CardContent className="p-4 flex items-center gap-3">
-          {data.merchant.avatar_url ? <img src={data.merchant.avatar_url} className="h-12 w-12 rounded-full object-cover"/> : <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center"><User className="h-6 w-6"/></div>}
-          <div>
-            <div className="font-semibold flex items-center gap-2">{data.merchant.full_name || "Merchant"}{TypeIcon && <TypeIcon className="h-4 w-4 text-paypal-blue"/>}</div>
-            {data.merchant.username && <div className="text-xs text-muted-foreground">@{data.merchant.username}</div>}
-          </div>
-        </CardContent></Card>
-
-        {/* Items / Amount */}
-        {isFlexible ? (
-          <Card><CardContent className="p-4 space-y-3">
-            <div>
-              {data.title && <div className="font-semibold">{data.title}</div>}
-              {data.description && <div className="text-sm text-muted-foreground mt-1">{data.description}</div>}
-            </div>
-            <div>
-              <Label className="text-xs">{data.payment_type === "tip" ? "Tip amount" : "Donation amount"} ({data.currency})</Label>
-              <Input type="number" inputMode="decimal" step="0.01" min={data.min_amount || 0}
-                     value={customAmount} onChange={e => setCustomAmount(e.target.value)} placeholder="0.00"/>
-              <div className="flex gap-2 mt-2">
-                {[1,5,10,25].map(v => (
-                  <Button key={v} type="button" variant="outline" size="sm" onClick={() => setCustomAmount(String(v))}>
-                    {data.currency} {v}
-                  </Button>
-                ))}
-              </div>
-              {data.min_amount ? <p className="text-xs text-muted-foreground mt-1">Minimum: {data.currency} {Number(data.min_amount).toFixed(2)}</p> : null}
-            </div>
-          </CardContent></Card>
-        ) : (
-          <Card><CardContent className="p-4">
-            {data.title && <div className="font-semibold mb-1">{data.title}</div>}
-            {data.description && <div className="text-sm text-muted-foreground mb-3">{data.description}</div>}
-            <div className="divide-y">
-              {data.items.map(it => (
-                <div key={it.id} className="py-2 flex justify-between text-sm gap-2">
-                  {it.image_url && <img src={it.image_url} className="h-10 w-10 rounded object-cover"/>}
-                  <div className="flex-1"><span className="font-medium">{it.name}</span> <span className="text-muted-foreground">× {it.quantity}</span>{it.description && <div className="text-xs text-muted-foreground">{it.description}</div>}</div>
-                  <div>{data.currency} {Number(it.line_total).toFixed(2)}</div>
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 p-4 lg:grid-cols-12 qrp-pop">
+        {/* ── Order column ─────────────────────────────── */}
+        <div className="space-y-4 lg:col-span-7">
+          <div className="qrp-sheet">
+            {data.cover_image_url && (
+              <img src={data.cover_image_url} alt={data.title} className="h-44 w-full object-cover" />
+            )}
+            <div className="flex items-center gap-3 p-4">
+              {data.merchant.avatar_url
+                ? <img src={data.merchant.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-paypal-blue/15" />
+                : <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted"><User className="h-6 w-6" /></div>}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 font-semibold text-foreground">
+                  <span className="truncate">{data.merchant.full_name || "Merchant"}</span>
+                  {TypeIcon && <TypeIcon className="h-4 w-4 shrink-0 text-paypal-blue" />}
                 </div>
-              ))}
+                {data.merchant.username && <div className="truncate text-xs text-muted-foreground">@{data.merchant.username}</div>}
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-paypal-blue/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-paypal-blue">
+                <ShieldCheck className="h-3 w-3" /> Verified
+              </span>
             </div>
-            <div className="flex justify-between mt-3 pt-3 border-t font-bold text-lg">
-              <span>Total</span><span>{data.currency} {Number(data.total).toFixed(2)}</span>
+          </div>
+
+          {/* Order summary */}
+          <div className="qrp-sheet">
+            <div className="qrp-sheet-head">
+              <span>Order summary</span>
+              {!isFlexible && <span className="normal-case tracking-normal">{data.items.length} item{data.items.length === 1 ? "" : "s"}</span>}
             </div>
-          </CardContent></Card>
-        )}
+            <div className="space-y-3 p-4">
+              {data.title && <div className="text-base font-semibold text-foreground">{data.title}</div>}
+              {data.description && <p className="-mt-1 text-sm text-muted-foreground">{data.description}</p>}
 
-        {/* Payer info */}
-        <Card><CardContent className="p-4 space-y-2">
-          <Label className="text-xs">
-            Your name{data.collect_delivery && (data.delivery_fields || []).includes("name") ? " *" : " (for receipt)"}
-          </Label>
-          <Input value={payerName} onChange={e => setPayerName(e.target.value)} placeholder="Your name"/>
-          <Label className="text-xs">
-            Email{data.collect_delivery && (data.delivery_fields || []).includes("email") ? " *" : " (optional, for emailed receipt)"}
-          </Label>
-          <Input type="email" value={payerEmail} onChange={e => setPayerEmail(e.target.value)} placeholder="you@example.com"/>
-        </CardContent></Card>
+              {isFlexible ? (
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {data.payment_type === "tip" ? "Tip amount" : "Donation amount"} ({data.currency})
+                  </Label>
+                  <Input className="qrp-input h-12 text-lg font-semibold" type="number" inputMode="decimal" step="0.01"
+                         min={data.min_amount || 0} value={customAmount}
+                         onChange={e => setCustomAmount(e.target.value)} placeholder="0.00" />
+                  <div className="flex flex-wrap gap-2">
+                    {[1, 5, 10, 25].map(v => (
+                      <button key={v} type="button" onClick={() => setCustomAmount(String(v))}
+                        className={`rounded-full border px-4 py-1.5 text-xs font-bold transition-all active:scale-95 ${
+                          Number(customAmount) === v ? "border-paypal-blue bg-paypal-blue text-primary-foreground" : "border-border bg-card text-foreground hover:border-paypal-blue/50"
+                        }`}>{data.currency} {v}</button>
+                    ))}
+                  </div>
+                  {data.min_amount ? <p className="text-xs text-muted-foreground">Minimum {data.currency} {Number(data.min_amount).toFixed(2)}</p> : null}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {data.items.map(it => (
+                    <div key={it.id} className="flex items-center gap-3">
+                      {it.image_url
+                        ? <img src={it.image_url} alt={it.name} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                        : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted text-xs font-bold text-muted-foreground">{it.quantity}×</span>}
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-foreground">{it.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {it.description ? `${it.description} · ` : ""}Qty {it.quantity}
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-sm font-semibold">{data.currency} {Number(it.line_total).toFixed(2)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-        {/* Delivery details (optional, set by merchant) */}
-        {data.collect_delivery && (
-          <Card><CardContent className="p-4 space-y-2">
-            <div className="text-sm font-semibold">Delivery details</div>
-            <p className="text-xs text-muted-foreground -mt-1">The merchant needs these to deliver your order.</p>
-            {(data.delivery_fields || []).includes("phone") && (
-              <>
-                <Label className="text-xs">Phone *</Label>
-                <Input value={payerPhone} onChange={e => setPayerPhone(e.target.value)} placeholder="+1 555 0100"/>
-              </>
-            )}
-            {(data.delivery_fields || []).includes("address") && (
-              <>
-                <Label className="text-xs">Shipping address *</Label>
-                <textarea className="w-full rounded-md border bg-background p-2 text-sm" rows={3}
-                          value={deliveryAddress} onChange={e => setDeliveryAddress(e.target.value)}
-                          placeholder="Street, city, postal code, country"/>
-              </>
-            )}
-            <Label className="text-xs">Notes (optional)</Label>
-            <textarea className="w-full rounded-md border bg-background p-2 text-sm" rows={2}
-                      value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)}
-                      placeholder="Anything the merchant should know"/>
-          </CardContent></Card>
-        )}
+              <div className="space-y-2 pt-1">
+                <div className="qrp-row"><span className="qrp-row-muted">Subtotal</span><span className="font-medium">{data.currency} {subtotal.toFixed(2)}</span></div>
+                <div className="qrp-row"><span className="qrp-row-muted">Fees</span><span className="font-medium text-emerald-600">No fee</span></div>
+                <div className="qrp-total-row">
+                  <span className="text-sm font-semibold text-muted-foreground">Total</span>
+                  <span className="text-2xl font-extrabold tracking-tight">
+                    {activeMethod === "pi" ? `${chargeAmount.toFixed(2)} π` : `${data.currency} ${chargeAmount.toFixed(2)}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          {/* Buyer + delivery */}
+          <div className="qrp-sheet">
+            <div className="qrp-sheet-head"><span>Your details</span><span className="normal-case tracking-normal">For your receipt</span></div>
+            <div className="space-y-3 p-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Name{data.collect_delivery && (data.delivery_fields || []).includes("name") ? " *" : ""}
+                  </Label>
+                  <Input className="qrp-input" value={payerName} onChange={e => setPayerName(e.target.value)} placeholder="Your name" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Email{data.collect_delivery && (data.delivery_fields || []).includes("email") ? " *" : ""}
+                  </Label>
+                  <Input className="qrp-input" type="email" value={payerEmail} onChange={e => setPayerEmail(e.target.value)} placeholder="you@example.com" />
+                </div>
+              </div>
 
-        {/* Methods — Apple Pay / Google Pay style stacked selector */}
-        <Card className="overflow-hidden border-border/70 shadow-[0_10px_30px_-18px_rgba(0,60,140,0.45)]">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Payment method</p>
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+              {data.collect_delivery && (
+                <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/40 p-3">
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Delivery details</div>
+                  {(data.delivery_fields || []).includes("phone") && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Phone *</Label>
+                      <Input className="qrp-input" value={payerPhone} onChange={e => setPayerPhone(e.target.value)} placeholder="+1 555 0100" />
+                    </div>
+                  )}
+                  {(data.delivery_fields || []).includes("address") && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Shipping address *</Label>
+                      <textarea className="qrp-input w-full p-2 text-sm" style={{ height: "auto" }} rows={3}
+                                value={deliveryAddress} onChange={e => setDeliveryAddress(e.target.value)}
+                                placeholder="Street, city, postal code, country" />
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Notes (optional)</Label>
+                    <textarea className="qrp-input w-full p-2 text-sm" style={{ height: "auto" }} rows={2}
+                              value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)}
+                              placeholder="Anything the merchant should know" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Payment column ───────────────────────────── */}
+        <div className="lg:col-span-5">
+          <div className="qrp-sheet lg:sticky lg:top-4">
+            <div className="qrp-sheet-head">
+              <span>Payment method</span>
+              <span className="inline-flex items-center gap-1 normal-case tracking-normal">
                 <ShieldCheck className="h-3.5 w-3.5 text-paypal-blue" /> Secure
               </span>
             </div>
-            <div className="space-y-2">
-              {tabs.includes("wallet") && (
-                <PayOpt active={activeMethod === "wallet"} onClick={() => setMethod("wallet")}
-                  logo={<span className="flex h-7 w-7 items-center justify-center rounded-full bg-paypal-blue/10"><BrandLogo className="h-5 w-5 text-paypal-blue" /></span>}
-                  label="OpenPay Balance (OUSD)"
-                  hint={`Pay ${data.currency} ${chargeAmount.toFixed(2)} from your wallet`} />
-              )}
-              {tabs.includes("pi") && (
-                <PayOpt active={activeMethod === "pi"} onClick={() => setMethod("pi")}
-                  logo={<img src={PURE_PI_ICON_URL} alt="Pi Network" className="h-7 w-7 rounded-full object-cover" />}
-                  label="Pi Network"
-                  hint={data.allow_guest ? "Pi Browser · guest checkout allowed" : "Pi Browser · sign-in required"} />
-              )}
-              {tabs.includes("card") && (
-                <PayOpt active={activeMethod === "card"} onClick={() => setMethod("card")}
-                  logo={
-                    <span className="flex h-6 w-9 items-center justify-center rounded-[6px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] shadow-sm">
-                      <BrandLogo className="h-3.5 w-3.5 text-white" />
-                    </span>
-                  }
-                  label="Virtual Card"
-                  hint={savedCard ? `OpenPay card •••• ${String(savedCard.card_number).slice(-4)}` : "Pay with your OpenPay virtual card"} />
-              )}
-            </div>
-
-            {activeMethod === "card" && (
-              <div className="space-y-2 pt-1">
-                {savedCard ? (
-                  <div className="flex items-center justify-between rounded-xl border border-paypal-blue/25 bg-paypal-blue/5 px-3 py-2.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="flex h-7 w-10 items-center justify-center rounded-[6px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] text-white">
-                        <CreditCard className="h-4 w-4" />
+            <div className="space-y-3 p-4">
+              <div className="space-y-2">
+                {tabs.includes("wallet") && (
+                  <PayOpt active={activeMethod === "wallet"} onClick={() => setMethod("wallet")}
+                    logo={<span className="flex h-7 w-7 items-center justify-center rounded-full bg-paypal-blue/10"><BrandLogo className="h-5 w-5 text-paypal-blue" /></span>}
+                    label="OpenPay Balance (OUSD)"
+                    hint={`Pay ${data.currency} ${chargeAmount.toFixed(2)} from your wallet`} />
+                )}
+                {tabs.includes("pi") && (
+                  <PayOpt active={activeMethod === "pi"} onClick={() => setMethod("pi")}
+                    logo={<img src={PURE_PI_ICON_URL} alt="Pi Network" className="h-7 w-7 rounded-full object-cover" />}
+                    label="Pi Network"
+                    hint={data.allow_guest ? "Pi Browser · guest checkout allowed" : "Pi Browser · sign-in required"} />
+                )}
+                {tabs.includes("card") && (
+                  <PayOpt active={activeMethod === "card"} onClick={() => setMethod("card")}
+                    logo={
+                      <span className="flex h-6 w-9 items-center justify-center rounded-[6px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] shadow-sm">
+                        <BrandLogo className="h-3.5 w-3.5 text-white" />
                       </span>
+                    }
+                    label="Virtual Card"
+                    hint={savedCard ? `OpenPay card •••• ${String(savedCard.card_number).slice(-4)}` : "Pay with your OpenPay virtual card"} />
+                )}
+              </div>
+
+              {activeMethod === "card" && (
+                <div className="space-y-2 pt-1">
+                  {savedCard ? (
+                    <div className="flex items-center justify-between rounded-2xl bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] px-3.5 py-3 text-white shadow-[0_14px_30px_-18px_rgba(0,60,140,0.9)]">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">•••• {String(savedCard.card_number).slice(-4)}</p>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">OpenPay Virtual Card</p>
+                        <p className="mt-1 font-mono text-base font-semibold">•••• •••• •••• {String(savedCard.card_number).slice(-4)}</p>
+                        <p className="text-[11px] text-white/75">
                           Auto-filled · exp {String(savedCard.expiry_month).padStart(2, "0")}/{String(savedCard.expiry_year).slice(-2)}
                         </p>
                       </div>
+                      <CreditCard className="h-6 w-6 shrink-0 text-white/85" />
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-paypal-blue">Saved</span>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">Enter your OpenPay virtual card details.</p>
-                )}
-                <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)}/>
-                <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)}/>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">Enter your OpenPay virtual card details.</p>
+                  )}
+                  <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)} />
+                  <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)} />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2.5 text-sm">
+                <span className="font-semibold text-muted-foreground">Total due</span>
+                <span className="font-extrabold">
+                  {activeMethod === "pi" ? `${chargeAmount.toFixed(2)} π` : `${data.currency} ${chargeAmount.toFixed(2)}`}
+                </span>
               </div>
-            )}
 
-            <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2.5 text-sm">
-              <span className="font-semibold text-muted-foreground">Total due</span>
-              <span className="font-extrabold">
-                {activeMethod === "pi" ? `${chargeAmount.toFixed(2)} π` : `${data.currency} ${chargeAmount.toFixed(2)}`}
-              </span>
+              <div className="qrp-paybar lg:static lg:m-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+                <Button
+                  className={`h-12 w-full text-base ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : "qrp-primary-btn"}`}
+                  disabled={paying}
+                  onClick={onPay}
+                >
+                  {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
+                  {payLabel}
+                </Button>
+                <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                  {activeMethod === "wallet" && !session ? "You'll be asked to sign in." : "Encrypted payment · instant receipt"}
+                </p>
+              </div>
             </div>
+          </div>
 
-            <Button
-              className={`w-full ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : "qrp-primary-btn"}`}
-              disabled={paying}
-              onClick={activeMethod === "pi" ? payPi : activeMethod === "card" ? payCard : payWallet}
-            >
-              {paying ? "Processing…"
-                : activeMethod === "pi" ? `Pay ${chargeAmount.toFixed(2)} π`
-                : activeMethod === "card" ? `Pay ${data.currency} ${chargeAmount.toFixed(2)} with card`
-                : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`}
-            </Button>
-            {activeMethod === "wallet" && !session && (
-              <p className="text-xs text-center text-muted-foreground">You'll be asked to sign in.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-center pb-2">
-          <p className="qrp-footnote">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Powered by OpenPay · Protected by dispute resolution
-          </p>
+          <div className="mt-4 flex justify-center pb-4">
+            <p className="qrp-footnote">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Powered by OpenPay · Protected by dispute resolution
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
 
 const PayOpt = ({ active, onClick, logo, label, hint }: any) => (
   <button
