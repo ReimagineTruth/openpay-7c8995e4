@@ -304,7 +304,7 @@ const SendInvoice = () => {
     if (original) {
       const meta = currencies.find((c) => c.code === original.code);
       const rate = meta?.rate ?? 1;
-      const computedOusd = rate ? (original.amount / rate) * usdFactorForCurrency(meta?.code ?? original.currency_code, livePiUsd) : original.amount;
+      const computedOusd = rate ? (original.amount / rate) * usdFactorForCurrency(meta?.code ?? original.code, livePiUsd) : original.amount;
       if (Number.isFinite(computedOusd) && Math.abs(computedOusd - invoiceOusdAmount) > 0.01) {
         invoiceOusdAmount = computedOusd;
       }
@@ -312,7 +312,7 @@ const SendInvoice = () => {
 
     const payMeta = currencies.find((c) => c.code === payCurrencyCode);
     const rate = payMeta?.rate ?? 1;
-    const senderAmount = rate ? (invoiceOusdAmount / PI_TO_USD) * rate : 0;
+    const senderAmount = rate ? (invoiceOusdAmount / usdFactorForCurrency(payMeta?.code ?? payCurrencyCode, livePiUsd)) * rate : 0;
     const { data, error } = await supabase.functions.invoke("send-money", {
       body: {
         receiver_id: invoice.sender_id,

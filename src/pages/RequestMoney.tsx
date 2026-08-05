@@ -481,7 +481,7 @@ const RequestMoney = () => {
     if (original) {
       const meta = currencies.find((c) => c.code === original.code);
       const rate = meta?.rate ?? 1;
-      const computedOusd = rate ? (original.amount / rate) * usdFactorForCurrency(meta?.code ?? original.currency_code, livePiUsd) : original.amount;
+      const computedOusd = rate ? (original.amount / rate) * usdFactorForCurrency(meta?.code ?? original.code, livePiUsd) : original.amount;
       if (Number.isFinite(computedOusd) && Math.abs(computedOusd - requestOusdAmount) > 0.01) {
         requestOusdAmount = computedOusd;
       }
@@ -489,7 +489,7 @@ const RequestMoney = () => {
 
     const payMeta = currencies.find((c) => c.code === payCurrencyCode);
     const rate = payMeta?.rate ?? 1;
-    const senderAmount = rate ? (requestOusdAmount / PI_TO_USD) * rate : 0;
+    const senderAmount = rate ? (requestOusdAmount / usdFactorForCurrency(payMeta?.code ?? payCurrencyCode, livePiUsd)) * rate : 0;
     const { data, error } = await supabase.functions.invoke("send-money", {
       body: {
         receiver_id: request.requester_id,
