@@ -301,6 +301,18 @@ export default function QrPayCheckoutPage() {
                 <ShieldCheck className="h-3 w-3" /> Verified
               </span>
             </div>
+            {data.pro_settlement_to && (
+              <div className="flex items-center gap-2 border-t border-border/60 px-4 py-2.5 text-xs text-muted-foreground">
+                <span
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black text-white"
+                  style={{ background: "#ab9ff2" }}
+                >
+                  P
+                </span>
+                Settles to OpenPay Pro · <span className="font-semibold text-foreground">{data.pro_settlement_to}</span>
+              </div>
+            )}
+
           </div>
 
           {/* Order summary */}
