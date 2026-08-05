@@ -48,6 +48,8 @@ export default function QrPayCheckoutPage() {
   const [payerEmail, setPayerEmail] = useState("");
   const [cardNum, setCardNum] = useState("");
   const [cardCvc, setCardCvc] = useState("");
+  const [method, setMethod] = useState<string | null>(null);
+
   const [customAmount, setCustomAmount] = useState<string>("");
   const [payerPhone, setPayerPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
