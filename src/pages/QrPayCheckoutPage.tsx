@@ -56,7 +56,20 @@ export default function QrPayCheckoutPage() {
   const [deliveryNotes, setDeliveryNotes] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth.getSession().then(async ({ data: s }) => {
+      setSession(s.session);
+      const uid = s.session?.user?.id;
+      if (!uid) return;
+      // Auto-fill virtual card details (same pattern as OpenNFT checkout)
+      const { data: cards } = await (supabase as any)
+        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year")
+        .eq("user_id", uid).eq("is_active", true).limit(1);
+      if (cards && cards[0]) {
+        setSavedCard(cards[0]);
+        setCardNum(String(cards[0].card_number || ""));
+        setCardCvc(String(cards[0].cvc || ""));
+      }
+    });
     (async () => {
       const { data: res, error } = await (supabase as any).rpc("qr_pay_get_by_token", { p_token: token });
       if (error || !res) { setData(null); setLoading(false); return; }
