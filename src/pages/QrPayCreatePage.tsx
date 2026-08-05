@@ -198,13 +198,15 @@ export default function QrPayCreatePage() {
 
   return (
     <div className="min-h-screen bg-muted/30 pb-32">
-      <div className="qrp-hero p-4 pb-10 flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={() => navigate("/qr-pay")}><ArrowLeft className="h-5 w-5" /></Button>
-        <div>
-          <h1 className="text-[22px] font-bold tracking-tight">New QR Payment</h1>
-          <p className="text-[13px] opacity-90">Configure your checkout experience</p>
-        </div>
-      </div>
+      <QrPayHeader
+        eyebrow="OpenPay · QR Pay"
+        title="New QR Payment"
+        subtitle="Configure your checkout experience, then generate a sharable QR code."
+        icon={QrCode}
+        backTo="/qr-pay"
+        backLabel="Back to QR Pay"
+      />
+
 
       <div className="mx-auto -mt-6 grid w-full max-w-5xl grid-cols-1 gap-6 p-4 lg:grid-cols-12">
         {/* ── Left: setup form ───────────────────────────── */}
