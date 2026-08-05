@@ -904,7 +904,6 @@ const SendMoney = () => {
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
-      window.clearTimeout(timer);
     };
   }, [normalizedUsernameSearch, isAccountNumberSearch, userId]);
 
