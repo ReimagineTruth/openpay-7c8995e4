@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import { buildQrPayReceiptHtml, downloadQrPayReceipt, printQrPayReceipt, type QrPayReceiptData } from "@/lib/qrPayReceipt";
 
 interface ReceiptExtras {
@@ -59,60 +60,87 @@ export default function QrPaySuccessPage() {
     <div className="min-h-screen qrp-page-bg flex flex-col">
       <div className="qrp-hero-v2 px-6 pb-8 pt-[max(2rem,env(safe-area-inset-top))] text-center">
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">OpenPay · QR Pay</div>
-        <div className="qrp-pop mx-auto mb-3 inline-flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-md ring-4 ring-white/30">
-          <CheckCircle2 className="h-12 w-12"/>
+        <div className="qrp-ring mx-auto mb-3 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white/15 ring-[6px] ring-white/25 backdrop-blur-md">
+          <CheckCircle2 className="h-14 w-14" />
         </div>
-        <h1 className="text-[26px] font-bold tracking-tight">Payment Successful</h1>
-        {data && <p className="mt-1 text-[15px] text-white/85">{data.currency} {Number(data.amount).toFixed(2)} paid to {data.merchant.full_name || "merchant"}</p>}
+        <h1 className="text-[28px] font-bold tracking-tight">Payment complete</h1>
+        {data && (
+          <p className="mt-1 text-[15px] text-white/85">
+            {data.currency} {Number(data.amount).toFixed(2)} paid to {data.merchant.full_name || "merchant"}
+          </p>
+        )}
+        <div className="mx-auto mt-5 max-w-md">
+          <QrPaySteps current="done" />
+        </div>
       </div>
 
-
-      <div className="max-w-md mx-auto p-4 w-full space-y-3 mt-4 qrp-pop">
-
-        <Card><CardContent className="p-4 space-y-2">
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Transaction ID</span><span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{ref}</span></div>
-          {data && <>
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Method</span><span className="capitalize">{data.method.replace("_"," ")}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Date</span><span>{new Date(data.paidAt).toLocaleString()}</span></div>
-            {data.merchant.username && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Merchant</span><span>@{data.merchant.username}</span></div>}
-          </>}
-        </CardContent></Card>
+      <div className="mx-auto mt-4 w-full max-w-md space-y-4 p-4 qrp-pop">
+        {/* Order receipt sheet */}
+        <div className="qrp-sheet">
+          <div className="qrp-sheet-head"><span>Receipt</span><span className="normal-case tracking-normal">Keep for disputes</span></div>
+          <div className="space-y-2.5 p-4">
+            <div className="qrp-row"><span className="qrp-row-muted">Transaction ID</span><span className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{ref}</span></div>
+            {data && <>
+              <div className="qrp-row"><span className="qrp-row-muted">Method</span><span className="font-medium capitalize">{data.method.replace("_", " ")}</span></div>
+              <div className="qrp-row"><span className="qrp-row-muted">Date</span><span className="font-medium">{new Date(data.paidAt).toLocaleString()}</span></div>
+              {data.merchant.username && <div className="qrp-row"><span className="qrp-row-muted">Merchant</span><span className="font-medium">@{data.merchant.username}</span></div>}
+              {!!data.items?.length && (
+                <div className="space-y-1.5 pt-1">
+                  {data.items.map((it: any, i: number) => (
+                    <div key={i} className="qrp-row text-[13px]">
+                      <span className="truncate qrp-row-muted">{it.name} × {it.quantity}</span>
+                      <span className="font-medium">{data.currency} {Number(it.line_total ?? it.unit_price * it.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="qrp-total-row">
+                <span className="text-sm font-semibold text-muted-foreground">Total paid</span>
+                <span className="text-2xl font-extrabold tracking-tight">{data.currency} {Number(data.amount).toFixed(2)}</span>
+              </div>
+            </>}
+          </div>
+        </div>
 
         {data?.after_payment_action === "download" && data.download_url && (
-          <Card><CardContent className="p-4">
-            <div className="text-sm font-semibold mb-2">Your download is ready</div>
-            <Button className="w-full" onClick={() => window.open(data.download_url!, "_blank")}>
-              <Download className="h-4 w-4 mr-1"/>Download your file
+          <div className="qrp-sheet p-4">
+            <div className="mb-2 text-sm font-semibold">Your download is ready</div>
+            <Button className="qrp-primary-btn w-full" onClick={() => window.open(data.download_url!, "_blank")}>
+              <Download className="mr-1 h-4 w-4" />Download your file
             </Button>
-          </CardContent></Card>
+          </div>
         )}
 
         {data?.after_payment_action === "redirect" && data.redirect_url && (
-          <Card><CardContent className="p-4">
-            <div className="text-sm font-semibold mb-2">Continue to merchant</div>
-            <Button className="w-full" onClick={() => window.location.href = data.redirect_url!}>
-              <ExternalLink className="h-4 w-4 mr-1"/>Continue
+          <div className="qrp-sheet p-4">
+            <div className="mb-2 text-sm font-semibold">Continue to merchant</div>
+            <Button className="qrp-primary-btn w-full" onClick={() => window.location.href = data.redirect_url!}>
+              <ExternalLink className="mr-1 h-4 w-4" />Continue
             </Button>
-          </CardContent></Card>
+          </div>
         )}
 
         {data && (
-          <Card><CardContent className="p-4 space-y-2">
-            <div className="text-sm font-semibold">Receipt</div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => downloadQrPayReceipt(data)}><Download className="h-4 w-4 mr-1"/>Download</Button>
-              <Button variant="outline" className="flex-1" onClick={() => printQrPayReceipt(data)}><Printer className="h-4 w-4 mr-1"/>Print / Save PDF</Button>
+          <div className="qrp-sheet">
+            <div className="qrp-sheet-head"><span>Share receipt</span></div>
+            <div className="space-y-2 p-4">
+              <div className="flex gap-2">
+                <Button variant="outline" className="h-11 flex-1 rounded-xl" onClick={() => downloadQrPayReceipt(data)}><Download className="mr-1 h-4 w-4" />Download</Button>
+                <Button variant="outline" className="h-11 flex-1 rounded-xl" onClick={() => printQrPayReceipt(data)}><Printer className="mr-1 h-4 w-4" />Print / PDF</Button>
+              </div>
+              <Input className="qrp-input" type="email" placeholder="Email receipt to…" value={emailTo} onChange={e => setEmailTo(e.target.value)} />
+              <Button className="qrp-primary-btn w-full" onClick={emailReceipt}><Mail className="mr-1 h-4 w-4" />Email receipt</Button>
+              <p className="text-center text-[11px] text-muted-foreground">Opens your email app with the receipt details.</p>
             </div>
-            <div className="pt-2">
-              <Input type="email" placeholder="Email receipt to…" value={emailTo} onChange={e => setEmailTo(e.target.value)}/>
-              <Button className="w-full mt-2" onClick={emailReceipt}><Mail className="h-4 w-4 mr-1"/>Email receipt</Button>
-              <p className="text-[11px] text-muted-foreground mt-1 text-center">Opens your email app with the receipt details.</p>
-            </div>
-          </CardContent></Card>
+          </div>
         )}
 
-        <Button variant="ghost" className="w-full" onClick={() => navigate("/dashboard")}><Home className="h-4 w-4 mr-1"/>Back to OpenPay</Button>
-        <p className="text-center text-xs text-muted-foreground">Keep your Transaction ID for any disputes or claims.</p>
+        <Button variant="ghost" className="w-full rounded-xl text-white hover:bg-white/15 hover:text-white" onClick={() => navigate("/dashboard")}>
+          <Home className="mr-1 h-4 w-4" />Back to OpenPay
+        </Button>
+        <div className="flex justify-center pb-4">
+          <p className="qrp-footnote">Keep your Transaction ID for any disputes or claims.</p>
+        </div>
       </div>
     </div>
   );
