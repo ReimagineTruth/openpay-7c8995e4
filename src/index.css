@@ -392,7 +392,16 @@
   }
 
   /* ============ QR Pay — iOS-style design system ============ */
+  /* Page background matching the OpenPay dashboard */
+  .qrp-page-bg {
+    background-color: hsl(var(--paypal-blue, 214 100% 33%));
+    background-image:
+      radial-gradient(120% 90% at 100% 0%, rgba(120, 190, 255, 0.35) 0%, transparent 55%),
+      radial-gradient(100% 80% at 0% 100%, rgba(0, 200, 255, 0.22) 0%, transparent 60%);
+    background-attachment: fixed;
+  }
   /* Unified premium header (QrPayHeader) */
+
   .qrp-hero-v2 {
     position: relative;
     overflow: hidden;
