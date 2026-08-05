@@ -214,7 +214,9 @@ export default function QrPayCreatePage() {
         icon={QrCode}
         backTo="/qr-pay"
         backLabel="Back to QR Pay"
-      />
+      >
+        <QrPaySteps current="setup" />
+      </QrPayHeader>
 
 
       <div className="mx-auto mt-4 grid w-full max-w-5xl grid-cols-1 gap-6 p-4 lg:grid-cols-12">
