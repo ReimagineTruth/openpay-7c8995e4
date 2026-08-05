@@ -75,6 +75,7 @@ export default function QrPayDashboardPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [itemsCache, setItemsCache] = useState<Record<string, QrItem[]>>({});
   const [refreshing, setRefreshing] = useState(false);
+  const [section, setSection] = useState<"overview" | "links" | "orders">("overview");
 
   const rangeLabel = useMemo(() => ({
     today: "today", week: "this week", month: "last 30 days", year: "this year", all: "all time"
