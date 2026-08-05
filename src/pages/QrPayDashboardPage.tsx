@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Copy, ExternalLink, QrCode, TrendingUp, Wallet, CreditCard, Eye, Trash2, BarChart3, Users, ChevronDown, ChevronUp, Package, Mail, Phone, MapPin, StickyNote, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Copy, ExternalLink, QrCode, TrendingUp, Wallet, CreditCard, Eye, Trash2, BarChart3, Users, ChevronDown, ChevronUp, Package, Mail, Phone, MapPin, StickyNote, RefreshCw, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import QrPayHeader from "@/components/qrpay/QrPayHeader";
+import QrPayGuideDialog from "@/components/qrpay/QrPayGuideDialog";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -76,6 +77,14 @@ export default function QrPayDashboardPage() {
   const [itemsCache, setItemsCache] = useState<Record<string, QrItem[]>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [section, setSection] = useState<"overview" | "links" | "orders">("overview");
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem("qrpay_guide_seen")) {
+      setGuideOpen(true);
+      localStorage.setItem("qrpay_guide_seen", "1");
+    }
+  }, []);
 
   const rangeLabel = useMemo(() => ({
     today: "today", week: "this week", month: "last 30 days", year: "this year", all: "all time"
@@ -179,6 +188,9 @@ export default function QrPayDashboardPage() {
         backLabel="Back to dashboard"
         actions={
           <>
+            <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={() => setGuideOpen(true)} title="How QR Pay works">
+              <HelpCircle className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={refresh} title="Refresh">
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
@@ -507,6 +519,8 @@ export default function QrPayDashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <QrPayGuideDialog open={guideOpen} onOpenChange={setGuideOpen} onCreate={() => navigate("/qr-pay/new")} />
 
       <BottomNav active="menu" />
     </div>
