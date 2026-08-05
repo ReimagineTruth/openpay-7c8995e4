@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { usePiUsdPrice } from "@/lib/piPrice";
 import { ChevronDown, Search } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 import {
@@ -21,6 +22,7 @@ const TOP_PRIORITY_CODES = ["OUSD", "PI", "USD", "EUR"];
 
 const CurrencySelector = () => {
   const { currencies, currency, setCurrency } = useCurrency();
+  const livePiUsd = usePiUsdPrice().price;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const getPiCodeLabel = (code: string) => {
@@ -29,8 +31,8 @@ const CurrencySelector = () => {
     return `PI ${code}`;
   };
   const getPiNameLabel = (code: string, name: string) => {
-    if (code === "PI") return "Pure Pi";
-    if (code === "OUSD") return `OpenPay USD Stablecoin (1 PI = ${PI_TO_USD.toFixed(2)} OUSD)`;
+    if (code === "PI") return `Pure Pi (live $${livePiUsd.toFixed(4)})`;
+    if (code === "OUSD") return "OpenPay USD Stablecoin (1 OUSD = $1.00)";
     return `PI ${name}`;
   };
   const getDisplaySymbol = (code: string, symbol: string) => (code === "PI" ? "π" : symbol);

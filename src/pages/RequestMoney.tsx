@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, usdFactorForCurrency, useCurrency } from "@/contexts/CurrencyContext";
+import { usePiUsdPrice } from "@/lib/piPrice";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
@@ -48,6 +49,7 @@ const RequestMoney = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { format: formatCurrency, currencies, currency } = useCurrency();
+  const livePiUsd = usePiUsdPrice().price;
   const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
   const OPENPAY_ICON_URL = "/openpay-logo.jpg";
   const [createCurrencyCode, setCreateCurrencyCode] = useState<string>(currency.code);
@@ -420,7 +422,7 @@ const RequestMoney = () => {
     setLoading(true);
     const createMeta = currencies.find((c) => c.code === createCurrencyCode);
     const createRate = createMeta?.rate ?? 1;
-    const ousdAmount = createRate ? (parsedAmount / createRate) * PI_TO_USD : parsedAmount;
+    const ousdAmount = createRate ? (parsedAmount / createRate) * usdFactorForCurrency(currency?.code, livePiUsd) : parsedAmount;
     const fullNote = note.trim();
     const noteWithOriginalInfo = fullNote 
       ? `${fullNote} [${createCurrencyCode} ${parsedAmount.toFixed(2)}]`
@@ -479,7 +481,7 @@ const RequestMoney = () => {
     if (original) {
       const meta = currencies.find((c) => c.code === original.code);
       const rate = meta?.rate ?? 1;
-      const computedOusd = rate ? (original.amount / rate) * PI_TO_USD : original.amount;
+      const computedOusd = rate ? (original.amount / rate) * usdFactorForCurrency(meta?.code ?? original.code, livePiUsd) : original.amount;
       if (Number.isFinite(computedOusd) && Math.abs(computedOusd - requestOusdAmount) > 0.01) {
         requestOusdAmount = computedOusd;
       }
@@ -487,7 +489,7 @@ const RequestMoney = () => {
 
     const payMeta = currencies.find((c) => c.code === payCurrencyCode);
     const rate = payMeta?.rate ?? 1;
-    const senderAmount = rate ? (requestOusdAmount / PI_TO_USD) * rate : 0;
+    const senderAmount = rate ? (requestOusdAmount / usdFactorForCurrency(payMeta?.code ?? payCurrencyCode, livePiUsd)) * rate : 0;
     const { data, error } = await supabase.functions.invoke("send-money", {
       body: {
         receiver_id: request.requester_id,
@@ -1049,7 +1051,7 @@ const RequestMoney = () => {
                   ? (() => {
                     const meta = currencies.find((c) => c.code === confirmAction.currencyCode);
                     const rate = meta?.rate ?? 1;
-                    const ousd = rate ? (confirmAction.amount / rate) * PI_TO_USD : confirmAction.amount;
+                    const ousd = rate ? (confirmAction.amount / rate) * usdFactorForCurrency(confirmAction.currencyCode, livePiUsd) : confirmAction.amount;
                     return ousd.toFixed(2);
                   })()
                   : confirmAction?.type === "pay" || confirmAction?.type === "reject"

@@ -4,7 +4,8 @@ import { ArrowLeft, ArrowUpDown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, usdFactorForCurrency, useCurrency } from "@/contexts/CurrencyContext";
+import { usePiUsdPrice } from "@/lib/piPrice";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 const OPENPAY_ICON_URL = "/openpay-logo.jpg";
@@ -12,6 +13,7 @@ const OPENPAY_ICON_URL = "/openpay-logo.jpg";
 const CurrencyConverterPage = () => {
   const navigate = useNavigate();
   const { currencies, ratesUpdatedAt } = useCurrency();
+  const livePiUsd = usePiUsdPrice().price;
   const [amount, setAmount] = useState("1");
   const [fromCode, setFromCode] = useState("USD");
   const [toCode, setToCode] = useState("PHP");
@@ -27,7 +29,7 @@ const CurrencyConverterPage = () => {
   const parsedAmount = Number(amount);
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount >= 0 ? parsedAmount : 0;
   const piAmount = fromCurrency?.rate ? safeAmount / fromCurrency.rate : 0;
-  const usdAmount = piAmount * PI_TO_USD;
+  const usdAmount = piAmount * usdFactorForCurrency(fromCurrency?.code, livePiUsd);
   const converted = piAmount * (toCurrency?.rate ?? 1);
   const unitRate = fromCurrency?.rate ? (toCurrency?.rate ?? 1) / fromCurrency.rate : 0;
   const formattedUpdatedAt = ratesUpdatedAt
@@ -56,7 +58,7 @@ const CurrencyConverterPage = () => {
 
         <div className="paypal-surface rounded-3xl p-5">
           <p className="mb-3 text-xs font-semibold text-muted-foreground">
-            Base rate: 1 PI = {PI_TO_USD.toFixed(2)} OUSD
+            {`Live rate: 1 PI = $${livePiUsd.toFixed(4)} (CoinGecko)`}
           </p>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amount</p>
           <Input
@@ -131,7 +133,7 @@ const CurrencyConverterPage = () => {
               1 {fromCurrency?.code} = {unitRate.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} {toCurrency?.code}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Rates are PI-based with a fixed conversion: 1 PI = {PI_TO_USD.toFixed(2)} OUSD.
+              {`Rates are PI-based. Pure Pi uses the live CoinGecko price (1 PI = $${livePiUsd.toFixed(4)}); 1 OUSD = $1.00.`}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Last updated: {formattedUpdatedAt}

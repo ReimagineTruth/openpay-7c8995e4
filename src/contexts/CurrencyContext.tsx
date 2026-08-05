@@ -11,6 +11,18 @@ export interface Currency {
 }
 
 export const PI_TO_USD = 1;
+
+/**
+ * USD value of 1 unit of the given OpenPay currency.
+ * Pure Pi ("PI") is priced with the live CoinGecko PI/USD feed;
+ * OUSD and PI-denominated fiat currencies stay pegged (1 OUSD = $1).
+ */
+export const usdFactorForCurrency = (code: string | undefined, livePiUsd: number): number => {
+  if ((code || "").toUpperCase() === "PI") {
+    return Number.isFinite(livePiUsd) && livePiUsd > 0 ? livePiUsd : PI_TO_USD;
+  }
+  return PI_TO_USD;
+};
 const PI_RATE_OVERRIDES: Record<string, number> = {
   USD: PI_TO_USD,
   EUR: 0.8429 * PI_TO_USD,

@@ -7,7 +7,8 @@ import { SlideToConfirm } from "@/components/ui/slide-to-confirm";
 import { ArrowLeft, Search, Info, ScanLine, Bookmark, BookmarkCheck, Loader2, FileText, Users, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, usdFactorForCurrency, useCurrency } from "@/contexts/CurrencyContext";
+import { usePiUsdPrice } from "@/lib/piPrice";
 import { useThankYouModal } from "@/contexts/ThankYouModalContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { isOpenPayProPartnerNote } from "@/lib/openpayProTransfer";
@@ -142,6 +143,7 @@ const SendMoney = () => {
     () => (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mode") === "pro" ? "pro" : "openpay"),
   );
 	  const { currencies, currency, setCurrency, format: formatCurrency } = useCurrency();
+  const livePiUsd = usePiUsdPrice().price;
 	  const checkoutSessionToken = searchParams.get("checkout_session") || "";
   const checkoutCustomerName = searchParams.get("checkout_customer_name") || "";
   const checkoutCustomerEmail = searchParams.get("checkout_customer_email") || "";
@@ -291,8 +293,9 @@ const SendMoney = () => {
     const isActuallyMultiSend = activeIsMultiSend && activeUsers.length > 0;
     const totalAmount = isActuallyMultiSend ? (parsedAmount * activeUsers.length) : parsedAmount;
     const rate = Number(currency?.rate || 1);
-    const usdAmountPerUser = rate > 0 ? (parsedAmount / rate) * PI_TO_USD : 0;
-    const totalUsdAmount = rate > 0 ? (totalAmount / rate) * PI_TO_USD : 0;
+    const usdFactor = usdFactorForCurrency(currency?.code, livePiUsd);
+    const usdAmountPerUser = rate > 0 ? (parsedAmount / rate) * usdFactor : 0;
+    const totalUsdAmount = rate > 0 ? (totalAmount / rate) * usdFactor : 0;
     
     if (totalUsdAmount > balance) { 
       toast.error("Amount exceeds your available balance"); 
@@ -1031,7 +1034,7 @@ const SendMoney = () => {
       return;
     }
     const totalAmount = isMultiSend ? parsedAmount * selectedUsers.length : parsedAmount;
-    const usdAmount = ((currency?.rate || 1) > 0 ? (totalAmount / (currency?.rate || 1)) * PI_TO_USD : 0);
+    const usdAmount = ((currency?.rate || 1) > 0 ? (totalAmount / (currency?.rate || 1)) * usdFactorForCurrency(currency?.code, livePiUsd) : 0);
     if (usdAmount > balance) {
       toast.error("Amount exceeds your available balance");
       return;
@@ -1432,8 +1435,8 @@ const SendMoney = () => {
                 <span className="text-muted-foreground">Converted (USD)</span>
                 <span className="font-semibold text-foreground">
                   {isMultiSend 
-                  ? `$${formatAmountWithCommas(((Number(amount || 0) * selectedUsers.length / (currency.rate || 1)) * PI_TO_USD))} total`
-                    : `$${formatAmountWithCommas(((Number(amount || 0) / (currency.rate || 1)) * PI_TO_USD))}`}
+                  ? `$${formatAmountWithCommas(((Number(amount || 0) * selectedUsers.length / (currency.rate || 1)) * usdFactorForCurrency(currency.code, livePiUsd)))} total`
+                    : `$${formatAmountWithCommas(((Number(amount || 0) / (currency.rate || 1)) * usdFactorForCurrency(currency.code, livePiUsd)))}`}
                 </span>
               </p>
               {note.trim() && (
