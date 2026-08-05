@@ -105,6 +105,8 @@ const SendMoney = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [contacts, setContacts] = useState<UserProfile[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [remoteResults, setRemoteResults] = useState<UserProfile[]>([]);
+  const [remoteSearching, setRemoteSearching] = useState(false);
   const [recentRecipients, setRecentRecipients] = useState<RecentRecipient[]>([]);
   const [contactIds, setContactIds] = useState<string[]>([]);
   const [balance, setBalance] = useState(0);
