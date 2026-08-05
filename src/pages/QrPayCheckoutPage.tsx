@@ -48,6 +48,7 @@ export default function QrPayCheckoutPage() {
   const [payerEmail, setPayerEmail] = useState("");
   const [cardNum, setCardNum] = useState("");
   const [cardCvc, setCardCvc] = useState("");
+  const [savedCard, setSavedCard] = useState<any>(null);
   const [method, setMethod] = useState<string | null>(null);
 
   const [customAmount, setCustomAmount] = useState<string>("");
@@ -56,7 +57,20 @@ export default function QrPayCheckoutPage() {
   const [deliveryNotes, setDeliveryNotes] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth.getSession().then(async ({ data: s }) => {
+      setSession(s.session);
+      const uid = s.session?.user?.id;
+      if (!uid) return;
+      // Auto-fill virtual card details (same pattern as OpenNFT checkout)
+      const { data: cards } = await (supabase as any)
+        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year")
+        .eq("user_id", uid).eq("is_active", true).limit(1);
+      if (cards && cards[0]) {
+        setSavedCard(cards[0]);
+        setCardNum(String(cards[0].card_number || ""));
+        setCardCvc(String(cards[0].cvc || ""));
+      }
+    });
     (async () => {
       const { data: res, error } = await (supabase as any).rpc("qr_pay_get_by_token", { p_token: token });
       if (error || !res) { setData(null); setLoading(false); return; }
@@ -336,80 +350,114 @@ export default function QrPayCheckoutPage() {
         )}
 
 
-        {/* Methods — OpenNFT style stacked selector */}
-        <Card><CardContent className="p-4 space-y-3">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Payment method</p>
-          <div className="space-y-2">
-            {tabs.includes("wallet") && (
-              <PayOpt active={activeMethod === "wallet"} onClick={() => setMethod("wallet")}
-                icon={<Wallet className="h-4 w-4" />} label="OpenPay Balance"
-                hint={`Pay ${data.currency} ${chargeAmount.toFixed(2)} from your wallet`} />
-            )}
-            {tabs.includes("pi") && (
-              <PayOpt active={activeMethod === "pi"} onClick={() => setMethod("pi")}
-                icon={<span className="text-[15px] font-bold leading-none">π</span>} label="Pi Network"
-                hint={data.allow_guest ? "Pi Browser · guest checkout allowed" : "Pi Browser · sign-in required"} />
-            )}
-            {tabs.includes("card") && (
-              <PayOpt active={activeMethod === "card"} onClick={() => setMethod("card")}
-                icon={<CreditCard className="h-4 w-4" />} label="Virtual Card"
-                hint="Pay with your OpenPay virtual card" />
-            )}
-          </div>
-
-          {activeMethod === "card" && (
-            <div className="space-y-2 pt-1">
-              <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)}/>
-              <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)}/>
+        {/* Methods — Apple Pay / Google Pay style stacked selector */}
+        <Card className="overflow-hidden border-border/70 shadow-[0_10px_30px_-18px_rgba(0,60,140,0.45)]">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Payment method</p>
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+                <ShieldCheck className="h-3.5 w-3.5 text-paypal-blue" /> Secure
+              </span>
             </div>
-          )}
+            <div className="space-y-2">
+              {tabs.includes("wallet") && (
+                <PayOpt active={activeMethod === "wallet"} onClick={() => setMethod("wallet")}
+                  logo={<img src="/assets/ousd-icon.svg" alt="OUSD" className="h-6 w-6" />}
+                  label="OpenPay Balance"
+                  hint={`Pay ${data.currency} ${chargeAmount.toFixed(2)} from your wallet`} />
+              )}
+              {tabs.includes("pi") && (
+                <PayOpt active={activeMethod === "pi"} onClick={() => setMethod("pi")}
+                  logo={<span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#7d3cff] to-[#a855f7] text-[13px] font-black text-white">π</span>}
+                  label="Pi Network"
+                  hint={data.allow_guest ? "Pi Browser · guest checkout allowed" : "Pi Browser · sign-in required"} />
+              )}
+              {tabs.includes("card") && (
+                <PayOpt active={activeMethod === "card"} onClick={() => setMethod("card")}
+                  logo={<span className="flex h-6 w-8 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] text-white"><CreditCard className="h-3.5 w-3.5" /></span>}
+                  label="Virtual Card"
+                  hint={savedCard ? `OpenPay card •••• ${String(savedCard.card_number).slice(-4)}` : "Pay with your OpenPay virtual card"} />
+              )}
+            </div>
 
-          <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2.5 text-sm">
-            <span className="font-semibold text-muted-foreground">Total due</span>
-            <span className="font-extrabold">
-              {activeMethod === "pi" ? `${chargeAmount.toFixed(2)} π` : `${data.currency} ${chargeAmount.toFixed(2)}`}
-            </span>
-          </div>
+            {activeMethod === "card" && (
+              <div className="space-y-2 pt-1">
+                {savedCard ? (
+                  <div className="flex items-center justify-between rounded-xl border border-paypal-blue/25 bg-paypal-blue/5 px-3 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex h-7 w-10 items-center justify-center rounded-[6px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] text-white">
+                        <CreditCard className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate">•••• {String(savedCard.card_number).slice(-4)}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Auto-filled · exp {String(savedCard.expiry_month).padStart(2, "0")}/{String(savedCard.expiry_year).slice(-2)}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-paypal-blue">Saved</span>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">Enter your OpenPay virtual card details.</p>
+                )}
+                <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)}/>
+                <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)}/>
+              </div>
+            )}
 
-          <Button
-            className={`w-full ${activeMethod === "pi" ? "qrp-pi-btn" : "qrp-primary-btn"}`}
-            disabled={paying}
-            onClick={activeMethod === "pi" ? payPi : activeMethod === "card" ? payCard : payWallet}
-          >
-            {paying ? "Processing…"
-              : activeMethod === "pi" ? `Pay ${chargeAmount.toFixed(2)} π`
-              : activeMethod === "card" ? "Pay with virtual card"
-              : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`}
-          </Button>
-          {activeMethod === "wallet" && !session && (
-            <p className="text-xs text-center text-muted-foreground">You'll be asked to sign in.</p>
-          )}
-        </CardContent></Card>
+            <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2.5 text-sm">
+              <span className="font-semibold text-muted-foreground">Total due</span>
+              <span className="font-extrabold">
+                {activeMethod === "pi" ? `${chargeAmount.toFixed(2)} π` : `${data.currency} ${chargeAmount.toFixed(2)}`}
+              </span>
+            </div>
 
+            <Button
+              className={`w-full ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : "qrp-primary-btn"}`}
+              disabled={paying}
+              onClick={activeMethod === "pi" ? payPi : activeMethod === "card" ? payCard : payWallet}
+            >
+              {paying ? "Processing…"
+                : activeMethod === "pi" ? `Pay ${chargeAmount.toFixed(2)} π`
+                : activeMethod === "card" ? `Pay ${data.currency} ${chargeAmount.toFixed(2)} with card`
+                : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`}
+            </Button>
+            {activeMethod === "wallet" && !session && (
+              <p className="text-xs text-center text-muted-foreground">You'll be asked to sign in.</p>
+            )}
+          </CardContent>
+        </Card>
 
-        <p className="text-center text-xs text-muted-foreground">Powered by OpenPay · Transactions are protected by dispute resolution.</p>
+        <div className="flex justify-center pb-2">
+          <p className="qrp-footnote">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Powered by OpenPay · Protected by dispute resolution
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
-const PayOpt = ({ active, onClick, icon, label, hint }: any) => (
+const PayOpt = ({ active, onClick, logo, label, hint }: any) => (
   <button
     type="button"
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-left transition ${
+    className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl border text-left transition-all ${
       active
-        ? "border-paypal-blue bg-paypal-blue/10 text-paypal-blue"
-        : "border-border hover:border-paypal-blue/40 bg-background"
+        ? "border-paypal-blue bg-paypal-blue/[0.07] shadow-[0_6px_18px_-10px_rgba(0,112,186,0.7)]"
+        : "border-border bg-background hover:border-paypal-blue/40 hover:bg-muted/40"
     }`}
   >
-    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${active ? "bg-paypal-blue/15" : "bg-muted"}`}>
-      {icon}
+    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? "bg-paypal-blue/10" : "bg-muted"}`}>
+      {logo}
     </span>
     <span className="min-w-0 flex-1">
-      <span className="block text-sm font-semibold">{label}</span>
+      <span className={`block text-sm font-semibold ${active ? "text-paypal-blue" : "text-foreground"}`}>{label}</span>
       {hint && <span className="block truncate text-[11px] text-muted-foreground">{hint}</span>}
     </span>
-    <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${active ? "border-paypal-blue bg-paypal-blue" : "border-muted-foreground/40"}`} />
+    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-paypal-blue bg-paypal-blue" : "border-muted-foreground/40"}`}>
+      {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+    </span>
   </button>
 );
