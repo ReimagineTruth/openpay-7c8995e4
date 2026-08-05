@@ -226,7 +226,7 @@ export default function QrPayCheckoutPage() {
   const TypeIcon = data.payment_type === "donation" ? Heart : data.payment_type === "tip" ? Coffee : null;
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen qrp-page-bg">
       <QrPayHeader
         eyebrow="OpenPay Checkout"
         title="Secure QR Payment"

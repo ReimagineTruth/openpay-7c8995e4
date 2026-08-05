@@ -56,7 +56,7 @@ export default function QrPaySuccessPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col">
+    <div className="min-h-screen qrp-page-bg flex flex-col">
       <div className="qrp-hero-v2 px-6 pb-8 pt-[max(2rem,env(safe-area-inset-top))] text-center">
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">OpenPay · QR Pay</div>
         <div className="qrp-pop mx-auto mb-3 inline-flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-md ring-4 ring-white/30">
