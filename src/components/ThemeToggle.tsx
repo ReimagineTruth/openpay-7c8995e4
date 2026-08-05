@@ -1,23 +1,14 @@
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
+import { getStoredAppTheme, persistAndApplyAppTheme } from "@/lib/appTheme";
 
 const ThemeToggle = () => {
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window === "undefined") return "light";
-    const stored = localStorage.getItem("openpay_theme");
-    return stored === "dark" ? "dark" : "light";
-  });
+  const [theme, setTheme] = useState<"light" | "dark">(() =>
+    getStoredAppTheme() === "dark" ? "dark" : "light"
+  );
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    if (typeof window !== "undefined") {
-      localStorage.setItem("openpay_theme", theme);
-    }
+    persistAndApplyAppTheme(theme);
   }, [theme]);
 
   return (
