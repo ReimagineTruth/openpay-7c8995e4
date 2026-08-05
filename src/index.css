@@ -440,9 +440,9 @@
   .qrp-page-bg input::placeholder,
   .qrp-page-bg textarea::placeholder { color: hsl(var(--muted-foreground)); opacity: 1; }
   /* Buttons keep their variant colors instead of inheriting white */
-  .qrp-page-bg .qrp-card button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn),
-  .qrp-page-bg .qrp-sheet button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn),
-  .qrp-page-bg [data-slot="card"] button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn) {
+  .qrp-page-bg .qrp-card button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn):not(.qrp-pro-btn),
+  .qrp-page-bg .qrp-sheet button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn):not(.qrp-pro-btn),
+  .qrp-page-bg [data-slot="card"] button:not(.qrp-primary-btn):not(.qrp-pi-btn):not(.qrp-card-btn):not(.qrp-pro-btn) {
     color: inherit;
   }
   /* Dark preview surfaces keep white text */
