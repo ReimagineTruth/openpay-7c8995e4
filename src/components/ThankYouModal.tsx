@@ -49,7 +49,7 @@ const ThankYouModal = ({ open, onOpenChange, data, onViewReceipt }: ThankYouModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden gap-0">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm rounded-3xl p-0 overflow-hidden gap-0">
         <DialogTitle className="sr-only">Thank You</DialogTitle>
         <DialogDescription className="sr-only">Thank you message for successful payment</DialogDescription>
 
@@ -91,9 +91,9 @@ const ThankYouModal = ({ open, onOpenChange, data, onViewReceipt }: ThankYouModa
 
           {/* Purpose */}
           {data.purpose && (
-            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl min-w-0">
+            <div className="flex w-full items-center gap-2 p-3 bg-blue-50 rounded-xl min-w-0">
               <span className="text-2xl shrink-0">{getPurposeIcon(data.purpose)}</span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs text-blue-600 font-medium">Purpose</p>
                 <p className="font-semibold text-blue-900 capitalize truncate">{data.purpose}</p>
               </div>
