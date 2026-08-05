@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, ShieldCheck, Wallet, CreditCard, User, Heart, Coffee, Lock } from "lucide-react";
+import { Loader2, ShieldCheck, Wallet, CreditCard, User, Heart, Coffee, Lock, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
