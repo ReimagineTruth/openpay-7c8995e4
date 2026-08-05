@@ -67,7 +67,7 @@ export default function QrPayCheckoutPage() {
       if (!uid) return;
       // Auto-fill virtual card details (same pattern as OpenNFT checkout)
       const { data: cards } = await (supabase as any)
-        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year")
+        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year, cardholder_name")
         .eq("user_id", uid).eq("is_active", true).limit(1);
       if (cards && cards[0]) {
         setSavedCard(cards[0]);
