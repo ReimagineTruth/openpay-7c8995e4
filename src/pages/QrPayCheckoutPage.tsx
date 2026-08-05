@@ -10,6 +10,9 @@ import QrPayHeader from "@/components/qrpay/QrPayHeader";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
+import BrandLogo from "@/components/BrandLogo";
+
+const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 
 interface QrPayData {
   id: string;
