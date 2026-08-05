@@ -92,8 +92,13 @@ export default function QrPayCreatePage() {
   const [minAmount, setMinAmount] = useState<string>("");
   const [coverImage, setCoverImage] = useState<string>("");
   const [uploading, setUploading] = useState<number | "cover" | null>(null);
+  const [proEnabled, setProEnabled] = useState(false);
+  const [proTo, setProTo] = useState("");
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState<{ token: string; total: number } | null>(null);
+
+  const proError = proEnabled ? getProDestinationError(proTo) : null;
+
 
   const isFlexible = paymentType === "donation" || paymentType === "tip";
   const total = isFlexible
