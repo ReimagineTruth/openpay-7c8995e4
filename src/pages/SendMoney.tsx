@@ -1713,7 +1713,13 @@ const SendMoney = () => {
               <Info className="w-5 h-5 text-muted-foreground/30" />
             </div>
           ))}
-          {filteredWithoutAccountMatch.length === 0 && !accountLookupResult && !accountLookupLoading && (
+          {remoteSearching && filteredWithoutAccountMatch.length === 0 && (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Searching accounts...</span>
+            </div>
+          )}
+          {filteredWithoutAccountMatch.length === 0 && !remoteSearching && !accountLookupResult && !accountLookupLoading && (
             <p className="text-center text-muted-foreground py-8">No users found</p>
           )}
         </div>
