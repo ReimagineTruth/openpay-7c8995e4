@@ -24,5 +24,7 @@ project_id = "araojncyittkahvvpdrn"
     verify_jwt = false
   [functions.transfer-to-openpay-pro]
     verify_jwt = true
+  [functions.qr-pay-pro-settle]
+    verify_jwt = false
 
 
