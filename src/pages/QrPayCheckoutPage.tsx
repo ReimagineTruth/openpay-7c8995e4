@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, ShieldCheck, Wallet, CreditCard, User, Heart, Coffee, Lock } from "lucide-react";
+import { Loader2, ShieldCheck, Wallet, CreditCard, User, Heart, Coffee, Lock, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +53,7 @@ export default function QrPayCheckoutPage() {
   const [cardNum, setCardNum] = useState("");
   const [cardCvc, setCardCvc] = useState("");
   const [savedCard, setSavedCard] = useState<any>(null);
+  const [showCard, setShowCard] = useState(false);
   const [method, setMethod] = useState<string | null>(null);
 
   const [customAmount, setCustomAmount] = useState<string>("");
@@ -67,7 +68,7 @@ export default function QrPayCheckoutPage() {
       if (!uid) return;
       // Auto-fill virtual card details (same pattern as OpenNFT checkout)
       const { data: cards } = await (supabase as any)
-        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year")
+        .from("virtual_cards").select("card_number, cvc, expiry_month, expiry_year, cardholder_name")
         .eq("user_id", uid).eq("is_active", true).limit(1);
       if (cards && cards[0]) {
         setSavedCard(cards[0]);
@@ -264,7 +265,7 @@ export default function QrPayCheckoutPage() {
 
       <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 p-4 lg:grid-cols-12 qrp-pop">
         {/* ── Order column ─────────────────────────────── */}
-        <div className="space-y-4 lg:col-span-7">
+        <div className="space-y-4 lg:col-span-7 qrp-stagger">
           <div className="qrp-sheet">
             {data.cover_image_url && (
               <img src={data.cover_image_url} alt={data.title} className="h-44 w-full object-cover" />
@@ -430,23 +431,56 @@ export default function QrPayCheckoutPage() {
               </div>
 
               {activeMethod === "card" && (
-                <div className="space-y-2 pt-1">
+                <div className="space-y-2 pt-1 qrp-rise">
                   {savedCard ? (
-                    <div className="flex items-center justify-between rounded-2xl bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] px-3.5 py-3 text-white shadow-[0_14px_30px_-18px_rgba(0,60,140,0.9)]">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">OpenPay Virtual Card</p>
-                        <p className="mt-1 font-mono text-base font-semibold">•••• •••• •••• {String(savedCard.card_number).slice(-4)}</p>
-                        <p className="text-[11px] text-white/75">
-                          Auto-filled · exp {String(savedCard.expiry_month).padStart(2, "0")}/{String(savedCard.expiry_year).slice(-2)}
-                        </p>
+                    <div className="rounded-2xl bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] px-3.5 py-3 text-white shadow-[0_14px_30px_-18px_rgba(0,60,140,0.9)]">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">OpenPay Virtual Card</p>
+                          <p className="mt-1 font-mono text-base font-semibold tracking-wider">
+                            {showCard
+                              ? String(savedCard.card_number).replace(/(.{4})/g, "$1 ").trim()
+                              : `•••• •••• •••• ${String(savedCard.card_number).slice(-4)}`}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <button type="button" onClick={() => setShowCard(v => !v)}
+                            aria-label={showCard ? "Hide card details" : "Show card details"}
+                            className="rounded-full bg-white/15 p-1.5 text-white transition hover:bg-white/25 active:scale-95">
+                            {showCard ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                          <CreditCard className="h-6 w-6 text-white/85" />
+                        </div>
                       </div>
-                      <CreditCard className="h-6 w-6 shrink-0 text-white/85" />
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+                        <div className="min-w-0">
+                          <p className="text-white/60">Card holder</p>
+                          <p className="truncate font-semibold uppercase">
+                            {showCard ? (savedCard.cardholder_name || "OPENPAY USER") : "•••• ••••"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/60">Expires</p>
+                          <p className="font-semibold">
+                            {showCard ? `${String(savedCard.expiry_month).padStart(2, "0")}/${String(savedCard.expiry_year).slice(-2)}` : "••/••"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/60">CVC</p>
+                          <p className="font-semibold">{showCard ? savedCard.cvc : "•••"}</p>
+                        </div>
+                      </div>
+                      <p className="mt-2 text-[10px] text-white/70">Auto-filled from your OpenPay wallet</p>
                     </div>
                   ) : (
                     <p className="text-[11px] text-muted-foreground">Enter your OpenPay virtual card details.</p>
                   )}
-                  <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)} />
-                  <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)} />
+                  {!savedCard && (
+                    <>
+                      <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)} />
+                      <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)} />
+                    </>
+                  )}
                 </div>
               )}
 
@@ -459,17 +493,29 @@ export default function QrPayCheckoutPage() {
 
               <div className="qrp-paybar lg:static lg:m-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
                 <Button
-                  className={`h-12 w-full text-base ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : "qrp-primary-btn"}`}
+                  className={`h-12 w-full gap-2 text-base ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : "qrp-primary-btn"}`}
                   disabled={paying}
                   onClick={onPay}
                 >
-                  {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
+                  {paying ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : activeMethod === "pi" ? (
+                    <img src={PURE_PI_ICON_URL} alt="" className="h-5 w-5 rounded-full object-cover" />
+                  ) : activeMethod === "card" ? (
+                    <span className="flex h-5 w-7 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba]">
+                      <BrandLogo className="h-3 w-3 text-white" />
+                    </span>
+                  ) : (
+                    <BrandLogo className="h-5 w-5" />
+                  )}
                   {payLabel}
+                  <Lock className="h-3.5 w-3.5 opacity-70" />
                 </Button>
                 <p className="mt-2 text-center text-[11px] text-muted-foreground">
                   {activeMethod === "wallet" && !session ? "You'll be asked to sign in." : "Encrypted payment · instant receipt"}
                 </p>
               </div>
+
             </div>
           </div>
 

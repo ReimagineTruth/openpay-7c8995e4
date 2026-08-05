@@ -60,9 +60,18 @@ export default function QrPaySuccessPage() {
     <div className="min-h-screen qrp-page-bg flex flex-col">
       <div className="qrp-hero-v2 px-6 pb-8 pt-[max(2rem,env(safe-area-inset-top))] text-center">
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">OpenPay · QR Pay</div>
-        <div className="qrp-ring mx-auto mb-3 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white/15 ring-[6px] ring-white/25 backdrop-blur-md">
-          <CheckCircle2 className="h-14 w-14" />
+        <div className="qrp-success-wrap mx-auto mb-4 h-[104px] w-[104px]">
+          <span className="qrp-success-ring" />
+          <span className="qrp-success-ring" />
+          <span className="qrp-success-ring" />
+          <span className="qrp-success-badge">
+            <svg viewBox="0 0 52 52" className="h-14 w-14" fill="none" aria-hidden>
+              <path className="qrp-check-path" d="M14 27.5 L22.5 36 L38 18"
+                    stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
         </div>
+
         <h1 className="text-[28px] font-bold tracking-tight">Payment complete</h1>
         {data && (
           <p className="mt-1 text-[15px] text-white/85">
@@ -74,7 +83,7 @@ export default function QrPaySuccessPage() {
         </div>
       </div>
 
-      <div className="mx-auto mt-4 w-full max-w-md space-y-4 p-4 qrp-pop">
+      <div className="mx-auto mt-4 w-full max-w-md space-y-4 p-4 qrp-stagger">
         {/* Order receipt sheet */}
         <div className="qrp-sheet">
           <div className="qrp-sheet-head"><span>Receipt</span><span className="normal-case tracking-normal">Keep for disputes</span></div>
