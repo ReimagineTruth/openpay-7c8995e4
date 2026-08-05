@@ -500,13 +500,13 @@
   }
 
   .qrp-hero {
-    background: linear-gradient(135deg, hsl(210 100% 40%) 0%, hsl(212 100% 45%) 45%, hsl(216 100% 55%) 100%);
+    background: linear-gradient(135deg, #131b2b 0%, #1a2334 55%, #212b3f 100%);
     color: #fff;
     position: relative;
     overflow: hidden;
     border-bottom-left-radius: 28px;
     border-bottom-right-radius: 28px;
-    box-shadow: 0 12px 32px -18px rgba(0, 112, 186, 0.6);
+    box-shadow: 0 12px 32px -18px rgba(8, 14, 26, 0.75);
   }
   .qrp-hero::before {
     content: "";
