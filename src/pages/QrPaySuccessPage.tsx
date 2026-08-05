@@ -83,7 +83,7 @@ export default function QrPaySuccessPage() {
         </div>
       </div>
 
-      <div className="mx-auto mt-4 w-full max-w-md space-y-4 p-4 qrp-pop">
+      <div className="mx-auto mt-4 w-full max-w-md space-y-4 p-4 qrp-stagger">
         {/* Order receipt sheet */}
         <div className="qrp-sheet">
           <div className="qrp-sheet-head"><span>Receipt</span><span className="normal-case tracking-normal">Keep for disputes</span></div>
