@@ -413,5 +413,3 @@ const PayOpt = ({ active, onClick, icon, label, hint }: any) => (
     <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${active ? "border-paypal-blue bg-paypal-blue" : "border-muted-foreground/40"}`} />
   </button>
 );
-
-}
