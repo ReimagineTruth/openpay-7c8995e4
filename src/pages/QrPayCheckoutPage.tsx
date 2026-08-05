@@ -333,31 +333,56 @@ export default function QrPayCheckoutPage() {
         )}
 
 
-        {/* Methods */}
-        <Card><CardContent className="p-4">
-          <Tabs defaultValue={defaultTab}>
-            <TabsList className="w-full grid bg-muted/50 rounded-2xl p-1 h-auto" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
-              {tabs.includes("pi") && <TabsTrigger value="pi" className="qrp-pay-tab h-10">Pi</TabsTrigger>}
-              {tabs.includes("wallet") && <TabsTrigger value="wallet" className="qrp-pay-tab h-10"><Wallet className="h-4 w-4 mr-1"/>Wallet</TabsTrigger>}
-              {tabs.includes("card") && <TabsTrigger value="card" className="qrp-pay-tab h-10"><CreditCard className="h-4 w-4 mr-1"/>Card</TabsTrigger>}
-            </TabsList>
-            {tabs.includes("pi") && <TabsContent value="pi" className="pt-3">
-              <p className="text-xs text-muted-foreground mb-2">Pay with your Pi balance via Pi Browser. {data.allow_guest ? "Guest checkout allowed." : "Sign-in required."}</p>
-              <Button className="w-full qrp-pi-btn" disabled={paying} onClick={payPi}>{paying ? "Processing…" : `Pay ${chargeAmount.toFixed(2)} π`}</Button>
-            </TabsContent>}
-            {tabs.includes("wallet") && <TabsContent value="wallet" className="pt-3">
-              <p className="text-xs text-muted-foreground mb-2">Pay from your OpenPay wallet balance.</p>
-              <Button className="w-full qrp-primary-btn" disabled={paying} onClick={payWallet}>{paying ? "Processing…" : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`}</Button>
-              {!session && <p className="text-xs text-center mt-2 text-muted-foreground">You'll be asked to sign in.</p>}
-            </TabsContent>}
-            {tabs.includes("card") && <TabsContent value="card" className="pt-3 space-y-2">
+        {/* Methods — OpenNFT style stacked selector */}
+        <Card><CardContent className="p-4 space-y-3">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Payment method</p>
+          <div className="space-y-2">
+            {tabs.includes("wallet") && (
+              <PayOpt active={activeMethod === "wallet"} onClick={() => setMethod("wallet")}
+                icon={<Wallet className="h-4 w-4" />} label="OpenPay Balance"
+                hint={`Pay ${data.currency} ${chargeAmount.toFixed(2)} from your wallet`} />
+            )}
+            {tabs.includes("pi") && (
+              <PayOpt active={activeMethod === "pi"} onClick={() => setMethod("pi")}
+                icon={<span className="text-[15px] font-bold leading-none">π</span>} label="Pi Network"
+                hint={data.allow_guest ? "Pi Browser · guest checkout allowed" : "Pi Browser · sign-in required"} />
+            )}
+            {tabs.includes("card") && (
+              <PayOpt active={activeMethod === "card"} onClick={() => setMethod("card")}
+                icon={<CreditCard className="h-4 w-4" />} label="Virtual Card"
+                hint="Pay with your OpenPay virtual card" />
+            )}
+          </div>
+
+          {activeMethod === "card" && (
+            <div className="space-y-2 pt-1">
               <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)}/>
               <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)}/>
-              <Button className="w-full qrp-primary-btn" disabled={paying} onClick={payCard}>{paying ? "Processing…" : `Pay with virtual card`}</Button>
+            </div>
+          )}
 
-            </TabsContent>}
-          </Tabs>
+          <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2.5 text-sm">
+            <span className="font-semibold text-muted-foreground">Total due</span>
+            <span className="font-extrabold">
+              {activeMethod === "pi" ? `${chargeAmount.toFixed(2)} π` : `${data.currency} ${chargeAmount.toFixed(2)}`}
+            </span>
+          </div>
+
+          <Button
+            className={`w-full ${activeMethod === "pi" ? "qrp-pi-btn" : "qrp-primary-btn"}`}
+            disabled={paying}
+            onClick={activeMethod === "pi" ? payPi : activeMethod === "card" ? payCard : payWallet}
+          >
+            {paying ? "Processing…"
+              : activeMethod === "pi" ? `Pay ${chargeAmount.toFixed(2)} π`
+              : activeMethod === "card" ? "Pay with virtual card"
+              : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`}
+          </Button>
+          {activeMethod === "wallet" && !session && (
+            <p className="text-xs text-center text-muted-foreground">You'll be asked to sign in.</p>
+          )}
         </CardContent></Card>
+
 
         <p className="text-center text-xs text-muted-foreground">Powered by OpenPay · Transactions are protected by dispute resolution.</p>
       </div>
