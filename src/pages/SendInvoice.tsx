@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
+import { PI_TO_USD, usdFactorForCurrency, useCurrency } from "@/contexts/CurrencyContext";
+import { usePiUsdPrice } from "@/lib/piPrice";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { Info } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -47,6 +48,7 @@ const SendInvoice = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { format: formatCurrency, currencies, currency } = useCurrency();
+  const livePiUsd = usePiUsdPrice().price;
   const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
   const OPENPAY_ICON_URL = "/openpay-logo.jpg";
   const [invoiceCurrencyCode, setInvoiceCurrencyCode] = useState<string>(currency.code);
@@ -241,7 +243,7 @@ const SendInvoice = () => {
     setLoading(true);
     const invoiceMeta = currencies.find((c) => c.code === invoiceCurrencyCode);
     const invoiceRate = invoiceMeta?.rate ?? 1;
-    const ousdAmount = invoiceRate ? (parsedAmount / invoiceRate) * PI_TO_USD : parsedAmount;
+    const ousdAmount = invoiceRate ? (parsedAmount / invoiceRate) * usdFactorForCurrency(currency?.code, livePiUsd) : parsedAmount;
     const fullDescription = description.trim();
     const descriptionWithOriginalInfo = fullDescription 
       ? `${fullDescription} [${invoiceCurrencyCode} ${parsedAmount.toFixed(2)}]`
@@ -302,7 +304,7 @@ const SendInvoice = () => {
     if (original) {
       const meta = currencies.find((c) => c.code === original.code);
       const rate = meta?.rate ?? 1;
-      const computedOusd = rate ? (original.amount / rate) * PI_TO_USD : original.amount;
+      const computedOusd = rate ? (original.amount / rate) * usdFactorForCurrency(meta?.code ?? original.currency_code, livePiUsd) : original.amount;
       if (Number.isFinite(computedOusd) && Math.abs(computedOusd - invoiceOusdAmount) > 0.01) {
         invoiceOusdAmount = computedOusd;
       }
@@ -814,7 +816,7 @@ const SendInvoice = () => {
                   ? (() => {
                     const meta = currencies.find((c) => c.code === confirmAction.currencyCode);
                     const rate = meta?.rate ?? 1;
-                    const ousd = rate ? (confirmAction.amount / rate) * PI_TO_USD : confirmAction.amount;
+                    const ousd = rate ? (confirmAction.amount / rate) * usdFactorForCurrency(confirmAction.currencyCode, livePiUsd) : confirmAction.amount;
                     return ousd.toFixed(2);
                   })()
                   : confirmAction?.type === "pay" || confirmAction?.type === "reject"
