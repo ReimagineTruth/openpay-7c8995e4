@@ -10,6 +10,9 @@ import QrPayHeader from "@/components/qrpay/QrPayHeader";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
+import BrandLogo from "@/components/BrandLogo";
+
+const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 
 interface QrPayData {
   id: string;
@@ -362,19 +365,23 @@ export default function QrPayCheckoutPage() {
             <div className="space-y-2">
               {tabs.includes("wallet") && (
                 <PayOpt active={activeMethod === "wallet"} onClick={() => setMethod("wallet")}
-                  logo={<img src="/assets/ousd-icon.svg" alt="OUSD" className="h-6 w-6" />}
-                  label="OpenPay Balance"
+                  logo={<span className="flex h-7 w-7 items-center justify-center rounded-full bg-paypal-blue/10"><BrandLogo className="h-5 w-5 text-paypal-blue" /></span>}
+                  label="OpenPay Balance (OUSD)"
                   hint={`Pay ${data.currency} ${chargeAmount.toFixed(2)} from your wallet`} />
               )}
               {tabs.includes("pi") && (
                 <PayOpt active={activeMethod === "pi"} onClick={() => setMethod("pi")}
-                  logo={<span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#7d3cff] to-[#a855f7] text-[13px] font-black text-white">π</span>}
+                  logo={<img src={PURE_PI_ICON_URL} alt="Pi Network" className="h-7 w-7 rounded-full object-cover" />}
                   label="Pi Network"
                   hint={data.allow_guest ? "Pi Browser · guest checkout allowed" : "Pi Browser · sign-in required"} />
               )}
               {tabs.includes("card") && (
                 <PayOpt active={activeMethod === "card"} onClick={() => setMethod("card")}
-                  logo={<span className="flex h-6 w-8 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] text-white"><CreditCard className="h-3.5 w-3.5" /></span>}
+                  logo={
+                    <span className="flex h-6 w-9 items-center justify-center rounded-[6px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] shadow-sm">
+                      <BrandLogo className="h-3.5 w-3.5 text-white" />
+                    </span>
+                  }
                   label="Virtual Card"
                   hint={savedCard ? `OpenPay card •••• ${String(savedCard.card_number).slice(-4)}` : "Pay with your OpenPay virtual card"} />
               )}
