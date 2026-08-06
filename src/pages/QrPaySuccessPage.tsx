@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import { downloadQrPayReceipt, printQrPayReceipt, type QrPayReceiptData } from "@/lib/qrPayReceipt";
+import BrandLogo from "@/components/BrandLogo";
 
 interface ReceiptExtras {
   after_payment_action?: "receipt" | "download" | "redirect";
@@ -59,12 +60,19 @@ export default function QrPaySuccessPage() {
           <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--qrp-muted)]">
             OpenPay
           </div>
-          <div className="qrp-success-wrap mx-auto mb-4 h-[72px] w-[72px]">
-            <span className="qrp-success-ring" />
-            <span className="qrp-success-badge" style={{ height: 72, width: 72 }}>
-              <svg viewBox="0 0 52 52" className="h-10 w-10" fill="none" aria-hidden>
-                <path className="qrp-check-path" d="M14 27.5 L22.5 36 L38 18"
-                      stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <div className="qrp-success-wrap mx-auto mb-5">
+            <span className="qrp-success-ring" aria-hidden />
+            <span className="qrp-success-ring qrp-success-ring--delay" aria-hidden />
+            <span className="qrp-success-badge" aria-hidden>
+              <svg viewBox="0 0 56 56" className="qrp-success-check" fill="none">
+                <path
+                  className="qrp-check-path"
+                  d="M16.5 29.5 L24.5 37.5 L40.5 19.5"
+                  stroke="white"
+                  strokeWidth="4.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </span>
           </div>
@@ -121,14 +129,16 @@ export default function QrPaySuccessPage() {
             </div>
 
             {data?.after_payment_action === "download" && data.download_url && (
-              <Button className="qrp-primary-btn w-full" onClick={() => window.open(data.download_url!, "_blank")}>
-                <Download className="mr-1 h-4 w-4" />Download your file
+              <Button className="qrp-primary-btn w-full gap-2" onClick={() => window.open(data.download_url!, "_blank")}>
+                <BrandLogo variant="white" animate={false} className="h-5 w-5" />
+                <Download className="h-4 w-4" />Download your file
               </Button>
             )}
 
             {data?.after_payment_action === "redirect" && data.redirect_url && (
-              <Button className="qrp-primary-btn w-full" onClick={() => { window.location.href = data.redirect_url!; }}>
-                <ExternalLink className="mr-1 h-4 w-4" />Continue
+              <Button className="qrp-primary-btn w-full gap-2" onClick={() => { window.location.href = data.redirect_url!; }}>
+                <BrandLogo variant="white" animate={false} className="h-5 w-5" />
+                <ExternalLink className="h-4 w-4" />Continue
               </Button>
             )}
 
@@ -146,15 +156,17 @@ export default function QrPaySuccessPage() {
                       </Button>
                     </div>
                     <Input className="qrp-input" type="email" placeholder="Email receipt to…" value={emailTo} onChange={e => setEmailTo(e.target.value)} />
-                    <Button className="qrp-primary-btn w-full" onClick={emailReceipt}>
-                      <Mail className="mr-1 h-4 w-4" />Email receipt
+                    <Button className="qrp-primary-btn w-full gap-2" onClick={emailReceipt}>
+                      <BrandLogo variant="white" animate={false} className="h-5 w-5" />
+                      <Mail className="h-4 w-4" />Email receipt
                     </Button>
                   </div>
                 </div>
               </div>
             )}
 
-            <Button className="qrp-primary-btn w-full" onClick={() => navigate("/dashboard")}>
+            <Button className="qrp-primary-btn w-full gap-2" onClick={() => navigate("/dashboard")}>
+              <BrandLogo variant="white" animate={false} className="h-5 w-5" />
               Done
             </Button>
             <Button variant="ghost" className="w-full rounded-xl text-[var(--qrp-muted)] hover:bg-black/[0.04]" onClick={() => navigate("/dashboard")}>

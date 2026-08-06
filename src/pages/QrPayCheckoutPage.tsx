@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, ShieldCheck, CreditCard, User, Heart, Coffee, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, ShieldCheck, User, Heart, Coffee, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import QrPaySteps from "@/components/qrpay/QrPaySteps";
+import QrPayPiBrowserDialog from "@/components/qrpay/QrPayPiBrowserDialog";
 import { toast } from "sonner";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
 import BrandLogo from "@/components/BrandLogo";
@@ -65,11 +66,17 @@ export default function QrPayCheckoutPage() {
   const [showCard, setShowCard] = useState(false);
   const [method, setMethod] = useState<string | null>(null);
   const [proAsset, setProAsset] = useState<string>("OUSD");
+  const [piBrowserOpen, setPiBrowserOpen] = useState(false);
 
   const [customAmount, setCustomAmount] = useState<string>("");
   const [payerPhone, setPayerPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
+
+  const canPayWithPi =
+    typeof window !== "undefined" && (isPiBrowserUAOnly() || Boolean((window as any).Pi));
+  const checkoutUrl =
+    typeof window !== "undefined" ? window.location.href : "";
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: s }) => {
@@ -194,10 +201,19 @@ export default function QrPayCheckoutPage() {
     goAfterPayment(res.transaction_ref, "virtual_card");
   };
 
+  const selectPi = () => {
+    setMethod("pi");
+    if (!canPayWithPi) setPiBrowserOpen(true);
+  };
+
   const payPi = async () => {
     if (!validateAmount() || !validateDelivery()) return;
+    if (!canPayWithPi) {
+      setPiBrowserOpen(true);
+      return;
+    }
     if (typeof window === "undefined" || !(window as any).Pi) {
-      toast.error("Pi SDK not available. Please open in Pi Browser.");
+      setPiBrowserOpen(true);
       return;
     }
     if (!data!.allow_guest && !session) { requireSignIn(); return; }
@@ -272,9 +288,8 @@ export default function QrPayCheckoutPage() {
   if (!data) return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center"><h1 className="text-xl font-bold mb-2">Payment not found</h1><p className="text-muted-foreground">This QR code is invalid or no longer available.</p></div>;
   if (data.status !== "active") return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center"><Badge variant="secondary" className="mb-3">{data.status}</Badge><h1 className="text-xl font-bold mb-2">This payment is no longer active</h1></div>;
 
-  const piInPi = isPiBrowserUAOnly();
   const tabs = [
-    data.allow_pi && (piInPi || (window as any).Pi) ? "pi" : null,
+    data.allow_pi ? "pi" : null,
     data.allow_wallet ? "wallet" : null,
     data.allow_virtual_card ? "card" : null,
     data.pro_settlement_to ? "pro" : null,
@@ -286,7 +301,7 @@ export default function QrPayCheckoutPage() {
   const payLabel = paying
     ? "Processing…"
     : activeMethod === "pi"
-      ? `Pay ${chargeAmount.toFixed(2)} π`
+      ? (canPayWithPi ? `Pay ${chargeAmount.toFixed(2)} π` : "Continue in Pi Browser")
       : activeMethod === "pro"
         ? `Pay ${chargeAmount.toFixed(2)} with Pro ${proAsset}`
         : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`;
@@ -412,16 +427,18 @@ export default function QrPayCheckoutPage() {
           hint={`Wallet · ${data.currency}`} />
       )}
       {tabs.includes("pi") && (
-        <PayOpt active={activeMethod === "pi"} onClick={() => setMethod("pi")}
+        <PayOpt active={activeMethod === "pi"} onClick={selectPi}
           logo={<img src={PURE_PI_ICON_URL} alt="Pi Network" className="h-8 w-8 rounded-full object-cover" />}
           label="Pi Network"
-          hint={data.allow_guest ? "Guest checkout" : "Sign-in required"} />
+          hint={canPayWithPi
+            ? (data.allow_guest ? "Guest checkout" : "Sign-in required")
+            : "Pi Browser required"} />
       )}
       {tabs.includes("card") && (
         <PayOpt active={activeMethod === "card"} onClick={() => setMethod("card")}
           logo={
             <span className="flex h-7 w-10 items-center justify-center rounded-[7px] bg-[var(--qrp-ink)]">
-              <BrandLogo className="h-3.5 w-3.5 text-white" />
+              <BrandLogo variant="white" animate={false} className="h-3.5 w-3.5" />
             </span>
           }
           label="Virtual Card"
@@ -503,21 +520,21 @@ export default function QrPayCheckoutPage() {
   const payBtnClass = `h-[54px] min-[900px]:h-[56px] w-full gap-2 text-[16px] min-[900px]:text-[17px] ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : activeMethod === "pro" ? "qrp-pro-btn" : "qrp-primary-btn"}`;
   const payHint = activeMethod === "pro"
     ? "You'll finish securely on OpenPay Pro."
+    : activeMethod === "pi" && !canPayWithPi
+      ? "Copy the link and complete in Pi Browser."
     : activeMethod === "wallet" && !session ? "You'll be asked to sign in." : "Encrypted · Instant receipt";
 
   const renderPayButton = () => (
     <Button className={payBtnClass} disabled={paying} onClick={onPay}>
-      {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : activeMethod === "pi" ? (
-        <img src={PURE_PI_ICON_URL} alt="" className="h-5 w-5 rounded-full object-cover" />
-      ) : activeMethod === "pro" ? (
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15 text-[10px] font-black">P</span>
-      ) : activeMethod === "card" ? (
-        <CreditCard className="h-4 w-4" />
+      {paying ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
-        <BrandLogo className="h-5 w-5 text-white" />
+        <BrandLogo variant="white" animate={false} className="h-5 w-5 shrink-0" />
       )}
       {payLabel}
-      <Lock className="h-3.5 w-3.5 opacity-55" />
+      {!paying && activeMethod === "pi" && (
+        <img src={PURE_PI_ICON_URL} alt="" className="h-4 w-4 rounded-full object-cover opacity-90" />
+      )}
     </Button>
   );
 
@@ -698,11 +715,21 @@ export default function QrPayCheckoutPage() {
       <div className="fixed inset-x-0 bottom-0 z-40 min-[900px]:hidden">
         <div className="qrp-paybar mx-auto w-full max-w-[42rem]">
           <Button className={payBtnClass} disabled={paying} onClick={onPay}>
-            {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-3.5 w-3.5 opacity-55" />}
+            {paying ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <BrandLogo variant="white" animate={false} className="h-5 w-5 shrink-0" />
+            )}
             {payLabel}
           </Button>
         </div>
       </div>
+
+      <QrPayPiBrowserDialog
+        open={piBrowserOpen}
+        onOpenChange={setPiBrowserOpen}
+        checkoutUrl={checkoutUrl}
+      />
     </div>
   );
 }

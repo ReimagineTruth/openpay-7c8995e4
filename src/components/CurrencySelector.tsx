@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { usePiUsdPrice } from "@/lib/piPrice";
 import { ChevronDown, Search, Check } from "lucide-react";
-import BrandLogo from "./BrandLogo";
+import CurrencyFlag from "./CurrencyFlag";
 import {
   Dialog,
   DialogContent,
@@ -14,10 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const emojiFlagStyle = {
-  fontFamily: "\"Apple Color Emoji\", \"Segoe UI Emoji\", \"Noto Color Emoji\", sans-serif",
-};
-const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 const TOP_PRIORITY_CODES = ["OUSD", "PI", "USD", "EUR"];
 
 const CurrencySelector = () => {
@@ -54,33 +50,11 @@ const CurrencySelector = () => {
     });
   }, [currencies, term]);
 
-  const Icon = ({ code, flag }: { code: string; flag: string }) => {
-    if (code === "PI")
-      return <img src={PURE_PI_ICON_URL} alt="Pure Pi" className="h-9 w-9 rounded-full object-cover" />;
-    if (code === "OUSD")
-      return (
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#007AFF]/12">
-          <BrandLogo className="h-5 w-5 text-[#007AFF]" />
-        </span>
-      );
-    return (
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/[0.04] text-[22px] leading-none" style={emojiFlagStyle}>
-        {flag}
-      </span>
-    );
-  };
-
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
       <DialogTrigger asChild>
         <button className="flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-3 py-1.5 text-[13px] font-semibold tracking-[-0.01em] text-[#1d1d1f] transition-colors hover:bg-[#eaeaef]">
-          {currency.code === "PI" ? (
-            <img src={PURE_PI_ICON_URL} alt="Pure Pi" className="h-[18px] w-[18px] rounded-full object-cover" />
-          ) : currency.code === "OUSD" ? (
-            <BrandLogo className="h-[18px] w-[18px] text-[#007AFF]" />
-          ) : (
-            <span className="text-base leading-none" style={emojiFlagStyle}>{currency.flag}</span>
-          )}
+          <CurrencyFlag code={currency.code} size="sm" />
           <span>{codeLabel(currency.code)}</span>
           <ChevronDown className="h-3.5 w-3.5 text-[#8e8e93]" strokeWidth={2.25} />
         </button>
@@ -125,7 +99,7 @@ const CurrencySelector = () => {
                     }`}
                   >
                     {i > 0 && <span className="ios-list-sep" aria-hidden />}
-                    <Icon code={c.code} flag={c.flag} />
+                    <CurrencyFlag code={c.code} size="lg" />
                     <div className="min-w-0 flex-1">
                       <p className="text-[15px] font-semibold tracking-[-0.01em] text-[#1d1d1f]">{codeLabel(c.code)}</p>
                       <p className="truncate text-[12px] leading-snug text-[#8e8e93]">{nameLabel(c.code, c.name)}</p>

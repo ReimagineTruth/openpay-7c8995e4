@@ -61,7 +61,7 @@ export default function QrPayHeader({
 
           <div className="min-w-0 flex-1">
             {eyebrow && (
-              <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--qrp-muted,#86868b)]">
+              <div className="mb-1.5 text-[13px] font-semibold tracking-[-0.01em] text-[var(--qrp-muted,#86868b)] sm:text-[14px]">
                 {eyebrow}
               </div>
             )}
@@ -76,7 +76,7 @@ export default function QrPayHeader({
               </h1>
             </div>
             {subtitle && (
-              <p className="mt-1.5 max-w-xl text-[14px] leading-snug text-[var(--qrp-muted,#86868b)] sm:text-[15px]">
+              <p className="mt-1.5 max-w-xl text-[15px] leading-snug text-[var(--qrp-muted,#86868b)] sm:text-[16px]">
                 {subtitle}
               </p>
             )}

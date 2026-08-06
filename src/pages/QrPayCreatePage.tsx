@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Plus, Trash2, Copy, Share2, ImagePlus, Loader2, QrCode,
   Package, Download, HeartHandshake, Coffee, ShieldCheck, Sparkles, X, Settings2,
+  Smartphone, Monitor, HelpCircle, ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import QrPayHeader from "@/components/qrpay/QrPayHeader";
 import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import CurrencyPicker from "@/components/CurrencyPicker";
+import QrPayShareHelpDialog from "@/components/qrpay/QrPayShareHelpDialog";
 
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,8 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import QrPayIntegrations from "@/components/qr-pay/QrPayIntegrations";
+import BrandLogo from "@/components/BrandLogo";
+import { OpenPayStyledButton, defaultBtnStyleForPayment } from "@/components/qr-pay/OpenPayPayButton";
 import {
   getProDestinationError,
   formatProDestinationPreview,
@@ -96,6 +100,8 @@ export default function QrPayCreatePage() {
   const [proTo, setProTo] = useState("");
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState<{ token: string; total: number } | null>(null);
+  const [shareSection, setShareSection] = useState<"mobile" | "desktop">("mobile");
+  const [shareHelpOpen, setShareHelpOpen] = useState(false);
 
   const proError = proEnabled ? getProDestinationError(proTo) : null;
 
@@ -178,18 +184,29 @@ export default function QrPayCreatePage() {
 
     setLoading(false);
     setCreated({ token: data.token, total: Number(data.total) });
+    setShareSection("mobile");
+    setShareHelpOpen(true);
     toast.success("QR payment created");
 
   };
 
   if (created) {
     const url = `${window.location.origin}/qr-pay/${created.token}`;
+    const resetCreate = () => {
+      setCreated(null);
+      setShareSection("mobile");
+      setItems([{ name: "", quantity: 1, unit_price: 0 }]);
+      setTitle("");
+      setDescription("");
+      setCoverImage("");
+    };
+
     return (
-      <div className="min-h-screen qrp-page-bg">
+      <div className="min-h-screen qrp-page-bg pb-10">
         <QrPayHeader
           eyebrow="OpenPay"
           title="Share"
-          subtitle="Your payment link is ready."
+          subtitle="Send to a customer, or embed on your website."
           watermark="SHARE"
           backTo="/qr-pay"
           backLabel="Back to QR Pay"
@@ -197,30 +214,167 @@ export default function QrPayCreatePage() {
           <QrPaySteps current="share" />
         </QrPayHeader>
 
-        <div className="qrp-stage relative z-[1] qrp-pop">
-          <div className="qrp-pay-sheet p-5 sm:p-7 flex flex-col items-center">
-            <div className="bg-white p-4 rounded-[20px] ring-1 ring-black/[0.06] shadow-[0_12px_40px_-24px_rgba(0,0,0,0.3)]">
-              <QRCodeSVG value={url} size={180} />
+        <div className="relative z-[1] mx-auto w-full max-w-3xl px-3 pb-8 sm:px-5">
+          {/* Section switcher */}
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="qrp-share-seg" role="tablist" aria-label="Share destination">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={shareSection === "mobile"}
+                className={shareSection === "mobile" ? "is-on" : ""}
+                onClick={() => setShareSection("mobile")}
+              >
+                <Smartphone className="h-4 w-4" />
+                <span>Mobile</span>
+                <span className="qrp-share-seg-hint">Share to customer</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={shareSection === "desktop"}
+                className={shareSection === "desktop" ? "is-on" : ""}
+                onClick={() => setShareSection("desktop")}
+              >
+                <Monitor className="h-4 w-4" />
+                <span>Website</span>
+                <span className="qrp-share-seg-hint">Site &amp; apps</span>
+              </button>
             </div>
-            <div className="mt-5 text-center">
-              <div className="qrp-amount-hero">{cur} {created.total.toFixed(2)}</div>
-              <p className="text-[13px] text-[var(--qrp-muted)] mt-2">Scan with OpenPay or any QR app</p>
-            </div>
-            <div className="w-full mt-4 rounded-[12px] bg-black/[0.04] p-2.5 text-[11px] break-all text-center font-mono text-[var(--qrp-muted)]">{url}</div>
-            <div className="flex gap-2 w-full mt-3">
-              <Button variant="outline" className="flex-1 rounded-[14px] h-12 border-0 bg-black/[0.04]" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copied"); }}><Copy className="h-4 w-4 mr-1" />Copy</Button>
-              <Button className="flex-1 qrp-primary-btn" onClick={async () => {
-                try { if ((navigator as any).share) await (navigator as any).share({ title: "Pay with OpenPay", url }); else { navigator.clipboard.writeText(url); toast.success("Link copied"); } } catch { }
-              }}><Share2 className="h-4 w-4 mr-1" />Share</Button>
-            </div>
-            <Button variant="ghost" className="mt-2 w-full rounded-xl text-[var(--qrp-accent)]" onClick={() => window.open(url, "_blank")}>Preview checkout</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 gap-1.5 self-start rounded-full px-3 text-[13px] font-semibold text-[var(--qrp-accent)] hover:bg-[var(--qrp-accent)]/10 sm:self-auto"
+              onClick={() => setShareHelpOpen(true)}
+            >
+              <HelpCircle className="h-4 w-4" />
+              Which should I use?
+            </Button>
           </div>
-          <div className="mt-4">
-            <QrPayIntegrations url={url} amount={created.total} currency={cur} title={title || "OpenPay Checkout"} />
+
+          {shareSection === "mobile" ? (
+            <div className="qrp-pop space-y-4">
+              <div className="rounded-[16px] border border-[var(--qrp-accent)]/20 bg-[var(--qrp-accent)]/[0.06] px-4 py-3">
+                <p className="text-[13px] font-semibold text-[var(--qrp-ink)]">Share to a customer</p>
+                <p className="mt-0.5 text-[12px] leading-snug text-[var(--qrp-muted)]">
+                  Send the link in chat, email, or SMS — or let them scan the QR in person. No website code needed.
+                </p>
+              </div>
+
+              <div className="qrp-pay-sheet flex flex-col items-center p-5 sm:p-7">
+                <div className="rounded-[20px] bg-white p-4 shadow-[0_12px_40px_-24px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.06]">
+                  <QRCodeSVG value={url} size={180} />
+                </div>
+                <div className="mt-5 text-center">
+                  <div className="qrp-amount-hero">{cur} {created.total.toFixed(2)}</div>
+                  <p className="mt-2 text-[13px] text-[var(--qrp-muted)]">Scan with OpenPay or any QR app</p>
+                </div>
+                <div className="mt-4 w-full break-all rounded-[12px] bg-black/[0.04] p-2.5 text-center font-mono text-[11px] text-[var(--qrp-muted)]">
+                  {url}
+                </div>
+                <div className="mt-3 flex w-full gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-1 rounded-[14px] border-0 bg-black/[0.04]"
+                    onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copied"); }}
+                  >
+                    <Copy className="mr-1 h-4 w-4" />Copy link
+                  </Button>
+                  <Button
+                    className="qrp-primary-btn h-12 flex-1 gap-2"
+                    onClick={async () => {
+                      try {
+                        if ((navigator as any).share) await (navigator as any).share({ title: "Pay with OpenPay", url });
+                        else { navigator.clipboard.writeText(url); toast.success("Link copied"); }
+                      } catch { /* user cancelled */ }
+                    }}
+                  >
+                    <BrandLogo variant="white" animate={false} className="h-4 w-4" />
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="mt-2 w-full gap-1.5 rounded-xl text-[var(--qrp-accent)]"
+                  onClick={() => window.open(url, "_blank")}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Preview checkout
+                </Button>
+              </div>
+
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-[16px] bg-white/80 px-4 py-3.5 text-left shadow-[0_0_0_1px_rgba(0,0,0,0.05)] backdrop-blur"
+                onClick={() => setShareSection("desktop")}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/[0.05]">
+                    <Monitor className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-[14px] font-semibold tracking-[-0.01em]">Need this on a website or app?</p>
+                    <p className="text-[12px] text-[var(--qrp-muted)]">Button, iFrame, widget, or HTML page</p>
+                  </div>
+                </div>
+                <span className="text-[13px] font-semibold text-[var(--qrp-accent)]">Open</span>
+              </button>
+            </div>
+          ) : (
+            <div className="qrp-pop space-y-4">
+              <div className="rounded-[16px] border border-black/5 bg-black/[0.03] px-4 py-3">
+                <p className="text-[13px] font-semibold text-[var(--qrp-ink)]">Website &amp; apps</p>
+                <p className="mt-0.5 text-[12px] leading-snug text-[var(--qrp-muted)]">
+                  Embed a Pay button, checkout iFrame, widget, or download a full HTML page for your site or app.
+                </p>
+              </div>
+
+              <QrPayIntegrations
+                url={url}
+                amount={created.total}
+                currency={cur}
+                title={title || "OpenPay Checkout"}
+                paymentType={paymentType}
+                hideQrTab
+                compactHeader
+              />
+
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-[16px] bg-white/80 px-4 py-3.5 text-left shadow-[0_0_0_1px_rgba(0,0,0,0.05)] backdrop-blur"
+                onClick={() => setShareSection("mobile")}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/[0.05]">
+                    <Smartphone className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-[14px] font-semibold tracking-[-0.01em]">Just sharing with a customer?</p>
+                    <p className="text-[12px] text-[var(--qrp-muted)]">QR code, copy link, and Share</p>
+                  </div>
+                </div>
+                <span className="text-[13px] font-semibold text-[var(--qrp-accent)]">Open</span>
+              </button>
+            </div>
+          )}
+
+          <div className="mt-5 space-y-2">
+            <Button className="qrp-primary-btn mt-1 w-full gap-2" onClick={() => navigate("/qr-pay")}>
+              <BrandLogo variant="white" animate={false} className="h-5 w-5" />
+              Done
+            </Button>
+            <Button variant="ghost" className="w-full rounded-xl text-[var(--qrp-muted)]" onClick={resetCreate}>
+              Create another
+            </Button>
           </div>
-          <Button className="qrp-primary-btn w-full mt-3" onClick={() => navigate("/qr-pay")}>Done</Button>
-          <Button variant="ghost" className="w-full rounded-xl text-[var(--qrp-muted)]" onClick={() => { setCreated(null); setItems([{ name: "", quantity: 1, unit_price: 0 }]); setTitle(""); setDescription(""); setCoverImage(""); }}>Create another</Button>
         </div>
+
+        <QrPayShareHelpDialog
+          open={shareHelpOpen}
+          onOpenChange={setShareHelpOpen}
+          onPick={setShareSection}
+        />
       </div>
     );
   }
@@ -646,8 +800,13 @@ export default function QrPayCreatePage() {
                   {allow.card && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Card</span>}
                 </div>
 
-                <div className="pointer-events-none w-full rounded-[14px] bg-[var(--qrp-ink)] py-3.5 text-center text-[15px] font-semibold text-white">
-                  Pay {total.toFixed(2)} {cur}
+                <div className="pointer-events-none w-full">
+                  <OpenPayStyledButton
+                    as="div"
+                    style={defaultBtnStyleForPayment(paymentType)}
+                    theme="black"
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>
@@ -664,11 +823,13 @@ export default function QrPayCreatePage() {
                 </span>
               </div>
               <Button
-                className="h-14 w-full rounded-[14px] bg-white text-[16px] font-semibold text-[var(--qrp-ink)] shadow-lg hover:bg-white/95"
+                className="h-14 w-full gap-2 rounded-[14px] bg-white text-[16px] font-semibold text-[var(--qrp-ink)] shadow-lg hover:bg-white/95"
                 disabled={loading || (!isFlexible && total <= 0)}
                 onClick={submit}
               >
-                {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Creating…</> : "Generate QR"}
+                {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Creating…</> : (
+                  <><BrandLogo animate={false} className="h-5 w-5" />Generate QR</>
+                )}
               </Button>
               <p className="text-center text-[11px] text-white/55">Review details before sharing</p>
             </div>

@@ -8,6 +8,7 @@ import QrPayGuideDialog from "@/components/qrpay/QrPayGuideDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import BrandLogo from "@/components/BrandLogo";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -194,10 +195,10 @@ export default function QrPayDashboardPage() {
             <Button variant="ghost" size="icon" className="qrp-hero-btn rounded-full h-9 w-9" onClick={refresh} title="Refresh">
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
-            <Button size="sm" className="qrp-hero-btn rounded-full h-9 px-3 text-xs font-semibold" onClick={() => navigate("/qr-pay/api")} title="QR Pay API">
+            <Button size="sm" className="qrp-hero-btn rounded-full h-10 px-3.5 text-[13px] font-semibold" onClick={() => navigate("/qr-pay/api")} title="QR Pay API">
               API
             </Button>
-            <Button size="sm" className="qrp-hero-cta rounded-full h-9 px-4" onClick={() => navigate("/qr-pay/new")}>
+            <Button size="sm" className="qrp-hero-cta rounded-full h-10 px-4 text-[14px]" onClick={() => navigate("/qr-pay/new")}>
               <Plus className="h-4 w-4 mr-1" /> New
             </Button>
           </>
@@ -211,7 +212,7 @@ export default function QrPayDashboardPage() {
           {([["overview", "Overview", BarChart3], ["links", "Payment links", QrCode], ["orders", "Orders", Package]] as const).map(([k, label, Icon]) => (
             <button key={k} type="button" onClick={() => setSection(k)}
               className={`qrp-subnav-tab ${section === k ? "is-active" : ""}`}>
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className="h-4 w-4" />
               {label}
               {k === "links" && <span className="qrp-subnav-count">{payments.length}</span>}
               {k === "orders" && <span className="qrp-subnav-count">{recentTx.length}</span>}
@@ -224,37 +225,37 @@ export default function QrPayDashboardPage() {
         {/* Top KPI cards */}
         <div className="qrp-dash-grid cols-2">
           <div className="qrp-card-blue p-4 sm:p-6">
-            <div className="text-[11px] uppercase tracking-[0.14em] opacity-90 flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5"/>Available balance</div>
-            <div className="qrp-display mt-2 text-[2.35rem] leading-none sm:text-[2.85rem]">{format(stats?.available_balance || 0)}</div>
-            <div className="text-[11px] opacity-80 mt-2.5">Updates in realtime</div>
+            <div className="qrp-label flex items-center gap-1.5"><Wallet className="h-4 w-4"/>Available balance</div>
+            <div className="qrp-display mt-2 text-[2.5rem] leading-none sm:text-[3rem]">{format(stats?.available_balance || 0)}</div>
+            <div className="qrp-meta mt-2.5">Updates in realtime</div>
           </div>
           <div className="qrp-sheet p-4 sm:p-6">
-            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5"/>Total revenue</div>
-            <div className="qrp-display mt-2 text-[2.35rem] leading-none text-foreground sm:text-[2.85rem]">{format(stats?.total || 0)}</div>
-            <div className="text-xs text-muted-foreground mt-2.5">{stats?.count || 0} payments settled</div>
+            <div className="qrp-label flex items-center gap-1.5"><TrendingUp className="h-4 w-4"/>Total revenue</div>
+            <div className="qrp-display mt-2 text-[2.5rem] leading-none text-foreground sm:text-[3rem]">{format(stats?.total || 0)}</div>
+            <div className="qrp-meta mt-2.5">{stats?.count || 0} payments settled</div>
           </div>
         </div>
 
         <div className="qrp-dash-grid cols-4">
           {([["today","Today",stats?.today],["week","Week",stats?.week],["month","Month",stats?.month],["year","Year",stats?.year]] as const).map(([k,label,val]) => (
             <div key={k} className="qrp-kpi">
-              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</div>
-              <div className="text-base font-semibold tracking-[-0.02em] text-foreground mt-1">{format(Number(val) || 0)}</div>
+              <div className="qrp-label">{label}</div>
+              <div className="qrp-value mt-1.5 text-[1.15rem] sm:text-[1.25rem]">{format(Number(val) || 0)}</div>
             </div>
           ))}
         </div>
 
         {/* Method breakdown */}
         <div className="qrp-sheet">
-          <div className="qrp-sheet-head"><span>Revenue by method</span><span className="normal-case tracking-normal">All time</span></div>
+          <div className="qrp-sheet-head"><span>Revenue by method</span><span>All time</span></div>
           <div className="grid grid-cols-3 divide-x divide-border/70">
             {([["Pi", stats?.by_method?.pi, "bg-black/[0.05] text-[var(--qrp-ink)]"], ["Wallet", stats?.by_method?.wallet, "bg-black/[0.05] text-[var(--qrp-accent)]"], ["Card", stats?.by_method?.virtual_card, "bg-slate-500/10 text-slate-600"]] as const).map(([label, val, tone], i) => (
-              <div key={label} className="p-4 text-center">
-                <span className={`mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full ${tone}`}>
-                  {i === 0 ? <span className="text-sm font-bold">π</span> : i === 1 ? <Wallet className="h-4 w-4"/> : <CreditCard className="h-4 w-4"/>}
+              <div key={label} className="p-4 text-center sm:p-5">
+                <span className={`mx-auto mb-2.5 flex h-9 w-9 items-center justify-center rounded-full ${tone}`}>
+                  {i === 0 ? <span className="text-base font-bold">π</span> : i === 1 ? <Wallet className="h-4 w-4"/> : <CreditCard className="h-4 w-4"/>}
                 </span>
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-                <div className="mt-0.5 font-bold text-foreground">{format(Number(val) || 0)}</div>
+                <div className="qrp-label">{label}</div>
+                <div className="qrp-value mt-1">{format(Number(val) || 0)}</div>
               </div>
             ))}
           </div>
@@ -263,40 +264,40 @@ export default function QrPayDashboardPage() {
         {/* Analytics */}
         <div className="qrp-sheet">
           <div className="qrp-sheet-head">
-            <span className="inline-flex items-center gap-1.5"><BarChart3 className="h-3.5 w-3.5 text-[var(--qrp-accent)]" /> Analytics — <span className="normal-case tracking-normal">{rangeLabel}</span></span>
+            <span className="inline-flex items-center gap-1.5"><BarChart3 className="h-4 w-4 text-[var(--qrp-accent)]" /> Analytics — <span className="font-medium text-[var(--qrp-muted)]">{rangeLabel}</span></span>
             <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
-              <TabsList className="h-8">
+              <TabsList className="h-9">
                 {(["today","week","month","year","all"] as Range[]).map(r => (
-                  <TabsTrigger key={r} value={r} className="h-6 px-2 text-[11px] capitalize">{r}</TabsTrigger>
+                  <TabsTrigger key={r} value={r} className="h-7 px-2.5 text-[13px] capitalize">{r}</TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
           </div>
-          <div className="p-4">
+          <div className="p-4 sm:p-5">
             {analytics?.totals && (
               <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                <div className="rounded-xl border border-border/70 bg-muted/40 p-3">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Revenue</div>
-                  <div className="text-sm font-bold">{format(Number(analytics.totals.total_revenue) || 0)}</div>
+                <div className="rounded-xl border border-border/70 bg-muted/40 p-3.5">
+                  <div className="qrp-label">Revenue</div>
+                  <div className="qrp-value mt-1">{format(Number(analytics.totals.total_revenue) || 0)}</div>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-muted/40 p-3">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Payments</div>
-                  <div className="text-sm font-bold">{analytics.totals.total_payments}</div>
+                <div className="rounded-xl border border-border/70 bg-muted/40 p-3.5">
+                  <div className="qrp-label">Payments</div>
+                  <div className="qrp-value mt-1">{analytics.totals.total_payments}</div>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-muted/40 p-3">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Avg payment</div>
-                  <div className="text-sm font-bold">{format(Number(analytics.totals.avg_payment) || 0)}</div>
+                <div className="rounded-xl border border-border/70 bg-muted/40 p-3.5">
+                  <div className="qrp-label">Avg payment</div>
+                  <div className="qrp-value mt-1">{format(Number(analytics.totals.avg_payment) || 0)}</div>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-muted/40 p-3">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3"/>Customers</div>
-                  <div className="text-sm font-bold">{analytics.totals.unique_customers}</div>
+                <div className="rounded-xl border border-border/70 bg-muted/40 p-3.5">
+                  <div className="qrp-label flex items-center gap-1"><Users className="h-3.5 w-3.5"/>Customers</div>
+                  <div className="qrp-value mt-1">{analytics.totals.unique_customers}</div>
                 </div>
               </div>
             )}
 
-            <div className="h-44 -mx-2">
+            <div className="h-52 -mx-1 sm:h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={analytics?.daily || []} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+                <AreaChart data={analytics?.daily || []} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <defs>
                     <linearGradient id="qrRev" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#1d1d1f" stopOpacity={0.5}/>
@@ -304,10 +305,10 @@ export default function QrPayDashboardPage() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2}/>
-                  <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={4} />
-                  <YAxis tick={{ fontSize: 10 }} width={36} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#86868b" }} interval={4} />
+                  <YAxis tick={{ fontSize: 12, fill: "#86868b" }} width={42} />
                   <Tooltip
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                    contentStyle={{ fontSize: 14, borderRadius: 10 }}
                     formatter={(v: any, name: string) => [name === "revenue" ? format(Number(v) || 0) : v, name === "revenue" ? "Revenue" : "Payments"]}
                   />
                   <Area type="monotone" dataKey="revenue" stroke="#1d1d1f" fill="url(#qrRev)" strokeWidth={2}/>
@@ -322,13 +323,13 @@ export default function QrPayDashboardPage() {
               <div className="px-4 pb-4">
                 <div className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/70">
                   {analytics.top.map((t, i) => (
-                    <div key={t.id} className="flex items-center justify-between gap-3 bg-card px-3 py-2.5 text-xs">
+                    <div key={t.id} className="flex items-center justify-between gap-3 bg-card px-3.5 py-3 text-[14px]">
                       <div className="flex min-w-0 items-center gap-2.5">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/[0.05] font-mono text-[10px] font-bold text-[var(--qrp-accent)]">{i+1}</span>
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/[0.05] font-mono text-[12px] font-bold text-[var(--qrp-accent)]">{i+1}</span>
                         <span className="truncate font-semibold text-foreground">{t.title || "Untitled"}</span>
                       </div>
                       <div className="flex shrink-0 items-center gap-3">
-                        <span className="text-muted-foreground">{t.payments}×</span>
+                        <span className="text-[13px] text-muted-foreground">{t.payments}×</span>
                         <span className="font-bold text-foreground">{t.currency} {Number(t.revenue).toFixed(2)}</span>
                       </div>
                     </div>
@@ -346,28 +347,31 @@ export default function QrPayDashboardPage() {
         <div className="qrp-sheet qrp-rise">
           <div className="qrp-sheet-head">
             <span>Payment links</span>
-            <Button variant="ghost" size="sm" className="h-7 text-xs normal-case tracking-normal text-[var(--qrp-accent)]" onClick={() => navigate("/qr-pay/new")}>
-              <Plus className="mr-1 h-3.5 w-3.5"/>Create
+            <Button variant="ghost" size="sm" className="h-8 text-[13px] font-semibold text-[var(--qrp-accent)]" onClick={() => navigate("/qr-pay/new")}>
+              <Plus className="mr-1 h-4 w-4"/>Create
             </Button>
           </div>
-          {loading ? <p className="p-4 text-sm text-muted-foreground">Loading…</p> :
+          {loading ? <p className="p-4 text-[15px] text-muted-foreground">Loading…</p> :
             payments.length === 0 ? (
               <div className="p-8 text-center">
                 <QrCode className="mx-auto mb-2 h-10 w-10 text-muted-foreground"/>
-                <p className="mb-3 text-sm text-muted-foreground">No QR payments yet</p>
-                <Button className="qrp-primary-btn" onClick={() => navigate("/qr-pay/new")}>Create your first</Button>
+                <p className="mb-3 text-[15px] text-muted-foreground">No QR payments yet</p>
+                <Button className="qrp-primary-btn gap-2" onClick={() => navigate("/qr-pay/new")}>
+                  <BrandLogo variant="white" animate={false} className="h-5 w-5" />
+                  Create your first
+                </Button>
               </div>
             ) : (
               <div className="divide-y divide-border/60">
                 {payments.map(p => (
-                  <div key={p.id} className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/40">
+                  <div key={p.id} className="flex items-center gap-3 px-3.5 py-3.5 transition-colors hover:bg-muted/40">
                     <div className="shrink-0 rounded-xl bg-muted p-2.5"><QrCode className="h-5 w-5"/></div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <div className="truncate text-sm font-semibold text-foreground">{p.title || "Untitled"}</div>
-                        <Badge variant={p.status === "active" ? "default" : "secondary"} className="text-[10px] capitalize">{p.status}</Badge>
+                        <div className="truncate text-[15px] font-semibold text-foreground">{p.title || "Untitled"}</div>
+                        <Badge variant={p.status === "active" ? "default" : "secondary"} className="text-[12px] capitalize">{p.status}</Badge>
                       </div>
-                      <div className="text-xs text-muted-foreground">{p.currency} {Number(p.total).toFixed(2)} · {new Date(p.created_at).toLocaleDateString()}</div>
+                      <div className="qrp-meta mt-0.5">{p.currency} {Number(p.total).toFixed(2)} · {new Date(p.created_at).toLocaleDateString()}</div>
                     </div>
                     <div className="flex shrink-0 items-center gap-0.5">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewToken(p.token)} title="Preview"><Eye className="h-4 w-4"/></Button>
@@ -390,7 +394,7 @@ export default function QrPayDashboardPage() {
             <span>Orders &amp; customer details</span>
             <span className="normal-case tracking-normal">{recentTx.length} recent</span>
           </div>
-          {recentTx.length === 0 ? <p className="p-6 text-center text-xs text-muted-foreground">No orders received yet.</p> : (
+          {recentTx.length === 0 ? <p className="p-6 text-center text-[15px] text-muted-foreground">No orders received yet.</p> : (
             <div className="divide-y divide-border/60">
               {recentTx.map(t => {
                 const open = expanded === t.id;
@@ -398,64 +402,62 @@ export default function QrPayDashboardPage() {
                 const linked = payments.find(p => p.id === t.qr_payment_id);
                 return (
                   <div key={t.id}>
-                    <button type="button" onClick={() => toggleExpand(t)} className="w-full px-3 py-3 text-left transition-colors hover:bg-muted/40">
+                    <button type="button" onClick={() => toggleExpand(t)} className="w-full px-3.5 py-3.5 text-left transition-colors hover:bg-muted/40">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 shrink-0 text-[var(--qrp-accent)]" />
-                            <div className="truncate text-sm font-semibold text-foreground">{t.payer_name || "Customer"}</div>
-                            <Badge variant={t.status === "succeeded" ? "default" : "secondary"} className="text-[10px] capitalize">{t.status}</Badge>
+                            <div className="truncate text-[15px] font-semibold text-foreground">{t.payer_name || "Customer"}</div>
+                            <Badge variant={t.status === "succeeded" ? "default" : "secondary"} className="text-[12px] capitalize">{t.status}</Badge>
                           </div>
-                          <div className="mt-0.5 truncate text-xs capitalize text-muted-foreground">
+                          <div className="qrp-meta mt-1 truncate capitalize">
                             {linked?.title || "QR payment"} · {t.method.replace("_"," ")} · #{t.transaction_ref}
                           </div>
                         </div>
                         <div className="shrink-0 text-right">
-                          <div className="font-bold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</div>
-                          <div className="text-[11px] text-muted-foreground">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
-                          <div className="mt-0.5 flex items-center justify-end gap-0.5 text-[11px] font-semibold text-[var(--qrp-accent)]">
-                            {open ? <>Hide<ChevronUp className="h-3 w-3"/></> : <>Details<ChevronDown className="h-3 w-3"/></>}
+                          <div className="text-[15px] font-bold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</div>
+                          <div className="qrp-meta mt-0.5">{t.paid_at ? new Date(t.paid_at).toLocaleString() : ""}</div>
+                          <div className="mt-1 flex items-center justify-end gap-0.5 text-[13px] font-semibold text-[var(--qrp-accent)]">
+                            {open ? <>Hide<ChevronUp className="h-3.5 w-3.5"/></> : <>Details<ChevronDown className="h-3.5 w-3.5"/></>}
                           </div>
                         </div>
                       </div>
                     </button>
                     {open && (
-                      <div className="space-y-3 border-t border-border/60 bg-muted/30 px-3 py-3 qrp-rise">
-                        {/* Customer */}
+                      <div className="space-y-3 border-t border-border/60 bg-muted/30 px-3.5 py-3.5 qrp-rise">
                         <div>
-                          <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Customer</div>
-                          <div className="space-y-1 text-xs text-foreground">
-                            {t.payer_email && <div className="flex items-center gap-2"><Mail className="h-3 w-3 text-muted-foreground"/>{t.payer_email}</div>}
-                            {t.payer_phone && <div className="flex items-center gap-2"><Phone className="h-3 w-3 text-muted-foreground"/>{t.payer_phone}</div>}
-                            {t.delivery_address && <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-3 w-3 text-muted-foreground"/><span className="whitespace-pre-line">{t.delivery_address}</span></div>}
-                            {t.delivery_notes && <div className="flex items-start gap-2"><StickyNote className="mt-0.5 h-3 w-3 text-muted-foreground"/><span className="italic">{t.delivery_notes}</span></div>}
+                          <div className="qrp-label mb-1.5">Customer</div>
+                          <div className="space-y-1.5 text-[14px] text-foreground">
+                            {t.payer_email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-muted-foreground"/>{t.payer_email}</div>}
+                            {t.payer_phone && <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-muted-foreground"/>{t.payer_phone}</div>}
+                            {t.delivery_address && <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 text-muted-foreground"/><span className="whitespace-pre-line">{t.delivery_address}</span></div>}
+                            {t.delivery_notes && <div className="flex items-start gap-2"><StickyNote className="mt-0.5 h-3.5 w-3.5 text-muted-foreground"/><span className="italic">{t.delivery_notes}</span></div>}
                             {!t.payer_email && !t.payer_phone && !t.delivery_address && !t.delivery_notes && (
                               <div className="text-muted-foreground">No customer details captured.</div>
                             )}
                           </div>
                         </div>
-                        {/* Items */}
                         <div>
-                          <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Items</div>
+                          <div className="qrp-label mb-1.5">Items</div>
                           {items.length === 0 ? (
-                            <div className="text-xs text-muted-foreground">No itemized line items.</div>
+                            <div className="qrp-meta">No itemized line items.</div>
                           ) : (
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               {items.map(it => (
-                                <div key={it.id} className="flex items-center gap-2 text-xs">
+                                <div key={it.id} className="flex items-center gap-2.5 text-[14px]">
                                   {it.image_url ? (
-                                    <img src={it.image_url} alt={it.name} className="h-8 w-8 rounded border object-cover" />
+                                    <img src={it.image_url} alt={it.name} className="h-9 w-9 rounded border object-cover" />
                                   ) : (
-                                    <div className="flex h-8 w-8 items-center justify-center rounded bg-muted"><Package className="h-3 w-3 text-muted-foreground"/></div>
+                                    <div className="flex h-9 w-9 items-center justify-center rounded bg-muted"><Package className="h-3.5 w-3.5 text-muted-foreground"/></div>
                                   )}
                                   <div className="min-w-0 flex-1">
                                     <div className="truncate font-medium text-foreground">{it.name}</div>
-                                    <div className="text-muted-foreground">{it.quantity} × {t.currency} {Number(it.unit_price).toFixed(2)}</div>
+                                    <div className="qrp-meta">{it.quantity} × {t.currency} {Number(it.unit_price).toFixed(2)}</div>
                                   </div>
                                   <div className="font-semibold text-foreground">{t.currency} {Number(it.line_total).toFixed(2)}</div>
                                 </div>
                               ))}
-                              <div className="mt-1 flex justify-between border-t pt-1 text-xs">
+                              <div className="mt-1.5 flex justify-between border-t pt-1.5 text-[14px]">
                                 <span className="text-muted-foreground">Total</span>
                                 <span className="font-bold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</span>
                               </div>
@@ -464,13 +466,13 @@ export default function QrPayDashboardPage() {
                         </div>
                         <div className="flex gap-2 pt-1">
                           {linked && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/qr-pay/${linked.token}`, "_blank"); }}>
-                              <ExternalLink className="mr-1 h-3 w-3"/>View checkout
+                            <Button size="sm" variant="outline" className="h-9 text-[13px]" onClick={(e) => { e.stopPropagation(); window.open(`/qr-pay/${linked.token}`, "_blank"); }}>
+                              <ExternalLink className="mr-1 h-3.5 w-3.5"/>View checkout
                             </Button>
                           )}
                           {t.payer_email && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${t.payer_email}?subject=Your order ${t.transaction_ref}`; }}>
-                              <Mail className="mr-1 h-3 w-3"/>Email customer
+                            <Button size="sm" variant="outline" className="h-9 text-[13px]" onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${t.payer_email}?subject=Your order ${t.transaction_ref}`; }}>
+                              <Mail className="mr-1 h-3.5 w-3.5"/>Email customer
                             </Button>
                           )}
                         </div>

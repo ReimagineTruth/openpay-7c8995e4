@@ -4,6 +4,11 @@
 
 @layer base {
   :root {
+    /* Editorial / blog / wiki / docs / website */
+    --font-editorial:
+      "Plus Jakarta Sans", "SF Pro Display", "SF Pro Text",
+      -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
     /* Professional Fintech Color Palette */
     --background: 220 35% 98%;
     --foreground: 220 25% 15%;
@@ -54,7 +59,7 @@
   }
 
   .dark {
-    /* Web3-matched Dark Mode — near-black with subtle blue tint */
+    /* Web3-matched Dark Mode ? near-black with subtle blue tint */
     --background: 0 0% 3%;
     --foreground: 0 0% 98%;
 
@@ -391,7 +396,7 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
-  /* ============ QR Pay — Apple Pay–inspired design system ============ */
+  /* ============ QR Pay ? Apple Pay?inspired design system ============ */
   .qrp-page-bg {
     --qrp-ink: #1d1d1f;
     --qrp-muted: #86868b;
@@ -401,8 +406,8 @@
     --qrp-accent: #007AFF;
     --qrp-pay: #1d1d1f;
     --qrp-ok: #34c759;
-    --qrp-display: "Outfit", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
-    --qrp-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+    --qrp-display: var(--font-editorial);
+    --qrp-text: var(--font-editorial);
     position: relative;
     isolation: isolate;
     overflow-x: clip;
@@ -411,7 +416,7 @@
     color: var(--qrp-ink);
     -webkit-font-smoothing: antialiased;
   }
-  /* Atmospheric mesh background — mobile + desktop */
+  /* Atmospheric mesh background ? mobile + desktop */
   .qrp-page-bg::before {
     content: "";
     position: fixed;
@@ -593,7 +598,7 @@
   }
   .dark .qrp-card { border-color: hsl(0 0% 16%); box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px -20px rgba(0,0,0,0.6); }
 
-  /* Checkout shell — fluid width that grows with the viewport */
+  /* Checkout shell ? fluid width that grows with the viewport */
   .qrp-stage {
     width: 100%;
     max-width: min(32rem, 100%);
@@ -624,7 +629,7 @@
     padding-right: clamp(0.75rem, 2.5vw, 1.75rem);
   }
 
-  /* Desktop checkout — fluid 2-column that fills large screens */
+  /* Desktop checkout ? fluid 2-column that fills large screens */
   .qrp-checkout-desk {
     display: grid;
     grid-template-columns: 1fr;
@@ -793,6 +798,69 @@
     color: #fff;
   }
 
+  /* Share step ? Mobile vs Website segmented control */
+  .qrp-share-seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+    width: 100%;
+    max-width: 28rem;
+    padding: 0.3rem;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.05);
+  }
+  .qrp-share-seg > button {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    padding: 0.65rem 0.85rem;
+    border: 0;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--qrp-muted);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-align: left;
+    transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+  }
+  .qrp-share-seg > button svg {
+    margin-bottom: 0.15rem;
+  }
+  .qrp-share-seg-hint {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: inherit;
+    opacity: 0.75;
+  }
+  .qrp-share-seg > button.is-on {
+    background: #fff;
+    color: var(--qrp-ink);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+  }
+  .qrp-share-seg > button.is-on .qrp-share-seg-hint {
+    color: var(--qrp-muted);
+    opacity: 1;
+  }
+  @media (min-width: 480px) {
+    .qrp-share-seg > button {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+    }
+    .qrp-share-seg > button svg {
+      margin-bottom: 0;
+    }
+    .qrp-share-seg-hint {
+      width: 100%;
+      padding-left: 1.55rem;
+      margin-top: -0.1rem;
+    }
+  }
+
   /* Primary floating payment card (checkout / success / share) */
   .qrp-pay-sheet {
     background: rgba(255,255,255,0.88);
@@ -919,12 +987,34 @@
     background: var(--qrp-surface);
     border: 0;
     border-radius: 14px;
-    padding: 14px 12px;
+    padding: 16px 14px;
     text-align: center;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
     transition: transform .15s ease, background .15s ease;
   }
   .qrp-kpi:hover { transform: translateY(-1px); background: #fafafa; }
+  .qrp-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--qrp-muted);
+    line-height: 1.25;
+  }
+  .qrp-meta {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--qrp-muted);
+    line-height: 1.35;
+  }
+  .qrp-value {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--qrp-ink);
+    line-height: 1.2;
+  }
+  .qrp-card-blue .qrp-label { color: rgba(255,255,255,0.88); }
+  .qrp-card-blue .qrp-meta { color: rgba(255,255,255,0.72); }
 
   /* Dashboard / create grid cards */
   .qrp-dash-grid {
@@ -950,8 +1040,8 @@
   .qrp-subnav::-webkit-scrollbar { display: none; }
   .qrp-subnav-tab {
     display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-    padding: 8px 14px; border-radius: 10px;
-    font-size: 13px; font-weight: 600; letter-spacing: -0.01em;
+    padding: 10px 16px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
     color: var(--qrp-muted);
     transition: background .18s ease, color .18s ease, transform .18s ease;
   }
@@ -962,8 +1052,8 @@
   }
   .qrp-subnav-tab:active { transform: scale(0.97); }
   .qrp-subnav-count {
-    min-width: 20px; padding: 1px 6px; border-radius: 999px;
-    font-size: 10px; font-weight: 700;
+    min-width: 22px; padding: 2px 7px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
     background: rgba(0,0,0,0.06); color: inherit;
   }
   .qrp-subnav-tab.is-active .qrp-subnav-count { background: rgba(0,113,227,0.12); color: var(--qrp-accent); }
@@ -1053,36 +1143,63 @@
   .qrp-pay-opt:hover { background: #fafafa; }
   .qrp-pay-opt.is-active { background: #f5f5f7; }
 
-  /* ── Success animation ─────────────────────────── */
+  /* ?? Success (Apple Pay?style green check) ?? */
   @keyframes qrp-check-pop {
-    0% { transform: scale(0.2); opacity: 0 }
-    55% { transform: scale(1.12); opacity: 1 }
+    0% { transform: scale(0.55); opacity: 0 }
+    60% { transform: scale(1.06); opacity: 1 }
     100% { transform: scale(1); opacity: 1 }
   }
   @keyframes qrp-pulse-ring {
-    0% { transform: scale(0.85); opacity: 0.5 }
-    100% { transform: scale(1.7); opacity: 0 }
+    0% { transform: scale(1); opacity: 0.45 }
+    100% { transform: scale(1.55); opacity: 0 }
   }
-  @keyframes qrp-draw { to { stroke-dashoffset: 0 } }
-  .qrp-success-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+  @keyframes qrp-draw {
+    from { stroke-dashoffset: 56 }
+    to { stroke-dashoffset: 0 }
+  }
+  .qrp-success-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 88px;
+    width: 88px;
+  }
   .qrp-success-badge {
-    position: relative; z-index: 2;
-    height: 88px; width: 88px; border-radius: 9999px;
-    display: inline-flex; align-items: center; justify-content: center;
-    background: var(--qrp-ok);
-    box-shadow: 0 16px 36px -18px rgba(52,199,89,0.85), inset 0 1px 0 rgba(255,255,255,0.35);
-    animation: qrp-check-pop .55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    position: relative;
+    z-index: 2;
+    height: 76px;
+    width: 76px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #3dd869 0%, #30d158 45%, #28c84a 100%);
+    box-shadow:
+      0 14px 32px -14px rgba(48, 209, 88, 0.75),
+      0 1px 0 rgba(255, 255, 255, 0.35) inset;
+    animation: qrp-check-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .qrp-success-check {
+    height: 40px;
+    width: 40px;
+    overflow: visible;
   }
   .qrp-success-ring {
-    position: absolute; inset: 0; border-radius: 9999px;
-    border: 2px solid rgba(52,199,89,0.55);
-    animation: qrp-pulse-ring 2s ease-out infinite;
+    position: absolute;
+    inset: 6px;
+    border-radius: 9999px;
+    border: 2px solid rgba(48, 209, 88, 0.45);
+    pointer-events: none;
+    animation: qrp-pulse-ring 1.8s ease-out infinite;
   }
-  .qrp-success-ring:nth-of-type(2) { animation-delay: .55s; }
-  .qrp-success-ring:nth-of-type(3) { animation-delay: 1.1s; }
+  .qrp-success-ring--delay {
+    animation-delay: 0.65s;
+  }
   .qrp-check-path {
-    stroke-dasharray: 48; stroke-dashoffset: 48;
-    animation: qrp-draw .5s cubic-bezier(0.65, 0, 0.35, 1) .3s forwards;
+    stroke-dasharray: 56;
+    stroke-dashoffset: 0;
+    animation: qrp-draw 0.45s cubic-bezier(0.65, 0, 0.35, 1) 0.28s both;
   }
 
   @keyframes qrp-rise { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: none } }
@@ -1094,7 +1211,11 @@
   .qrp-stagger > *:nth-child(4) { animation-delay: .22s }
   .qrp-stagger > *:nth-child(5) { animation-delay: .28s }
   @media (prefers-reduced-motion: reduce) {
-    .qrp-stagger > *, .qrp-rise, .qrp-success-badge, .qrp-success-ring, .qrp-check-path { animation: none !important; }
+    .qrp-stagger > *, .qrp-rise, .qrp-success-badge, .qrp-success-ring { animation: none !important; }
+    .qrp-check-path {
+      animation: none !important;
+      stroke-dashoffset: 0 !important;
+    }
   }
 
   .qrp-footnote {
@@ -1140,9 +1261,14 @@
   }
   .qrp-sheet-head {
     display: flex; align-items: center; justify-content: space-between; gap: .5rem;
-    padding: 0.85rem 1.1rem 0.35rem;
+    padding: 1rem 1.15rem 0.45rem;
     border-bottom: 0;
-    font-size: 12px; font-weight: 500; letter-spacing: -0.01em; text-transform: none;
+    font-size: 15px; font-weight: 600; letter-spacing: -0.015em; text-transform: none;
+    color: var(--qrp-ink);
+  }
+  .qrp-sheet-head > span:last-child:not(:only-child) {
+    font-size: 13px;
+    font-weight: 500;
     color: var(--qrp-muted);
   }
   .qrp-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; font-size: 15px; }
@@ -1177,7 +1303,7 @@
   @keyframes qrp-ring { 0% { transform: scale(.6); opacity: 0 } 60% { transform: scale(1.06); opacity: 1 } 100% { transform: scale(1); opacity: 1 } }
   .qrp-ring { animation: qrp-ring .55s cubic-bezier(0.22, 1, 0.36, 1); }
 
-  /* ── iOS currency sheet + form chrome ───────────────────────── */
+  /* ?? iOS currency sheet + form chrome ????????????????????????? */
   .ios-currency-trigger {
     display: flex;
     width: 100%;
@@ -1189,14 +1315,14 @@
     border: 0;
     background: #f2f2f7;
     text-align: left;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    font-family: var(--font-editorial);
     transition: background .12s ease, transform .12s ease;
   }
   .ios-currency-trigger:hover { background: #eaeaef; }
   .ios-currency-trigger:active { transform: scale(0.99); background: #e5e5ea; }
 
   .ios-currency-sheet {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    font-family: var(--font-editorial);
     border-radius: 20px !important;
     border: 0 !important;
     background: #f2f2f7 !important;
@@ -2480,7 +2606,7 @@ body {
 }
 
 /* ============================================================
-   Dashboard CTA button system — unified, polished, animated
+   Dashboard CTA button system ? unified, polished, animated
    ============================================================ */
 .dash-cta {
   position: relative;
@@ -2545,7 +2671,7 @@ body {
   box-shadow: 0 4px 12px -4px rgba(0,0,0,0.12);
 }
 
-/* Section tab — animated active indicator */
+/* Section tab ? animated active indicator */
 .dash-tab {
   position: relative;
   transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -2616,7 +2742,7 @@ body {
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ============================================================
-   NFT theme adaptation — many NFT pages ship hardcoded dark
+   NFT theme adaptation ? many NFT pages ship hardcoded dark
    utilities (bg-black, text-white, white/x overlays). When the
    app is in light mode, remap those to semantic tokens so the
    entire NFT feature respects the active theme.
@@ -2686,7 +2812,7 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/60,
 html:not(.dark) .nft-scope .nft-on-media .text-white\/50,
 html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,255,0.75) !important; }
 
-/* Web3 CTA — PayPal-blue gradient with animated shine + sparkle */
+/* Web3 CTA ? PayPal-blue gradient with animated shine + sparkle */
 .web3-cta {
   background: linear-gradient(120deg, hsl(217 91% 55%) 0%, hsl(217 91% 60%) 45%, hsl(199 89% 55%) 100%);
   background-size: 200% 200%;
@@ -2733,7 +2859,7 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,2
    Maps hardcoded Tailwind utilities used across legacy pages
    to theme-aware colors so text stays visible when the user
    toggles between light and dark modes.
-   Scoped with :where() so specificity stays at 0 — any
+   Scoped with :where() so specificity stays at 0 ? any
    component that explicitly sets its own color still wins.
    ========================================================= */
 .dark :where(.text-black) { color: hsl(var(--foreground)); }
@@ -2761,7 +2887,7 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,2
 .dark .theme-fixed :where(.bg-black) { background-color: #000; color: inherit; }
 
 /* =========================================================
-   Classic Dashboard dark-mode override — match Web3 dark look
+   Classic Dashboard dark-mode override ? match Web3 dark look
    The dashboard root and section hero pills hardcode
    bg-paypal-blue / bg-white / text-paypal-blue. In dark mode
    we repaint them so the whole screen reads like the Web3
@@ -2785,7 +2911,7 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,2
 }
 
 /* ==========================================================================
-   NFT scope — light mode adaptations.
+   NFT scope ? light mode adaptations.
    The marketplace/detail/store pages were designed dark-first with lots of
    hard-coded arbitrary color values (bg-[#0f0f10], bg-white/5, border-white/10,
    text-white, etc). In light mode those become invisible / low-contrast.
@@ -2816,7 +2942,7 @@ html:not(.dark) .nft-scope .nft-on-media .text-white\/40 { color: rgba(255,255,2
   --tw-ring-color: hsl(var(--card)) !important;
 }
 
-/* Text colors — force readable dark text in light mode where components hard-coded white */
+/* Text colors ? force readable dark text in light mode where components hard-coded white */
 .nft-scope:not(.dark) :where(.text-white) { color: hsl(var(--foreground)) !important; }
 .nft-scope:not(.dark) :where(.text-white\/80) { color: hsl(var(--foreground) / 0.8) !important; }
 .nft-scope:not(.dark) :where(.text-white\/70) { color: hsl(var(--foreground) / 0.7) !important; }
@@ -2837,12 +2963,13 @@ html:not(.dark) .nft-on-media :where(svg) { color: #ffffff !important; stroke: c
 html:not(.dark) .nft-on-media :where(.text-white\/80, .text-white\/70) { color: rgba(255,255,255,0.85) !important; }
 html:not(.dark) .nft-on-media :where(.text-white\/60, .text-white\/50, .text-white\/40) { color: rgba(255,255,255,0.7) !important; }
 
-/* Store name / owner labels on NFT detail + store cards — force white when placed over the blue store banner */
+/* Store name / owner labels on NFT detail + store cards ? force white when placed over the blue store banner */
 html:not(.dark) .nft-store-banner :where(h1, h2, h3, h4, p, span, a, button) { color: #ffffff !important; }
 html:not(.dark) .nft-store-banner :where(svg) { color: #ffffff !important; }
 
-/* OpenPay AI — Claude-inspired typography + prose rhythm */
+/* OpenPay AI ? Claude-inspired typography + prose rhythm */
 .chat-md {
+  font-family: var(--font-editorial);
   font-optical-sizing: auto;
   font-feature-settings: "liga" 1, "kern" 1;
   max-width: 48rem;
@@ -2874,7 +3001,7 @@ html:not(.dark) .nft-store-banner :where(svg) { color: #ffffff !important; }
 
 /* =========================================================
    OpenSea-grade polish layer for every NFT page (.nft-scope)
-   Presentation only — classes are opt-in plus a few safe
+   Presentation only ? classes are opt-in plus a few safe
    element-level upgrades scoped to the NFT surface.
    ========================================================= */
 
@@ -2976,3 +3103,112 @@ html:not(.dark) .nft-store-banner :where(svg) { color: #ffffff !important; }
 }
 .nft-scope button { transition: transform .15s ease, background-color .2s ease, color .2s ease, box-shadow .2s ease, border-color .2s ease; }
 .nft-scope button:active:not(:disabled) { transform: scale(.97); }
+
+/* =========================================================
+   Editorial type - blog / wiki / website / docs (.opblog-*)
+   Font: Plus Jakarta Sans (see --font-editorial)
+   ========================================================= */
+
+.opblog,
+.article,
+.op-font {
+  font-family: var(--font-editorial);
+  -webkit-font-smoothing: antialiased;
+}
+
+.opblog-title,
+.article-title {
+  font-family: var(--font-editorial);
+  font-weight: 700;
+  font-size: clamp(2.25rem, 5.2vw, 3.75rem);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+
+.opblog-h2,
+.article-h2 {
+  font-family: var(--font-editorial);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+
+.opblog-dek,
+.article-dek {
+  font-family: var(--font-editorial);
+  font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  font-weight: 400;
+}
+
+.opblog-body,
+.article-body {
+  max-width: 46rem;
+}
+
+.opblog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* space-y-6 */
+}
+
+.opblog-body p,
+.opblog-body li,
+.article-body p,
+.article-body li {
+  font-family: var(--font-editorial);
+  font-size: 1.125rem; /* 18px */
+  line-height: 1.72;
+  letter-spacing: -0.006em;
+  font-weight: 400;
+}
+
+.opblog-label,
+.article-label {
+  font-family: var(--font-editorial);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.opblog-meta,
+.opblog-nav {
+  font-family: var(--font-editorial);
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600;
+}
+
+.opblog-quote {
+  font-family: var(--font-editorial);
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+}
+
+.opblog-code,
+.opblog pre,
+.opblog code {
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+/* Marketing website hero ? larger than blog */
+.op-hero-title {
+  font-family: var(--font-editorial);
+  font-weight: 800;
+  font-size: clamp(2.85rem, 8vw, 5rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.op-hero-support {
+  font-family: var(--font-editorial);
+  font-weight: 500;
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+}
