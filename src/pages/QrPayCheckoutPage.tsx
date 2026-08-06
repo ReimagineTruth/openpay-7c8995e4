@@ -19,6 +19,12 @@ import {
   makeProXferRef,
   formatProDestinationPreview,
 } from "@/lib/openpayProTransfer";
+import {
+  authenticatePiForPayments,
+  resolvePiPaymentAmount,
+  waitForPiSdk,
+  initPiSdk,
+} from "@/lib/piPayment";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 
@@ -83,7 +89,9 @@ export default function QrPayCheckoutPage() {
 
   // Pi SDK is injected on every page (index.html). Only the real Pi Browser
   // can complete Pi payments — do NOT treat window.Pi as “inside Pi Browser”.
-  const [inPiBrowser, setInPiBrowser] = useState(false);
+  const [inPiBrowser, setInPiBrowser] = useState(
+    () => typeof window !== "undefined" && isPiBrowserUAOnly(),
+  );
   useEffect(() => {
     setInPiBrowser(isPiBrowserUAOnly());
   }, []);
@@ -330,68 +338,102 @@ export default function QrPayCheckoutPage() {
 
   const selectPi = () => {
     setMethod("pi");
-    if (!inPiBrowser) setPiBrowserOpen(true);
+    if (!inPiBrowser) {
+      setPiBrowserOpen(true);
+      return;
+    }
+    // Warm Pi Auth as soon as user picks Pi inside Pi Browser
+    void (async () => {
+      try {
+        await waitForPiSdk(8000);
+        initPiSdk();
+        await authenticatePiForPayments(60000);
+      } catch {
+        // Pay button will retry auth — don't toast on silent warm-up
+      }
+    })();
   };
 
   const payPi = async () => {
     if (!validateAmount() || !validateDelivery()) return;
-    // Outside Pi Browser: always show copy-link instructions (never hang on SDK)
-    if (!inPiBrowser) {
-      setPaying(false);
-      setPiBrowserOpen(true);
-      return;
-    }
-    if (typeof window === "undefined" || !(window as any).Pi) {
+
+    const hasNativePi =
+      typeof window !== "undefined" &&
+      Boolean((window as any).Pi?.nativeFeaturesList || (window as any).Pi?.Ads);
+
+    // Outside Pi Browser: show copy-link instructions (never hang on SDK)
+    if (!inPiBrowser && !hasNativePi) {
       setPaying(false);
       setPiBrowserOpen(true);
       return;
     }
     if (!data!.allow_guest && !session) { requireSignIn(); return; }
+
     setPaying(true);
     try {
-      const Pi = (window as any).Pi;
-      // Ensure the user is authenticated with "payments" scope before creating a payment.
-      try {
-        await Pi.authenticate(["username", "payments"], async (incomplete: any) => {
-          // If there is an incomplete payment, complete it via our edge function
-          try {
-            if (incomplete?.identifier && incomplete?.transaction?.txid) {
-              await supabase.functions.invoke("pi-platform", {
-                body: { action: "complete", paymentId: incomplete.identifier, txid: incomplete.transaction.txid },
-              });
-            }
-          } catch {}
-        });
-      } catch (e: any) {
-        throw new Error(e?.message || "Pi sign-in required");
+      toast.message("Sign in with Pi…");
+      // 1) Wait for SDK  2) Init  3) Pi Auth with payments scope  4) Then createPayment
+      const auth = await authenticatePiForPayments();
+      const Pi = initPiSdk(await waitForPiSdk());
+      if (typeof Pi.createPayment !== "function") {
+        throw new Error("Pi payments unavailable. Update Pi Browser and try again.");
       }
 
-      const piAmount = chargeAmount;
+      const piAmount = await resolvePiPaymentAmount(chargeAmount, data!.currency);
+      toast.message(`Confirm ${piAmount.toFixed(4)} π in Pi…`);
+
       await new Promise<void>((resolve, reject) => {
-        Pi.createPayment(
-          { amount: piAmount, memo: `OpenPay QR · ${data!.title || data!.token}`.slice(0, 64),
-            metadata: { qr_token: data!.token, kind: "qr_pay" } },
-          {
-            onReadyForServerApproval: async (paymentId: string) => {
-              await supabase.functions.invoke("pi-platform", { body: { action: "approve", paymentId } });
+        try {
+          Pi.createPayment(
+            {
+              amount: piAmount,
+              memo: `OpenPay QR · ${data!.title || data!.token}`.slice(0, 64),
+              metadata: {
+                qr_token: data!.token,
+                kind: "qr_pay",
+                currency: data!.currency,
+                charge_amount: chargeAmount,
+                pi_username: auth?.user?.username || null,
+              },
             },
-            onReadyForServerCompletion: async (paymentId: string, txid: string) => {
-              await supabase.functions.invoke("pi-platform", { body: { action: "complete", paymentId, txid } });
-              const { data: res, error } = await (supabase as any).rpc("qr_pay_complete_pi", {
-                p_token: token, p_pi_payment_id: paymentId, p_pi_txid: txid,
-                p_payer_name: payerName || null, p_payer_email: payerEmail || null,
-                p_payer_username: null,
-                p_amount: isFlexible ? chargeAmount : null,
-                ...deliveryPayload(),
-              });
-              if (error) { reject(new Error(error.message)); return; }
-              goAfterPayment(res.transaction_ref, "pi");
-              resolve();
+            {
+              onReadyForServerApproval: async (paymentId: string) => {
+                const { error } = await supabase.functions.invoke("pi-platform", {
+                  body: { action: "approve", paymentId },
+                });
+                if (error) throw new Error(error.message || "Pi approval failed");
+              },
+              onReadyForServerCompletion: async (paymentId: string, txid: string) => {
+                try {
+                  const { error: completeErr } = await supabase.functions.invoke("pi-platform", {
+                    body: { action: "complete", paymentId, txid },
+                  });
+                  if (completeErr) throw new Error(completeErr.message || "Pi complete failed");
+
+                  const { data: res, error } = await (supabase as any).rpc("qr_pay_complete_pi", {
+                    p_token: token,
+                    p_pi_payment_id: paymentId,
+                    p_pi_txid: txid,
+                    p_payer_name: payerName || auth?.user?.username || null,
+                    p_payer_email: payerEmail || null,
+                    p_payer_username: auth?.user?.username || null,
+                    p_amount: isFlexible ? chargeAmount : null,
+                    ...deliveryPayload(),
+                  });
+                  if (error) { reject(new Error(error.message)); return; }
+                  await goAfterPayment(res.transaction_ref, "pi");
+                  resolve();
+                } catch (e: any) {
+                  reject(e);
+                }
+              },
+              onCancel: () => reject(new Error("Payment cancelled")),
+              onError: (e: any) => reject(new Error(e?.message || "Pi payment failed")),
             },
-            onCancel: () => reject(new Error("Payment cancelled")),
-            onError: (e: any) => reject(new Error(e?.message || "Pi payment failed")),
-          },
-        );
+          );
+        } catch (e: any) {
+          reject(e);
+        }
       });
     } catch (e: any) {
       toast.error(e?.message || "Pi payment failed");
