@@ -6,16 +6,73 @@ import AuthMark from "@/components/AuthMark";
 import { supabase } from "@/integrations/supabase/client";
 import { setAppCookie } from "@/lib/userPreferences";
 import AuthFooter from "@/components/AuthFooter";
-import { Loader2, Mail, Download, Globe, BookOpen, Users, KeyRound, ChevronRight } from "lucide-react";
+import {
+  Loader2, Mail, Download, Globe, BookOpen, Users, KeyRound, ChevronRight,
+  Sparkles, Coins, Info, Newspaper, Library,
+} from "lucide-react";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { isPiOAuthEnabled } from "@/lib/piOAuth";
+import { openExternalUrl } from "@/lib/externalLink";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+const OPENPAY_PRO_LINKS = [
+  {
+    id: "home",
+    label: "OpenPay Pro",
+    hint: "Open the Pro app",
+    href: "http://openpaypro4378.pinet.com",
+    icon: Sparkles,
+  },
+  {
+    id: "website",
+    label: "Website",
+    hint: "openpaypro.space",
+    href: "http://openpaypro.space/website",
+    icon: Globe,
+  },
+  {
+    id: "openusd",
+    label: "OpenUSD ($OUSD)",
+    hint: "Learn about OUSD",
+    href: "http://openpaypro.space/openusd",
+    icon: Coins,
+  },
+  {
+    id: "about",
+    label: "About",
+    hint: "About OpenPay Pro",
+    href: "http://openpaypro.space/about",
+    icon: Info,
+  },
+  {
+    id: "blog",
+    label: "Blog",
+    hint: "News & updates",
+    href: "http://openpaypro.space/blog",
+    icon: Newspaper,
+  },
+  {
+    id: "wiki",
+    label: "Wiki",
+    hint: "Docs & guides",
+    href: "http://openpaypro.space/wiki",
+    icon: Library,
+  },
+] as const;
 
 const PiAuthPage = () => {
   const [piUser, setPiUser] = useState<{ uid: string; username: string } | null>(null);
   const [busyAuth, setBusyAuth] = useState(false);
   const [authorizationCode, setAuthorizationCode] = useState("");
   const [sdkReady, setSdkReady] = useState(() => typeof window !== "undefined" && !!window.Pi);
+  const [proOpen, setProOpen] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // Only hide email sign-in when actually running inside Pi Browser (UA-based).
@@ -280,6 +337,14 @@ const PiAuthPage = () => {
             </Button>
           )}
 
+          <Button
+            type="button"
+            variant="outline"
+            className="mb-3 h-12 w-full rounded-2xl border-[#1d1d1f]/15 bg-[#1d1d1f] text-base font-semibold text-white hover:bg-[#2c2c2e] hover:text-white"
+            onClick={() => setProOpen(true)}
+          >
+            <Sparkles className="mr-2 h-4 w-4" /> OpenPay Pro
+          </Button>
 
           {false && isPiOAuthEnabled() && (
             <Button
@@ -302,6 +367,17 @@ const PiAuthPage = () => {
               <ResourceLink href="https://www.droplinkpi.space/@openpay" icon={<Users className="h-4 w-4" />} label="OpenPay Socials" />
               <ResourceLink href="https://www.openpy.space/" icon={<Globe className="h-4 w-4" />} label="OpenPay Website" />
               <ResourceLink href="https://www.openpy.space/blog" icon={<BookOpen className="h-4 w-4" />} label="OpenPay Blog" />
+              <button
+                type="button"
+                onClick={() => setProOpen(true)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="text-paypal-blue"><Sparkles className="h-4 w-4" /></span>
+                  OpenPay Pro
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
             </div>
           </div>
 
@@ -322,6 +398,70 @@ const PiAuthPage = () => {
           </div>
         </div>
       </div>
+
+      <Dialog open={proOpen} onOpenChange={setProOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="w-[calc(100vw-2rem)] max-w-[380px] gap-0 overflow-hidden rounded-[28px] border-0 bg-white p-0 op-font shadow-[0_28px_80px_-24px_rgba(0,0,0,0.45)]"
+        >
+          <div className="px-6 pb-2 pt-8 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#1d1d1f] text-white">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-center text-[22px] font-bold tracking-[-0.03em] text-[#1d1d1f]">
+                OpenPay Pro
+              </DialogTitle>
+              <DialogDescription className="text-center text-[14px] text-[#6e6e73]">
+                Choose where to go
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="px-4 pb-3">
+            <div className="overflow-hidden rounded-[16px] bg-[#f2f2f7]">
+              {OPENPAY_PRO_LINKS.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      openExternalUrl(item.href);
+                      setProOpen(false);
+                    }}
+                    className="relative flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors active:bg-black/[0.06] hover:bg-black/[0.03]"
+                  >
+                    {i > 0 && (
+                      <span className="absolute inset-x-3.5 top-0 h-px bg-black/[0.06]" aria-hidden />
+                    )}
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white text-[#1d1d1f] shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
+                      <Icon className="h-4 w-4" strokeWidth={2.25} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[15px] font-semibold tracking-[-0.01em] text-[#1d1d1f]">
+                        {item.label}
+                      </span>
+                      <span className="block truncate text-[12px] text-[#8e8e93]">{item.hint}</span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-[#c7c7cc]" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="px-6 pb-7 pt-1 text-center">
+            <button
+              type="button"
+              onClick={() => setProOpen(false)}
+              className="text-[16px] font-medium text-[#007AFF]"
+            >
+              Cancel
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
