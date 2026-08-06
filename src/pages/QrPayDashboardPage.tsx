@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Copy, ExternalLink, QrCode, TrendingUp, Wallet, CreditCard, Eye, Trash2, BarChart3, Users, ChevronDown, ChevronUp, Package, Mail, Phone, MapPin, StickyNote, RefreshCw, HelpCircle } from "lucide-react";
+import { ArrowLeft, Plus, Copy, ExternalLink, QrCode, TrendingUp, Wallet, CreditCard, Eye, Trash2, BarChart3, Users, ChevronDown, ChevronUp, Package, Mail, Phone, RefreshCw, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import QrPayHeader from "@/components/qrpay/QrPayHeader";
 import QrPayGuideDialog from "@/components/qrpay/QrPayGuideDialog";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import BrandLogo from "@/components/BrandLogo";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,8 +29,10 @@ interface QrPay {
   total: number;
   status: string;
   created_at: string;
+  payment_type?: string | null;
+  payment_purpose?: string | null;
 }
-interface QrItem { id: string; name: string; quantity: number; unit_price: number; line_total: number; image_url: string | null; }
+interface QrItem { id: string; name: string; quantity: number; unit_price: number; line_total: number; image_url: string | null; description?: string | null; }
 interface Tx {
   id: string;
   qr_payment_id: string;
@@ -46,6 +47,34 @@ interface Tx {
   payer_phone: string | null;
   delivery_address: string | null;
   delivery_notes: string | null;
+}
+
+function customerInitials(name?: string | null, email?: string | null) {
+  const src = (name || email || "C").trim();
+  const parts = src.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return src.slice(0, 2).toUpperCase();
+}
+
+function methodLabel(method: string) {
+  const m = (method || "").toLowerCase();
+  if (m === "pi") return "Pi Network";
+  if (m === "wallet") return "OpenPay Wallet";
+  if (m === "virtual_card" || m === "card") return "Virtual Card";
+  if (m === "pro") return "OpenPay Pro";
+  return method.replace(/_/g, " ");
+}
+
+function OrderField({ label, value, multiline }: { label: string; value?: string | null; multiline?: boolean }) {
+  const empty = !value || !String(value).trim();
+  return (
+    <div className="qrp-order-field">
+      <div className="qrp-order-field-k">{label}</div>
+      <div className={`qrp-order-field-v ${empty ? "is-empty" : ""} ${multiline ? "whitespace-pre-line" : ""}`}>
+        {empty ? "—" : value}
+      </div>
+    </div>
+  );
 }
 
 type Range = "today" | "week" | "month" | "year" | "all";
@@ -97,7 +126,7 @@ export default function QrPayDashboardPage() {
     const [{ data: s }, { data: list }, { data: txs }, { data: an }] = await Promise.all([
       (supabase as any).rpc("qr_pay_merchant_stats"),
       (supabase as any).from("qr_payments")
-        .select("id,token,title,currency,total,status,created_at")
+        .select("id,token,title,currency,total,status,created_at,payment_type,payment_purpose")
         .eq("merchant_user_id", user.id)
         .order("created_at", { ascending: false }).limit(50),
       (supabase as any).from("qr_payment_transactions")
@@ -148,7 +177,7 @@ export default function QrPayDashboardPage() {
     if (!itemsCache[tx.qr_payment_id]) {
       const { data } = await (supabase as any)
         .from("qr_payment_items")
-        .select("id,name,quantity,unit_price,line_total,image_url")
+        .select("id,name,quantity,unit_price,line_total,image_url,description")
         .eq("qr_payment_id", tx.qr_payment_id);
       setItemsCache(prev => ({ ...prev, [tx.qr_payment_id]: (data as any) || [] }));
     }
@@ -371,7 +400,10 @@ export default function QrPayDashboardPage() {
                         <div className="truncate text-[15px] font-semibold text-foreground">{p.title || "Untitled"}</div>
                         <Badge variant={p.status === "active" ? "default" : "secondary"} className="text-[12px] capitalize">{p.status}</Badge>
                       </div>
-                      <div className="qrp-meta mt-0.5">{p.currency} {Number(p.total).toFixed(2)} · {new Date(p.created_at).toLocaleDateString()}</div>
+                      <div className="qrp-meta mt-0.5">
+                        {p.payment_purpose ? `${String(p.payment_purpose).replace(/_/g, " ")} · ` : ""}
+                        {p.currency} {Number(p.total).toFixed(2)} · {new Date(p.created_at).toLocaleDateString()}
+                      </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-0.5">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewToken(p.token)} title="Preview"><Eye className="h-4 w-4"/></Button>
@@ -411,8 +443,13 @@ export default function QrPayDashboardPage() {
                             <Badge variant={t.status === "succeeded" ? "default" : "secondary"} className="text-[12px] capitalize">{t.status}</Badge>
                           </div>
                           <div className="qrp-meta mt-1 truncate capitalize">
-                            {linked?.title || "QR payment"} · {t.method.replace("_"," ")} · #{t.transaction_ref}
+                            {linked?.title || "QR payment"} · {methodLabel(t.method)} · #{t.transaction_ref}
                           </div>
+                          {(t.payer_email || t.payer_phone) && (
+                            <div className="qrp-meta mt-0.5 truncate normal-case">
+                              {[t.payer_email, t.payer_phone].filter(Boolean).join(" · ")}
+                            </div>
+                          )}
                         </div>
                         <div className="shrink-0 text-right">
                           <div className="text-[15px] font-bold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</div>
@@ -424,57 +461,200 @@ export default function QrPayDashboardPage() {
                       </div>
                     </button>
                     {open && (
-                      <div className="space-y-3 border-t border-border/60 bg-muted/30 px-3.5 py-3.5 qrp-rise">
-                        <div>
-                          <div className="qrp-label mb-1.5">Customer</div>
-                          <div className="space-y-1.5 text-[14px] text-foreground">
-                            {t.payer_email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-muted-foreground"/>{t.payer_email}</div>}
-                            {t.payer_phone && <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-muted-foreground"/>{t.payer_phone}</div>}
-                            {t.delivery_address && <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 text-muted-foreground"/><span className="whitespace-pre-line">{t.delivery_address}</span></div>}
-                            {t.delivery_notes && <div className="flex items-start gap-2"><StickyNote className="mt-0.5 h-3.5 w-3.5 text-muted-foreground"/><span className="italic">{t.delivery_notes}</span></div>}
-                            {!t.payer_email && !t.payer_phone && !t.delivery_address && !t.delivery_notes && (
-                              <div className="text-muted-foreground">No customer details captured.</div>
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="qrp-label mb-1.5">Items</div>
-                          {items.length === 0 ? (
-                            <div className="qrp-meta">No itemized line items.</div>
-                          ) : (
-                            <div className="space-y-1.5">
-                              {items.map(it => (
-                                <div key={it.id} className="flex items-center gap-2.5 text-[14px]">
-                                  {it.image_url ? (
-                                    <img src={it.image_url} alt={it.name} className="h-9 w-9 rounded border object-cover" />
-                                  ) : (
-                                    <div className="flex h-9 w-9 items-center justify-center rounded bg-muted"><Package className="h-3.5 w-3.5 text-muted-foreground"/></div>
-                                  )}
-                                  <div className="min-w-0 flex-1">
-                                    <div className="truncate font-medium text-foreground">{it.name}</div>
-                                    <div className="qrp-meta">{it.quantity} × {t.currency} {Number(it.unit_price).toFixed(2)}</div>
+                      <div className="border-t border-border/60 bg-[#f6f6f8] px-3.5 py-3.5 qrp-rise">
+                        <div className="qrp-order-panel">
+                          {/* Customer */}
+                          <div className="qrp-order-card">
+                            <div className="qrp-order-card-head">
+                              <span>Customer</span>
+                              {(t.payer_email || t.payer_phone) && (
+                                <span className="normal-case tracking-normal text-[11px] font-medium text-emerald-600">Contact saved</span>
+                              )}
+                            </div>
+                            <div className="qrp-order-card-body">
+                              <div className="mb-2.5 flex items-center gap-3">
+                                <span className="qrp-order-avatar">{customerInitials(t.payer_name, t.payer_email)}</span>
+                                <div className="min-w-0">
+                                  <div className="truncate text-[15px] font-semibold tracking-[-0.015em] text-foreground">
+                                    {t.payer_name || "Guest customer"}
                                   </div>
-                                  <div className="font-semibold text-foreground">{t.currency} {Number(it.line_total).toFixed(2)}</div>
+                                  <div className="qrp-meta truncate">
+                                    {t.payer_email || "No email on file"}
+                                  </div>
                                 </div>
-                              ))}
-                              <div className="mt-1.5 flex justify-between border-t pt-1.5 text-[14px]">
-                                <span className="text-muted-foreground">Total</span>
-                                <span className="font-bold text-foreground">{t.currency} {Number(t.amount).toFixed(2)}</span>
+                              </div>
+                              <OrderField label="Name" value={t.payer_name} />
+                              <OrderField label="Email" value={t.payer_email} />
+                              <OrderField label="Phone" value={t.payer_phone} />
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {t.payer_email && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 rounded-full text-[12px]"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `mailto:${t.payer_email}?subject=Your OpenPay order ${t.transaction_ref}`;
+                                    }}
+                                  >
+                                    <Mail className="mr-1 h-3.5 w-3.5" /> Email
+                                  </Button>
+                                )}
+                                {t.payer_phone && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 rounded-full text-[12px]"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `tel:${t.payer_phone}`;
+                                    }}
+                                  >
+                                    <Phone className="mr-1 h-3.5 w-3.5" /> Call
+                                  </Button>
+                                )}
+                                {t.payer_email && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 rounded-full text-[12px]"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard.writeText(t.payer_email || "");
+                                      toast.success("Email copied");
+                                    }}
+                                  >
+                                    Copy email
+                                  </Button>
+                                )}
                               </div>
                             </div>
-                          )}
+                          </div>
+
+                          {/* Shipping + payment */}
+                          <div className="space-y-3">
+                            <div className="qrp-order-card">
+                              <div className="qrp-order-card-head">
+                                <span>Shipping / delivery</span>
+                              </div>
+                              <div className="qrp-order-card-body">
+                                <OrderField label="Address" value={t.delivery_address} multiline />
+                                <OrderField label="Notes" value={t.delivery_notes} multiline />
+                                {!t.delivery_address && (
+                                  <p className="mt-1 text-[11px] leading-snug text-[#8e8e93]">
+                                    Enable “Collect delivery details” on the payment link to capture address at checkout.
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="qrp-order-card">
+                              <div className="qrp-order-card-head">
+                                <span>Payment</span>
+                              </div>
+                              <div className="qrp-order-card-body">
+                                <OrderField label="Status" value={t.status} />
+                                <OrderField label="Method" value={methodLabel(t.method)} />
+                                <OrderField label="Amount" value={`${t.currency} ${Number(t.amount).toFixed(2)}`} />
+                                <OrderField label="Paid" value={t.paid_at ? new Date(t.paid_at).toLocaleString() : null} />
+                                <OrderField label="Order ID" value={t.transaction_ref} />
+                                {linked?.payment_purpose && (
+                                  <OrderField label="Purpose" value={String(linked.payment_purpose).replace(/_/g, " ")} />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Line items */}
+                          <div className="qrp-order-card qrp-order-items">
+                            <div className="qrp-order-card-head">
+                              <span>Order items</span>
+                              <span className="normal-case tracking-normal text-[11px] font-medium text-[var(--qrp-muted)]">
+                                {(items.length || 1)} item{(items.length || 1) === 1 ? "" : "s"}
+                              </span>
+                            </div>
+                            <div className="qrp-order-card-body">
+                              {(items.length > 0
+                                ? items
+                                : [{
+                                    id: "synthetic",
+                                    name: linked?.title || "OpenPay payment",
+                                    quantity: 1,
+                                    unit_price: Number(t.amount),
+                                    line_total: Number(t.amount),
+                                    image_url: null as string | null,
+                                    description: linked?.payment_purpose
+                                      ? String(linked.payment_purpose).replace(/_/g, " ")
+                                      : "Checkout payment",
+                                  }]
+                              ).map((it) => (
+                                <div key={it.id} className="qrp-order-line">
+                                  {it.image_url ? (
+                                    <img src={it.image_url} alt={it.name} className="qrp-order-thumb" />
+                                  ) : (
+                                    <div className="qrp-order-thumb-ph">
+                                      <Package className="h-4 w-4" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="truncate text-[14px] font-semibold tracking-[-0.01em] text-foreground">
+                                      {it.name}
+                                    </div>
+                                    <div className="qrp-meta">
+                                      Qty {it.quantity} · {t.currency} {Number(it.unit_price).toFixed(2)} each
+                                      {"description" in it && it.description ? ` · ${it.description}` : ""}
+                                    </div>
+                                  </div>
+                                  <div className="shrink-0 text-[14px] font-semibold text-foreground">
+                                    {t.currency} {Number(it.line_total).toFixed(2)}
+                                  </div>
+                                </div>
+                              ))}
+
+                              <div className="qrp-order-totals">
+                                <div className="qrp-order-total-row">
+                                  <span>Subtotal</span>
+                                  <span>{t.currency} {Number(t.amount).toFixed(2)}</span>
+                                </div>
+                                <div className="qrp-order-total-row">
+                                  <span>Fees</span>
+                                  <span className="text-emerald-600">No fee</span>
+                                </div>
+                                <div className="qrp-order-total-row is-grand">
+                                  <span>Total paid</span>
+                                  <span>{t.currency} {Number(t.amount).toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex gap-2 pt-1">
+
+                        <div className="mt-3 flex flex-wrap gap-2">
                           {linked && (
-                            <Button size="sm" variant="outline" className="h-9 text-[13px]" onClick={(e) => { e.stopPropagation(); window.open(`/qr-pay/${linked.token}`, "_blank"); }}>
-                              <ExternalLink className="mr-1 h-3.5 w-3.5"/>View checkout
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-9 rounded-full text-[13px]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(`/qr-pay/${linked.token}`, "_blank");
+                              }}
+                            >
+                              <ExternalLink className="mr-1 h-3.5 w-3.5" /> View checkout
                             </Button>
                           )}
-                          {t.payer_email && (
-                            <Button size="sm" variant="outline" className="h-9 text-[13px]" onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${t.payer_email}?subject=Your order ${t.transaction_ref}`; }}>
-                              <Mail className="mr-1 h-3.5 w-3.5"/>Email customer
-                            </Button>
-                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 rounded-full text-[13px]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(t.transaction_ref);
+                              toast.success("Order ID copied");
+                            }}
+                          >
+                            <Copy className="mr-1 h-3.5 w-3.5" /> Copy order ID
+                          </Button>
                         </div>
                       </div>
                     )}

@@ -36,6 +36,11 @@ interface QrPayData {
   allow_virtual_card: boolean;
   allow_guest: boolean;
   payment_type: "product" | "digital" | "donation" | "tip";
+  payment_purpose?: string | null;
+  payment_purpose_label?: string | null;
+  payment_category?: string | null;
+  payment_category_id?: string | null;
+  is_flexible?: boolean;
   after_payment_action: "receipt" | "download" | "redirect";
   download_url?: string | null;
   redirect_url?: string | null;
@@ -102,7 +107,12 @@ export default function QrPayCheckoutPage() {
     })();
   }, [token]);
 
-  const isFlexible = !!data && (data.payment_type === "donation" || data.payment_type === "tip");
+  const isFlexible = !!data && (
+    data.is_flexible === true ||
+    data.payment_type === "donation" ||
+    data.payment_type === "tip" ||
+    !!data.allow_custom_amount
+  );
   const chargeAmount = useMemo(() => {
     if (!data) return 0;
     if (isFlexible) return Number(customAmount || 0);
@@ -296,7 +306,11 @@ export default function QrPayCheckoutPage() {
   ].filter(Boolean) as string[];
   const activeMethod = method && tabs.includes(method) ? method : (tabs[0] || "wallet");
 
-  const TypeIcon = data.payment_type === "donation" ? Heart : data.payment_type === "tip" ? Coffee : null;
+  const TypeIcon = data.payment_type === "donation" || data.payment_purpose === "gift" || data.payment_purpose === "charity"
+    ? Heart
+    : data.payment_type === "tip" || data.payment_purpose === "split_bill"
+      ? Coffee
+      : null;
 
   const payLabel = paying
     ? "Processing…"
@@ -324,7 +338,11 @@ export default function QrPayCheckoutPage() {
   const renderOrderBody = (align: "center" | "start" = "center") => isFlexible ? (
     <div className={`space-y-3 p-4 ${align === "start" ? "text-left" : ""}`}>
       <Label className="text-[12px] font-medium text-[var(--qrp-muted)]">
-        {data.payment_type === "tip" ? "Tip amount" : "Donation amount"}
+        {data.payment_type === "tip" || data.payment_purpose === "split_bill" || data.payment_purpose === "tip"
+          ? "Tip amount"
+          : data.payment_purpose_label
+            ? `${data.payment_purpose_label} amount`
+            : "Donation amount"}
       </Label>
       <div className="qrp-tip-field">
         <span className="qrp-curr">{data.currency}</span>

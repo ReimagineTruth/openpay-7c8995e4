@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Plus, Trash2, Copy, Share2, ImagePlus, Loader2, QrCode,
-  Package, Download, HeartHandshake, Coffee, ShieldCheck, Sparkles, X, Settings2,
+  Package, Coffee, ShieldCheck, Sparkles, X, Settings2,
   Smartphone, Monitor, HelpCircle, ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import QrPayHeader from "@/components/qrpay/QrPayHeader";
 import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import CurrencyPicker from "@/components/CurrencyPicker";
 import QrPayShareHelpDialog from "@/components/qrpay/QrPayShareHelpDialog";
+import QrPayPurposePicker from "@/components/qrpay/QrPayPurposePicker";
 
 
 import { Button } from "@/components/ui/button";
@@ -30,19 +31,20 @@ import {
   formatProDestinationPreview,
   formatProDestinationForApi,
 } from "@/lib/openpayProTransfer";
+import {
+  defaultTitleForPurpose,
+  getPurposeCategory,
+  getQrPayPurpose,
+  isFlexiblePurpose,
+  purposeTitlePlaceholder,
+  resolveApiType,
+  type QrPayPurposeId,
+} from "@/lib/qrPayPurposes";
 
 
 interface Item { name: string; description?: string; quantity: number; unit_price: number; image_url?: string }
 
-type PType = "product" | "digital" | "donation" | "tip";
 type AfterAction = "receipt" | "download" | "redirect";
-
-const PAYMENT_TYPES: { value: PType; label: string; hint: string; icon: typeof Package; tone: string }[] = [
-  { value: "product", label: "Product", hint: "Goods or services", icon: Package, tone: "ios-glyph-blue" },
-  { value: "digital", label: "Digital", hint: "Files & downloads", icon: Download, tone: "ios-glyph-indigo" },
-  { value: "donation", label: "Donation", hint: "Any amount", icon: HeartHandshake, tone: "ios-glyph-pink" },
-  { value: "tip", label: "Tip", hint: "Say thanks", icon: Coffee, tone: "ios-glyph-orange" },
-];
 
 async function uploadQrPayImage(file: File): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -88,7 +90,7 @@ export default function QrPayCreatePage() {
   const [collectDelivery, setCollectDelivery] = useState(false);
   const [deliveryFields, setDeliveryFields] = useState<string[]>(["name", "email", "address"]);
   const [expiresMin, setExpiresMin] = useState<string>("");
-  const [paymentType, setPaymentType] = useState<PType>("product");
+  const [purposeId, setPurposeId] = useState<QrPayPurposeId>("product");
   const [afterAction, setAfterAction] = useState<AfterAction>("receipt");
   const [downloadUrl, setDownloadUrl] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("");
@@ -105,14 +107,24 @@ export default function QrPayCreatePage() {
 
   const proError = proEnabled ? getProDestinationError(proTo) : null;
 
-
-  const isFlexible = paymentType === "donation" || paymentType === "tip";
+  const purpose = getQrPayPurpose(purposeId);
+  const purposeCat = getPurposeCategory(purposeId);
+  const PurposeIcon = purpose?.icon || Package;
+  const paymentType = resolveApiType(purposeId);
+  const isFlexible = isFlexiblePurpose(purposeId);
   const total = isFlexible
     ? Number(suggested || 0)
     : items.reduce((s, it) => s + Number(it.quantity || 0) * Number(it.unit_price || 0), 0);
 
-  const previewTitle = title || (paymentType === "donation" ? "Support our project" : paymentType === "tip" ? "Leave a tip" : "Your checkout title");
+  const previewTitle = title || purpose?.defaultTitle || "Your checkout title";
   const filledItems = items.filter(it => it.name.trim());
+
+  const selectPurpose = (id: QrPayPurposeId) => {
+    setPurposeId(id);
+    const api = resolveApiType(id);
+    if (api === "digital" && afterAction === "receipt") setAfterAction("download");
+    if (api !== "digital" && afterAction === "download") setAfterAction("receipt");
+  };
 
   const update = (i: number, k: keyof Item, v: any) =>
     setItems(prev => prev.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
@@ -150,8 +162,8 @@ export default function QrPayCreatePage() {
     if (proEnabled && proError) { toast.error(proError); return; }
 
     setLoading(true);
-    const { data, error } = await (supabase as any).rpc("qr_pay_create", {
-      p_title: title || (isFlexible ? (paymentType === "tip" ? "Tip" : "Donation") : "QR Payment"),
+    const createArgs: Record<string, unknown> = {
+      p_title: title || defaultTitleForPurpose(purposeId),
       p_description: description || null,
       p_currency: cur,
       p_items: cleaned,
@@ -162,6 +174,7 @@ export default function QrPayCreatePage() {
       p_reusable: isFlexible ? true : reusable,
       p_expires_minutes: expiresMin ? Number(expiresMin) : null,
       p_payment_type: paymentType,
+      p_payment_purpose: purposeId,
       p_after_payment_action: afterAction,
       p_download_url: downloadUrl || null,
       p_redirect_url: redirectUrl || null,
@@ -171,7 +184,14 @@ export default function QrPayCreatePage() {
       p_cover_image_url: coverImage || null,
       p_collect_delivery: collectDelivery,
       p_delivery_fields: collectDelivery ? deliveryFields : ["name", "email", "address"],
-    });
+    };
+
+    let { data, error } = await (supabase as any).rpc("qr_pay_create", createArgs);
+    // Until the purpose migration is applied, retry without p_payment_purpose
+    if (error && /payment_purpose|PGRST202|Could not find the function/i.test(String(error.message || ""))) {
+      const { p_payment_purpose: _drop, ...legacyArgs } = createArgs;
+      ({ data, error } = await (supabase as any).rpc("qr_pay_create", legacyArgs));
+    }
     if (error) { setLoading(false); toast.error(error.message); return; }
 
     if (proEnabled && proTo.trim()) {
@@ -335,7 +355,7 @@ export default function QrPayCreatePage() {
                 amount={created.total}
                 currency={cur}
                 title={title || "OpenPay Checkout"}
-                paymentType={paymentType}
+                paymentType={purposeId}
                 hideQrTab
                 compactHeader
               />
@@ -400,8 +420,8 @@ export default function QrPayCreatePage() {
           {/* Step 1 — details */}
           <div className="qrp-card space-y-4 p-4 sm:p-5">
             <div className="flex items-center gap-3">
-              <span className="ios-glyph ios-glyph-blue">
-                <Package className="h-4 w-4" strokeWidth={2.25} />
+              <span className={`ios-glyph ${purposeCat?.tone || "ios-glyph-blue"}`}>
+                <PurposeIcon className="h-4 w-4" strokeWidth={2.25} />
               </span>
               <div>
                 <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-foreground">Payment details</h2>
@@ -410,26 +430,18 @@ export default function QrPayCreatePage() {
             </div>
 
             <div className="space-y-2">
-              <p className="px-0.5 text-[12px] font-medium tracking-[-0.01em] text-[#8e8e93]">Payment type</p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {PAYMENT_TYPES.map(({ value, label, hint, icon: Icon, tone }) => {
-                  const active = paymentType === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setPaymentType(value)}
-                      className={`ios-type-tile ${active ? "is-active" : ""}`}
-                    >
-                      <span className={`ios-glyph ${tone}`}>
-                        <Icon className="h-4 w-4" strokeWidth={2.25} />
-                      </span>
-                      <span className={`text-[13px] font-semibold tracking-[-0.01em] ${active ? "text-[#007AFF]" : "text-[#1d1d1f]"}`}>{label}</span>
-                      <span className="text-[10px] leading-tight text-[#8e8e93]">{hint}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <p className="px-0.5 text-[12px] font-medium tracking-[-0.01em] text-[#8e8e93]">Payment purpose</p>
+              <QrPayPurposePicker value={purposeId} onChange={selectPurpose} />
+              {purposeCat && (
+                <p className="px-0.5 text-[11px] leading-snug text-[#8e8e93]">
+                  {purposeCat.emoji} {purposeCat.label}
+                  {isFlexible
+                    ? " · Customers choose their own amount"
+                    : paymentType === "digital"
+                      ? " · Digital goods & downloads"
+                      : " · Fixed price with line items"}
+                </p>
+              )}
             </div>
 
             <div className="ios-form-group">
@@ -439,7 +451,7 @@ export default function QrPayCreatePage() {
                   className="ios-form-input"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  placeholder={paymentType === "donation" ? "Support our project" : paymentType === "tip" ? "Leave a tip" : "e.g. Morning Coffee Combo"}
+                  placeholder={purposeTitlePlaceholder(purposeId)}
                 />
               </div>
               <div className="ios-form-row !gap-2">
@@ -803,7 +815,7 @@ export default function QrPayCreatePage() {
                 <div className="pointer-events-none w-full">
                   <OpenPayStyledButton
                     as="div"
-                    style={defaultBtnStyleForPayment(paymentType)}
+                    style={defaultBtnStyleForPayment(purposeId)}
                     theme="black"
                     className="w-full"
                   />

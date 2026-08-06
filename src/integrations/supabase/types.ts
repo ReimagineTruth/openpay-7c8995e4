@@ -3820,6 +3820,48 @@ export type Database = {
           },
         ]
       }
+      qr_pay_purposes: {
+        Row: {
+          active: boolean
+          api_type: string
+          category_id: string
+          category_label: string
+          created_at: string
+          default_title: string | null
+          hint: string
+          id: string
+          is_flexible: boolean
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          api_type: string
+          category_id: string
+          category_label: string
+          created_at?: string
+          default_title?: string | null
+          hint?: string
+          id: string
+          is_flexible?: boolean
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          api_type?: string
+          category_id?: string
+          category_label?: string
+          created_at?: string
+          default_title?: string | null
+          hint?: string
+          id?: string
+          is_flexible?: boolean
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       qr_payments: {
         Row: {
           after_payment_action: string
@@ -3841,6 +3883,7 @@ export type Database = {
           metadata: Json
           min_amount: number | null
           payment_type: string
+          payment_purpose: string | null
           pro_settlement_to: string | null
           redirect_url: string | null
           reusable: boolean
@@ -3872,6 +3915,7 @@ export type Database = {
           metadata?: Json
           min_amount?: number | null
           payment_type?: string
+          payment_purpose?: string | null
           pro_settlement_to?: string | null
           redirect_url?: string | null
           reusable?: boolean
@@ -3903,6 +3947,7 @@ export type Database = {
           metadata?: Json
           min_amount?: number | null
           payment_type?: string
+          payment_purpose?: string | null
           pro_settlement_to?: string | null
           redirect_url?: string | null
           reusable?: boolean
@@ -6164,6 +6209,7 @@ export type Database = {
           p_expires_minutes: number
           p_items: Json
           p_min_amount?: number
+          p_payment_purpose?: string
           p_payment_type?: string
           p_redirect_url?: string
           p_reusable: boolean
@@ -6175,6 +6221,7 @@ export type Database = {
       qr_pay_delete: { Args: { p_id: string }; Returns: Json }
       qr_pay_gen_token: { Args: never; Returns: string }
       qr_pay_get_by_token: { Args: { p_token: string }; Returns: Json }
+      qr_pay_list_purposes: { Args: never; Returns: Json }
       qr_pay_merchant_stats: { Args: never; Returns: Json }
       qr_pay_normalize_pro_destination: {
         Args: { p_to: string }

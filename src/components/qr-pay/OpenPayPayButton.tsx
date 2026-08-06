@@ -19,9 +19,12 @@ export const OPENPAY_BTN_STYLES: {
 ];
 
 export function defaultBtnStyleForPayment(type?: string): OpenPayBtnStyle {
-  if (type === "donation") return "donate";
-  if (type === "tip") return "tip";
-  if (type === "digital" || type === "product") return "buy";
+  if (type === "donation" || type === "charity" || type === "crowdfunding" || type === "fundraising" || type === "gift") {
+    return "donate";
+  }
+  if (type === "tip" || type === "split_bill") return "tip";
+  if (type === "digital" || type === "product" || type === "digital_product" || type === "download") return "buy";
+  if (type === "service" || type === "invoice" || type === "payment_request") return "pay";
   return "pay";
 }
 
