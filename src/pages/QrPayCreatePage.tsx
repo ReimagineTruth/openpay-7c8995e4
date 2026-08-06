@@ -33,11 +33,11 @@ interface Item { name: string; description?: string; quantity: number; unit_pric
 type PType = "product" | "digital" | "donation" | "tip";
 type AfterAction = "receipt" | "download" | "redirect";
 
-const PAYMENT_TYPES: { value: PType; label: string; hint: string; icon: typeof Package }[] = [
-  { value: "product", label: "Product", hint: "Goods or services", icon: Package },
-  { value: "digital", label: "Digital", hint: "Files & downloads", icon: Download },
-  { value: "donation", label: "Donation", hint: "Any amount", icon: HeartHandshake },
-  { value: "tip", label: "Tip", hint: "Say thanks", icon: Coffee },
+const PAYMENT_TYPES: { value: PType; label: string; hint: string; icon: typeof Package; tone: string }[] = [
+  { value: "product", label: "Product", hint: "Goods or services", icon: Package, tone: "ios-glyph-blue" },
+  { value: "digital", label: "Digital", hint: "Files & downloads", icon: Download, tone: "ios-glyph-indigo" },
+  { value: "donation", label: "Donation", hint: "Any amount", icon: HeartHandshake, tone: "ios-glyph-pink" },
+  { value: "tip", label: "Tip", hint: "Say thanks", icon: Coffee, tone: "ios-glyph-orange" },
 ];
 
 async function uploadQrPayImage(file: File): Promise<string | null> {
@@ -71,12 +71,6 @@ async function uploadQrPayImage(file: File): Promise<string | null> {
   const { data } = supabase.storage.from("qr-pay-images").getPublicUrl(path);
   return data.publicUrl;
 }
-
-const StepBadge = ({ n }: { n: number }) => (
-  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-paypal-blue/10 text-sm font-bold text-paypal-blue">
-    {n}
-  </span>
-);
 
 export default function QrPayCreatePage() {
   const navigate = useNavigate();
@@ -193,35 +187,39 @@ export default function QrPayCreatePage() {
     return (
       <div className="min-h-screen qrp-page-bg">
         <QrPayHeader
-          eyebrow="OpenPay · QR Pay"
-          title="Share QR Payment"
-          subtitle="Your payment link is ready — share it anywhere."
-          icon={Share2}
+          eyebrow="OpenPay"
+          title="Share"
+          subtitle="Your payment link is ready."
+          watermark="SHARE"
           backTo="/qr-pay"
           backLabel="Back to QR Pay"
         >
           <QrPaySteps current="share" />
         </QrPayHeader>
 
-        <div className="p-4 max-w-md mx-auto space-y-4 mt-4 qrp-pop">
-          <div className="qrp-card p-6 flex flex-col items-center">
-            <div className="bg-white p-4 rounded-2xl shadow-inner ring-1 ring-black/5"><QRCodeSVG value={url} size={220} /></div>
-            <div className="mt-4 text-center">
-              <div className="text-3xl font-bold text-foreground tracking-tight">{cur} {created.total.toFixed(2)}</div>
-              <p className="text-sm text-muted-foreground mt-1">Customers scan with OpenPay scanner or any QR app</p>
+        <div className="qrp-stage relative z-[1] qrp-pop">
+          <div className="qrp-pay-sheet p-5 sm:p-7 flex flex-col items-center">
+            <div className="bg-white p-4 rounded-[20px] ring-1 ring-black/[0.06] shadow-[0_12px_40px_-24px_rgba(0,0,0,0.3)]">
+              <QRCodeSVG value={url} size={180} />
             </div>
-            <div className="w-full mt-4 bg-muted rounded-xl p-2.5 text-xs break-all text-center font-mono">{url}</div>
+            <div className="mt-5 text-center">
+              <div className="qrp-amount-hero">{cur} {created.total.toFixed(2)}</div>
+              <p className="text-[13px] text-[var(--qrp-muted)] mt-2">Scan with OpenPay or any QR app</p>
+            </div>
+            <div className="w-full mt-4 rounded-[12px] bg-black/[0.04] p-2.5 text-[11px] break-all text-center font-mono text-[var(--qrp-muted)]">{url}</div>
             <div className="flex gap-2 w-full mt-3">
-              <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copied"); }}><Copy className="h-4 w-4 mr-1" />Copy</Button>
+              <Button variant="outline" className="flex-1 rounded-[14px] h-12 border-0 bg-black/[0.04]" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copied"); }}><Copy className="h-4 w-4 mr-1" />Copy</Button>
               <Button className="flex-1 qrp-primary-btn" onClick={async () => {
                 try { if ((navigator as any).share) await (navigator as any).share({ title: "Pay with OpenPay", url }); else { navigator.clipboard.writeText(url); toast.success("Link copied"); } } catch { }
               }}><Share2 className="h-4 w-4 mr-1" />Share</Button>
             </div>
-            <Button variant="ghost" className="mt-2 w-full rounded-xl" onClick={() => window.open(url, "_blank")}>Open checkout preview</Button>
+            <Button variant="ghost" className="mt-2 w-full rounded-xl text-[var(--qrp-accent)]" onClick={() => window.open(url, "_blank")}>Preview checkout</Button>
           </div>
-          <QrPayIntegrations url={url} amount={created.total} currency={cur} title={title || "OpenPay Checkout"} />
-          <Button variant="outline" className="w-full rounded-xl h-11" onClick={() => navigate("/qr-pay")}>Back to dashboard</Button>
-          <Button variant="ghost" className="w-full rounded-xl" onClick={() => { setCreated(null); setItems([{ name: "", quantity: 1, unit_price: 0 }]); setTitle(""); setDescription(""); setCoverImage(""); }}>Create another</Button>
+          <div className="mt-4">
+            <QrPayIntegrations url={url} amount={created.total} currency={cur} title={title || "OpenPay Checkout"} />
+          </div>
+          <Button className="qrp-primary-btn w-full mt-3" onClick={() => navigate("/qr-pay")}>Done</Button>
+          <Button variant="ghost" className="w-full rounded-xl text-[var(--qrp-muted)]" onClick={() => { setCreated(null); setItems([{ name: "", quantity: 1, unit_price: 0 }]); setTitle(""); setDescription(""); setCoverImage(""); }}>Create another</Button>
         </div>
       </div>
     );
@@ -230,10 +228,10 @@ export default function QrPayCreatePage() {
   return (
     <div className="min-h-screen qrp-page-bg pb-32">
       <QrPayHeader
-        eyebrow="OpenPay · QR Pay"
-        title="New QR Payment"
-        subtitle="Configure your checkout experience, then generate a sharable QR code."
-        icon={QrCode}
+        eyebrow="OpenPay"
+        title="New Payment"
+        subtitle="Set up checkout, then share a QR code."
+        watermark="PAY"
         backTo="/qr-pay"
         backLabel="Back to QR Pay"
       >
@@ -241,89 +239,95 @@ export default function QrPayCreatePage() {
       </QrPayHeader>
 
 
-      <div className="mx-auto mt-4 grid w-full max-w-5xl grid-cols-1 gap-6 p-4 lg:grid-cols-12">
+      <div className="relative z-[1] mx-auto mt-3 grid w-full max-w-6xl grid-cols-1 gap-4 p-3 sm:mt-5 sm:gap-5 sm:p-5 lg:grid-cols-12 lg:gap-8">
         {/* ── Left: setup form ───────────────────────────── */}
-        <div className="space-y-5 lg:col-span-7">
+        <div className="space-y-4 lg:col-span-7 lg:space-y-5">
 
           {/* Step 1 — details */}
-          <div className="qrp-card space-y-5 p-5">
-            <div className="flex items-center gap-3 border-b border-border/60 pb-3">
-              <StepBadge n={1} />
+          <div className="qrp-card space-y-4 p-4 sm:p-5">
+            <div className="flex items-center gap-3">
+              <span className="ios-glyph ios-glyph-blue">
+                <Package className="h-4 w-4" strokeWidth={2.25} />
+              </span>
               <div>
-                <h2 className="font-semibold text-foreground">Payment details</h2>
-                <p className="text-xs text-muted-foreground">What are you charging for?</p>
+                <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-foreground">Payment details</h2>
+                <p className="text-[13px] text-[var(--qrp-muted)]">What are you charging for?</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Payment type</Label>
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                {PAYMENT_TYPES.map(({ value, label, hint, icon: Icon }) => {
+              <p className="px-0.5 text-[12px] font-medium tracking-[-0.01em] text-[#8e8e93]">Payment type</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {PAYMENT_TYPES.map(({ value, label, hint, icon: Icon, tone }) => {
                   const active = paymentType === value;
                   return (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setPaymentType(value)}
-                      className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-3 text-center transition-all active:scale-95 ${
-                        active
-                          ? "border-paypal-blue bg-paypal-blue/5 shadow-sm"
-                          : "border-border bg-card hover:border-paypal-blue/40"
-                      }`}
+                      className={`ios-type-tile ${active ? "is-active" : ""}`}
                     >
-                      <span className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${active ? "bg-paypal-blue text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                        <Icon className="h-4 w-4" />
+                      <span className={`ios-glyph ${tone}`}>
+                        <Icon className="h-4 w-4" strokeWidth={2.25} />
                       </span>
-                      <span className={`text-xs font-bold ${active ? "text-paypal-blue" : "text-foreground"}`}>{label}</span>
-                      <span className="text-[10px] leading-tight text-muted-foreground">{hint}</span>
+                      <span className={`text-[13px] font-semibold tracking-[-0.01em] ${active ? "text-[#007AFF]" : "text-[#1d1d1f]"}`}>{label}</span>
+                      <span className="text-[10px] leading-tight text-[#8e8e93]">{hint}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Display title</Label>
+            <div className="ios-form-group">
+              <div className="ios-form-row">
+                <label className="ios-form-label">Display title</label>
                 <Input
-                  className="qrp-input h-12 rounded-xl"
+                  className="ios-form-input"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder={paymentType === "donation" ? "Support our project" : paymentType === "tip" ? "Leave a tip" : "e.g. Morning Coffee Combo"}
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Currency</Label>
-                <CurrencyPicker value={cur} onChange={setCur} className="qrp-input h-12" />
-
+              <div className="ios-form-row !gap-2">
+                <label className="ios-form-label">Currency</label>
+                <CurrencyPicker value={cur} onChange={setCur} className="!bg-transparent !px-0 !min-h-0 !rounded-none" />
+              </div>
+              <div className="ios-form-row">
+                <label className="ios-form-label">Description (optional)</label>
+                <Textarea
+                  className="ios-form-input min-h-[56px] resize-none"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Shown at checkout"
+                />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Description (optional)</Label>
-              <Textarea className="qrp-input rounded-xl" value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Shown to your customer at checkout" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cover image</Label>
+            <div className="space-y-2">
+              <p className="px-0.5 text-[12px] font-medium tracking-[-0.01em] text-[#8e8e93]">Cover photo</p>
               {coverImage ? (
-                <div className="relative overflow-hidden rounded-2xl border border-border">
+                <div className="relative overflow-hidden rounded-[14px]">
                   <img src={coverImage} alt="Checkout cover" className="h-36 w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => setCoverImage("")}
-                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm"
+                    className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4" strokeWidth={2.5} />
                   </button>
                 </div>
               ) : (
-                <label className="group flex cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed border-border p-7 text-center transition-all hover:border-paypal-blue hover:bg-paypal-blue/5">
+                <label className="ios-upload">
                   {uploading === "cover"
-                    ? <Loader2 className="mb-2 h-7 w-7 animate-spin text-paypal-blue" />
-                    : <ImagePlus className="mb-2 h-7 w-7 text-muted-foreground transition-colors group-hover:text-paypal-blue" />}
-                  <span className="text-sm font-medium text-foreground">Click to upload cover photo</span>
-                  <span className="mt-0.5 text-xs text-muted-foreground">Makes your checkout look 2× more trusted</span>
+                    ? <Loader2 className="h-7 w-7 animate-spin text-[#007AFF]" />
+                    : (
+                      <span className="ios-glyph ios-glyph-gray mb-1">
+                        <ImagePlus className="h-4 w-4" strokeWidth={2.25} />
+                      </span>
+                    )}
+                  <span className="text-[15px] font-medium text-[#007AFF]">Add Cover Photo</span>
+                  <span className="text-[12px] text-[#8e8e93]">Looks more trusted at checkout</span>
                   <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleCoverImage(e.target.files[0])} />
                 </label>
               )}
@@ -331,36 +335,38 @@ export default function QrPayCreatePage() {
           </div>
 
           {/* Step 2 — amount / items */}
-          <div className="qrp-card space-y-4 p-5">
-            <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="qrp-card space-y-4 p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <StepBadge n={2} />
+                <span className={`ios-glyph ${isFlexible ? "ios-glyph-orange" : "ios-glyph-teal"}`}>
+                  {isFlexible ? <Coffee className="h-4 w-4" strokeWidth={2.25} /> : <Package className="h-4 w-4" strokeWidth={2.25} />}
+                </span>
                 <div>
-                  <h2 className="font-semibold text-foreground">{isFlexible ? "Amount settings" : "Line items"}</h2>
-                  <p className="text-xs text-muted-foreground">{isFlexible ? "Customers pick their own amount" : "What the customer is paying for"}</p>
+                  <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-foreground">{isFlexible ? "Amount settings" : "Line items"}</h2>
+                  <p className="text-[13px] text-[var(--qrp-muted)]">{isFlexible ? "Customers pick their own amount" : "What the customer is paying for"}</p>
                 </div>
               </div>
               {!isFlexible && (
                 <button
                   type="button"
                   onClick={() => setItems([...items, { name: "", quantity: 1, unit_price: 0 }])}
-                  className="flex shrink-0 items-center gap-1 rounded-lg bg-paypal-blue/10 px-3 py-1.5 text-xs font-bold uppercase tracking-tight text-paypal-blue transition-colors hover:bg-paypal-blue/20"
+                  className="flex shrink-0 items-center gap-1 rounded-full bg-[#007AFF]/12 px-3 py-1.5 text-[13px] font-semibold text-[#007AFF] transition-colors hover:bg-[#007AFF]/18"
                 >
-                  <Plus className="h-3.5 w-3.5" />Add item
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />Add
                 </button>
               )}
             </div>
 
             {isFlexible ? (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Suggested ({cur})</Label>
-                    <Input className="qrp-input h-12 rounded-xl" type="number" step="0.01" min={0} value={suggested} onChange={e => setSuggested(e.target.value)} placeholder="5.00" />
+                <div className="ios-form-group">
+                  <div className="ios-form-row">
+                    <label className="ios-form-label">Suggested ({cur})</label>
+                    <Input className="ios-form-input" type="number" step="0.01" min={0} value={suggested} onChange={e => setSuggested(e.target.value)} placeholder="5.00" />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Minimum ({cur})</Label>
-                    <Input className="qrp-input h-12 rounded-xl" type="number" step="0.01" min={0} value={minAmount} onChange={e => setMinAmount(e.target.value)} placeholder="Optional" />
+                  <div className="ios-form-row">
+                    <label className="ios-form-label">Minimum ({cur})</label>
+                    <Input className="ios-form-input" type="number" step="0.01" min={0} value={minAmount} onChange={e => setMinAmount(e.target.value)} placeholder="Optional" />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -369,38 +375,38 @@ export default function QrPayCreatePage() {
                       key={v}
                       type="button"
                       onClick={() => setSuggested(String(v))}
-                      className={`rounded-full border px-4 py-1.5 text-xs font-bold transition-all active:scale-95 ${
-                        Number(suggested) === v ? "border-paypal-blue bg-paypal-blue text-primary-foreground" : "border-border bg-card text-foreground hover:border-paypal-blue/50"
+                      className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-all active:scale-95 ${
+                        Number(suggested) === v ? "bg-[#007AFF] text-white" : "bg-[#f2f2f7] text-[#1d1d1f]"
                       }`}
                     >
                       {cur} {v}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">The suggested amount is pre-filled at checkout — customers can change it.</p>
+                <p className="text-[12px] text-[#8e8e93]">Suggested amount is pre-filled — customers can change it.</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {items.map((it, i) => (
-                  <div key={i} className="group relative rounded-2xl border border-border bg-muted/40 p-4">
+                  <div key={i} className="group relative overflow-hidden rounded-[14px] bg-[#f2f2f7] p-3.5">
                     <div className="flex gap-3">
-                      <label className="relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border bg-card transition-colors hover:border-paypal-blue">
+                      <label className="relative flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[12px] bg-white">
                         {it.image_url
                           ? <img src={it.image_url} alt={it.name || "Item"} className="h-full w-full object-cover" />
                           : uploading === i
-                            ? <Loader2 className="h-5 w-5 animate-spin text-paypal-blue" />
-                            : <ImagePlus className="h-5 w-5 text-muted-foreground" />}
+                            ? <Loader2 className="h-5 w-5 animate-spin text-[#007AFF]" />
+                            : <ImagePlus className="h-5 w-5 text-[#c7c7cc]" strokeWidth={1.75} />}
                         <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleItemImage(i, e.target.files[0])} />
                       </label>
-                      <div className="min-w-0 flex-1 space-y-1">
+                      <div className="min-w-0 flex-1 space-y-0.5">
                         <Input
-                          className="h-8 border-0 bg-transparent px-0 font-semibold text-foreground shadow-none focus-visible:ring-0"
+                          className="h-8 border-0 bg-transparent px-0 text-[15px] font-semibold tracking-[-0.01em] text-[#1d1d1f] shadow-none focus-visible:ring-0"
                           placeholder="Item name"
                           value={it.name}
                           onChange={e => update(i, "name", e.target.value)}
                         />
                         <Input
-                          className="h-7 border-0 bg-transparent px-0 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
+                          className="h-7 border-0 bg-transparent px-0 text-[13px] text-[#8e8e93] shadow-none focus-visible:ring-0"
                           placeholder="Optional description"
                           value={it.description || ""}
                           onChange={e => update(i, "description", e.target.value)}
@@ -410,25 +416,25 @@ export default function QrPayCreatePage() {
 
                     <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Qty</span>
+                        <span className="text-[11px] font-medium text-[#8e8e93]">Qty</span>
                         <div className="mt-1 flex items-center gap-2">
-                          <button type="button" onClick={() => update(i, "quantity", Math.max(1, Number(it.quantity) - 1))} className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-foreground active:scale-90">−</button>
-                          <span className="w-6 text-center text-sm font-bold">{it.quantity}</span>
-                          <button type="button" onClick={() => update(i, "quantity", Number(it.quantity) + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-foreground active:scale-90">+</button>
+                          <button type="button" onClick={() => update(i, "quantity", Math.max(1, Number(it.quantity) - 1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[17px] text-[#007AFF] active:scale-90">−</button>
+                          <span className="w-6 text-center text-[15px] font-semibold">{it.quantity}</span>
+                          <button type="button" onClick={() => update(i, "quantity", Number(it.quantity) + 1)} className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[17px] text-[#007AFF] active:scale-90">+</button>
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Unit price ({cur})</span>
+                        <span className="text-[11px] font-medium text-[#8e8e93]">Unit ({cur})</span>
                         <Input
                           type="number" step="0.01" min={0}
-                          className="qrp-input mt-1 h-9 w-28 rounded-lg text-right font-bold"
+                          className="mt-1 h-9 w-28 rounded-[10px] border-0 bg-white text-right text-[15px] font-semibold shadow-none focus-visible:ring-1 focus-visible:ring-[#007AFF]/30"
                           value={it.unit_price}
                           onChange={e => update(i, "unit_price", Number(e.target.value))}
                         />
                       </div>
                       <div className="ml-auto text-right">
-                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Line</span>
-                        <div className="text-sm font-bold text-paypal-blue">{cur} {(Number(it.quantity || 0) * Number(it.unit_price || 0)).toFixed(2)}</div>
+                        <span className="text-[11px] font-medium text-[#8e8e93]">Line</span>
+                        <div className="text-[15px] font-semibold tracking-[-0.01em] text-[#1d1d1f]">{cur} {(Number(it.quantity || 0) * Number(it.unit_price || 0)).toFixed(2)}</div>
                       </div>
                     </div>
 
@@ -436,9 +442,9 @@ export default function QrPayCreatePage() {
                       <button
                         type="button"
                         onClick={() => setItems(items.filter((_, idx) => idx !== i))}
-                        className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-opacity md:opacity-0 md:group-hover:opacity-100"
+                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#FF3B30] shadow-sm"
                       >
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={2.25} />
                       </button>
                     )}
                   </div>
@@ -448,31 +454,38 @@ export default function QrPayCreatePage() {
           </div>
 
           {/* Step 3 — options */}
-          <div className="qrp-card p-5">
-            <div className="flex items-center gap-3 border-b border-border/60 pb-3">
-              <StepBadge n={3} />
+          <div className="qrp-card space-y-1 p-4 sm:p-5">
+            <div className="mb-2 flex items-center gap-3">
+              <span className="ios-glyph ios-glyph-green">
+                <Settings2 className="h-4 w-4" strokeWidth={2.25} />
+              </span>
               <div>
-                <h2 className="font-semibold text-foreground">Checkout options</h2>
-                <p className="text-xs text-muted-foreground">Great defaults are already set — tweak if you need to</p>
+                <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-foreground">Checkout options</h2>
+                <p className="text-[13px] text-[var(--qrp-muted)]">Defaults work great — tweak if needed</p>
               </div>
             </div>
 
             <Accordion type="multiple" className="w-full">
-              <AccordionItem value="methods" className="border-border/60">
-                <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-                  <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-paypal-blue" />Payment methods</span>
+              <AccordionItem value="methods" className="border-black/[0.06]">
+                <AccordionTrigger className="text-[15px] font-semibold tracking-[-0.01em] hover:no-underline">
+                  <span className="flex items-center gap-2.5">
+                    <span className="ios-glyph ios-glyph-blue !h-7 !w-7 !rounded-[7px]">
+                      <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.25} />
+                    </span>
+                    Payment methods
+                  </span>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-3 pb-4">
+                <AccordionContent className="space-y-2 pb-4">
                   {[
                     { k: "pi", l: "Pi Network", d: "Pay from Pi balance" },
                     { k: "wallet", l: "OpenPay Wallet", d: "Instant internal transfer" },
                     { k: "card", l: "Virtual Card", d: "Card checkout" },
                     { k: "guest", l: "Allow guest checkout", d: "No sign-in needed for Pi" },
                   ].map(m => (
-                    <div key={m.k} className="flex items-center justify-between gap-3 rounded-xl bg-muted/50 p-3">
+                    <div key={m.k} className="flex items-center justify-between gap-3 rounded-[12px] bg-[#f2f2f7] px-3.5 py-3">
                       <div>
-                        <p className="text-sm font-medium text-foreground">{m.l}</p>
-                        <p className="text-xs text-muted-foreground">{m.d}</p>
+                        <p className="text-[15px] font-medium tracking-[-0.01em] text-[#1d1d1f]">{m.l}</p>
+                        <p className="text-[12px] text-[#8e8e93]">{m.d}</p>
                       </div>
                       <Switch checked={(allow as any)[m.k]} onCheckedChange={v => setAllow({ ...allow, [m.k]: v })} />
                     </div>
@@ -486,7 +499,7 @@ export default function QrPayCreatePage() {
                       <Switch checked={reusable} onCheckedChange={setReusable} />
                     </div>
                   )}
-                  <div className="space-y-2 rounded-xl border border-paypal-blue/20 bg-paypal-blue/5 p-3">
+                  <div className="space-y-2 rounded-xl border border-black/10 bg-black/[0.03] p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-medium text-foreground">Settle to OpenPay Pro</p>
@@ -522,7 +535,12 @@ export default function QrPayCreatePage() {
 
               <AccordionItem value="after" className="border-border/60">
                 <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-                  <span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-paypal-blue" />After payment</span>
+                  <span className="flex items-center gap-2.5">
+                    <span className="ios-glyph ios-glyph-indigo !h-7 !w-7 !rounded-[7px]">
+                      <Sparkles className="h-3.5 w-3.5" strokeWidth={2.25} />
+                    </span>
+                    After payment
+                  </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-4">
                   <Select value={afterAction} onValueChange={v => setAfterAction(v as AfterAction)}>
@@ -544,7 +562,12 @@ export default function QrPayCreatePage() {
 
               <AccordionItem value="delivery" className="border-b-0">
                 <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-                  <span className="flex items-center gap-2"><Settings2 className="h-4 w-4 text-paypal-blue" />Customer details</span>
+                  <span className="flex items-center gap-2.5">
+                    <span className="ios-glyph ios-glyph-gray !h-7 !w-7 !rounded-[7px]">
+                      <Settings2 className="h-3.5 w-3.5" strokeWidth={2.25} />
+                    </span>
+                    Customer details
+                  </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-4">
                   <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/50 p-3">
@@ -583,85 +606,71 @@ export default function QrPayCreatePage() {
 
         {/* ── Right: live preview + generate ─────────────── */}
         <div className="lg:col-span-5">
-          <div className="space-y-5 lg:sticky lg:top-6">
-            <p className="text-center text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Customer preview</p>
+          <div className="space-y-4 lg:sticky lg:top-6 lg:space-y-5">
+            <p className="text-center text-[11px] font-semibold tracking-[-0.01em] text-muted-foreground">Customer preview</p>
 
-            {/* live checkout card */}
-            <div className="mx-auto max-w-[340px] overflow-hidden rounded-[2rem] border border-border bg-card shadow-2xl">
+            {/* live checkout card — Apple Pay sheet preview */}
+            <div className="qrp-pay-sheet mx-auto max-w-[340px]">
               {coverImage ? (
-                <img src={coverImage} alt="Checkout cover preview" className="h-36 w-full object-cover" />
+                <img src={coverImage} alt="Checkout cover preview" className="h-32 w-full object-cover" />
               ) : (
-                <div className="flex h-36 w-full items-center justify-center bg-muted">
-                  <ImagePlus className="h-10 w-10 text-muted-foreground/40" />
+                <div className="flex h-28 w-full items-center justify-center bg-black/[0.03]">
+                  <ImagePlus className="h-8 w-8 text-muted-foreground/35" />
                 </div>
               )}
 
-              <div className="space-y-4 px-6 py-6">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-paypal-blue">
-                    <QrCode className="h-3 w-3 text-primary-foreground" />
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">OpenPay Checkout</span>
-                </div>
-
-                <div>
-                  <h3 className="truncate text-lg font-bold text-foreground">{previewTitle}</h3>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">{description || "Secure payment via QR"}</p>
+              <div className="space-y-4 px-5 py-5">
+                <div className="text-center">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--qrp-muted)]">OpenPay</p>
+                  <h3 className="mt-1 truncate text-[17px] font-semibold tracking-[-0.02em] text-foreground">{previewTitle}</h3>
+                  <p className="mt-0.5 line-clamp-2 text-[12px] text-[var(--qrp-muted)]">{description || "Secure payment via QR"}</p>
+                  <div className="qrp-amount-hero mt-3 text-[2rem]">{total.toFixed(2)} <span className="text-base font-medium text-[var(--qrp-muted)]">{cur}</span></div>
                 </div>
 
                 {!isFlexible && (
-                  <div className="space-y-2 border-t border-border/60 pt-3">
+                  <div className="qrp-group">
                     {filledItems.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">Add items to see them here…</p>
+                      <div className="qrp-group-row text-[12px] text-muted-foreground">Add items to see them here…</div>
                     ) : filledItems.slice(0, 4).map((it, i) => (
-                      <div key={i} className="flex justify-between gap-3 text-xs">
-                        <span className="truncate text-muted-foreground">{it.name} × {it.quantity}</span>
-                        <span className="shrink-0 font-medium text-foreground">{(Number(it.quantity || 0) * Number(it.unit_price || 0)).toFixed(2)} {cur}</span>
+                      <div key={i} className="qrp-group-row text-[13px]">
+                        <span className="truncate text-[var(--qrp-muted)]">{it.name} × {it.quantity}</span>
+                        <span className="shrink-0 font-medium">{(Number(it.quantity || 0) * Number(it.unit_price || 0)).toFixed(2)}</span>
                       </div>
                     ))}
-                    {filledItems.length > 4 && <p className="text-xs text-muted-foreground">+{filledItems.length - 4} more</p>}
                   </div>
                 )}
 
-                <div className="flex items-end justify-between border-t border-border/60 pt-3">
-                  <span className="text-sm font-semibold text-foreground">Total</span>
-                  <div className="text-right">
-                    <div className="text-2xl font-extrabold text-paypal-dark">{total.toFixed(2)}</div>
-                    <div className="text-[10px] font-bold uppercase text-muted-foreground">{cur}</div>
-                  </div>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {allow.pi && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Pi</span>}
+                  {allow.wallet && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Wallet</span>}
+                  {allow.card && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Card</span>}
                 </div>
 
-                <div className="flex flex-wrap gap-1.5">
-                  {allow.pi && <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-foreground">Pi</span>}
-                  {allow.wallet && <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-foreground">Wallet</span>}
-                  {allow.card && <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-foreground">Card</span>}
-                </div>
-
-                <div className="pointer-events-none w-full rounded-2xl bg-paypal-blue py-3 text-center text-sm font-bold text-primary-foreground shadow-lg">
+                <div className="pointer-events-none w-full rounded-[14px] bg-[var(--qrp-ink)] py-3.5 text-center text-[15px] font-semibold text-white">
                   Pay {total.toFixed(2)} {cur}
                 </div>
               </div>
             </div>
 
             {/* grand total + generate */}
-            <div className="space-y-4 rounded-3xl bg-paypal-dark p-6 text-primary-foreground shadow-xl">
+            <div className="qrp-dark-panel space-y-4 rounded-[22px] bg-[var(--qrp-ink)] p-6 text-white shadow-[0_20px_50px_-28px_rgba(0,0,0,0.55)]">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium uppercase text-primary-foreground/70">Grand total</p>
-                  <h4 className="truncate text-2xl font-bold">{total.toFixed(2)} <span className="text-lg">{cur}</span></h4>
+                  <p className="text-[11px] font-medium text-white/60">Total</p>
+                  <h4 className="qrp-display truncate text-[1.85rem] sm:text-[2.1rem]">{total.toFixed(2)} <span className="text-base font-medium text-white/70">{cur}</span></h4>
                 </div>
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-foreground/10">
-                  <QrCode className="h-6 w-6" />
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10">
+                  <QrCode className="h-5 w-5" />
                 </span>
               </div>
               <Button
-                className="h-14 w-full rounded-2xl bg-background text-lg font-bold text-paypal-dark shadow-lg hover:bg-background/90"
+                className="h-14 w-full rounded-[14px] bg-white text-[16px] font-semibold text-[var(--qrp-ink)] shadow-lg hover:bg-white/95"
                 disabled={loading || (!isFlexible && total <= 0)}
                 onClick={submit}
               >
-                {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Creating…</> : "Generate & Share QR"}
+                {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Creating…</> : "Generate QR"}
               </Button>
-              <p className="text-center text-[11px] text-primary-foreground/70">Double-check your settings before generating</p>
+              <p className="text-center text-[11px] text-white/55">Review details before sharing</p>
             </div>
           </div>
         </div>

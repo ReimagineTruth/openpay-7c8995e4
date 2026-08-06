@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, ShieldCheck, Wallet, CreditCard, User, Heart, Coffee, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, ShieldCheck, CreditCard, User, Heart, Coffee, Lock, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import QrPayHeader from "@/components/qrpay/QrPayHeader";
 import QrPaySteps from "@/components/qrpay/QrPaySteps";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
 import BrandLogo from "@/components/BrandLogo";
@@ -286,7 +283,6 @@ export default function QrPayCheckoutPage() {
 
   const TypeIcon = data.payment_type === "donation" ? Heart : data.payment_type === "tip" ? Coffee : null;
 
-  const subtotal = isFlexible ? chargeAmount : Number(data.total);
   const payLabel = paying
     ? "Processing…"
     : activeMethod === "pi"
@@ -300,326 +296,411 @@ export default function QrPayCheckoutPage() {
     : activeMethod === "pro" ? payPro
     : payWallet;
 
+  const amountText = activeMethod === "pi"
+    ? `${chargeAmount.toFixed(2)} π`
+    : `${data.currency} ${chargeAmount.toFixed(2)}`;
+
+  const amountParts = activeMethod === "pi"
+    ? { curr: "π", value: chargeAmount.toFixed(2), suffix: true }
+    : { curr: data.currency, value: chargeAmount.toFixed(2), suffix: false };
+
+  const merchantLabel = data.merchant.full_name || data.merchant.username || "merchant";
+
+  const renderOrderBody = (align: "center" | "start" = "center") => isFlexible ? (
+    <div className={`space-y-3 p-4 ${align === "start" ? "text-left" : ""}`}>
+      <Label className="text-[12px] font-medium text-[var(--qrp-muted)]">
+        {data.payment_type === "tip" ? "Tip amount" : "Donation amount"}
+      </Label>
+      <div className="qrp-tip-field">
+        <span className="qrp-curr">{data.currency}</span>
+        <Input
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          min={data.min_amount || 0}
+          value={customAmount}
+          onChange={e => setCustomAmount(e.target.value)}
+          placeholder="0.00"
+        />
+      </div>
+      <div className={`flex flex-wrap gap-2 ${align === "start" ? "justify-start" : "justify-center"}`}>
+        {[1, 5, 10, 25].map(v => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setCustomAmount(String(v))}
+            className={`qrp-chip ${Number(customAmount) === v ? "is-on" : ""}`}
+          >
+            {data.currency} {v}
+          </button>
+        ))}
+      </div>
+      {data.min_amount ? (
+        <p className={`text-[11px] text-[var(--qrp-muted)] ${align === "start" ? "text-left" : "text-center"}`}>
+          Min {data.currency} {Number(data.min_amount).toFixed(2)}
+        </p>
+      ) : null}
+    </div>
+  ) : (
+    <>
+      {data.items.map(it => (
+        <div key={it.id} className="qrp-group-row">
+          <div className="flex min-w-0 items-center gap-3">
+            {it.image_url
+              ? <img src={it.image_url} alt={it.name} className="h-10 w-10 shrink-0 rounded-[10px] object-cover" />
+              : <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-black/[0.04] text-[11px] font-semibold text-[var(--qrp-muted)]">{it.quantity}×</span>}
+            <div className="min-w-0">
+              <div className="truncate text-[15px] font-medium tracking-[-0.01em]">{it.name}</div>
+              <div className="truncate text-[12px] text-[var(--qrp-muted)]">Qty {it.quantity}</div>
+            </div>
+          </div>
+          <div className="shrink-0 text-[15px] font-semibold tracking-[-0.01em]">{data.currency} {Number(it.line_total).toFixed(2)}</div>
+        </div>
+      ))}
+      <div className="qrp-group-row">
+        <span className="text-[15px] text-[var(--qrp-muted)]">Fees</span>
+        <span className="text-[15px] font-medium text-emerald-600">No fee</span>
+      </div>
+      <div className="qrp-group-row">
+        <span className="text-[15px] font-semibold">Total</span>
+        <span className="text-[17px] font-semibold tracking-[-0.02em]">{amountText}</span>
+      </div>
+    </>
+  );
+
+  const renderDetailsBody = () => (
+    <div className="space-y-3 p-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label className="text-[12px] font-medium text-[var(--qrp-muted)]">
+            Name{data.collect_delivery && (data.delivery_fields || []).includes("name") ? " *" : ""}
+          </Label>
+          <Input className="qrp-input" value={payerName} onChange={e => setPayerName(e.target.value)} placeholder="Your name" />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[12px] font-medium text-[var(--qrp-muted)]">
+            Email{data.collect_delivery && (data.delivery_fields || []).includes("email") ? " *" : ""}
+          </Label>
+          <Input className="qrp-input" type="email" value={payerEmail} onChange={e => setPayerEmail(e.target.value)} placeholder="you@example.com" />
+        </div>
+      </div>
+      {data.collect_delivery && (
+        <div className="space-y-3 rounded-[12px] bg-black/[0.03] p-3">
+          <div className="text-[12px] font-medium text-[var(--qrp-muted)]">Delivery</div>
+          {(data.delivery_fields || []).includes("phone") && (
+            <Input className="qrp-input" value={payerPhone} onChange={e => setPayerPhone(e.target.value)} placeholder="Phone *" />
+          )}
+          {(data.delivery_fields || []).includes("address") && (
+            <textarea className="qrp-input w-full p-3 text-sm" style={{ height: "auto" }} rows={3}
+                      value={deliveryAddress} onChange={e => setDeliveryAddress(e.target.value)}
+                      placeholder="Shipping address *" />
+          )}
+          <textarea className="qrp-input w-full p-3 text-sm" style={{ height: "auto" }} rows={2}
+                    value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)}
+                    placeholder="Notes (optional)" />
+        </div>
+      )}
+    </div>
+  );
+
+  const renderMethodsBody = () => (
+    <div className="overflow-hidden">
+      {tabs.includes("wallet") && (
+        <PayOpt active={activeMethod === "wallet"} onClick={() => setMethod("wallet")}
+          logo={<span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/[0.05]"><BrandLogo className="h-5 w-5 text-[var(--qrp-ink)]" /></span>}
+          label="OpenPay Balance"
+          hint={`Wallet · ${data.currency}`} />
+      )}
+      {tabs.includes("pi") && (
+        <PayOpt active={activeMethod === "pi"} onClick={() => setMethod("pi")}
+          logo={<img src={PURE_PI_ICON_URL} alt="Pi Network" className="h-8 w-8 rounded-full object-cover" />}
+          label="Pi Network"
+          hint={data.allow_guest ? "Guest checkout" : "Sign-in required"} />
+      )}
+      {tabs.includes("card") && (
+        <PayOpt active={activeMethod === "card"} onClick={() => setMethod("card")}
+          logo={
+            <span className="flex h-7 w-10 items-center justify-center rounded-[7px] bg-[var(--qrp-ink)]">
+              <BrandLogo className="h-3.5 w-3.5 text-white" />
+            </span>
+          }
+          label="Virtual Card"
+          hint={savedCard ? `•••• ${String(savedCard.card_number).slice(-4)}` : "OpenPay card"} />
+      )}
+      {tabs.includes("pro") && (
+        <PayOpt active={activeMethod === "pro"} onClick={() => setMethod("pro")}
+          logo={
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2c2c2e] text-[11px] font-black text-white">P</span>
+          }
+          label="OpenPay Pro"
+          hint={formatProDestinationPreview(data.pro_settlement_to || "")} />
+      )}
+
+      {activeMethod === "pro" && (
+        <div className="qrp-group-footer space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {PRO_PAY_ASSETS.map(a => (
+              <button key={a.key} type="button" onClick={() => setProAsset(a.key)}
+                className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-all active:scale-95 ${
+                  proAsset === a.key
+                    ? "bg-[var(--qrp-ink)] text-white"
+                    : "bg-white text-[var(--qrp-ink)] ring-1 ring-black/10"
+                }`}>{a.label}</button>
+            ))}
+          </div>
+          <button type="button" onClick={() => openExternalUrl(PRO_TOPUP_URL)}
+            className="text-[12px] font-semibold text-[var(--qrp-accent)]">
+            Top up on OpenPay Pro
+          </button>
+        </div>
+      )}
+
+      {activeMethod === "card" && (
+        <div className="qrp-group-footer space-y-2">
+          {savedCard ? (
+            <div className="rounded-[14px] bg-gradient-to-br from-[#1d1d1f] to-[#3a3a3c] px-3.5 py-3 text-white">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/60">Virtual Card</p>
+                  <p className="mt-1 font-mono text-[15px] font-semibold tracking-[0.12em]">
+                    {showCard
+                      ? String(savedCard.card_number).replace(/(\d{4})(?=\d)/g, "$1 ").trim()
+                      : `•••• •••• •••• ${String(savedCard.card_number).slice(-4)}`}
+                  </p>
+                </div>
+                <button type="button" onClick={() => setShowCard(v => !v)}
+                  aria-label={showCard ? "Hide card details" : "Show card details"}
+                  className="rounded-full bg-white/15 p-1.5 text-white">
+                  {showCard ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+                <div className="min-w-0">
+                  <p className="text-white/50">Holder</p>
+                  <p className="truncate font-semibold uppercase">{showCard ? (savedCard.cardholder_name || "OPENPAY") : "••••"}</p>
+                </div>
+                <div>
+                  <p className="text-white/50">Expires</p>
+                  <p className="font-semibold">{showCard ? `${String(savedCard.expiry_month).padStart(2, "0")}/${String(savedCard.expiry_year).slice(-2)}` : "••/••"}</p>
+                </div>
+                <div>
+                  <p className="text-white/50">CVC</p>
+                  <p className="font-semibold">{showCard ? savedCard.cvc : "•••"}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)} />
+              <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)} />
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const payBtnClass = `h-[54px] min-[900px]:h-[56px] w-full gap-2 text-[16px] min-[900px]:text-[17px] ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : activeMethod === "pro" ? "qrp-pro-btn" : "qrp-primary-btn"}`;
+  const payHint = activeMethod === "pro"
+    ? "You'll finish securely on OpenPay Pro."
+    : activeMethod === "wallet" && !session ? "You'll be asked to sign in." : "Encrypted · Instant receipt";
+
+  const renderPayButton = () => (
+    <Button className={payBtnClass} disabled={paying} onClick={onPay}>
+      {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : activeMethod === "pi" ? (
+        <img src={PURE_PI_ICON_URL} alt="" className="h-5 w-5 rounded-full object-cover" />
+      ) : activeMethod === "pro" ? (
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15 text-[10px] font-black">P</span>
+      ) : activeMethod === "card" ? (
+        <CreditCard className="h-4 w-4" />
+      ) : (
+        <BrandLogo className="h-5 w-5 text-white" />
+      )}
+      {payLabel}
+      <Lock className="h-3.5 w-3.5 opacity-55" />
+    </Button>
+  );
+
   return (
-    <div className="min-h-screen qrp-page-bg">
-      <QrPayHeader
-        eyebrow="OpenPay Checkout"
-        title="Secure checkout"
-        subtitle={`You're paying ${data.merchant.full_name || "a merchant"} · protected by OpenPay dispute resolution`}
-        icon={ShieldCheck}
-      >
-        <QrPaySteps current="pay" />
-      </QrPayHeader>
+    <div className="min-h-screen qrp-page-bg pb-[calc(5.75rem+env(safe-area-inset-bottom))] min-[900px]:pb-12">
+      <div className="qrp-bg-mark" aria-hidden><span>PAY</span></div>
 
-      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 p-4 lg:grid-cols-12 qrp-pop">
-        {/* ── Order column ─────────────────────────────── */}
-        <div className="space-y-4 lg:col-span-7 qrp-stagger">
-          <div className="qrp-sheet">
-            {data.cover_image_url && (
-              <img src={data.cover_image_url} alt={data.title} className="h-44 w-full object-cover" />
-            )}
-            <div className="flex items-center gap-3 p-4">
-              {data.merchant.avatar_url
-                ? <img src={data.merchant.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-paypal-blue/15" />
-                : <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted"><User className="h-6 w-6" /></div>}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 font-semibold text-foreground">
-                  <span className="truncate">{data.merchant.full_name || "Merchant"}</span>
-                  {TypeIcon && <TypeIcon className="h-4 w-4 shrink-0 text-paypal-blue" />}
+      {/* ════════════ DESKTOP / TABLET+ LAYOUT ════════════ */}
+      <div className="relative z-[1] hidden qrp-pop min-[900px]:block">
+        <div className="qrp-checkout-shell flex items-center justify-between pb-2 pt-[clamp(1rem,2vw,1.75rem)]">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--qrp-muted)]">OpenPay Checkout</div>
+          <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--qrp-muted)]">
+            <ShieldCheck className="h-3.5 w-3.5 text-[var(--qrp-accent)]" /> Secure payment
+          </div>
+        </div>
+        <div className="qrp-checkout-shell pb-4">
+          <QrPaySteps current="pay" />
+        </div>
+
+        <div className="qrp-checkout-desk">
+          <div className="qrp-desk-left">
+            <div className="qrp-desk-hero">
+              {data.cover_image_url && (
+                <div className="qrp-desk-hero-cover">
+                  <img src={data.cover_image_url} alt="" />
                 </div>
-                {data.merchant.username && <div className="truncate text-xs text-muted-foreground">@{data.merchant.username}</div>}
+              )}
+              <div className="qrp-desk-hero-main">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-black/[0.04] ring-1 ring-black/5">
+                    {data.merchant.avatar_url
+                      ? <img src={data.merchant.avatar_url} alt="" className="h-full w-full object-cover" />
+                      : <User className="h-5 w-5 text-[var(--qrp-muted)]" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-[16px] font-semibold tracking-[-0.01em]">
+                      Paying {merchantLabel}
+                      {TypeIcon && <TypeIcon className="ml-1.5 inline h-3.5 w-3.5 align-[-2px] text-[var(--qrp-accent)]" />}
+                    </p>
+                    {data.merchant.username && data.merchant.full_name && (
+                      <p className="truncate text-[13px] text-[var(--qrp-muted)]">@{data.merchant.username}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="qrp-desk-amount">
+                  {amountParts.suffix ? (
+                    <><span>{amountParts.value}</span> <span className="qrp-curr">{amountParts.curr}</span></>
+                  ) : (
+                    <><span className="qrp-curr">{amountParts.curr}</span><span>{amountParts.value}</span></>
+                  )}
+                </div>
+                {(data.title || data.description) && (
+                  <p className="mt-2.5 max-w-xl text-[15px] leading-snug text-[var(--qrp-muted)]">
+                    {data.title || data.description}
+                  </p>
+                )}
+                {data.pro_settlement_to && (
+                  <p className="mt-2 text-[12px] text-[var(--qrp-muted)]">
+                    Settles to Pro · <span className="font-medium text-[var(--qrp-ink)]">{data.pro_settlement_to}</span>
+                  </p>
+                )}
               </div>
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-paypal-blue/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-paypal-blue">
-                <ShieldCheck className="h-3 w-3" /> Verified
-              </span>
             </div>
-            {data.pro_settlement_to && (
-              <div className="flex items-center gap-2 border-t border-border/60 px-4 py-2.5 text-xs text-muted-foreground">
-                <span
-                  className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black text-white"
-                  style={{ background: "#ab9ff2" }}
-                >
-                  P
+
+            <div className="qrp-desk-panel">
+              <div className="qrp-desk-panel-head">Order</div>
+              <div className="qrp-group !m-0 !rounded-none !shadow-none">{renderOrderBody("start")}</div>
+            </div>
+
+            <div className="qrp-desk-panel">
+              <div className="qrp-desk-panel-head">Your details</div>
+              {renderDetailsBody()}
+            </div>
+          </div>
+
+          <div className="qrp-desk-right">
+            <div className="qrp-desk-panel p-[clamp(1.15rem,2vw,1.5rem)]">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[12px] font-medium text-[var(--qrp-muted)]">Pay with</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--qrp-muted)]">
+                  <ShieldCheck className="h-3.5 w-3.5 text-[var(--qrp-accent)]" /> Secure
                 </span>
-                Settles to OpenPay Pro · <span className="font-semibold text-foreground">{data.pro_settlement_to}</span>
               </div>
+              <div className="qrp-group !mt-2 !rounded-[14px]">{renderMethodsBody()}</div>
+
+              <div className="mt-5 flex items-baseline justify-between gap-3 border-t border-black/[0.06] pt-4 px-0.5">
+                <span className="text-[14px] font-medium text-[var(--qrp-muted)]">Total due</span>
+                <span className="qrp-desk-amount is-total">
+                  {amountParts.suffix ? (
+                    <>{amountParts.value} <span className="qrp-curr">{amountParts.curr}</span></>
+                  ) : (
+                    <><span className="qrp-curr">{amountParts.curr}</span>{amountParts.value}</>
+                  )}
+                </span>
+              </div>
+
+              <div className="mt-4">
+                {renderPayButton()}
+                <p className="mt-2.5 text-center text-[11px] text-[var(--qrp-muted)]">{payHint}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-center">
+              <p className="qrp-footnote">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Powered by OpenPay
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ════════════ MOBILE LAYOUT ════════════ */}
+      <div className="qrp-stage relative z-[1] qrp-pop min-[900px]:hidden">
+        <div className="mb-3 flex items-center justify-between px-0.5 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--qrp-muted)]">OpenPay</div>
+          <div className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--qrp-muted)]">
+            <ShieldCheck className="h-3.5 w-3.5 text-[var(--qrp-accent)]" /> Secure
+          </div>
+        </div>
+
+        <div className="mb-4 px-0.5">
+          <QrPaySteps current="pay" />
+        </div>
+
+        <div className="qrp-pay-sheet">
+          <div className="qrp-pay-sheet-hero">
+            {data.cover_image_url && (
+              <img src={data.cover_image_url} alt="" className="mb-4 h-32 w-full rounded-2xl object-cover sm:h-40" />
             )}
-
-          </div>
-
-          {/* Order summary */}
-          <div className="qrp-sheet">
-            <div className="qrp-sheet-head">
-              <span>Order summary</span>
-              {!isFlexible && <span className="normal-case tracking-normal">{data.items.length} item{data.items.length === 1 ? "" : "s"}</span>}
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-black/[0.04] ring-1 ring-black/5 shadow-lg">
+              {data.merchant.avatar_url
+                ? <img src={data.merchant.avatar_url} alt="" className="h-full w-full object-cover" />
+                : <User className="h-6 w-6 text-[var(--qrp-muted)]" />}
             </div>
-            <div className="space-y-3 p-4">
-              {data.title && <div className="text-base font-semibold text-foreground">{data.title}</div>}
-              {data.description && <p className="-mt-1 text-sm text-muted-foreground">{data.description}</p>}
-
-              {isFlexible ? (
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {data.payment_type === "tip" ? "Tip amount" : "Donation amount"} ({data.currency})
-                  </Label>
-                  <Input className="qrp-input h-12 text-lg font-semibold" type="number" inputMode="decimal" step="0.01"
-                         min={data.min_amount || 0} value={customAmount}
-                         onChange={e => setCustomAmount(e.target.value)} placeholder="0.00" />
-                  <div className="flex flex-wrap gap-2">
-                    {[1, 5, 10, 25].map(v => (
-                      <button key={v} type="button" onClick={() => setCustomAmount(String(v))}
-                        className={`rounded-full border px-4 py-1.5 text-xs font-bold transition-all active:scale-95 ${
-                          Number(customAmount) === v ? "border-paypal-blue bg-paypal-blue text-primary-foreground" : "border-border bg-card text-foreground hover:border-paypal-blue/50"
-                        }`}>{data.currency} {v}</button>
-                    ))}
-                  </div>
-                  {data.min_amount ? <p className="text-xs text-muted-foreground">Minimum {data.currency} {Number(data.min_amount).toFixed(2)}</p> : null}
-                </div>
+            <p className="text-[13px] font-medium text-[var(--qrp-muted)]">
+              Paying {merchantLabel}
+              {TypeIcon && <TypeIcon className="ml-1 inline h-3.5 w-3.5 align-[-2px] text-[var(--qrp-accent)]" />}
+            </p>
+            <div className="qrp-amount-hero mt-2">
+              {amountParts.suffix ? (
+                <><span>{amountParts.value}</span> <span className="qrp-curr">{amountParts.curr}</span></>
               ) : (
-                <div className="space-y-3">
-                  {data.items.map(it => (
-                    <div key={it.id} className="flex items-center gap-3">
-                      {it.image_url
-                        ? <img src={it.image_url} alt={it.name} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
-                        : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted text-xs font-bold text-muted-foreground">{it.quantity}×</span>}
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold text-foreground">{it.name}</div>
-                        <div className="truncate text-xs text-muted-foreground">
-                          {it.description ? `${it.description} · ` : ""}Qty {it.quantity}
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-sm font-semibold">{data.currency} {Number(it.line_total).toFixed(2)}</div>
-                    </div>
-                  ))}
-                </div>
+                <><span className="qrp-curr">{amountParts.curr}</span><span>{amountParts.value}</span></>
               )}
-
-              <div className="space-y-2 pt-1">
-                <div className="qrp-row"><span className="qrp-row-muted">Subtotal</span><span className="font-medium">{data.currency} {subtotal.toFixed(2)}</span></div>
-                <div className="qrp-row"><span className="qrp-row-muted">Fees</span><span className="font-medium text-emerald-600">No fee</span></div>
-                <div className="qrp-total-row">
-                  <span className="text-sm font-semibold text-muted-foreground">Total</span>
-                  <span className="text-2xl font-extrabold tracking-tight">
-                    {activeMethod === "pi" ? `${chargeAmount.toFixed(2)} π` : `${data.currency} ${chargeAmount.toFixed(2)}`}
-                  </span>
-                </div>
-              </div>
             </div>
+            {(data.title || data.description) && (
+              <p className="mx-auto mt-2 max-w-[22rem] text-[14px] leading-snug text-[var(--qrp-muted)]">
+                {data.title || data.description}
+              </p>
+            )}
           </div>
 
-          {/* Buyer + delivery */}
-          <div className="qrp-sheet">
-            <div className="qrp-sheet-head"><span>Your details</span><span className="normal-case tracking-normal">For your receipt</span></div>
-            <div className="space-y-3 p-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Name{data.collect_delivery && (data.delivery_fields || []).includes("name") ? " *" : ""}
-                  </Label>
-                  <Input className="qrp-input" value={payerName} onChange={e => setPayerName(e.target.value)} placeholder="Your name" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Email{data.collect_delivery && (data.delivery_fields || []).includes("email") ? " *" : ""}
-                  </Label>
-                  <Input className="qrp-input" type="email" value={payerEmail} onChange={e => setPayerEmail(e.target.value)} placeholder="you@example.com" />
-                </div>
-              </div>
-
-              {data.collect_delivery && (
-                <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/40 p-3">
-                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Delivery details</div>
-                  {(data.delivery_fields || []).includes("phone") && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Phone *</Label>
-                      <Input className="qrp-input" value={payerPhone} onChange={e => setPayerPhone(e.target.value)} placeholder="+1 555 0100" />
-                    </div>
-                  )}
-                  {(data.delivery_fields || []).includes("address") && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Shipping address *</Label>
-                      <textarea className="qrp-input w-full p-2 text-sm" style={{ height: "auto" }} rows={3}
-                                value={deliveryAddress} onChange={e => setDeliveryAddress(e.target.value)}
-                                placeholder="Street, city, postal code, country" />
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Notes (optional)</Label>
-                    <textarea className="qrp-input w-full p-2 text-sm" style={{ height: "auto" }} rows={2}
-                              value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)}
-                              placeholder="Anything the merchant should know" />
-                  </div>
-                </div>
-              )}
+          <div className="space-y-5 px-0 pb-4 pt-4">
+            <div>
+              <span className="qrp-section-label qrp-group-inset">Order</span>
+              <div className="qrp-group qrp-group-inset">{renderOrderBody("center")}</div>
+            </div>
+            <div>
+              <span className="qrp-section-label qrp-group-inset">Your details</span>
+              <div className="qrp-group qrp-group-inset">{renderDetailsBody()}</div>
+            </div>
+            <div>
+              <span className="qrp-section-label qrp-group-inset">Pay with</span>
+              <div className="qrp-group qrp-group-inset">{renderMethodsBody()}</div>
             </div>
           </div>
         </div>
 
-        {/* ── Payment column ───────────────────────────── */}
-        <div className="lg:col-span-5">
-          <div className="qrp-sheet lg:sticky lg:top-4">
-            <div className="qrp-sheet-head">
-              <span>Payment method</span>
-              <span className="inline-flex items-center gap-1 normal-case tracking-normal">
-                <ShieldCheck className="h-3.5 w-3.5 text-paypal-blue" /> Secure
-              </span>
-            </div>
-            <div className="space-y-3 p-4">
-              <div className="space-y-2">
-                {tabs.includes("wallet") && (
-                  <PayOpt active={activeMethod === "wallet"} onClick={() => setMethod("wallet")}
-                    logo={<span className="flex h-7 w-7 items-center justify-center rounded-full bg-paypal-blue/10"><BrandLogo className="h-5 w-5 text-paypal-blue" /></span>}
-                    label="OpenPay Balance (OUSD)"
-                    hint={`Pay ${data.currency} ${chargeAmount.toFixed(2)} from your wallet`} />
-                )}
-                {tabs.includes("pi") && (
-                  <PayOpt active={activeMethod === "pi"} onClick={() => setMethod("pi")}
-                    logo={<img src={PURE_PI_ICON_URL} alt="Pi Network" className="h-7 w-7 rounded-full object-cover" />}
-                    label="Pi Network"
-                    hint={data.allow_guest ? "Pi Browser · guest checkout allowed" : "Pi Browser · sign-in required"} />
-                )}
-                {tabs.includes("card") && (
-                  <PayOpt active={activeMethod === "card"} onClick={() => setMethod("card")}
-                    logo={
-                      <span className="flex h-6 w-9 items-center justify-center rounded-[6px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] shadow-sm">
-                        <BrandLogo className="h-3.5 w-3.5 text-white" />
-                      </span>
-                    }
-                    label="Virtual Card"
-                    hint={savedCard ? `OpenPay card •••• ${String(savedCard.card_number).slice(-4)}` : "Pay with your OpenPay virtual card"} />
-                )}
-                {tabs.includes("pro") && (
-                  <PayOpt active={activeMethod === "pro"} onClick={() => setMethod("pro")}
-                    logo={
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black text-white" style={{ background: "#ab9ff2" }}>P</span>
-                    }
-                    label="OpenPay Pro"
-                    hint={`Pay from your Pro wallet · ${formatProDestinationPreview(data.pro_settlement_to || "")}`} />
-                )}
-              </div>
+        <div className="mt-4 flex justify-center">
+          <p className="qrp-footnote">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Powered by OpenPay
+          </p>
+        </div>
+      </div>
 
-              {activeMethod === "pro" && (
-                <div className="space-y-2 rounded-2xl border border-border/70 bg-muted/40 p-3 qrp-rise">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Pay with</div>
-                  <div className="flex flex-wrap gap-2">
-                    {PRO_PAY_ASSETS.map(a => (
-                      <button key={a.key} type="button" onClick={() => setProAsset(a.key)}
-                        className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all active:scale-95 ${
-                          proAsset === a.key
-                            ? "border-[#8c7cf0] bg-[#ab9ff2]/20 text-[#5b4bc4]"
-                            : "border-border bg-background text-foreground hover:border-[#ab9ff2]"
-                        }`}>{a.label}</button>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {PRO_PAY_ASSETS.find(a => a.key === proAsset)?.hint} · credited to the merchant as OUSD.
-                  </p>
-                  <button type="button" onClick={() => openExternalUrl(PRO_TOPUP_URL)}
-                    className="text-[11px] font-semibold text-[#5b4bc4] underline underline-offset-2">
-                    No Pro balance? Top up on OpenPay Pro
-                  </button>
-                </div>
-              )}
-
-              {activeMethod === "card" && (
-                <div className="space-y-2 pt-1 qrp-rise">
-                  {savedCard ? (
-                    <div className="rounded-2xl bg-gradient-to-br from-[#0b2d6b] to-[#0070ba] px-3.5 py-3 text-white shadow-[0_14px_30px_-18px_rgba(0,60,140,0.9)]">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">OpenPay Virtual Card</p>
-                          <p className="mt-1 font-mono text-base font-semibold tracking-wider">
-                            {showCard
-                              ? String(savedCard.card_number).replace(/(.{4})/g, "$1 ").trim()
-                              : `•••• •••• •••• ${String(savedCard.card_number).slice(-4)}`}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <button type="button" onClick={() => setShowCard(v => !v)}
-                            aria-label={showCard ? "Hide card details" : "Show card details"}
-                            className="rounded-full bg-white/15 p-1.5 text-white transition hover:bg-white/25 active:scale-95">
-                            {showCard ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                          <CreditCard className="h-6 w-6 text-white/85" />
-                        </div>
-                      </div>
-                      <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
-                        <div className="min-w-0">
-                          <p className="text-white/60">Card holder</p>
-                          <p className="truncate font-semibold uppercase">
-                            {showCard ? (savedCard.cardholder_name || "OPENPAY USER") : "•••• ••••"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-white/60">Expires</p>
-                          <p className="font-semibold">
-                            {showCard ? `${String(savedCard.expiry_month).padStart(2, "0")}/${String(savedCard.expiry_year).slice(-2)}` : "••/••"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-white/60">CVC</p>
-                          <p className="font-semibold">{showCard ? savedCard.cvc : "•••"}</p>
-                        </div>
-                      </div>
-                      <p className="mt-2 text-[10px] text-white/70">Auto-filled from your OpenPay wallet</p>
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-muted-foreground">Enter your OpenPay virtual card details.</p>
-                  )}
-                  {!savedCard && (
-                    <>
-                      <Input placeholder="Card number" className="qrp-input" value={cardNum} onChange={e => setCardNum(e.target.value)} />
-                      <Input placeholder="CVC" maxLength={4} className="qrp-input" value={cardCvc} onChange={e => setCardCvc(e.target.value)} />
-                    </>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2.5 text-sm">
-                <span className="font-semibold text-muted-foreground">Total due</span>
-                <span className="font-extrabold">
-                  {activeMethod === "pi" ? `${chargeAmount.toFixed(2)} π` : `${data.currency} ${chargeAmount.toFixed(2)}`}
-                </span>
-              </div>
-
-              <div className="qrp-paybar lg:static lg:m-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
-                <Button
-                  className={`h-12 w-full gap-2 text-base ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : activeMethod === "pro" ? "qrp-pro-btn" : "qrp-primary-btn"}`}
-                  disabled={paying}
-                  onClick={onPay}
-                >
-                  {paying ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : activeMethod === "pi" ? (
-                    <img src={PURE_PI_ICON_URL} alt="" className="h-5 w-5 rounded-full object-cover" />
-                  ) : activeMethod === "pro" ? (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#16112e] text-[10px] font-black text-[#ab9ff2]">P</span>
-                  ) : activeMethod === "card" ? (
-                    <span className="flex h-5 w-7 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#0b2d6b] to-[#0070ba]">
-                      <BrandLogo className="h-3 w-3 text-white" />
-                    </span>
-                  ) : (
-                    <BrandLogo className="h-5 w-5" />
-                  )}
-                  {payLabel}
-                  <Lock className="h-3.5 w-3.5 opacity-70" />
-                </Button>
-                <p className="mt-2 text-center text-[11px] text-muted-foreground">
-                  {activeMethod === "pro"
-                    ? "You'll finish this payment securely on OpenPay Pro."
-                    : activeMethod === "wallet" && !session ? "You'll be asked to sign in." : "Encrypted payment · instant receipt"}
-                </p>
-              </div>
-
-            </div>
-          </div>
-
-          <div className="mt-4 flex justify-center pb-4">
-            <p className="qrp-footnote">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Powered by OpenPay · Protected by dispute resolution
-            </p>
-          </div>
+      {/* Mobile sticky pay bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 min-[900px]:hidden">
+        <div className="qrp-paybar mx-auto w-full max-w-[42rem]">
+          <Button className={payBtnClass} disabled={paying} onClick={onPay}>
+            {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-3.5 w-3.5 opacity-55" />}
+            {payLabel}
+          </Button>
         </div>
       </div>
     </div>
@@ -631,21 +712,21 @@ const PayOpt = ({ active, onClick, logo, label, hint }: any) => (
   <button
     type="button"
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl border text-left transition-all ${
-      active
-        ? "border-paypal-blue bg-paypal-blue/[0.07] shadow-[0_6px_18px_-10px_rgba(0,112,186,0.7)]"
-        : "border-border bg-background hover:border-paypal-blue/40 hover:bg-muted/40"
-    }`}
+    className={`qrp-pay-opt ${active ? "is-active" : ""}`}
   >
-    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? "bg-paypal-blue/10" : "bg-muted"}`}>
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center">
       {logo}
     </span>
     <span className="min-w-0 flex-1">
-      <span className={`block text-sm font-semibold ${active ? "text-paypal-blue" : "text-foreground"}`}>{label}</span>
-      {hint && <span className="block truncate text-[11px] text-muted-foreground">{hint}</span>}
+      <span className="block text-[15px] font-semibold tracking-[-0.01em] text-[var(--qrp-ink)]">{label}</span>
+      {hint && <span className="block truncate text-[12px] text-[var(--qrp-muted)]">{hint}</span>}
     </span>
-    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-paypal-blue bg-paypal-blue" : "border-muted-foreground/40"}`}>
-      {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+    <span className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-[1.5px] ${active ? "border-[var(--qrp-accent)] bg-[var(--qrp-accent)]" : "border-black/20"}`}>
+      {active && (
+        <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" aria-hidden>
+          <path d="M2.5 6.2 L4.8 8.5 L9.5 3.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
     </span>
   </button>
 );

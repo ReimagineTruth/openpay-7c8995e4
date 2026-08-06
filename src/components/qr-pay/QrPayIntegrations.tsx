@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Code2, Copy, Monitor, QrCode, Layers, Globe, Sparkles, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -38,11 +37,11 @@ export default function QrPayIntegrations({ url, amount, currency, title }: Prop
   const snippets = useMemo(() => ({
     button: `<!-- OpenPay Payment Button -->
 <a href="${url}" target="_blank"
-   style="display:inline-block;background:linear-gradient(135deg,#0070ba,#003087);
-          color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;
-          font-weight:700;font-family:system-ui,sans-serif;
-          box-shadow:0 4px 12px rgba(0,112,186,.35);">
-  💳 ${label} — ${priceLabel}
+   style="display:inline-block;background:#1d1d1f;
+          color:#fff;padding:14px 28px;border-radius:14px;text-decoration:none;
+          font-weight:600;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,system-ui,sans-serif;
+          box-shadow:0 8px 20px -10px rgba(0,0,0,.45);letter-spacing:-0.01em;">
+  ${label} — ${priceLabel}
 </a>`,
     iframe: `<!-- OpenPay iFrame Checkout -->
 <iframe
@@ -109,36 +108,31 @@ export default function QrPayIntegrations({ url, amount, currency, title }: Prop
 
   const PreviewButton = (
     <a href={url} target="_blank" rel="noreferrer"
-       className="inline-block px-6 py-3 rounded-xl text-white font-bold shadow-lg"
-       style={{ background: "linear-gradient(135deg,#0070ba,#003087)" }}>
-      💳 {label} — {priceLabel}
+       className="inline-block rounded-[14px] px-6 py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_24px_-12px_rgba(0,0,0,0.45)]"
+       style={{ background: "#1d1d1f" }}>
+      {label} — {priceLabel}
     </a>
   );
 
   const PreviewWidget = (
-    <div className="max-w-xs mx-auto rounded-2xl p-5 text-center shadow-lg"
-         style={{ background: "linear-gradient(135deg,#e6f0ff,#fff)" }}>
-      <h2 className="text-lg font-bold text-[#003087]">{label}</h2>
-      <p className="text-xs text-muted-foreground">Powered by OpenPay</p>
-      <div className="bg-white rounded-xl p-4 my-3">
-        <div className="text-xs text-muted-foreground">Total</div>
-        <div className="text-2xl font-extrabold text-paypal-blue">{priceLabel}</div>
-      </div>
+    <div className="qrp-pay-sheet mx-auto max-w-xs p-5 text-center">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--qrp-muted,#86868b)]">OpenPay</p>
+      <h2 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-[var(--qrp-ink,#1d1d1f)]">{label}</h2>
+      <div className="my-4 text-[28px] font-semibold tracking-[-0.04em] text-[var(--qrp-ink,#1d1d1f)]">{priceLabel}</div>
       <a href={url} target="_blank" rel="noreferrer"
-         className="block bg-paypal-blue text-white font-bold py-3 rounded-xl">Pay Now →</a>
+         className="block rounded-[14px] bg-[var(--qrp-ink,#1d1d1f)] py-3.5 text-[15px] font-semibold text-white">Pay Now</a>
     </div>
   );
 
   return (
-    <Card>
-      <CardContent className="p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-paypal-blue" />
-          <div>
-            <h3 className="font-bold">Choose Your Integration</h3>
-            <p className="text-xs text-muted-foreground">Add OpenPay to your website in seconds</p>
-          </div>
+    <div className="qrp-card p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-[var(--qrp-accent,#0071e3)]" />
+        <div>
+          <h3 className="font-semibold tracking-[-0.01em]">Choose Your Integration</h3>
+          <p className="text-xs text-muted-foreground">Add OpenPay to your website in seconds</p>
         </div>
+      </div>
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid grid-cols-5 w-full h-auto">
@@ -198,7 +192,6 @@ export default function QrPayIntegrations({ url, amount, currency, title }: Prop
             }}><Play className="h-3 w-3 mr-1"/>Download HTML file</Button>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
