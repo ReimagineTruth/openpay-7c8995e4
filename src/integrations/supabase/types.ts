@@ -6192,6 +6192,7 @@ export type Database = {
         }
         Returns: Json
       }
+      qr_pay_check_result: { Args: { p_token: string }; Returns: Json }
       qr_pay_create: {
         Args: {
           p_after_payment_action?: string

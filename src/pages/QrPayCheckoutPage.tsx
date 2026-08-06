@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Loader2, ShieldCheck, User, Heart, Coffee, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,7 @@ interface QrPayData {
 
 export default function QrPayCheckoutPage() {
   const { token } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [data, setData] = useState<QrPayData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,16 +73,30 @@ export default function QrPayCheckoutPage() {
   const [method, setMethod] = useState<string | null>(null);
   const [proAsset, setProAsset] = useState<string>("OUSD");
   const [piBrowserOpen, setPiBrowserOpen] = useState(false);
+  const [waitingPiCallback, setWaitingPiCallback] = useState(false);
+  const piCallbackHandled = useRef(false);
 
   const [customAmount, setCustomAmount] = useState<string>("");
   const [payerPhone, setPayerPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
 
-  const canPayWithPi =
-    typeof window !== "undefined" && (isPiBrowserUAOnly() || Boolean((window as any).Pi));
-  const checkoutUrl =
-    typeof window !== "undefined" ? window.location.href : "";
+  // Pi SDK is injected on every page (index.html). Only the real Pi Browser
+  // can complete Pi payments — do NOT treat window.Pi as “inside Pi Browser”.
+  const [inPiBrowser, setInPiBrowser] = useState(false);
+  useEffect(() => {
+    setInPiBrowser(isPiBrowserUAOnly());
+  }, []);
+
+  const piReturn = searchParams.get("pi_return") === "1";
+
+  /** Link shown in QR / copy — tags Pi Browser session for return messaging */
+  const checkoutUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const u = new URL(window.location.href.split("#")[0]);
+    u.searchParams.set("pi_return", "1");
+    return u.toString();
+  }, [token]);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: s }) => {
@@ -161,24 +176,126 @@ export default function QrPayCheckoutPage() {
     }
   };
 
-  const goAfterPayment = async (ref: string, method: string) => {
+  const goAfterPayment = async (ref: string, method: string, opts?: {
+    amount?: number;
+    currency?: string;
+    payerName?: string | null;
+    payerEmail?: string | null;
+  }) => {
     await settleToPro(ref);
     const receipt = {
       transactionRef: ref, method, paidAt: new Date().toISOString(),
-      amount: chargeAmount, currency: data!.currency,
+      amount: opts?.amount ?? chargeAmount,
+      currency: opts?.currency ?? data!.currency,
       merchant: data!.merchant, title: data!.title, description: data!.description,
-      items: data!.items, payer: { name: payerName, email: payerEmail },
+      items: data!.items,
+      payer: {
+        name: opts?.payerName ?? payerName,
+        email: opts?.payerEmail ?? payerEmail,
+      },
       after_payment_action: data!.after_payment_action,
       download_url: data!.download_url,
       redirect_url: data!.redirect_url,
       pro_settlement_to: data!.pro_settlement_to || null,
+      pi_return: piReturn || undefined,
     };
     sessionStorage.setItem(`qrp_receipt_${ref}`, JSON.stringify(receipt));
+    // Signal other same-origin tabs (original browser) that payment finished
+    try {
+      localStorage.setItem(`qrp_paid_${token}`, JSON.stringify({
+        ref, method, at: Date.now(),
+      }));
+    } catch {}
     if (data!.after_payment_action === "redirect" && data!.redirect_url) {
       try { window.location.href = data!.redirect_url; return; } catch {}
     }
-    navigate(`/qr-pay/${token}/success?ref=${ref}`);
+    const q = new URLSearchParams({ ref });
+    if (piReturn) q.set("pi_return", "1");
+    navigate(`/qr-pay/${token}/success?${q.toString()}`);
   };
+
+  // Poll / listen while waiting for Pi payment to finish in another browser
+  useEffect(() => {
+    if (!piBrowserOpen || inPiBrowser || !token || !data) {
+      setWaitingPiCallback(false);
+      return;
+    }
+    setWaitingPiCallback(true);
+    piCallbackHandled.current = false;
+
+    const finishFromResult = async (res: any) => {
+      if (piCallbackHandled.current || !res?.paid || !res?.transaction_ref) return;
+      piCallbackHandled.current = true;
+      setPiBrowserOpen(false);
+      setWaitingPiCallback(false);
+      toast.success("Pi payment received — returning here");
+      await goAfterPayment(res.transaction_ref, res.method || "pi", {
+        amount: res.amount != null ? Number(res.amount) : undefined,
+        currency: res.currency || undefined,
+        payerName: res.payer_name,
+        payerEmail: res.payer_email,
+      });
+    };
+
+    const poll = async () => {
+      try {
+        const { data: res, error } = await (supabase as any).rpc("qr_pay_check_result", {
+          p_token: token,
+        });
+        if (!error && res) {
+          await finishFromResult(res);
+          return;
+        }
+        // Fallback if RPC not deployed yet: status via get_by_token
+        const { data: pay } = await (supabase as any).rpc("qr_pay_get_by_token", { p_token: token });
+        if (pay?.status === "paid" && pay?.id) {
+          // Best-effort: try reading tx (may be RLS-blocked for guests)
+          const { data: txs } = await (supabase as any)
+            .from("qr_payment_transactions")
+            .select("transaction_ref, method, amount, currency, paid_at, payer_name, payer_email")
+            .eq("qr_payment_id", pay.id)
+            .eq("status", "succeeded")
+            .order("paid_at", { ascending: false })
+            .limit(1);
+          const tx = txs?.[0];
+          if (tx?.transaction_ref) {
+            await finishFromResult({
+              paid: true,
+              transaction_ref: tx.transaction_ref,
+              method: tx.method || "pi",
+              amount: tx.amount,
+              currency: tx.currency,
+              payer_name: tx.payer_name,
+              payer_email: tx.payer_email,
+            });
+          }
+        }
+      } catch {}
+    };
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== `qrp_paid_${token}` || !e.newValue) return;
+      try {
+        const payload = JSON.parse(e.newValue);
+        if (payload?.ref) {
+          void finishFromResult({
+            paid: true,
+            transaction_ref: payload.ref,
+            method: payload.method || "pi",
+          });
+        }
+      } catch {}
+    };
+
+    void poll();
+    const id = window.setInterval(poll, 2500);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("storage", onStorage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [piBrowserOpen, inPiBrowser, token, data?.id]);
 
 
   const payWallet = async () => {
@@ -213,16 +330,19 @@ export default function QrPayCheckoutPage() {
 
   const selectPi = () => {
     setMethod("pi");
-    if (!canPayWithPi) setPiBrowserOpen(true);
+    if (!inPiBrowser) setPiBrowserOpen(true);
   };
 
   const payPi = async () => {
     if (!validateAmount() || !validateDelivery()) return;
-    if (!canPayWithPi) {
+    // Outside Pi Browser: always show copy-link instructions (never hang on SDK)
+    if (!inPiBrowser) {
+      setPaying(false);
       setPiBrowserOpen(true);
       return;
     }
     if (typeof window === "undefined" || !(window as any).Pi) {
+      setPaying(false);
       setPiBrowserOpen(true);
       return;
     }
@@ -315,7 +435,7 @@ export default function QrPayCheckoutPage() {
   const payLabel = paying
     ? "Processing…"
     : activeMethod === "pi"
-      ? (canPayWithPi ? `Pay ${chargeAmount.toFixed(2)} π` : "Continue in Pi Browser")
+      ? (inPiBrowser ? `Pay ${chargeAmount.toFixed(2)} π` : "Continue in Pi Browser")
       : activeMethod === "pro"
         ? `Pay ${chargeAmount.toFixed(2)} with Pro ${proAsset}`
         : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`;
@@ -448,7 +568,7 @@ export default function QrPayCheckoutPage() {
         <PayOpt active={activeMethod === "pi"} onClick={selectPi}
           logo={<img src={PURE_PI_ICON_URL} alt="Pi Network" className="h-8 w-8 rounded-full object-cover" />}
           label="Pi Network"
-          hint={canPayWithPi
+          hint={inPiBrowser
             ? (data.allow_guest ? "Guest checkout" : "Sign-in required")
             : "Pi Browser required"} />
       )}
@@ -538,7 +658,7 @@ export default function QrPayCheckoutPage() {
   const payBtnClass = `h-[54px] min-[900px]:h-[56px] w-full gap-2 text-[16px] min-[900px]:text-[17px] ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : activeMethod === "pro" ? "qrp-pro-btn" : "qrp-primary-btn"}`;
   const payHint = activeMethod === "pro"
     ? "You'll finish securely on OpenPay Pro."
-    : activeMethod === "pi" && !canPayWithPi
+    : activeMethod === "pi" && !inPiBrowser
       ? "Copy the link and complete in Pi Browser."
     : activeMethod === "wallet" && !session ? "You'll be asked to sign in." : "Encrypted · Instant receipt";
 
@@ -745,8 +865,18 @@ export default function QrPayCheckoutPage() {
 
       <QrPayPiBrowserDialog
         open={piBrowserOpen}
-        onOpenChange={setPiBrowserOpen}
+        onOpenChange={(o) => {
+          setPiBrowserOpen(o);
+          if (!o) setWaitingPiCallback(false);
+        }}
         checkoutUrl={checkoutUrl}
+        waitingForPayment={waitingPiCallback}
+        onUseOtherMethod={() => {
+          setPiBrowserOpen(false);
+          setWaitingPiCallback(false);
+          const fallback = tabs.find((t) => t !== "pi") || null;
+          if (fallback) setMethod(fallback);
+        }}
       />
     </div>
   );

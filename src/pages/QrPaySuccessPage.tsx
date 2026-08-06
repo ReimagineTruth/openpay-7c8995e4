@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Download, Printer, Mail, Home, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,14 +12,21 @@ interface ReceiptExtras {
   after_payment_action?: "receipt" | "download" | "redirect";
   download_url?: string | null;
   redirect_url?: string | null;
+  pi_return?: boolean;
 }
 
 export default function QrPaySuccessPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const ref = params.get("ref") || "";
+  const piReturn = params.get("pi_return") === "1";
   const [data, setData] = useState<(QrPayReceiptData & ReceiptExtras) | null>(null);
   const [emailTo, setEmailTo] = useState("");
+  const [inPiBrowser, setInPiBrowser] = useState(false);
+
+  useEffect(() => {
+    setInPiBrowser(/pibrowser|pi\s*browser|minepi|pinetwork|pi\s*network/i.test(navigator.userAgent || ""));
+  }, []);
 
   useEffect(() => {
     const raw = sessionStorage.getItem(`qrp_receipt_${ref}`);
@@ -31,6 +38,8 @@ export default function QrPaySuccessPage() {
       } catch {}
     }
   }, [ref]);
+
+  const showReturnHint = piReturn || data?.pi_return || inPiBrowser;
 
   const emailReceipt = () => {
     if (!data) return;
@@ -88,6 +97,14 @@ export default function QrPaySuccessPage() {
             <p className="mt-2 text-[15px] text-[var(--qrp-muted)]">
               Paid to {data.merchant.full_name || "merchant"}
             </p>
+          )}
+          {showReturnHint && (
+            <div className="mx-auto mt-4 max-w-sm rounded-[14px] bg-[#007AFF]/[0.08] px-4 py-3 text-left">
+              <p className="text-[13px] font-semibold text-[#007AFF]">Return to your other browser</p>
+              <p className="mt-1 text-[12px] leading-snug text-[#6e6e73]">
+                Payment is complete. You can close Pi Browser — your original tab will open the receipt automatically.
+              </p>
+            </div>
           )}
           <div className="mx-auto mt-5 max-w-sm">
             <QrPaySteps current="done" />
