@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import AuthMark from "@/components/AuthMark";
+import BrandLogo from "@/components/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { setAppCookie } from "@/lib/userPreferences";
 import AuthFooter from "@/components/AuthFooter";
 import {
   Loader2, Mail, Download, Globe, BookOpen, Users, KeyRound, ChevronRight,
-  Sparkles, Coins, Info, Newspaper, Library,
+  Coins, Info, Newspaper, Library,
 } from "lucide-react";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
@@ -22,50 +23,59 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const OPENPAY_PRO_LINKS = [
+/** Same Pi mark used on QR Pay checkout */
+const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
+
+const OPENPAY_PRO_LINKS: {
+  id: string;
+  label: string;
+  hint: string;
+  href: string;
+  icon: ReactNode;
+}[] = [
   {
     id: "home",
     label: "OpenPay Pro",
     hint: "Open the Pro app",
     href: "http://openpaypro4378.pinet.com",
-    icon: Sparkles,
+    icon: <BrandLogo animate={false} className="h-5 w-5" />,
   },
   {
     id: "website",
     label: "Website",
     hint: "openpaypro.space",
     href: "http://openpaypro.space/website",
-    icon: Globe,
+    icon: <Globe className="h-4 w-4" strokeWidth={2.25} />,
   },
   {
     id: "openusd",
     label: "OpenUSD ($OUSD)",
     hint: "Learn about OUSD",
     href: "http://openpaypro.space/openusd",
-    icon: Coins,
+    icon: <Coins className="h-4 w-4" strokeWidth={2.25} />,
   },
   {
     id: "about",
     label: "About",
     hint: "About OpenPay Pro",
     href: "http://openpaypro.space/about",
-    icon: Info,
+    icon: <Info className="h-4 w-4" strokeWidth={2.25} />,
   },
   {
     id: "blog",
     label: "Blog",
     hint: "News & updates",
     href: "http://openpaypro.space/blog",
-    icon: Newspaper,
+    icon: <Newspaper className="h-4 w-4" strokeWidth={2.25} />,
   },
   {
     id: "wiki",
     label: "Wiki",
     hint: "Docs & guides",
     href: "http://openpaypro.space/wiki",
-    icon: Library,
+    icon: <Library className="h-4 w-4" strokeWidth={2.25} />,
   },
-] as const;
+];
 
 const PiAuthPage = () => {
   const [piUser, setPiUser] = useState<{ uid: string; username: string } | null>(null);
@@ -314,15 +324,32 @@ const PiAuthPage = () => {
           <Button
             onClick={handlePiAuthClick}
             disabled={busyAuth || (inPiBrowser && !sdkReady)}
-            className="mb-3 h-12 w-full rounded-2xl bg-paypal-blue text-base font-semibold text-white shadow-md shadow-paypal-blue/30 hover:bg-[#004dc5]"
+            className="mb-3 h-12 w-full rounded-2xl bg-violet-600 text-base font-semibold text-white shadow-md shadow-violet-600/35 hover:bg-violet-700"
           >
             {busyAuth ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Authenticating…</>
             ) : inPiBrowser && !sdkReady ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Pi SDK…</>
             ) : (
-              <>Authenticate with Pi</>
+              <>
+                <img
+                  src={PURE_PI_ICON_URL}
+                  alt=""
+                  className="mr-2 h-5 w-5 rounded-full object-cover ring-1 ring-white/25"
+                />
+                Authenticate with Pi
+              </>
             )}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="mb-3 h-12 w-full rounded-2xl border-[#1d1d1f]/15 bg-[#1d1d1f] text-base font-semibold text-white hover:bg-[#2c2c2e] hover:text-white"
+            onClick={() => setProOpen(true)}
+          >
+            <BrandLogo variant="white" animate={false} className="mr-2 h-5 w-5" />
+            OpenPay Pro
           </Button>
 
           {!inPiBrowser && (
@@ -336,15 +363,6 @@ const PiAuthPage = () => {
               </Link>
             </Button>
           )}
-
-          <Button
-            type="button"
-            variant="outline"
-            className="mb-3 h-12 w-full rounded-2xl border-[#1d1d1f]/15 bg-[#1d1d1f] text-base font-semibold text-white hover:bg-[#2c2c2e] hover:text-white"
-            onClick={() => setProOpen(true)}
-          >
-            <Sparkles className="mr-2 h-4 w-4" /> OpenPay Pro
-          </Button>
 
           {false && isPiOAuthEnabled() && (
             <Button
@@ -373,7 +391,7 @@ const PiAuthPage = () => {
                 className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
               >
                 <span className="flex items-center gap-3">
-                  <span className="text-paypal-blue"><Sparkles className="h-4 w-4" /></span>
+                  <BrandLogo animate={false} className="h-4 w-4" />
                   OpenPay Pro
                 </span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -405,8 +423,8 @@ const PiAuthPage = () => {
           className="w-[calc(100vw-2rem)] max-w-[380px] gap-0 overflow-hidden rounded-[28px] border-0 bg-white p-0 op-font shadow-[0_28px_80px_-24px_rgba(0,0,0,0.45)]"
         >
           <div className="px-6 pb-2 pt-8 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#1d1d1f] text-white">
-              <Sparkles className="h-5 w-5" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#1d1d1f]">
+              <BrandLogo variant="white" animate={false} className="h-6 w-6" />
             </div>
             <DialogHeader className="space-y-1">
               <DialogTitle className="text-center text-[22px] font-bold tracking-[-0.03em] text-[#1d1d1f]">
@@ -420,34 +438,31 @@ const PiAuthPage = () => {
 
           <div className="px-4 pb-3">
             <div className="overflow-hidden rounded-[16px] bg-[#f2f2f7]">
-              {OPENPAY_PRO_LINKS.map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      openExternalUrl(item.href);
-                      setProOpen(false);
-                    }}
-                    className="relative flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors active:bg-black/[0.06] hover:bg-black/[0.03]"
-                  >
-                    {i > 0 && (
-                      <span className="absolute inset-x-3.5 top-0 h-px bg-black/[0.06]" aria-hidden />
-                    )}
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white text-[#1d1d1f] shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
-                      <Icon className="h-4 w-4" strokeWidth={2.25} />
+              {OPENPAY_PRO_LINKS.map((item, i) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    openExternalUrl(item.href);
+                    setProOpen(false);
+                  }}
+                  className="relative flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors active:bg-black/[0.06] hover:bg-black/[0.03]"
+                >
+                  {i > 0 && (
+                    <span className="absolute inset-x-3.5 top-0 h-px bg-black/[0.06]" aria-hidden />
+                  )}
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white text-[#1d1d1f] shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
+                    {item.icon}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-semibold tracking-[-0.01em] text-[#1d1d1f]">
+                      {item.label}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[15px] font-semibold tracking-[-0.01em] text-[#1d1d1f]">
-                        {item.label}
-                      </span>
-                      <span className="block truncate text-[12px] text-[#8e8e93]">{item.hint}</span>
-                    </span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-[#c7c7cc]" />
-                  </button>
-                );
-              })}
+                    <span className="block truncate text-[12px] text-[#8e8e93]">{item.hint}</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#c7c7cc]" />
+                </button>
+              ))}
             </div>
           </div>
 

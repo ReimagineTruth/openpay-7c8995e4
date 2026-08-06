@@ -627,7 +627,9 @@ export default function QrPayCheckoutPage() {
       {tabs.includes("pro") && (
         <PayOpt active={activeMethod === "pro"} onClick={() => setMethod("pro")}
           logo={
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2c2c2e] text-[11px] font-black text-white">P</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2c2c2e]">
+              <BrandLogo variant="white" animate={false} className="h-5 w-5" />
+            </span>
           }
           label="OpenPay Pro"
           hint={formatProDestinationPreview(data.pro_settlement_to || "")} />
