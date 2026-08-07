@@ -1460,14 +1460,18 @@
   @media (max-width: 640px) {
     .ios-currency-sheet {
       position: fixed !important;
-      left: 0.5rem !important;
-      right: 0.5rem !important;
-      bottom: max(0.5rem, env(safe-area-inset-bottom)) !important;
-      top: auto !important;
+      inset: 0 !important;
+      margin: auto !important;
+      left: 0.75rem !important;
+      right: 0.75rem !important;
+      top: 0 !important;
+      bottom: 0 !important;
       width: auto !important;
-      max-width: none !important;
+      max-width: 400px !important;
+      max-height: min(85dvh, calc(100dvh - 1.5rem)) !important;
       translate: none !important;
-      border-radius: 18px !important;
+      transform: none !important;
+      border-radius: 20px !important;
     }
   }
 

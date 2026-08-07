@@ -1246,7 +1246,7 @@ const SendMoney = () => {
             {showPurposeSelector && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[99999]" />
             )}
-            <DialogContent className="rounded-3xl max-h-[80vh] overflow-y-auto z-[100000] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md shadow-2xl border border-white/20">
+            <DialogContent className="z-[100000] max-h-[80vh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-3xl border border-white/20 shadow-2xl">
               <DialogTitle className="text-xl font-bold">Select Payment Purpose</DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
                 Choose a purpose to help track your spending in analytics

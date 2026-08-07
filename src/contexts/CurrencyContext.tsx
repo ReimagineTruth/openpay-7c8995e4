@@ -293,6 +293,8 @@ const currencyFlagCountryCode: Record<string, string> = {
   SOS: "SO", SDG: "SD", SSP: "SS", DZD: "DZ", MAD: "MA", TND: "TN", LYD: "LY", XOF: "SN", XAF: "CM", MUR: "MU",
   SCR: "SC",
   AUD: "AU", NZD: "NZ", PGK: "PG", FJD: "FJ", SBD: "SB", VUV: "VU", WST: "WS", TOP: "TO",
+  HTG: "HT", MRU: "MR", SVC: "SV", AMD: "AM", AZN: "AZ", ERN: "ER", GMD: "GM", GNF: "GN",
+  KMF: "KM", KYD: "KY", MGA: "MG", MVR: "MV", SLL: "SL", SRD: "SR", STN: "ST",
 };
 
 const countryCodeToFlag = (countryCode: string) =>
@@ -339,14 +341,20 @@ const mergedCurrencies: Currency[] = [
       (currency.rate !== 1 || typeof PI_RATE_OVERRIDES[currency.code] === "number"),
   ),
 ];
-export const currencies: Currency[] = mergedCurrencies.map((currency) => {
-  const overrideRate = PI_RATE_OVERRIDES[currency.code];
-  return {
-    ...currency,
-    rate: typeof overrideRate === "number" ? overrideRate : currency.rate,
-    flag: normalizeCurrencyFlag(currency.code, currency.flag),
-  };
-});
+
+/** Hidden from currency pickers (still referenced by top-up / swap flows). */
+const DISABLED_CURRENCY_CODES = new Set(["OUSD_SOL", "MRWN"]);
+
+export const currencies: Currency[] = mergedCurrencies
+  .map((currency) => {
+    const overrideRate = PI_RATE_OVERRIDES[currency.code];
+    return {
+      ...currency,
+      rate: typeof overrideRate === "number" ? overrideRate : currency.rate,
+      flag: normalizeCurrencyFlag(currency.code, currency.flag),
+    };
+  })
+  .filter((currency) => !DISABLED_CURRENCY_CODES.has(currency.code));
 
 interface CurrencyContextType {
   currencies: Currency[];

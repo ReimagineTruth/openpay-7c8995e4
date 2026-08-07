@@ -81,8 +81,7 @@ export default function QrPayPurposePicker({ value, onChange }: Props) {
       </DialogTrigger>
 
       <DialogContent className="ios-currency-sheet gap-0 overflow-hidden p-0 sm:max-w-[400px]">
-        <div className="mx-auto mt-2 hidden h-1 w-9 rounded-full bg-black/15 max-[640px]:block" />
-        <DialogHeader className="space-y-0 px-4 pb-2 pt-3 text-center sm:pt-5">
+        <DialogHeader className="space-y-0 px-4 pb-2 pt-5 text-center">
           <DialogTitle className="text-[17px] font-semibold tracking-[-0.02em] text-[#1d1d1f]">
             Payment purpose
           </DialogTitle>

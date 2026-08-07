@@ -61,7 +61,7 @@ const CurrencySelector = () => {
       </DialogTrigger>
 
       <DialogContent className="ios-currency-sheet gap-0 overflow-hidden p-0 sm:max-w-[380px]">
-        <DialogHeader className="space-y-0 px-4 pb-2 pt-3 text-center sm:pt-5">
+        <DialogHeader className="space-y-0 px-4 pb-2 pt-5 text-center">
           <DialogTitle className="text-[17px] font-semibold tracking-[-0.02em] text-[#1d1d1f]">
             Currency
           </DialogTitle>

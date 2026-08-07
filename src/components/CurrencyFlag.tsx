@@ -154,6 +154,9 @@ const CURRENCY_TO_FLAG: Record<string, string> = {
   YER: "ye",
   BTN: "bt",
   MVR: "mv",
+  HTG: "ht",
+  MRU: "mr",
+  SVC: "sv",
 };
 
 function flagUrl(countryOrRegion: string, size: 40 | 80 = 80) {

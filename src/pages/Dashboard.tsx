@@ -3887,7 +3887,7 @@ const Dashboard = () => {
       <TransactionReceipt open={receiptOpen} onOpenChange={setReceiptOpen} receipt={receiptData} />
 
       <Dialog open={showRecentActivity} onOpenChange={setShowRecentActivity}>
-        <DialogContent className="top-auto bottom-0 flex max-h-[85vh] translate-y-0 flex-col rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 sm:max-w-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0">
+        <DialogContent className="inset-x-0 top-auto bottom-0 mx-auto mb-0 mt-auto flex max-h-[85vh] w-full max-w-lg translate-y-0 flex-col rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0">
           <DialogTitle className="text-center text-2xl font-bold text-foreground">Recent activity</DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground">
             {recentActivityCount > 0
@@ -3930,7 +3930,7 @@ const Dashboard = () => {
       </Dialog>
 
       <Dialog open={showReceiveOptions} onOpenChange={setShowReceiveOptions}>
-        <DialogContent className="top-auto bottom-0 translate-y-0 rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 sm:max-w-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0">
+        <DialogContent className="inset-x-0 top-auto bottom-0 mx-auto mb-0 mt-auto w-full max-w-lg translate-y-0 rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0">
           <DialogTitle className="text-center text-2xl font-bold text-foreground">Ways to get paid</DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground">
             Choose how you want to receive payment.
@@ -3987,7 +3987,7 @@ const Dashboard = () => {
       </Dialog>
 
       <Dialog open={showBuyOptions} onOpenChange={setShowBuyOptions}>
-        <DialogContent className="top-auto bottom-0 translate-y-0 rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 sm:max-w-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0">
+        <DialogContent className="inset-x-0 top-auto bottom-0 mx-auto mb-0 mt-auto w-full max-w-lg translate-y-0 rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0">
           <DialogTitle className="text-center text-2xl font-bold text-foreground">Buy Options</DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground">
             Choose how you want to get OpenUSD.
@@ -4091,7 +4091,7 @@ const Dashboard = () => {
       </Dialog>
 
       <Dialog open={showOnrampPicker} onOpenChange={setShowOnrampPicker}>
-        <DialogContent className="top-auto bottom-0 max-h-[85vh] translate-y-0 overflow-y-auto rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 sm:max-w-lg">
+        <DialogContent className="inset-x-0 top-auto bottom-0 mx-auto mb-0 mt-auto max-h-[85vh] w-full max-w-lg translate-y-0 overflow-y-auto rounded-b-none rounded-t-3xl px-5 pb-7 pt-5">
           <DialogTitle className="text-center text-2xl font-bold text-foreground">Choose onramp</DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground">
             Select the provider for your OpenUSD buy quote.
@@ -4316,7 +4316,7 @@ const Dashboard = () => {
       </Dialog>
 
       <Dialog open={showPaymentMethodPicker} onOpenChange={setShowPaymentMethodPicker}>
-        <DialogContent className="top-auto bottom-0 max-h-[85vh] translate-y-0 overflow-y-auto overscroll-contain rounded-b-none rounded-t-3xl px-5 pb-7 pt-5 sm:max-w-lg">
+        <DialogContent className="inset-x-0 top-auto bottom-0 mx-auto mb-0 mt-auto max-h-[85vh] w-full max-w-lg translate-y-0 overflow-y-auto overscroll-contain rounded-b-none rounded-t-3xl px-5 pb-7 pt-5">
           <DialogTitle className="text-center text-2xl font-bold text-foreground">Choose payment method</DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground">
             PI to OpenUSD buy.
