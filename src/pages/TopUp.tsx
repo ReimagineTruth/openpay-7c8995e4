@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, HelpCircle, Copy, ExternalLink, LifeBuoy, FileText, CreditCard, Link2, MessageCircle, History } from "lucide-react";
+import { ArrowLeft, HelpCircle, Copy, ExternalLink, LifeBuoy, FileText, CreditCard, Link2, MessageCircle, History, CircleDollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import TopUpAccountDetails from "@/components/TopUpAccountDetails";
 import RegulatoryStatusModal from "@/components/RegulatoryStatusModal";
 import TopUpActionGrid from "@/components/TopUpActionGrid";
+import DashboardSectionHero from "@/components/dashboard/DashboardSectionHero";
 import {
   buildPiTopupMemo,
   fetchPiUsdPrice,
