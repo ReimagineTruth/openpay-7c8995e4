@@ -26,5 +26,9 @@ project_id = "araojncyittkahvvpdrn"
     verify_jwt = true
   [functions.qr-pay-pro-settle]
     verify_jwt = false
+  [functions.paymongo-qr-pay]
+    verify_jwt = false
+  [functions.paymongo-webhook]
+    verify_jwt = false
 
 

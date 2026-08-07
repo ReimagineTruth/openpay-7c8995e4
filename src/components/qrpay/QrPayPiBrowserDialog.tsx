@@ -59,8 +59,9 @@ export default function QrPayPiBrowserDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        overlayClassName="z-[90] bg-black/55 backdrop-blur-[2px]"
-        className="z-[91] flex w-[calc(100vw-2rem)] max-w-[360px] max-h-[min(90dvh,560px)] flex-col gap-0 overflow-hidden rounded-[28px] border-0 bg-white p-0 op-font shadow-[0_28px_80px_-24px_rgba(0,0,0,0.5)] sm:rounded-[28px]"
+        overlayClassName="z-[90] bg-black/40 backdrop-blur-[2px]"
+        className="z-[91] flex w-[calc(100vw-2rem)] max-w-[360px] max-h-[min(90dvh,560px)] flex-col gap-0 overflow-hidden rounded-[28px] border border-black/5 !bg-white p-0 op-font text-[#1d1d1f] shadow-[0_28px_80px_-24px_rgba(0,0,0,0.35)] sm:rounded-[28px] [color-scheme:light]"
+        style={{ backgroundColor: "#ffffff", color: "#1d1d1f" }}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {/* Compact header */}

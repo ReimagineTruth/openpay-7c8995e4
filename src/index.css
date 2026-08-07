@@ -1696,6 +1696,53 @@ body {
   background-color: hsl(var(--card)) !important;
 }
 
+/* Public QR Pay checkout — always light, even if app theme is dark */
+html.qrp-force-light,
+html.qrp-force-light.dark {
+  color-scheme: light !important;
+}
+html.qrp-force-light.dark {
+  /* Keep class for other pages, but neutralize dark tokens on checkout */
+}
+body.qrp-scope,
+body.qrp-scope .qrp-page-bg {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 46%;
+  --border: 240 6% 90%;
+  color-scheme: light !important;
+  background-color: #eef1f6 !important;
+  color: #1d1d1f !important;
+}
+html.dark body.qrp-scope .qrp-page-bg,
+html.dark body.qrp-scope .qrp-page-bg .bg-white,
+html.dark body.qrp-scope .bg-white,
+html.dark body.qrp-scope [class*="bg-white"] {
+  background-color: #ffffff !important;
+  color: #1d1d1f !important;
+}
+html.dark body.qrp-scope .text-white {
+  color: #ffffff !important;
+}
+html.dark body.qrp-scope .qrp-page-bg {
+  --qrp-ink: #1d1d1f !important;
+  --qrp-muted: #86868b !important;
+  --qrp-surface: #ffffff !important;
+  --qrp-canvas: #eef1f6 !important;
+}
+/* Pi Browser dialog portal (renders outside .qrp-page-bg) */
+html.qrp-force-light [role="dialog"].op-font,
+html.dark.qrp-force-light [role="dialog"].op-font {
+  background-color: #ffffff !important;
+  color: #1d1d1f !important;
+  color-scheme: light !important;
+}
+
 /* OpenPay Modern Animations and Effects */
 
 /* Smooth page transitions */

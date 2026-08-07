@@ -8,9 +8,11 @@ import BrandLogo from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
 import {
   OPENPAY_BTN_STYLES,
+  OPENPAY_BTN_THEMES,
   OpenPayStyledButton,
   OpenPayWordmark,
   defaultBtnStyleForPayment,
+  getOpenPayBtnTheme,
   openPayButtonHtml,
   type OpenPayBtnStyle,
   type OpenPayBtnTheme,
@@ -64,19 +66,20 @@ export default function QrPayIntegrations({
   const logoColor = typeof window !== "undefined"
     ? `${window.location.origin}/openpay-o.svg`
     : "/openpay-o.svg";
-  const logoUrl = btnTheme === "black" ? logoWhite : logoColor;
+  const themeMeta = getOpenPayBtnTheme(btnTheme);
+  const logoUrl = themeMeta.wordVariant === "white" ? logoWhite : logoColor;
   const embedFont =
     "'Plus Jakarta Sans','SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,system-ui,sans-serif";
 
-  const previewShellClass = btnTheme === "black"
-    ? "rounded-2xl border border-black/5 bg-zinc-100 p-5 text-center sm:p-6"
-    : "rounded-2xl border border-black/8 bg-zinc-900 p-5 text-center sm:p-6";
-  const previewLabelClass = btnTheme === "black"
-    ? "mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-    : "mb-3 text-xs font-semibold uppercase tracking-wide text-white/55";
-  const previewHintClass = btnTheme === "black"
-    ? "mt-3 text-[13px] text-muted-foreground"
-    : "mt-3 text-[13px] text-white/60";
+  const previewShellClass = themeMeta.previewDark
+    ? "rounded-2xl border border-black/8 bg-zinc-900 p-5 text-center sm:p-6"
+    : "rounded-2xl border border-black/5 bg-zinc-100 p-5 text-center sm:p-6";
+  const previewLabelClass = themeMeta.previewDark
+    ? "mb-3 text-xs font-semibold uppercase tracking-wide text-white/55"
+    : "mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground";
+  const previewHintClass = themeMeta.previewDark
+    ? "mt-3 text-[13px] text-white/60"
+    : "mt-3 text-[13px] text-muted-foreground";
 
   const buttonHtml = useMemo(
     () => openPayButtonHtml({ url, logoUrl, style: btnStyle, theme: btnTheme }),
@@ -211,11 +214,8 @@ export default function QrPayIntegrations({
 
           <div>
             <p className="mb-2 text-[14px] font-semibold">Color</p>
-            <div className="flex gap-2">
-              {([
-                { id: "black" as const, label: "Black", swatch: "bg-[var(--qrp-ink)]" },
-                { id: "white" as const, label: "White", swatch: "bg-white ring-1 ring-black/15" },
-              ]).map((t) => {
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {OPENPAY_BTN_THEMES.map((t) => {
                 const on = btnTheme === t.id;
                 return (
                   <button
@@ -223,13 +223,13 @@ export default function QrPayIntegrations({
                     type="button"
                     onClick={() => setBtnTheme(t.id)}
                     className={cn(
-                      "flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-3 text-[14px] font-semibold transition-all sm:text-[15px]",
+                      "flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-[14px] font-semibold transition-all sm:text-[15px]",
                       on
                         ? "border-[var(--qrp-accent)] bg-[var(--qrp-accent)]/10 text-[var(--qrp-ink)]"
                         : "border-black/8 bg-black/[0.04]",
                     )}
                   >
-                    <span className={cn("h-5 w-5 rounded-full", t.swatch)} />
+                    <span className={cn("h-5 w-5 shrink-0 rounded-full", t.swatch)} />
                     {t.label}
                   </button>
                 );

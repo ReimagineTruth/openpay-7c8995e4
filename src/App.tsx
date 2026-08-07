@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { applyAppTheme, getStoredAppTheme } from "@/lib/appTheme";
 import Index from "./pages/Index";
 import AdminMrwainAuth from "./pages/AdminMrwainAuth";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
@@ -195,6 +196,25 @@ const AppRoutes = () => {
   useEffect(() => {
     navigateRef.current = navigate;
   }, [navigate]);
+
+  // Force light QR Pay checkout (public pay pages) regardless of app theme.
+  useEffect(() => {
+    const isPublicQrPay =
+      /^\/qr-pay\/[^/]+$/.test(location.pathname) ||
+      /^\/qr-pay\/[^/]+\/success$/.test(location.pathname);
+    document.body.classList.toggle("qrp-scope", isPublicQrPay);
+    document.documentElement.classList.toggle("qrp-force-light", isPublicQrPay);
+    if (isPublicQrPay) {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.style.colorScheme = "light";
+    } else {
+      applyAppTheme(getStoredAppTheme());
+    }
+    return () => {
+      document.body.classList.remove("qrp-scope");
+      document.documentElement.classList.remove("qrp-force-light");
+    };
+  }, [location.pathname]);
 
   // Toggle a global `nft-scope` class on <body> while browsing NFT routes so
   // theme-aware CSS overrides can adapt hardcoded dark utilities to light mode.

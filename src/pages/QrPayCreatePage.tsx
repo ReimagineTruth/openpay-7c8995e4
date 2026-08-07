@@ -46,6 +46,44 @@ interface Item { name: string; description?: string; quantity: number; unit_pric
 
 type AfterAction = "receipt" | "download" | "redirect";
 
+type AllowKey = "pi" | "wallet" | "card" | "moonpay" | "google_pay" | "apple_pay" | "paypal" | "qr_ph" | "gcash" | "billease" | "bank" | "guest";
+
+const PI_METHOD_LOGO =
+  "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
+const MOONPAY_LOGO = "/icons/moonpay.svg";
+const GOOGLE_PAY_LOGO =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Google_Pay_Logo.svg/1920px-Google_Pay_Logo.svg.png";
+const APPLE_PAY_LOGO =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Apple_Pay_logo.svg/1920px-Apple_Pay_logo.svg.png";
+const PAYPAL_LOGO =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/1920px-PayPal.svg.png";
+const QR_PH_LOGO =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/QR_Ph_Logo.svg/960px-QR_Ph_Logo.svg.png?20250310160234";
+const GCASH_LOGO = "/icons/gcash.svg";
+const BILLEASE_LOGO = "/icons/billease.svg";
+const BANK_LOGO = "/icons/bank.svg";
+
+const PAYMENT_METHOD_OPTIONS: {
+  k: AllowKey;
+  l: string;
+  d: string;
+  logo?: string;
+  brand?: "openpay";
+}[] = [
+  { k: "pi", l: "Pi Network", d: "Pay from Pi balance", logo: PI_METHOD_LOGO },
+  { k: "wallet", l: "OpenPay Wallet", d: "Instant internal transfer", brand: "openpay" },
+  { k: "card", l: "Virtual Card", d: "Card checkout", brand: "openpay" },
+  { k: "moonpay", l: "MoonPay", d: "Buy crypto & pay", logo: MOONPAY_LOGO },
+  { k: "google_pay", l: "Google Pay", d: "Fast checkout with Google", logo: GOOGLE_PAY_LOGO },
+  { k: "apple_pay", l: "Apple Pay", d: "Pay with Apple devices", logo: APPLE_PAY_LOGO },
+  { k: "paypal", l: "PayPal", d: "Pay with PayPal balance or linked card", logo: PAYPAL_LOGO },
+  { k: "qr_ph", l: "QR PH", d: "Scan with any PH bank / e-wallet app", logo: QR_PH_LOGO },
+  { k: "gcash", l: "GCash", d: "Pay with GCash via PayMongo", logo: GCASH_LOGO },
+  { k: "billease", l: "Buy Now, Pay Later", d: "BillEase installments via PayMongo", logo: BILLEASE_LOGO },
+  { k: "bank", l: "Online Banking", d: "BPI, UnionBank, BDO, Land Bank, Metrobank", logo: BANK_LOGO },
+  { k: "guest", l: "Allow guest checkout", d: "No OpenPay sign-in (recommended for public links)" },
+];
+
 async function uploadQrPayImage(file: File): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   const toDataUrl = () => new Promise<string | null>((resolve) => {
@@ -85,7 +123,21 @@ export default function QrPayCreatePage() {
   const [description, setDescription] = useState("");
   const [cur, setCur] = useState<string>(currency.code);
   const [items, setItems] = useState<Item[]>([{ name: "", quantity: 1, unit_price: 0 }]);
-  const [allow, setAllow] = useState({ pi: true, wallet: true, card: true, guest: true });
+  const [allow, setAllow] = useState<Record<AllowKey, boolean>>({
+    pi: true,
+    wallet: true,
+    card: true,
+    moonpay: false,
+    google_pay: false,
+    apple_pay: false,
+    paypal: false,
+    qr_ph: false,
+    gcash: false,
+    billease: false,
+    bank: false,
+    guest: true,
+  });
+  // Guest stays on by default for public payment links
   const [reusable, setReusable] = useState(false);
   const [collectDelivery, setCollectDelivery] = useState(false);
   const [deliveryFields, setDeliveryFields] = useState<string[]>(["name", "email", "address"]);
@@ -170,7 +222,7 @@ export default function QrPayCreatePage() {
       p_allow_pi: allow.pi,
       p_allow_wallet: allow.wallet,
       p_allow_virtual_card: allow.card,
-      p_allow_guest: allow.guest,
+      p_allow_guest: true, // Public checkout links never require OpenPay sign-in for Pi
       p_reusable: isFlexible ? true : reusable,
       p_expires_minutes: expiresMin ? Number(expiresMin) : null,
       p_payment_type: paymentType,
@@ -210,6 +262,24 @@ export default function QrPayCreatePage() {
       });
       if (proErr) toast.error(`QR created, but Pro settlement wasn't saved: ${proErr.message}`);
     }
+
+    // Extra methods (integration later) — persist flags in metadata without changing RPC signature
+    const { error: metaErr } = await (supabase as any)
+      .from("qr_payments")
+      .update({
+        metadata: {
+          allow_moonpay: allow.moonpay,
+          allow_google_pay: allow.google_pay,
+          allow_apple_pay: allow.apple_pay,
+          allow_paypal: allow.paypal,
+          allow_qr_ph: allow.qr_ph,
+          allow_gcash: allow.gcash,
+          allow_billease: allow.billease,
+          allow_bank: allow.bank,
+        },
+      })
+      .eq("token", data.token);
+    if (metaErr) console.warn("qr_pay extra methods metadata not saved:", metaErr.message);
 
     setLoading(false);
     setCreated({ token: data.token, total: Number(data.total) });
@@ -651,18 +721,24 @@ export default function QrPayCreatePage() {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-2 pb-4">
-                  {[
-                    { k: "pi", l: "Pi Network", d: "Pay from Pi balance" },
-                    { k: "wallet", l: "OpenPay Wallet", d: "Instant internal transfer" },
-                    { k: "card", l: "Virtual Card", d: "Card checkout" },
-                    { k: "guest", l: "Allow guest checkout", d: "No sign-in needed for Pi" },
-                  ].map(m => (
+                  {PAYMENT_METHOD_OPTIONS.map(m => (
                     <div key={m.k} className="flex items-center justify-between gap-3 rounded-[12px] bg-[#f2f2f7] px-3.5 py-3">
-                      <div>
-                        <p className="text-[15px] font-medium tracking-[-0.01em] text-[#1d1d1f]">{m.l}</p>
-                        <p className="text-[12px] text-[#8e8e93]">{m.d}</p>
+                      <div className="flex min-w-0 items-center gap-3">
+                        {m.brand === "openpay" ? (
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white shadow-sm ring-1 ring-black/[0.06]">
+                            <BrandLogo animate={false} className="h-5 w-5 text-[#1d1d1f]" />
+                          </span>
+                        ) : m.logo ? (
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-white p-1.5 shadow-sm ring-1 ring-black/[0.06]">
+                            <img src={m.logo} alt="" className="h-full w-full object-contain" />
+                          </span>
+                        ) : null}
+                        <div className="min-w-0">
+                          <p className="text-[15px] font-medium tracking-[-0.01em] text-[#1d1d1f]">{m.l}</p>
+                          <p className="text-[12px] text-[#8e8e93]">{m.d}</p>
+                        </div>
                       </div>
-                      <Switch checked={(allow as any)[m.k]} onCheckedChange={v => setAllow({ ...allow, [m.k]: v })} />
+                      <Switch checked={allow[m.k]} onCheckedChange={v => setAllow({ ...allow, [m.k]: v })} />
                     </div>
                   ))}
                   {!isFlexible && (
@@ -819,6 +895,14 @@ export default function QrPayCreatePage() {
                   {allow.pi && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Pi</span>}
                   {allow.wallet && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Wallet</span>}
                   {allow.card && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Card</span>}
+                  {allow.moonpay && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">MoonPay</span>}
+                  {allow.google_pay && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Google Pay</span>}
+                  {allow.apple_pay && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Apple Pay</span>}
+                  {allow.paypal && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">PayPal</span>}
+                  {allow.qr_ph && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">QR PH</span>}
+                  {allow.gcash && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">GCash</span>}
+                  {allow.billease && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">BNPL</span>}
+                  {allow.bank && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Bank</span>}
                 </div>
 
                 <div className="pointer-events-none w-full">

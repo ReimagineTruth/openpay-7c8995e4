@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import QrPayPiBrowserDialog from "@/components/qrpay/QrPayPiBrowserDialog";
+import QrPayQrPhDialog from "@/components/qrpay/QrPayQrPhDialog";
 import { toast } from "sonner";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
 import BrandLogo from "@/components/BrandLogo";
@@ -26,9 +27,45 @@ import {
   waitForPiSdk,
   initPiSdk,
 } from "@/lib/piPayment";
+import { invokePaymongoQrPay } from "@/lib/paymongoQrPay";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
+const MOONPAY_LOGO = "/icons/moonpay.svg";
+const GOOGLE_PAY_LOGO =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Google_Pay_Logo.svg/1920px-Google_Pay_Logo.svg.png";
+const APPLE_PAY_LOGO =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Apple_Pay_logo.svg/1920px-Apple_Pay_logo.svg.png";
+const PAYPAL_LOGO =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/1920px-PayPal.svg.png";
+const QR_PH_LOGO =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/QR_Ph_Logo.svg/960px-QR_Ph_Logo.svg.png?20250310160234";
+const GCASH_LOGO = "/icons/gcash.svg";
+const BILLEASE_LOGO = "/icons/billease.svg";
+const BANK_LOGO = "/icons/bank.svg";
 
+const EXTRA_METHOD_KEYS = ["moonpay", "google_pay", "apple_pay", "paypal", "qr_ph", "gcash", "billease", "bank"] as const;
+type ExtraMethod = (typeof EXTRA_METHOD_KEYS)[number];
+const PAYMONGO_METHODS = ["qr_ph", "gcash", "billease", "bank"] as const;
+type PaymongoCheckoutMethod = (typeof PAYMONGO_METHODS)[number];
+
+const BANK_OPTIONS = [
+  { code: "bpi", label: "BPI" },
+  { code: "ubp", label: "UnionBank" },
+  { code: "bdo", label: "BDO" },
+  { code: "landbank", label: "Land Bank" },
+  { code: "metrobank", label: "Metrobank" },
+] as const;
+
+const EXTRA_METHOD_META: Record<ExtraMethod, { label: string; hint: string; logo: string }> = {
+  moonpay: { label: "MoonPay", hint: "Buy crypto & pay", logo: MOONPAY_LOGO },
+  google_pay: { label: "Google Pay", hint: "Fast checkout with Google", logo: GOOGLE_PAY_LOGO },
+  apple_pay: { label: "Apple Pay", hint: "Pay with Apple devices", logo: APPLE_PAY_LOGO },
+  paypal: { label: "PayPal", hint: "PayPal balance or linked card", logo: PAYPAL_LOGO },
+  qr_ph: { label: "QR PH", hint: "Scan with any PH bank / e-wallet", logo: QR_PH_LOGO },
+  gcash: { label: "GCash", hint: "Pay with GCash via PayMongo", logo: GCASH_LOGO },
+  billease: { label: "Buy Now, Pay Later", hint: "BillEase installments", logo: BILLEASE_LOGO },
+  bank: { label: "Online Banking", hint: "Pay from your PH bank account", logo: BANK_LOGO },
+};
 
 interface QrPayData {
   id: string;
@@ -42,6 +79,14 @@ interface QrPayData {
   allow_wallet: boolean;
   allow_virtual_card: boolean;
   allow_guest: boolean;
+  allow_moonpay?: boolean;
+  allow_google_pay?: boolean;
+  allow_apple_pay?: boolean;
+  allow_paypal?: boolean;
+  allow_qr_ph?: boolean;
+  allow_gcash?: boolean;
+  allow_billease?: boolean;
+  allow_bank?: boolean;
   payment_type: "product" | "digital" | "donation" | "tip";
   payment_purpose?: string | null;
   payment_purpose_label?: string | null;
@@ -87,6 +132,12 @@ export default function QrPayCheckoutPage() {
   const [payerPhone, setPayerPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [paymongoIntentId, setPaymongoIntentId] = useState<string | null>(null);
+  const [qrPhImageUrl, setQrPhImageUrl] = useState<string | null>(null);
+  const [qrPhOpen, setQrPhOpen] = useState(false);
+  const [paymongoPhpAmount, setPaymongoPhpAmount] = useState<number | null>(null);
+  const [paymongoPolling, setPaymongoPolling] = useState(false);
+  const [bankCode, setBankCode] = useState<string>("bpi");
 
   // Pi SDK is injected on every page (index.html). Only the real Pi Browser
   // can complete Pi payments — do NOT treat window.Pi as “inside Pi Browser”.
@@ -125,7 +176,31 @@ export default function QrPayCheckoutPage() {
     (async () => {
       const { data: res, error } = await (supabase as any).rpc("qr_pay_get_by_token", { p_token: token });
       if (error || !res) { setData(null); setLoading(false); return; }
-      setData(res as QrPayData);
+
+      // Extra methods are stored in metadata at create-time (until dedicated columns exist)
+      let extraAllows: Partial<QrPayData> = {};
+      try {
+        const { data: row } = await (supabase as any)
+          .from("qr_payments")
+          .select("metadata")
+          .eq("token", token)
+          .maybeSingle();
+        const meta = (row?.metadata && typeof row.metadata === "object") ? row.metadata : {};
+        extraAllows = {
+          allow_moonpay: !!meta.allow_moonpay,
+          allow_google_pay: !!meta.allow_google_pay,
+          allow_apple_pay: !!meta.allow_apple_pay,
+          allow_paypal: !!meta.allow_paypal,
+          allow_qr_ph: !!meta.allow_qr_ph,
+          allow_gcash: !!meta.allow_gcash,
+          allow_billease: !!meta.allow_billease,
+          allow_bank: !!meta.allow_bank,
+        };
+      } catch {
+        /* optional */
+      }
+
+      setData({ ...(res as QrPayData), ...extraAllows });
       if (res?.suggested_amount) setCustomAmount(String(res.suggested_amount));
       setLoading(false);
     })();
@@ -368,7 +443,7 @@ export default function QrPayCheckoutPage() {
       setPiBrowserOpen(true);
       return;
     }
-    if (!data!.allow_guest && !session) { requireSignIn(); return; }
+    // Public QR Pay: Pi does not require an OpenPay account (Pi Browser auth only)
 
     setPaying(true);
     try {
@@ -457,17 +532,179 @@ export default function QrPayCheckoutPage() {
     openExternalUrl(url);
   };
 
+  const confirmPaymongo = async (intentId: string, method: PaymongoCheckoutMethod) => {
+    const res = await invokePaymongoQrPay({
+      action: "confirm",
+      token,
+      intent_id: intentId,
+      method,
+      amount: isFlexible ? chargeAmount : undefined,
+      payer_name: payerName || null,
+      payer_email: payerEmail || null,
+      payer_phone: payerPhone || null,
+      delivery_address: deliveryAddress || null,
+      delivery_notes: deliveryNotes || null,
+    });
+    if (!res?.paid) return false;
+    setPaymongoPolling(false);
+    setQrPhImageUrl(null);
+    setQrPhOpen(false);
+    await goAfterPayment(String(res.transaction_ref), method);
+    return true;
+  };
+
+  const payPaymongo = async (method: PaymongoCheckoutMethod) => {
+    if (!validateAmount() || !validateDelivery()) return;
+    if (method === "bank" && !bankCode) {
+      toast.error("Select a bank first");
+      return;
+    }
+    setPaying(true);
+    try {
+      const returnUrl = `${window.location.origin}/qr-pay/${token}?paymongo_return=1&pm_method=${method}`;
+      const res = await invokePaymongoQrPay({
+        action: "create",
+        token,
+        method,
+        bank_code: method === "bank" ? bankCode : undefined,
+        amount: isFlexible ? chargeAmount : undefined,
+        return_url: returnUrl,
+        payer_name: payerName || null,
+        payer_email: payerEmail || null,
+        payer_phone: payerPhone || null,
+        delivery_address: deliveryAddress || null,
+        delivery_notes: deliveryNotes || null,
+      });
+
+      const intentId = String(res?.intent_id || "");
+      if (!intentId) throw new Error("No payment intent returned");
+      setPaymongoIntentId(intentId);
+      setPaymongoPhpAmount(Number(res?.php_amount) || null);
+
+      if (method === "qr_ph") {
+        const img = String(res?.qr_image_url || "");
+        if (!img) throw new Error("QR code was not returned by PayMongo");
+        setQrPhImageUrl(img);
+        setPaymongoPolling(true);
+        setQrPhOpen(true);
+        toast.success(`Scan QR PH · ₱${Number(res.php_amount).toFixed(2)}`);
+        return;
+      }
+
+      const redirect = String(res?.redirect_url || "");
+      if (!redirect) throw new Error("Redirect URL missing from PayMongo");
+      sessionStorage.setItem(`qrp_paymongo_${token}`, JSON.stringify({
+        intent_id: intentId,
+        method,
+        bank_code: method === "bank" ? bankCode : null,
+        amount: chargeAmount,
+      }));
+      const openLabel =
+        method === "gcash" ? "Opening GCash…"
+        : method === "billease" ? "Opening BillEase…"
+        : "Opening your bank…";
+      toast.success(openLabel);
+      window.location.href = redirect;
+    } catch (e: any) {
+      toast.error(e?.message || "Payment failed");
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const payExtra = (key: ExtraMethod) => {
+    if (key === "qr_ph" && qrPhImageUrl) {
+      setQrPhOpen(true);
+      return;
+    }
+    if ((PAYMONGO_METHODS as readonly string[]).includes(key)) {
+      void payPaymongo(key as PaymongoCheckoutMethod);
+      return;
+    }
+    if (!validateAmount() || !validateDelivery()) return;
+    const label = EXTRA_METHOD_META[key].label;
+    toast.info(`${label} checkout will be available once the integration is connected.`);
+  };
+
+  // Poll QR PH until paid / expired
+  useEffect(() => {
+    if (!paymongoPolling || !paymongoIntentId || !token) return;
+    let stopped = false;
+    const tick = async () => {
+      try {
+        const paid = await confirmPaymongo(paymongoIntentId, "qr_ph");
+        if (paid || stopped) return;
+      } catch {
+        /* keep polling */
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 4000);
+    return () => {
+      stopped = true;
+      window.clearInterval(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymongoPolling, paymongoIntentId, token]);
+
+  // Resume after GCash return
+  useEffect(() => {
+    if (!token || searchParams.get("paymongo_return") !== "1") return;
+    const method = (searchParams.get("pm_method") || "gcash") as PaymongoCheckoutMethod;
+    let intentId = "";
+    try {
+      const raw = sessionStorage.getItem(`qrp_paymongo_${token}`);
+      if (raw) intentId = String(JSON.parse(raw)?.intent_id || "");
+    } catch { /* ignore */ }
+    if (!intentId) return;
+
+    let cancelled = false;
+    (async () => {
+      setPaying(true);
+      setMethod(method);
+      try {
+        const paid = await confirmPaymongo(intentId, method);
+        if (!paid && !cancelled) {
+          toast.message("Waiting for payment confirmation…");
+          // brief poll
+          for (let i = 0; i < 8 && !cancelled; i++) {
+            await new Promise(r => setTimeout(r, 2500));
+            if (await confirmPaymongo(intentId, method)) return;
+          }
+          toast.error("Payment not confirmed yet. If you paid, refresh in a moment.");
+        }
+      } catch (e: any) {
+        if (!cancelled) toast.error(e?.message || "Could not confirm payment");
+      } finally {
+        if (!cancelled) setPaying(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, searchParams]);
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin"/></div>;
   if (!data) return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center"><h1 className="text-xl font-bold mb-2">Payment not found</h1><p className="text-muted-foreground">This QR code is invalid or no longer available.</p></div>;
   if (data.status !== "active") return <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center"><Badge variant="secondary" className="mb-3">{data.status}</Badge><h1 className="text-xl font-bold mb-2">This payment is no longer active</h1></div>;
 
   const tabs = [
-    data.allow_pi ? "pi" : null,
     data.allow_wallet ? "wallet" : null,
+    data.allow_pi ? "pi" : null,
     data.allow_virtual_card ? "card" : null,
+    data.allow_moonpay ? "moonpay" : null,
+    data.allow_google_pay ? "google_pay" : null,
+    data.allow_apple_pay ? "apple_pay" : null,
+    data.allow_paypal ? "paypal" : null,
+    data.allow_qr_ph ? "qr_ph" : null,
+    data.allow_gcash ? "gcash" : null,
+    data.allow_billease ? "billease" : null,
+    data.allow_bank ? "bank" : null,
     data.pro_settlement_to ? "pro" : null,
   ].filter(Boolean) as string[];
   const activeMethod = method && tabs.includes(method) ? method : (tabs[0] || "wallet");
+  const isExtraMethod = (EXTRA_METHOD_KEYS as readonly string[]).includes(activeMethod);
+  const isPaymongoMethod = (PAYMONGO_METHODS as readonly string[]).includes(activeMethod);
+  const extraMeta = isExtraMethod ? EXTRA_METHOD_META[activeMethod as ExtraMethod] : null;
 
   const TypeIcon = data.payment_type === "donation" || data.payment_purpose === "gift" || data.payment_purpose === "charity"
     ? Heart
@@ -481,11 +718,22 @@ export default function QrPayCheckoutPage() {
       ? (inPiBrowser ? `Pay ${chargeAmount.toFixed(2)} π` : "Continue in Pi Browser")
       : activeMethod === "pro"
         ? `Pay ${chargeAmount.toFixed(2)} with Pro ${proAsset}`
-        : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`;
+        : activeMethod === "qr_ph"
+          ? (qrPhImageUrl ? "Waiting for QR PH payment…" : `Pay with QR PH`)
+          : activeMethod === "gcash"
+            ? `Continue with GCash`
+            : activeMethod === "billease"
+              ? `Continue with BillEase`
+              : activeMethod === "bank"
+                ? `Continue with ${BANK_OPTIONS.find(b => b.code === bankCode)?.label || "Bank"}`
+                : extraMeta
+                  ? `Pay ${data.currency} ${chargeAmount.toFixed(2)} with ${extraMeta.label}`
+                  : `Pay ${data.currency} ${chargeAmount.toFixed(2)}`;
   const onPay =
     activeMethod === "pi" ? payPi
     : activeMethod === "card" ? payCard
     : activeMethod === "pro" ? payPro
+    : isExtraMethod ? () => payExtra(activeMethod as ExtraMethod)
     : payWallet;
 
   const amountText = activeMethod === "pi"
@@ -612,7 +860,7 @@ export default function QrPayCheckoutPage() {
           logo={<img src={PURE_PI_ICON_URL} alt="Pi Network" className="h-8 w-8 rounded-full object-cover" />}
           label="Pi Network"
           hint={inPiBrowser
-            ? (data.allow_guest ? "Guest checkout" : "Sign-in required")
+            ? "Guest checkout · Pi Browser"
             : "Pi Browser required"} />
       )}
       {tabs.includes("card") && (
@@ -624,6 +872,57 @@ export default function QrPayCheckoutPage() {
           }
           label="Virtual Card"
           hint={savedCard ? `•••• ${String(savedCard.card_number).slice(-4)}` : "OpenPay card"} />
+      )}
+      {EXTRA_METHOD_KEYS.map((key) => (
+        tabs.includes(key) ? (
+          <PayOpt
+            key={key}
+            active={activeMethod === key}
+            onClick={() => {
+              setMethod(key);
+              if (key !== "qr_ph") {
+                setQrPhImageUrl(null);
+                setQrPhOpen(false);
+                setPaymongoPolling(false);
+              }
+            }}
+            logo={
+              <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-[10px] bg-white p-1 ring-1 ring-black/[0.06]">
+                <img src={EXTRA_METHOD_META[key].logo} alt="" className="h-full w-full object-contain" />
+              </span>
+            }
+            label={EXTRA_METHOD_META[key].label}
+            hint={EXTRA_METHOD_META[key].hint}
+          />
+        ) : null
+      ))}
+      {activeMethod === "bank" && (
+        <div className="qrp-group-footer space-y-2">
+          <p className="text-[12px] font-medium text-[var(--qrp-muted)]">Choose your bank</p>
+          <div className="flex flex-wrap gap-2">
+            {BANK_OPTIONS.map((b) => (
+              <button
+                key={b.code}
+                type="button"
+                onClick={() => setBankCode(b.code)}
+                className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-all active:scale-95 ${
+                  bankCode === b.code
+                    ? "bg-[var(--qrp-ink)] text-white"
+                    : "bg-white text-[var(--qrp-ink)] ring-1 ring-black/10"
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {activeMethod === "billease" && (
+        <div className="qrp-group-footer">
+          <p className="text-[12px] text-[var(--qrp-muted)]">
+            You’ll complete eligibility and installments on BillEase. Min ₱100. If declined, pick another method.
+          </p>
+        </div>
       )}
       {tabs.includes("pro") && (
         <PayOpt active={activeMethod === "pro"} onClick={() => setMethod("pro")}
@@ -705,12 +1004,28 @@ export default function QrPayCheckoutPage() {
     ? "You'll finish securely on OpenPay Pro."
     : activeMethod === "pi" && !inPiBrowser
       ? "Copy the link and complete in Pi Browser."
+    : activeMethod === "qr_ph"
+      ? "Powered by PayMongo QR PH · code expires in ~30 minutes."
+    : activeMethod === "gcash"
+      ? "You'll authorize in the GCash app, then return here."
+    : activeMethod === "billease"
+      ? "Powered by BillEase · eligibility checked on redirect."
+    : activeMethod === "bank"
+      ? "You'll log in to your bank portal to authorize the transfer."
+    : isExtraMethod && !isPaymongoMethod
+      ? `${extraMeta!.label} integration coming soon — method is ready to enable.`
     : activeMethod === "wallet" && !session ? "You'll be asked to sign in." : "Encrypted · Instant receipt";
 
   const renderPayButton = () => (
-    <Button className={payBtnClass} disabled={paying} onClick={onPay}>
-      {paying ? (
+    <Button
+      className={payBtnClass}
+      disabled={paying}
+      onClick={onPay}
+    >
+      {paying || (activeMethod === "qr_ph" && paymongoPolling) ? (
         <Loader2 className="h-4 w-4 animate-spin" />
+      ) : isExtraMethod && extraMeta ? (
+        <img src={extraMeta.logo} alt="" className="h-5 w-5 shrink-0 rounded object-contain bg-white/90 p-0.5" />
       ) : (
         <BrandLogo variant="white" animate={false} className="h-5 w-5 shrink-0" />
       )}
@@ -923,6 +1238,23 @@ export default function QrPayCheckoutPage() {
           if (fallback) setMethod(fallback);
         }}
       />
+
+      {qrPhImageUrl && (
+        <QrPayQrPhDialog
+          open={qrPhOpen}
+          onOpenChange={setQrPhOpen}
+          qrImageUrl={qrPhImageUrl}
+          phpAmount={paymongoPhpAmount}
+          waitingForPayment={paymongoPolling}
+          onUseOtherMethod={() => {
+            setQrPhOpen(false);
+            setQrPhImageUrl(null);
+            setPaymongoPolling(false);
+            const fallback = tabs.find((t) => t !== "qr_ph") || null;
+            if (fallback) setMethod(fallback);
+          }}
+        />
+      )}
     </div>
   );
 }

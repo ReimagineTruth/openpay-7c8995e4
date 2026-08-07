@@ -62,6 +62,14 @@ function methodLabel(method: string) {
   if (m === "wallet") return "OpenPay Wallet";
   if (m === "virtual_card" || m === "card") return "Virtual Card";
   if (m === "pro") return "OpenPay Pro";
+  if (m === "moonpay") return "MoonPay";
+  if (m === "google_pay") return "Google Pay";
+  if (m === "apple_pay") return "Apple Pay";
+  if (m === "paypal") return "PayPal";
+  if (m === "qr_ph" || m === "qrph") return "QR PH";
+  if (m === "gcash") return "GCash";
+  if (m === "billease") return "Buy Now, Pay Later";
+  if (m === "bank") return "Online Banking";
   return method.replace(/_/g, " ");
 }
 

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Online Banking">
+  <rect width="48" height="48" rx="12" fill="#0B3B6E"/>
+  <path fill="#FFFFFF" d="M8 20 L24 10 L40 20 V22 H8 Z"/>
+  <rect x="12" y="24" width="5" height="12" rx="1" fill="#FFFFFF"/>
+  <rect x="21.5" y="24" width="5" height="12" rx="1" fill="#FFFFFF"/>
+  <rect x="31" y="24" width="5" height="12" rx="1" fill="#FFFFFF"/>
+  <rect x="10" y="37" width="28" height="3" rx="1" fill="#FFFFFF"/>
+</svg>
