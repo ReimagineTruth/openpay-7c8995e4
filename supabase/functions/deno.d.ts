@@ -3,6 +3,7 @@ declare global {
     env: {
       get(key: string): string | undefined;
     };
+    serve: (handler: (req: Request) => Response | Promise<Response>) => void;
   };
 }
 
@@ -46,4 +47,27 @@ declare module "https://deno.land/*" {
 declare module "https://esm.sh/*" {
   const module: any;
   export default module;
+}
+
+// Deno npm: imports used by the Lovable MCP edge function bundle
+declare module "npm:@lovable.dev/mcp-js@0.20.0" {
+  export const auth: any;
+  export const defineMcp: any;
+  export const defineTool: any;
+  const mod: any;
+  export default mod;
+}
+
+declare module "npm:@lovable.dev/mcp-js@0.20.0/stacks/supabase" {
+  export function createSupabaseHandler(mcp: any, opts: { functionName: string }): (req: Request) => Response | Promise<Response>;
+}
+
+declare module "npm:@supabase/supabase-js@^2.108.2" {
+  export function createClient(url: string | undefined, key: string | undefined, options?: any): any;
+}
+
+declare module "npm:zod@^4.4.3" {
+  export const z: any;
+  const zod: any;
+  export default zod;
 }

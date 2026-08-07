@@ -1,6 +1,6 @@
-// Owned copy of the MCP Supabase edge entry (do not re-enable auto-regen banner).
-// Local Vite mcpPlugin was rewriting this with a Windows absolute `npm:C:\...` path,
-// which breaks Lovable publish / Deno deploy.
+// @ts-nocheck
+// Owned MCP Supabase edge entry (portable Deno bundle).
+// Vite mcpPlugin is disabled — it rewrites Windows absolute paths as npm:C:\\... and breaks Lovable publish.
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts

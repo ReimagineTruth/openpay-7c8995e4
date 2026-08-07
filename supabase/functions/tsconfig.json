@@ -13,5 +13,5 @@
     "esModuleInterop": true
   },
   "include": ["**/*.ts", "**/*.d.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "mcp/index.ts"]
 }
