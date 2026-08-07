@@ -697,6 +697,8 @@ const MenuPage = () => {
 
             { icon: ShieldCheck, label: "Pi Ads", action: () => navigate("/admin-pi-ads") },
 
+            { icon: ShieldCheck, label: "QR Pay", action: () => navigate("/admin-qr-pay") },
+
 
             { icon: ShieldCheck, label: "Withdrawals", action: () => navigate("/admin-swap-withrawals") },
 

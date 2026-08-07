@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Loader2, ShieldCheck, User, Heart, Coffee, Eye, EyeOff } from "lucide-react";
+import { Loader2, ShieldCheck, User, Heart, Coffee, Eye, EyeOff, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,11 @@ import {
 import { invokePaymongoQrPay } from "@/lib/paymongoQrPay";
 import { requestGooglePayToken } from "@/lib/googlePay";
 import { currencies } from "@/contexts/CurrencyContext";
+import {
+  fetchQrPayPlatformSettings,
+  isQrPayMethodPlatformEnabled,
+  type QrPayPlatformSettings,
+} from "@/lib/qrPayPlatformSettings";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 const MOONPAY_LOGO = "/icons/moonpay.svg";
@@ -170,6 +175,7 @@ export default function QrPayCheckoutPage() {
   const [paymongoPhpAmount, setPaymongoPhpAmount] = useState<number | null>(null);
   const [paymongoPolling, setPaymongoPolling] = useState(false);
   const [bankCode, setBankCode] = useState<string>("bpi");
+  const [platformSettings, setPlatformSettings] = useState<QrPayPlatformSettings | null>(null);
 
   // Pi SDK is injected on every page (index.html). Only the real Pi Browser
   // can complete Pi payments — do NOT treat window.Pi as “inside Pi Browser”.
@@ -206,6 +212,9 @@ export default function QrPayCheckoutPage() {
       }
     });
     (async () => {
+      const platform = await fetchQrPayPlatformSettings();
+      setPlatformSettings(platform);
+
       const { data: res, error } = await (supabase as any).rpc("qr_pay_get_by_token", { p_token: token });
       if (error || !res) { setData(null); setLoading(false); return; }
 
@@ -810,7 +819,33 @@ export default function QrPayCheckoutPage() {
     data.allow_billease ? "billease" : null,
     data.allow_bank ? "bank" : null,
     data.pro_settlement_to ? "pro" : null,
-  ].filter(Boolean) as string[];
+  ].filter((t): t is string => !!t && isQrPayMethodPlatformEnabled(platformSettings, t));
+
+  if (platformSettings?.maintenance_mode) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 p-6 text-center qrp-page-bg">
+        <Wrench className="h-8 w-8 text-[var(--qrp-muted)]" />
+        <h1 className="text-xl font-bold tracking-[-0.02em]">Under maintenance</h1>
+        <p className="max-w-sm text-muted-foreground text-[15px]">
+          {platformSettings.maintenance_message
+            || "QR Pay is temporarily under maintenance. Please try again later."}
+        </p>
+      </div>
+    );
+  }
+
+  if (tabs.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 p-6 text-center qrp-page-bg">
+        <ShieldCheck className="h-8 w-8 text-[var(--qrp-muted)]" />
+        <h1 className="text-xl font-bold tracking-[-0.02em]">Payments unavailable</h1>
+        <p className="max-w-sm text-muted-foreground text-[15px]">
+          No payment methods are available for this checkout right now.
+        </p>
+      </div>
+    );
+  }
+
   const activeMethod = method && tabs.includes(method) ? method : (tabs[0] || "wallet");
   const isExtraMethod = (EXTRA_METHOD_KEYS as readonly string[]).includes(activeMethod);
   const isPaymongoMethod = (PAYMONGO_METHODS as readonly string[]).includes(activeMethod);

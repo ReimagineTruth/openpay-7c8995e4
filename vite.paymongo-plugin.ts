@@ -279,6 +279,19 @@ async function handlePaymongo(req, res, env) {
     if (!token) throw new Error("token required");
     const resolved = resolveMethod(method, bankCode);
 
+    try {
+      const platformOk = await sbFetch(admin, "/rest/v1/rpc/qr_pay_platform_method_allowed", {
+        method: "POST",
+        body: { p_method: method },
+      });
+      if (platformOk === false) {
+        throw new Error("This payment method is temporarily unavailable");
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("temporarily unavailable")) throw e;
+      // RPC missing until migration is applied — allow create
+    }
+
     // Prefer public RPC (same as checkout), then enrich with metadata flags
     let pay = null;
     try {

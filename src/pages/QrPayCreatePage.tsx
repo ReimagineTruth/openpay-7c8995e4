@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Plus, Trash2, Copy, Share2, ImagePlus, Loader2, QrCode,
@@ -40,6 +40,11 @@ import {
   resolveApiType,
   type QrPayPurposeId,
 } from "@/lib/qrPayPurposes";
+import {
+  fetchQrPayPlatformSettings,
+  isQrPayMethodPlatformEnabled,
+  type QrPayPlatformSettings,
+} from "@/lib/qrPayPlatformSettings";
 
 
 interface Item { name: string; description?: string; quantity: number; unit_price: number; image_url?: string }
@@ -165,6 +170,22 @@ export default function QrPayCreatePage() {
   const [created, setCreated] = useState<{ token: string; total: number } | null>(null);
   const [shareSection, setShareSection] = useState<"mobile" | "desktop">("mobile");
   const [shareHelpOpen, setShareHelpOpen] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState<QrPayPlatformSettings | null>(null);
+
+  useEffect(() => {
+    fetchQrPayPlatformSettings().then((s) => {
+      setPlatformSettings(s);
+      if (s.maintenance_mode) return;
+      setAllow((prev) => {
+        const next = { ...prev };
+        (Object.keys(next) as AllowKey[]).forEach((k) => {
+          if (!isQrPayMethodPlatformEnabled(s, k)) next[k] = false;
+        });
+        return next;
+      });
+      if (!isQrPayMethodPlatformEnabled(s, "pro")) setProEnabled(false);
+    });
+  }, []);
 
   const proError = proEnabled ? getProDestinationError(proTo) : null;
 
@@ -733,8 +754,15 @@ export default function QrPayCreatePage() {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-2 pb-4">
-                  {PAYMENT_METHOD_OPTIONS.map(m => (
-                    <div key={m.k} className="flex items-center justify-between gap-3 rounded-[12px] bg-[#f2f2f7] px-3.5 py-3">
+                  {platformSettings?.maintenance_mode && (
+                    <div className="rounded-[12px] border border-amber-500/30 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-950">
+                      Platform maintenance is on — checkout is paused for payers until an admin turns it off.
+                    </div>
+                  )}
+                  {PAYMENT_METHOD_OPTIONS.map(m => {
+                    const platformOn = isQrPayMethodPlatformEnabled(platformSettings, m.k);
+                    return (
+                    <div key={m.k} className={`flex items-center justify-between gap-3 rounded-[12px] bg-[#f2f2f7] px-3.5 py-3 ${!platformOn ? "opacity-50" : ""}`}>
                       <div className="flex min-w-0 items-center gap-3">
                         {m.brand === "openpay" ? (
                           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white shadow-sm ring-1 ring-black/[0.06]">
@@ -747,12 +775,19 @@ export default function QrPayCreatePage() {
                         ) : null}
                         <div className="min-w-0">
                           <p className="text-[15px] font-medium tracking-[-0.01em] text-[#1d1d1f]">{m.l}</p>
-                          <p className="text-[12px] text-[#8e8e93]">{m.d}</p>
+                          <p className="text-[12px] text-[#8e8e93]">
+                            {platformOn ? m.d : "Disabled by platform admin"}
+                          </p>
                         </div>
                       </div>
-                      <Switch checked={allow[m.k]} onCheckedChange={v => setAllow({ ...allow, [m.k]: v })} />
+                      <Switch
+                        checked={platformOn && allow[m.k]}
+                        disabled={!platformOn}
+                        onCheckedChange={v => setAllow({ ...allow, [m.k]: v })}
+                      />
                     </div>
-                  ))}
+                    );
+                  })}
                   {!isFlexible && (
                     <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/50 p-3">
                       <div>
@@ -766,9 +801,17 @@ export default function QrPayCreatePage() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-medium text-foreground">Settle to OpenPay Pro</p>
-                        <p className="text-xs text-muted-foreground">Credit earnings to your Pro wallet</p>
+                        <p className="text-xs text-muted-foreground">
+                          {isQrPayMethodPlatformEnabled(platformSettings, "pro")
+                            ? "Credit earnings to your Pro wallet"
+                            : "Disabled by platform admin"}
+                        </p>
                       </div>
-                      <Switch checked={proEnabled} onCheckedChange={setProEnabled} />
+                      <Switch
+                        checked={isQrPayMethodPlatformEnabled(platformSettings, "pro") && proEnabled}
+                        disabled={!isQrPayMethodPlatformEnabled(platformSettings, "pro")}
+                        onCheckedChange={setProEnabled}
+                      />
                     </div>
                     {proEnabled && (
                       <div className="space-y-1.5">

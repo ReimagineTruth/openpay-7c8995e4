@@ -143,6 +143,7 @@ import AdminKycMetricsPage from "./pages/AdminKycMetricsPage";
 import AdminOpenPayMetricsPage from "./pages/AdminOpenPayMetricsPage";
 import AdminNftPage from "./pages/AdminNftPage";
 import AdminPiAdsPage from "./pages/AdminPiAdsPage";
+import AdminQrPayPage from "./pages/AdminQrPayPage";
 import LiveCustomerServicePage from "./pages/LiveCustomerServicePage";
 import SwapWithdrawalPage from "./pages/SwapWithdrawalPage";
 import ConfirmPinPage from "./pages/ConfirmPinPage";
@@ -624,6 +625,7 @@ const AppRoutes = () => {
         <Route path="/admin-openpay-metrics" element={<AdminOpenPayMetricsPage />} />
         <Route path="/admin-nft" element={<AdminNftPage />} />
         <Route path="/admin-pi-ads" element={<AdminPiAdsPage />} />
+        <Route path="/admin-qr-pay" element={<AdminQrPayPage />} />
 
 
         <Route path="/remittance-merchant" element={<RemittanceMerchantPage />} />

@@ -113,6 +113,16 @@ Deno.serve(async (req: Request) => {
       }, 400);
     }
 
+    const { data: platformOk, error: platformErr } = await supabase.rpc(
+      "qr_pay_platform_method_allowed",
+      { p_method: method },
+    );
+    if (platformErr) {
+      console.error("platform method check failed", platformErr);
+    } else if (platformOk === false) {
+      return json({ error: "This payment method is temporarily unavailable" }, 503);
+    }
+
     const resolved = resolvePaymongoMethod(method, bankCode);
 
     const { data: pay, error: payErr } = await supabase
