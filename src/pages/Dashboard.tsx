@@ -2024,14 +2024,16 @@ const Dashboard = () => {
     buyOpenUsdAmount > 0
       ? buyOpenUsdAmount.toFixed(isEwalletBuyFlow ? 6 : 2)
       : "0.00";
-  const buyOpenUsdMeetsMinimum = buyOpenUsdAmount >= 1;
+  const isPiBuyFlow = buyPaymentMethod === "Pi Payment";
+  const buyMinimumLabel = isEwalletBuyFlow ? "Min 57 PHP" : isPiBuyFlow ? "Min 1 PI" : "Min 1 OUSD";
+  const buyOpenUsdMeetsMinimum = isPiBuyFlow ? safeBuySpend >= 1 : buyOpenUsdAmount >= 1;
   const handleBuyOpenUsd = () => {
     if (safeBuySpend <= 0) {
       toast.error("Enter a valid amount");
       return;
     }
     if (!buyOpenUsdMeetsMinimum) {
-      toast.error("Minimum buy is 1 OPEN USD");
+      toast.error(isPiBuyFlow ? "Minimum cash in is 1 PI" : "Minimum buy is 1 OPEN USD");
       return;
     }
     if (!supportedBuyPaymentMethods.includes(buyPaymentMethod)) {
@@ -2261,7 +2263,7 @@ const Dashboard = () => {
       id: "buy",
       title: "Buy",
       description: "Add OpenUSD using your preferred payment method.",
-      stat: buyOpenUsdMeetsMinimum ? `${buyOpenUsdDisplay} OUSD` : "Min 1 OUSD",
+      stat: buyOpenUsdMeetsMinimum ? `${buyOpenUsdDisplay} OUSD` : buyMinimumLabel,
       badge: buyOnrampProvider,
       icon: CircleDollarSign,
       onClick: () => setActiveSection("buy"),
@@ -3375,7 +3377,7 @@ const Dashboard = () => {
                 onChange={(e) => setBuySpendAmount(normalizeAmountInput(e.target.value))}
                 type="text"
                 inputMode="decimal"
-                placeholder={isEwalletBuyFlow ? "Min 57 PHP" : "Min 1"}
+                placeholder={buyMinimumLabel}
                 className="mt-1 h-10 w-full bg-transparent text-3xl font-bold text-foreground outline-none"
               />
               <p className="mt-1 text-xs font-medium text-muted-foreground">{buySpendRateText}</p>

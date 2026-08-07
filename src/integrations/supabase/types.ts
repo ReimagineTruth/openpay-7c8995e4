@@ -3684,6 +3684,48 @@ export type Database = {
           },
         ]
       }
+      qr_pay_purposes: {
+        Row: {
+          active: boolean
+          api_type: string
+          category_id: string
+          category_label: string
+          created_at: string
+          default_title: string | null
+          hint: string
+          id: string
+          is_flexible: boolean
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          api_type: string
+          category_id: string
+          category_label: string
+          created_at?: string
+          default_title?: string | null
+          hint?: string
+          id: string
+          is_flexible?: boolean
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          api_type?: string
+          category_id?: string
+          category_label?: string
+          created_at?: string
+          default_title?: string | null
+          hint?: string
+          id?: string
+          is_flexible?: boolean
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       qr_payment_items: {
         Row: {
           created_at: string
@@ -3820,48 +3862,6 @@ export type Database = {
           },
         ]
       }
-      qr_pay_purposes: {
-        Row: {
-          active: boolean
-          api_type: string
-          category_id: string
-          category_label: string
-          created_at: string
-          default_title: string | null
-          hint: string
-          id: string
-          is_flexible: boolean
-          label: string
-          sort_order: number
-        }
-        Insert: {
-          active?: boolean
-          api_type: string
-          category_id: string
-          category_label: string
-          created_at?: string
-          default_title?: string | null
-          hint?: string
-          id: string
-          is_flexible?: boolean
-          label: string
-          sort_order?: number
-        }
-        Update: {
-          active?: boolean
-          api_type?: string
-          category_id?: string
-          category_label?: string
-          created_at?: string
-          default_title?: string | null
-          hint?: string
-          id?: string
-          is_flexible?: boolean
-          label?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
       qr_payments: {
         Row: {
           after_payment_action: string
@@ -3882,8 +3882,8 @@ export type Database = {
           merchant_user_id: string
           metadata: Json
           min_amount: number | null
-          payment_type: string
           payment_purpose: string | null
+          payment_type: string
           pro_settlement_to: string | null
           redirect_url: string | null
           reusable: boolean
@@ -3914,8 +3914,8 @@ export type Database = {
           merchant_user_id: string
           metadata?: Json
           min_amount?: number | null
-          payment_type?: string
           payment_purpose?: string | null
+          payment_type?: string
           pro_settlement_to?: string | null
           redirect_url?: string | null
           reusable?: boolean
@@ -3946,8 +3946,8 @@ export type Database = {
           merchant_user_id?: string
           metadata?: Json
           min_amount?: number | null
-          payment_type?: string
           payment_purpose?: string | null
+          payment_type?: string
           pro_settlement_to?: string | null
           redirect_url?: string | null
           reusable?: boolean
@@ -3959,7 +3959,15 @@ export type Database = {
           total?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "qr_payments_payment_purpose_fkey"
+            columns: ["payment_purpose"]
+            isOneToOne: false
+            referencedRelation: "qr_pay_purposes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       referral_rewards: {
         Row: {
@@ -6151,6 +6159,7 @@ export type Database = {
         }
         Returns: number
       }
+      qr_pay_check_result: { Args: { p_token: string }; Returns: Json }
       qr_pay_complete_pi: {
         Args: {
           p_amount?: number
@@ -6192,7 +6201,6 @@ export type Database = {
         }
         Returns: Json
       }
-      qr_pay_check_result: { Args: { p_token: string }; Returns: Json }
       qr_pay_create: {
         Args: {
           p_after_payment_action?: string
@@ -6222,10 +6230,18 @@ export type Database = {
       qr_pay_delete: { Args: { p_id: string }; Returns: Json }
       qr_pay_gen_token: { Args: never; Returns: string }
       qr_pay_get_by_token: { Args: { p_token: string }; Returns: Json }
+      qr_pay_is_flexible_payment: {
+        Args: { p_pay: Database["public"]["Tables"]["qr_payments"]["Row"] }
+        Returns: boolean
+      }
       qr_pay_list_purposes: { Args: never; Returns: Json }
       qr_pay_merchant_stats: { Args: never; Returns: Json }
       qr_pay_normalize_pro_destination: {
         Args: { p_to: string }
+        Returns: string
+      }
+      qr_pay_resolve_api_type: {
+        Args: { p_payment_type?: string; p_purpose: string }
         Returns: string
       }
       qr_pay_set_pro_settlement: {

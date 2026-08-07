@@ -4,7 +4,6 @@ import { ousdToPi } from "@/lib/ousdPrice";
 
 declare global {
   interface Window {
-    Pi?: any;
     __PI_SDK_LOADING__?: boolean;
   }
 }
