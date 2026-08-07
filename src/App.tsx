@@ -107,6 +107,7 @@ import PaymentLinksCreatePage from "./pages/PaymentLinksCreatePage";
 import MerchantProductCatalogPage from "./pages/MerchantProductCatalogPage";
 import MerchantProductCreatePage from "./pages/MerchantProductCreatePage";
 import PiAuthPage from "./pages/PiAuthPage";
+import AppStorePreviewsPage from "./pages/AppStorePreviewsPage";
 import OAuthConsentPage from "./pages/OAuthConsentPage";
 import SetupProfilePage from "./pages/SetupProfilePage";
 import PiAdsPage from "./pages/PiAdsPage";
@@ -296,6 +297,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Index />} />
         <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
         <Route path="/auth" element={<PiAuthPage />} />
+        <Route path="/app-store-previews" element={<AppStorePreviewsPage />} />
         <Route path="/setup-profile" element={<SetupProfilePage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/feature-quest" element={<ProtectedRoute><FeatureQuestPage /></ProtectedRoute>} />
