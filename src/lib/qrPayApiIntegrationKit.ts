@@ -11,11 +11,16 @@ export const QR_PAY_API_BASE = `${
 
 export const QR_PAY_API_DOCS_PATH = "/qr-pay/api";
 
+export const OPENLEDGER_SITE_DOCS =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_OPENLEDGER_SITE_URL) ||
+  "https://openpyledger.space";
+
 export type QrPayKitOpts = {
   site?: string;
   apiBase?: string;
   apiKey?: string;
   qrToken?: string;
+  openLedgerSite?: string;
 };
 
 const defaults = (opts: QrPayKitOpts = {}) => ({
@@ -23,6 +28,7 @@ const defaults = (opts: QrPayKitOpts = {}) => ({
   api: opts.apiBase || QR_PAY_API_BASE,
   key: opts.apiKey || "qpk_live_YOUR_API_KEY",
   token: opts.qrToken || "QR_TOKEN",
+  ledger: opts.openLedgerSite || OPENLEDGER_SITE_DOCS,
 });
 
 /** Beginner step-by-step guide (markdown). */
@@ -79,12 +85,11 @@ curl -s -X POST "${api}/checkout-session" \\
 Redirect the buyer to \`checkout_url\` from the response.
 
 ## 6) After payment — verify
-Poll or look up:
 \`\`\`bash
-curl -s "${api}/transactions?limit=10" \\
+curl -s "${api}/transactions/by-ref/QRP-XXXXXXXXXXXX" \\
   -H "x-api-key: ${key}"
 \`\`\`
-Or open \`success_url\` with OpenPay query params when the buyer finishes.
+Only fulfill the order when \`transaction.status === "succeeded"\`.
 
 ## Auth model (simple)
 | Need | Use |
@@ -97,42 +102,188 @@ No client id is required for the QR Pay Public API — only the \`qpk_live_\` ke
 `;
 }
 
-/** Full API reference. */
+/** Full API reference (complete field schemas + examples). */
 export function buildQrPayApiReference(opts: QrPayKitOpts = {}): string {
-  const { site, api, key, token } = defaults(opts);
-  return `# OpenPay QR Pay Public API
+  const { site, api, key, token, ledger } = defaults(opts);
+  return `# OpenPay QR Pay Public API — Full documentation
 
 Base URL: \`${api}\`
-Docs UI: \`${site}${QR_PAY_API_DOCS_PATH}\`
+Docs & keys UI: \`${site}${QR_PAY_API_DOCS_PATH}\`
+Hosted checkout: \`${site}/qr-pay/{token}\`
+OpenLedger explorer: \`${ledger}/tx/ref/{transaction_ref}\`
+API version: \`1.1.0\` (see \`GET /health\`)
+
+---
+
+## Overview
+
+OpenPay QR Pay Public API lets any app (Shopify, Lovable, custom store, POS) create hosted checkouts for **your** QR payment links and verify paid orders — Stripe-style.
+
+Flow:
+1. Merchant creates a QR Pay link in OpenPay → gets a \`token\`
+2. Merchant creates an API key at ${site}${QR_PAY_API_DOCS_PATH} → \`qpk_live_…\`
+3. Your server calls \`POST /checkout-session\` → redirect buyer to \`checkout_url\`
+4. Buyer pays on OpenPay (wallet, card, GCash, Maya, Google Pay, Pi, OpenPay Pro, …)
+5. Buyer returns to your \`success_url\` with \`ref=QRP-…\`
+6. Your server verifies with \`GET /transactions/by-ref/{ref}\`
+7. Optional: open the immutable receipt on OpenLedger using the same \`QRP-…\` as \`external_ref\`
+
+---
 
 ## Authentication
-All endpoints except \`GET /health\` require:
+
+All endpoints **except** \`GET /health\` require:
+
 \`\`\`
 x-api-key: ${key}
 \`\`\`
 
-Keys are issued at ${site}${QR_PAY_API_DOCS_PATH}. Format: \`qpk_live_<prefix>_<secret>\`.
+| Rule | Detail |
+|------|--------|
+| Format | \`qpk_live_<prefix>_<secret>\` |
+| Issue | ${site}${QR_PAY_API_DOCS_PATH} → **+ New API key** |
+| Scope | Key can only access **your** QR payments & transactions |
+| Revoke | Dashboard → trash icon (apps using it stop immediately) |
+| Logging | Every call is logged (endpoint, status, latency) |
+
+Do **not** put production keys in browser bundles. Use a Node/Express/Edge proxy.
+
+CORS is enabled for prototypes. Prefer server-side calls in production.
+
+---
 
 ## Endpoints
 
 ### GET /health
-Public. Returns service status + endpoint list.
+Public. No API key.
+
+**Response 200**
+\`\`\`json
+{
+  "status": "ok",
+  "service": "qr-pay-api",
+  "version": "1.1.0",
+  "docs": "${site}${QR_PAY_API_DOCS_PATH}",
+  "site": "${site}",
+  "endpoints": [
+    "GET  /health",
+    "GET  /qr",
+    "GET  /qr/:token",
+    "GET  /qr/:token/checkout-url",
+    "POST /checkout-session",
+    "GET  /transactions",
+    "GET  /transactions/:id",
+    "GET  /transactions/by-ref/:transaction_ref"
+  ],
+  "timestamp": "2026-08-08T00:00:00.000Z"
+}
+\`\`\`
+
+---
 
 ### GET /qr
-List QR payments owned by the API key owner.
-Response: \`{ qr_payments: [...], count }\`
+List QR payments owned by the API key owner (max 100, newest first).
+
+**Headers:** \`x-api-key\`
+
+**Response 200**
+\`\`\`json
+{
+  "qr_payments": [
+    {
+      "id": "uuid",
+      "token": "${token}",
+      "title": "Coffee + tip",
+      "total": 10.5,
+      "amount": 10.5,
+      "currency": "USD",
+      "payment_type": "product",
+      "type": "product",
+      "status": "active",
+      "created_at": "ISO-8601"
+    }
+  ],
+  "count": 1
+}
+\`\`\`
+
+Notes:
+- \`amount\` is an alias of \`total\`
+- \`type\` is an alias of \`payment_type\`
+- \`status\` is typically \`active\` or inactive/archived values used by the dashboard
+
+---
 
 ### GET /qr/{token}
 Read one QR Pay + line items (must be yours).
-Response: \`{ qr_pay, items }\`
+
+**Headers:** \`x-api-key\`
+
+**Response 200**
+\`\`\`json
+{
+  "qr_pay": {
+    "id": "uuid",
+    "merchant_user_id": "uuid",
+    "user_id": "uuid",
+    "token": "${token}",
+    "title": "Coffee + tip",
+    "description": "Optional",
+    "total": 10.5,
+    "amount": 10.5,
+    "subtotal": 10,
+    "currency": "USD",
+    "payment_type": "product",
+    "type": "product",
+    "status": "active",
+    "cover_image_url": "https://…",
+    "image_url": "https://…",
+    "reusable": true,
+    "allow_custom_amount": false,
+    "min_amount": null,
+    "suggested_amount": null,
+    "created_at": "ISO-8601"
+  },
+  "items": [
+    {
+      "id": "uuid",
+      "name": "Latte",
+      "description": null,
+      "unit_price": 5,
+      "price": 5,
+      "quantity": 2,
+      "line_total": 10,
+      "image_url": null
+    }
+  ]
+}
+\`\`\`
+
+**Errors:** \`404\` QR payment not found (or not yours)
+
+---
 
 ### GET /qr/{token}/checkout-url
-Returns \`{ token, checkout_url }\` for hosted checkout.
+Convenience helper — returns hosted checkout URL (no customer prefill).
+
+**Response 200**
+\`\`\`json
+{
+  "token": "${token}",
+  "checkout_url": "${site}/qr-pay/${token}"
+}
+\`\`\`
+
+Prefer \`POST /checkout-session\` when you need \`success_url\`, \`cancel_url\`, or customer prefill.
+
+---
 
 ### POST /checkout-session
-Create a Stripe-style checkout session.
+Create a Stripe-style checkout session and get a redirect URL.
 
-Body:
+**Headers:** \`x-api-key\`, \`Content-Type: application/json\`
+
+**Body**
 \`\`\`json
 {
   "qr_pay_token": "${token}",
@@ -143,55 +294,211 @@ Body:
 }
 \`\`\`
 
-Response:
+| Field | Required | Notes |
+|-------|----------|-------|
+| \`qr_pay_token\` | yes | Token from \`${site}/qr-pay/{token}\` |
+| \`customer_email\` | no | Prefills checkout \`?email=\` |
+| \`customer_name\` | no | Prefills checkout \`?name=\` |
+| \`success_url\` | no | After pay, buyer is sent here with query params |
+| \`cancel_url\` | no | Passed through to hosted checkout |
+
+**Response 200**
 \`\`\`json
 {
   "id": "uuid",
   "qr_pay_token": "${token}",
-  "amount": 10,
+  "amount": 10.5,
   "currency": "USD",
-  "title": "…",
-  "checkout_url": "${site}/qr-pay/${token}?…",
+  "title": "Coffee + tip",
+  "checkout_url": "${site}/qr-pay/${token}?email=buyer%40example.com&name=Jane%20Doe&success_url=…&cancel_url=…",
   "expires_at": "ISO-8601"
 }
 \`\`\`
 
-Redirect the customer to \`checkout_url\`.
+Redirect the browser to \`checkout_url\`. Session hint expires in ~1 hour (\`expires_at\`); the underlying QR link remains reusable if configured as reusable.
+
+**Errors**
+- \`400\` missing \`qr_pay_token\` / QR not active
+- \`404\` QR not found / not yours
+
+---
 
 ### GET /transactions?limit=50
-List recent successful/paid transactions for your merchant account.
+List recent transactions for your merchant account.
+
+**Query**
+| Param | Default | Max |
+|-------|---------|-----|
+| \`limit\` | 50 | 100 |
+
+**Response 200**
+\`\`\`json
+{
+  "transactions": [
+    {
+      "id": "uuid",
+      "qr_payment_id": "uuid",
+      "amount": 10.5,
+      "currency": "USD",
+      "status": "succeeded",
+      "method": "gcash",
+      "payment_method": "gcash",
+      "payer_email": "buyer@example.com",
+      "customer_email": "buyer@example.com",
+      "payer_name": "Jane Doe",
+      "customer_name": "Jane Doe",
+      "transaction_ref": "QRP-AB12CD34EF56",
+      "paid_at": "ISO-8601",
+      "created_at": "ISO-8601"
+    }
+  ],
+  "count": 1
+}
+\`\`\`
+
+---
 
 ### GET /transactions/{id}
-Fetch one transaction by UUID (verify payment).
+Fetch one transaction by UUID.
+
+**Response 200:** \`{ "transaction": { … } }\`  
+**Errors:** \`404\`
+
+---
 
 ### GET /transactions/by-ref/{transaction_ref}
-Fetch one transaction by \`QRP-…\` reference (verify payment).
+**Primary verification endpoint.** Fetch by OpenPay order reference (\`QRP-…\`).
 
-## Callbacks / return URLs
-Pass \`success_url\` and \`cancel_url\` into \`POST /checkout-session\`.
-After payment, OpenPay may append:
-- \`openpay_return=1\`
-- \`ref\` / \`transaction_ref\`
-- \`token\`
+Example: \`GET ${api}/transactions/by-ref/QRP-AB12CD34EF56\`
 
-On your thank-you page, call \`GET /transactions/by-ref/{ref}\` with your API key to confirm \`status=succeeded\`.
+**Response 200**
+\`\`\`json
+{
+  "transaction": {
+    "id": "uuid",
+    "amount": 10.5,
+    "currency": "USD",
+    "status": "succeeded",
+    "method": "gcash",
+    "payment_method": "gcash",
+    "payer_email": "buyer@example.com",
+    "customer_email": "buyer@example.com",
+    "payer_name": "Jane Doe",
+    "customer_name": "Jane Doe",
+    "transaction_ref": "QRP-AB12CD34EF56",
+    "paid_at": "ISO-8601",
+    "created_at": "ISO-8601"
+  }
+}
+\`\`\`
+
+Fulfill only when \`status === "succeeded"\`.
+
+---
+
+## Return URL callbacks
+
+When you pass \`success_url\` to \`POST /checkout-session\`, after a successful payment OpenPay redirects the buyer to your URL and appends:
+
+| Query param | Example | Meaning |
+|-------------|---------|---------|
+| \`openpay_return\` | \`1\` | Payment completed return |
+| \`ref\` | \`QRP-…\` | Same as transaction_ref |
+| \`transaction_ref\` | \`QRP-…\` | Canonical order id |
+| \`token\` | QR token | Which QR was paid |
+| \`method\` | \`gcash\` | Payment rail used |
+
+Example thank-you URL:
+\`\`\`
+https://YOUR_APP/thank-you?openpay_return=1&ref=QRP-AB12CD34EF56&transaction_ref=QRP-AB12CD34EF56&token=${token}&method=gcash
+\`\`\`
+
+On your thank-you page (server-side):
+1. Read \`ref\` or \`transaction_ref\`
+2. Call \`GET /transactions/by-ref/{ref}\` with your API key
+3. Confirm \`status === "succeeded"\` and amount/currency match
+4. Mark order paid / deliver goods
+
+If no \`success_url\` is set, OpenPay shows \`${site}/qr-pay/{token}/success?ref=QRP-…\`.
+
+---
+
+## Payment methods (hosted checkout)
+
+Methods available depend on the QR link settings and platform admin toggles. Common rails:
+
+| Method code | Label |
+|-------------|-------|
+| \`wallet\` | OpenPay wallet |
+| \`virtual_card\` | OpenPay virtual card |
+| \`pi\` | Pi Network |
+| \`pro\` | OpenPay Pro |
+| \`gcash\` | GCash (PayMongo) |
+| \`maya\` | Maya (PayMongo) |
+| \`grab_pay\` | GrabPay (PayMongo) |
+| \`shopeepay\` | ShopeePay (PayMongo) |
+| \`qrph\` | QR Ph (PayMongo) |
+| \`billease\` | BillEase BNPL |
+| \`bank\` / bank rails | Online banking |
+| \`google_pay\` | Google Pay |
+
+Your integration does **not** call these rails directly — OpenPay hosted checkout handles them. You only create a session and verify the \`QRP-\` ref afterward.
+
+---
+
+## OpenLedger deep links
+
+Every paid QR order gets a stable \`transaction_ref\` like \`QRP-AB12CD34EF56\`.
+That same value is the OpenLedger \`external_ref\`.
+
+| Use | URL |
+|-----|-----|
+| Public receipt by order | \`${ledger}/tx/ref/{transaction_ref}\` |
+| Explorer | \`${ledger}/explorer?source=openpay\` |
+
+Example: \`${ledger}/tx/ref/QRP-AB12CD34EF56\`
+
+Show this link on receipts / thank-you pages so buyers and merchants can audit the payment.
+
+---
 
 ## Errors
+
 | Status | Meaning |
 |--------|---------|
-| 401 | Missing/invalid/revoked API key |
+| 401 | Missing / invalid / revoked API key |
 | 404 | QR or transaction not found (or not yours) |
-| 400 | Bad request (missing fields) |
+| 400 | Bad request (missing fields, inactive QR) |
 | 500 | Server error |
 
-## CORS
-Enabled for browser prototypes. Prefer server-side calls in production.
+Error body shape:
+\`\`\`json
+{ "error": "Human readable message" }
+\`\`\`
+
+---
+
+## Security checklist
+
+- [ ] API key only in server env / secrets manager
+- [ ] Never commit \`qpk_live_\` keys
+- [ ] Always verify \`/transactions/by-ref/{ref}\` before fulfillment
+- [ ] Match amount + currency to your cart
+- [ ] Revoke leaked keys immediately at ${site}${QR_PAY_API_DOCS_PATH}
+- [ ] Prefer Node/Express proxy over browser \`x-api-key\`
+
+---
+
+## Partner OAuth (optional)
+
+Not required for QR Pay checkout.
+Use ${site}/partner-api only if you need **Sign in with OpenPay**, wallet transfers, or Partner PayButton.
 `;
 }
 
 /** Universal AI scaffold prompt (Lovable / Cursor / Claude / ChatGPT). */
 export function buildQrPayAiPrompt(opts: QrPayKitOpts = {}): string {
-  const { site, api, key, token } = defaults(opts);
+  const { site, api, key, token, ledger } = defaults(opts);
   return `Integrate OpenPay QR Pay into my app. Follow this spec exactly.
 
 ## Official URLs
@@ -199,6 +506,7 @@ export function buildQrPayAiPrompt(opts: QrPayKitOpts = {}): string {
 - API docs / keys: ${site}${QR_PAY_API_DOCS_PATH}
 - API base: ${api}
 - Hosted checkout: ${site}/qr-pay/{token}
+- OpenLedger receipt: ${ledger}/tx/ref/{transaction_ref}
 
 ## Credentials
 \`\`\`
@@ -228,6 +536,7 @@ No OAuth client_id is required for QR Pay Public API.
    - cancel_url = current origin + /cart
 4. Redirect browser to checkout_url
 5. Thank-you page reads \`ref\` from query, calls GET /transactions/by-ref/{ref}, shows paid/pending
+6. Show OpenLedger link: ${ledger}/tx/ref/{ref}
 
 ## Style
 Clean mobile-first Tailwind. Primary #0070BA. Button label: "Pay with OpenPay".
@@ -236,11 +545,33 @@ Clean mobile-first Tailwind. Primary #0070BA. Button label: "Pay with OpenPay".
 - [ ] health returns ok
 - [ ] qr fetch works with my key
 - [ ] checkout redirects to ${site}/qr-pay/…
-- [ ] thank-you verifies transaction
+- [ ] thank-you verifies transaction status === "succeeded"
 - [ ] API key only in env / server
+- [ ] OpenLedger deep link uses the QRP- ref
 
 Sample QR token to wire first: ${token}
 `;
+}
+
+/** One pasteable document: quick start + full reference + callbacks + AI prompt. */
+export function buildQrPayFullDocumentation(opts: QrPayKitOpts = {}): string {
+  return [
+    buildQrPayQuickStart(opts),
+    "",
+    "---",
+    "",
+    buildQrPayApiReference(opts),
+    "",
+    "---",
+    "",
+    buildQrPayWebhookGuide(opts),
+    "",
+    "---",
+    "",
+    "# AI scaffold prompt (optional)",
+    "",
+    buildQrPayAiPrompt(opts),
+  ].join("\n");
 }
 
 export function buildQrPayCurlSnippet(opts: QrPayKitOpts = {}): string {
@@ -248,8 +579,16 @@ export function buildQrPayCurlSnippet(opts: QrPayKitOpts = {}): string {
   return `# Health
 curl -s "${api}/health" | jq
 
+# List your QR payments
+curl -s "${api}/qr" \\
+  -H "x-api-key: ${key}" | jq
+
 # Read QR
 curl -s "${api}/qr/${token}" \\
+  -H "x-api-key: ${key}" | jq
+
+# Checkout URL helper
+curl -s "${api}/qr/${token}/checkout-url" \\
   -H "x-api-key: ${key}" | jq
 
 # Checkout session
@@ -263,6 +602,10 @@ curl -s -X POST "${api}/checkout-session" \\
     "success_url": "https://YOUR_APP/thank-you",
     "cancel_url": "https://YOUR_APP/cart"
   }' | jq
+
+# List transactions
+curl -s "${api}/transactions?limit=10" \\
+  -H "x-api-key: ${key}" | jq
 
 # Verify by reference
 curl -s "${api}/transactions/by-ref/QRP-XXXXXXXXXXXX" \\
@@ -319,7 +662,7 @@ export async function verifyByRef(ref) {
 }
 
 export function buildQrPayReactSnippet(opts: QrPayKitOpts = {}): string {
-  const { site, api, token } = defaults(opts);
+  const { site, api, token, ledger } = defaults(opts);
   return `import { useEffect, useState } from "react";
 
 const API = import.meta.env.VITE_OPENPAY_QR_API_BASE || "${api}";
@@ -381,6 +724,11 @@ export function OpenPayPayButton({ token = "${token}" }) {
     </button>
   );
 }
+
+// Thank-you: verify + OpenLedger
+// const ref = new URLSearchParams(location.search).get("ref");
+// GET \${API}/transactions/by-ref/\${ref}
+// OpenLedger: ${ledger}/tx/ref/\${ref}
 
 // Optional direct link (no API key needed for buyers):
 // <a href={"${site}/qr-pay/" + token}>Open hosted checkout</a>
@@ -517,7 +865,7 @@ OPENPAY_QR_API_KEY=${key}
 }
 
 export function buildQrPayWebhookGuide(opts: QrPayKitOpts = {}): string {
-  const { site, api } = defaults(opts);
+  const { site, api, ledger } = defaults(opts);
   return `# Callbacks & verification (no complex OAuth)
 
 ## A) Return URL callback (easiest)
@@ -528,6 +876,7 @@ export function buildQrPayWebhookGuide(opts: QrPayKitOpts = {}): string {
    GET ${api}/transactions/by-ref/{ref}
    Header: x-api-key: YOUR_KEY
 5. Only fulfill the order if \`transaction.status === "succeeded"\`
+6. Optional receipt: ${ledger}/tx/ref/{ref}
 
 ## B) Polling
 While the buyer is on OpenPay checkout (another tab), poll:

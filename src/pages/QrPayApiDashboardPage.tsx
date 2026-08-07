@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import QrPayHeader from "@/components/qrpay/QrPayHeader";
 
@@ -12,15 +12,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import {
   KeyRound, Plus, Copy, Check, Trash2, Activity, Zap, AlertTriangle, Code2, BookOpen, Sparkles,
-  ListOrdered, Link2, ShieldCheck, Terminal,
+  ListOrdered, Link2, ShieldCheck, Terminal, FileText,
 } from "lucide-react";
 import {
   QR_PAY_API_BASE,
   QR_PAY_SITE,
+  OPENLEDGER_SITE_DOCS,
   buildQrPayAiPrompt,
   buildQrPayApiReference,
   buildQrPayCurlSnippet,
   buildQrPayEnvSnippet,
+  buildQrPayFullDocumentation,
   buildQrPayJsSnippet,
   buildQrPayNodeSnippet,
   buildQrPayPhpSnippet,
@@ -64,7 +66,7 @@ const CopyBtn = ({ text, label = "Copy" }: { text: string; label?: string }) => 
 
 const CodeBlock = ({ code, lang }: { code: string; lang?: string }) => (
   <div className="relative group">
-    <pre className="text-xs bg-slate-950 text-slate-100 rounded-lg p-4 overflow-x-auto max-h-[480px] whitespace-pre-wrap break-words">
+    <pre className="text-xs bg-slate-950 text-slate-100 rounded-lg p-4 overflow-x-auto max-h-[520px] whitespace-pre-wrap break-words">
       <code>{code}</code>
     </pre>
     <div className="absolute top-2 right-2 flex gap-2 items-center">
@@ -73,6 +75,175 @@ const CodeBlock = ({ code, lang }: { code: string; lang?: string }) => (
     </div>
   </div>
 );
+
+/** Lightweight markdown for readable docs (headings, lists, tables, fences, inline). */
+function DocMarkdown({ md }: { md: string }) {
+  const nodes = useMemo(() => {
+    const lines = md.replace(/\r\n/g, "\n").split("\n");
+    const out: ReactNode[] = [];
+    let i = 0;
+    let listBuf: string[] = [];
+    let tableBuf: string[][] = [];
+
+    const inline = (s: string) =>
+      s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/`([^`]+)`/g, '<code class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px] text-slate-800">$1</code>')
+        .replace(
+          /\[(.+?)\]\((.+?)\)/g,
+          '<a class="text-[#0070BA] underline underline-offset-2" href="$2" target="_blank" rel="noreferrer">$1</a>',
+        );
+
+    const flushList = () => {
+      if (!listBuf.length) return;
+      out.push(
+        <ul key={`ul-${out.length}`} className="my-2 list-disc space-y-1 pl-5 text-sm text-foreground/90">
+          {listBuf.map((li, idx) => (
+            <li key={idx} dangerouslySetInnerHTML={{ __html: inline(li) }} />
+          ))}
+        </ul>,
+      );
+      listBuf = [];
+    };
+
+    const flushTable = () => {
+      if (!tableBuf.length) return;
+      const rows = tableBuf.filter((r) => !r.every((c) => /^:?-+:?$/.test(c.trim())));
+      if (!rows.length) {
+        tableBuf = [];
+        return;
+      }
+      const [head, ...body] = rows;
+      out.push(
+        <div key={`tbl-${out.length}`} className="my-3 overflow-x-auto rounded-lg border border-black/10">
+          <table className="w-full min-w-[480px] text-left text-xs">
+            <thead className="bg-slate-50 text-muted-foreground">
+              <tr>
+                {head.map((c, ci) => (
+                  <th key={ci} className="px-3 py-2 font-semibold" dangerouslySetInnerHTML={{ __html: inline(c.trim()) }} />
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {body.map((row, ri) => (
+                <tr key={ri} className="border-t border-black/5">
+                  {row.map((c, ci) => (
+                    <td key={ci} className="px-3 py-2 text-foreground/90" dangerouslySetInnerHTML={{ __html: inline(c.trim()) }} />
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      );
+      tableBuf = [];
+    };
+
+    while (i < lines.length) {
+      const raw = lines[i];
+      const line = raw.trimEnd();
+
+      if (line.startsWith("```")) {
+        flushList();
+        flushTable();
+        const lang = line.slice(3).trim();
+        const buf: string[] = [];
+        i += 1;
+        while (i < lines.length && !lines[i].startsWith("```")) {
+          buf.push(lines[i]);
+          i += 1;
+        }
+        out.push(
+          <div key={`code-${out.length}`} className="my-3">
+            <CodeBlock code={buf.join("\n")} lang={lang || undefined} />
+          </div>,
+        );
+        i += 1;
+        continue;
+      }
+
+      if (/^\|/.test(line) && line.includes("|")) {
+        flushList();
+        tableBuf.push(line.split("|").slice(1, -1));
+        i += 1;
+        continue;
+      }
+      if (tableBuf.length) flushTable();
+
+      if (/^[-*]{3,}\s*$/.test(line)) {
+        flushList();
+        out.push(<hr key={`hr-${out.length}`} className="my-6 border-black/10" />);
+        i += 1;
+        continue;
+      }
+
+      if (/^####\s+/.test(line)) {
+        flushList();
+        out.push(
+          <h4 key={i} className="mt-4 mb-1 text-sm font-bold text-foreground" dangerouslySetInnerHTML={{ __html: inline(line.replace(/^####\s+/, "")) }} />,
+        );
+        i += 1;
+        continue;
+      }
+      if (/^###\s+/.test(line)) {
+        flushList();
+        out.push(
+          <h3 key={i} className="mt-5 mb-2 text-base font-bold text-foreground" dangerouslySetInnerHTML={{ __html: inline(line.replace(/^###\s+/, "")) }} />,
+        );
+        i += 1;
+        continue;
+      }
+      if (/^##\s+/.test(line)) {
+        flushList();
+        out.push(
+          <h2 key={i} className="mt-7 mb-2 border-b border-black/5 pb-1 text-lg font-bold text-foreground" dangerouslySetInnerHTML={{ __html: inline(line.replace(/^##\s+/, "")) }} />,
+        );
+        i += 1;
+        continue;
+      }
+      if (/^#\s+/.test(line)) {
+        flushList();
+        out.push(
+          <h1 key={i} className="mt-2 mb-3 text-xl font-extrabold tracking-tight text-foreground" dangerouslySetInnerHTML={{ __html: inline(line.replace(/^#\s+/, "")) }} />,
+        );
+        i += 1;
+        continue;
+      }
+
+      if (/^[-*]\s+/.test(line)) {
+        listBuf.push(line.replace(/^[-*]\s+/, ""));
+        i += 1;
+        continue;
+      }
+      if (/^\d+\.\s+/.test(line)) {
+        listBuf.push(line.replace(/^\d+\.\s+/, ""));
+        i += 1;
+        continue;
+      }
+
+      if (!line.trim()) {
+        flushList();
+        i += 1;
+        continue;
+      }
+
+      flushList();
+      out.push(
+        <p key={i} className="my-2 text-sm leading-relaxed text-foreground/90" dangerouslySetInnerHTML={{ __html: inline(line) }} />,
+      );
+      i += 1;
+    }
+
+    flushList();
+    flushTable();
+    return out;
+  }, [md]);
+
+  return <div className="doc-md max-w-none">{nodes}</div>;
+}
 
 const Kpi = ({ icon: Icon, label, value, hint }: { icon: any; label: string; value: string | number; hint?: string }) => (
   <Card>
@@ -109,6 +280,7 @@ export default function QrPayApiDashboardPage() {
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [sampleToken, setSampleToken] = useState("QR_TOKEN");
+  const [docsTab, setDocsTab] = useState<"read" | "raw">("read");
 
   const load = async () => {
     setLoading(true);
@@ -158,6 +330,7 @@ export default function QrPayApiDashboardPage() {
       apiBase: QR_PAY_API_BASE,
       apiKey: sampleKey,
       qrToken: sampleToken,
+      openLedgerSite: OPENLEDGER_SITE_DOCS,
     }),
     [sampleKey, sampleToken],
   );
@@ -166,6 +339,7 @@ export default function QrPayApiDashboardPage() {
     ai: buildQrPayAiPrompt(kitOpts),
     quick: buildQrPayQuickStart(kitOpts),
     ref: buildQrPayApiReference(kitOpts),
+    full: buildQrPayFullDocumentation(kitOpts),
     webhook: buildQrPayWebhookGuide(kitOpts),
     env: buildQrPayEnvSnippet(kitOpts),
     curl: buildQrPayCurlSnippet(kitOpts),
@@ -181,14 +355,17 @@ export default function QrPayApiDashboardPage() {
       <QrPayHeader
         eyebrow="OpenPay · Developers"
         title="QR Pay API"
-        subtitle="Copy-paste kit so any app (or AI) can connect OpenPay QR Pay in minutes — beginners welcome."
+        subtitle="Full documentation + copy-paste kit — connect any app (or AI) to OpenPay QR Pay in minutes."
         icon={Code2}
         backTo="/qr-pay"
         backLabel="Back to QR Pay"
         actions={
-          <Button onClick={() => setShowCreate(true)} className="qrp-hero-cta rounded-full h-9 px-4">
-            <Plus className="h-4 w-4 mr-1" /> New API key
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <CopyBtn text={snippets.full} label="Copy full docs" />
+            <Button onClick={() => setShowCreate(true)} className="qrp-hero-cta rounded-full h-9 px-4">
+              <Plus className="h-4 w-4 mr-1" /> New API key
+            </Button>
+          </div>
         }
       />
 
@@ -213,7 +390,7 @@ export default function QrPayApiDashboardPage() {
           <CardContent className="grid gap-3 md:grid-cols-2">
             <Step n={1} title="Create a QR Pay link" body="QR Pay → New → copy the token from /qr-pay/YOUR_TOKEN" />
             <Step n={2} title="Create an API key here" body="Click + New API key. Copy qpk_live_… once — treat it like a password." />
-            <Step n={3} title="Paste into your AI or code" body="Use the AI prompt tab below in Lovable, Cursor, Claude, or ChatGPT." />
+            <Step n={3} title="Paste into your AI or code" body="Use Copy full docs or the AI prompt tab — Lovable, Cursor, Claude, ChatGPT." />
             <Step n={4} title="Verify with callbacks" body="Pass success_url on checkout-session, then GET /transactions/by-ref/{ref}." />
             <div className="md:col-span-2 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs">
               <Label className="shrink-0">Sample QR token</Label>
@@ -223,8 +400,57 @@ export default function QrPayApiDashboardPage() {
                 onChange={(e) => setSampleToken(e.target.value.trim() || "QR_TOKEN")}
                 placeholder="Paste a QR token"
               />
-              <span className="text-muted-foreground">Snippets below auto-fill this token + your key preview.</span>
+              <span className="text-muted-foreground">Snippets + docs below auto-fill this token + your key preview.</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Full documentation */}
+        <Card id="full-docs" className="border-[#0070BA]/20 shadow-sm">
+          <CardHeader className="space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-[#0070BA]" /> Full documentation
+                </CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Complete API reference: auth, every endpoint, request/response schemas, return URLs, payment methods, OpenLedger, and security.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant={docsTab === "read" ? "default" : "outline"}
+                  className={docsTab === "read" ? "bg-[#0070BA] hover:bg-[#005ea6]" : ""}
+                  onClick={() => setDocsTab("read")}
+                >
+                  Read
+                </Button>
+                <Button
+                  size="sm"
+                  variant={docsTab === "raw" ? "default" : "outline"}
+                  className={docsTab === "raw" ? "bg-[#0070BA] hover:bg-[#005ea6]" : ""}
+                  onClick={() => setDocsTab("raw")}
+                >
+                  Markdown
+                </Button>
+                <CopyBtn text={snippets.full} label="Copy all" />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+              <Badge variant="secondary" className="font-mono">Base {QR_PAY_API_BASE}</Badge>
+              <Badge variant="secondary" className="font-mono">Checkout {QR_PAY_SITE}/qr-pay/{"{token}"}</Badge>
+              <Badge variant="secondary" className="font-mono">Ledger {OPENLEDGER_SITE_DOCS}/tx/ref/{"{ref}"}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {docsTab === "read" ? (
+              <div className="max-h-[720px] overflow-y-auto rounded-xl border border-black/5 bg-white/80 p-4 sm:p-6">
+                <DocMarkdown md={snippets.ref} />
+              </div>
+            ) : (
+              <CodeBlock code={snippets.full} lang="md" />
+            )}
           </CardContent>
         </Card>
 
@@ -292,12 +518,12 @@ export default function QrPayApiDashboardPage() {
                 <TabsTrigger value="python">Python</TabsTrigger>
                 <TabsTrigger value="php">PHP</TabsTrigger>
                 <TabsTrigger value="callback"><Link2 className="h-3.5 w-3.5 mr-1" />Callbacks</TabsTrigger>
-                <TabsTrigger value="ref"><Terminal className="h-3.5 w-3.5 mr-1" />Full docs</TabsTrigger>
+                <TabsTrigger value="ref"><Terminal className="h-3.5 w-3.5 mr-1" />API reference</TabsTrigger>
               </TabsList>
 
               <TabsContent value="ai" className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Paste this entire prompt into Lovable / Cursor / Claude / ChatGPT — it scaffolds checkout + verify.
+                  Paste this entire prompt into Lovable / Cursor / Claude / ChatGPT — it scaffolds checkout + verify + OpenLedger.
                 </p>
                 <CodeBlock code={snippets.ai} lang="prompt" />
               </TabsContent>
@@ -338,6 +564,7 @@ export default function QrPayApiDashboardPage() {
             <div className="mt-3 space-y-1 text-xs text-muted-foreground">
               <div>Base URL: <code className="text-foreground">{QR_PAY_API_BASE}</code></div>
               <div>Hosted checkout: <code className="text-foreground">{QR_PAY_SITE}/qr-pay/{"{token}"}</code></div>
+              <div>OpenLedger: <code className="text-foreground">{OPENLEDGER_SITE_DOCS}/tx/ref/{"{transaction_ref}"}</code></div>
               <div className="flex items-center gap-1.5 pt-1">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 QR Pay uses API key only. Partner OAuth client_id is optional (only for Sign in with OpenPay).
