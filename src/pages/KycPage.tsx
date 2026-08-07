@@ -52,6 +52,12 @@ const KycPage = () => {
   const [uploadedUrls, setUploadedUrls] = useState<UploadState>(emptyUploadState);
   const [step, setStep] = useState<KycWizardStep>("intro");
   const [faceVerification, setFaceVerification] = useState<KycFaceCaptureResult | null>(null);
+  const [linkedIdentity, setLinkedIdentity] = useState<{
+    openpayUsername: string;
+    accountNumber: string;
+    accountName: string;
+    piUsername: string;
+  }>({ openpayUsername: "", accountNumber: "", accountName: "", piUsername: "" });
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -162,7 +168,7 @@ const KycPage = () => {
           return;
         }
 
-        const [{ data: profile }, { data: appRows, error: appError }] = await Promise.all([
+        const [{ data: profile }, { data: appRows, error: appError }, { data: accountRow }, { data: piRow }] = await Promise.all([
           supabase.from("profiles").select("full_name, username").eq("id", user.id).maybeSingle(),
           (supabase as any)
             .from("kyc_applications")
@@ -170,13 +176,25 @@ const KycPage = () => {
             .eq("user_id", user.id)
             .order("submitted_at", { ascending: false })
             .limit(1),
+          supabase.rpc("upsert_my_user_account"),
+          (supabase as any).from("pi_accounts").select("pi_username").eq("user_id", user.id).maybeSingle(),
         ]);
 
         if (appError) throw appError;
 
+        const account = accountRow as { account_number?: string; account_name?: string; account_username?: string } | null;
+        const profileUser = String(profile?.username || "").trim().replace(/^@+/, "");
+        const accountUser = String(account?.account_username || "").trim().replace(/^@+/, "");
+        setLinkedIdentity({
+          openpayUsername: profileUser || accountUser,
+          accountNumber: String(account?.account_number || "").trim().toUpperCase(),
+          accountName: String(account?.account_name || profile?.full_name || "").trim(),
+          piUsername: String(piRow?.pi_username || "").trim().replace(/^@+/, ""),
+        });
+
         setFormData((prev) => ({
           ...prev,
-          full_name: prev.full_name || String(profile?.full_name || ""),
+          full_name: prev.full_name || String(profile?.full_name || account?.account_name || ""),
           email: prev.email || String(user.email || ""),
         }));
 
@@ -519,6 +537,34 @@ const KycPage = () => {
               <User className="h-4 w-4 text-paypal-blue" />
               Personal information
             </h3>
+
+            <div className="rounded-xl border border-paypal-blue/20 bg-paypal-light-blue/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-paypal-blue">Linked OpenPay account (auto-filled)</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Username, Pi username, and account number come from your OpenPay account — you do not need to type them.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">OpenPay username</p>
+                  <p className="font-medium text-foreground">
+                    {linkedIdentity.openpayUsername ? `@${linkedIdentity.openpayUsername}` : "Not set yet"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">OpenPay account number</p>
+                  <p className="font-mono text-xs font-medium text-foreground break-all">
+                    {linkedIdentity.accountNumber || "Not set yet"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Pi username</p>
+                  <p className="font-medium text-foreground">
+                    {linkedIdentity.piUsername ? `@${linkedIdentity.piUsername}` : "Not linked"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="mb-1 block text-sm font-medium">Full legal name *</label>
               <input value={formData.full_name} onChange={(e) => handleInputChange("full_name", e.target.value)} className="h-11 w-full rounded-xl border border-border px-3" placeholder="As shown on your ID" />

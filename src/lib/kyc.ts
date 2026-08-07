@@ -96,6 +96,11 @@ export const KYC_CHANNEL_LABELS: Record<KycChannel, string> = {
 export interface AdminKycApplicationRecord extends KycApplicationRecord {
   profile_username?: string | null;
   profile_avatar_url?: string | null;
+  /** Linked OpenPay @username (profiles or user_accounts) — auto-resolved, not form-entered. */
+  openpay_username?: string | null;
+  /** Linked OpenPay OP… account number — auto-resolved. */
+  openpay_account_number?: string | null;
+  openpay_account_name?: string | null;
   source?: string | null;
   partner_app_id?: string | null;
   external_user_id?: string | null;
@@ -103,6 +108,23 @@ export interface AdminKycApplicationRecord extends KycApplicationRecord {
   callback_url?: string | null;
   pi_username?: string | null;
   channel?: KycChannel;
+}
+
+export type AdminKycIdentityRow = {
+  user_id: string;
+  profile_username: string | null;
+  account_username: string | null;
+  account_number: string | null;
+  account_name: string | null;
+  pi_username: string | null;
+};
+
+/** Prefer profile username, else account username. */
+export function resolveOpenPayUsername(identity?: Partial<AdminKycIdentityRow> | null): string | null {
+  const fromProfile = String(identity?.profile_username || "").trim().replace(/^@+/, "");
+  const fromAccount = String(identity?.account_username || "").trim().replace(/^@+/, "");
+  const value = fromProfile || fromAccount;
+  return value || null;
 }
 
 

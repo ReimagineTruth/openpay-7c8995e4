@@ -24,9 +24,11 @@ import {
   ADMIN_PROFILE_USERNAMES,
   KYC_CHANNEL_LABELS,
   type AdminKycApplicationRecord,
+  type AdminKycIdentityRow,
   type KycChannel,
   isLikelyStoragePath,
   normalizeKycApplication,
+  resolveOpenPayUsername,
 } from "@/lib/kyc";
 
 const channelBadgeClass = (channel?: KycChannel) => {
@@ -40,10 +42,10 @@ const channelBadgeClass = (channel?: KycChannel) => {
   }
 };
 
-type ProfileRow = {
-  id: string;
-  username: string | null;
-  avatar_url: string | null;
+const chunkIds = <T,>(items: T[], size = 200): T[][] => {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
 };
 
 const AdminKycReview = () => {
@@ -92,25 +94,60 @@ const AdminKycReview = () => {
       const normalized = (Array.isArray(data) ? data : []).map((row: any) => normalizeKycApplication(row));
       const userIds = [...new Set(normalized.map((row) => row.user_id).filter(Boolean))];
 
-      let profilesMap = new Map<string, ProfileRow>();
-      const piMap = new Map<string, string>();
+      // SECURITY DEFINER RPC bypasses RLS so admins see linked OpenPay/Pi identity (auto, not form-filled).
+      const identityMap = new Map<string, AdminKycIdentityRow>();
+      const avatarMap = new Map<string, string | null>();
       if (userIds.length > 0) {
-        const [{ data: profiles }, { data: piAccounts }] = await Promise.all([
-          supabase.from("profiles").select("id, username, avatar_url").in("id", userIds),
-          (supabase as any).from("pi_accounts").select("user_id, pi_username").in("user_id", userIds),
-        ]);
-        profilesMap = new Map((profiles || []).map((row) => [row.id, row as ProfileRow]));
-        (Array.isArray(piAccounts) ? piAccounts : []).forEach((row: any) => {
-          if (row?.user_id && row?.pi_username) piMap.set(String(row.user_id), String(row.pi_username));
-        });
+        for (const batch of chunkIds(userIds, 250)) {
+          const { data: identities, error: idErr } = await (supabase as any).rpc("admin_kyc_user_identities", {
+            p_user_ids: batch,
+          });
+          if (idErr) {
+            console.warn("admin_kyc_user_identities failed", idErr);
+            // Fallback: profiles only (may miss account # / Pi due to RLS)
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("id, username, avatar_url")
+              .in("id", batch);
+            (profiles || []).forEach((row: any) => {
+              identityMap.set(String(row.id), {
+                user_id: String(row.id),
+                profile_username: row.username || null,
+                account_username: null,
+                account_number: null,
+                account_name: null,
+                pi_username: null,
+              });
+              avatarMap.set(String(row.id), row.avatar_url || null);
+            });
+            continue;
+          }
+          (Array.isArray(identities) ? identities : []).forEach((row: any) => {
+            const uid = String(row.user_id || "");
+            if (!uid) return;
+            identityMap.set(uid, {
+              user_id: uid,
+              profile_username: row.profile_username || null,
+              account_username: row.account_username || null,
+              account_number: row.account_number || null,
+              account_name: row.account_name || null,
+              pi_username: row.pi_username || null,
+            });
+          });
+        }
+        for (const batch of chunkIds(userIds, 250)) {
+          const { data: profiles } = await supabase.from("profiles").select("id, avatar_url").in("id", batch);
+          (profiles || []).forEach((row: any) => avatarMap.set(String(row.id), row.avatar_url || null));
+        }
       }
 
       const rawRows = Array.isArray(data) ? data : [];
       const merged = normalized.map((row, index) => {
-        const profileRow = profilesMap.get(row.user_id);
+        const identity = identityMap.get(row.user_id);
         const raw = (rawRows[index] || {}) as any;
         const source = raw.source || "openpay";
-        const piUsername = piMap.get(row.user_id) || null;
+        const openpayUsername = resolveOpenPayUsername(identity);
+        const piUsername = identity?.pi_username || null;
         const channel: KycChannel = source === "partner" ? "pro" : piUsername ? "pi" : "openpay";
         return {
           ...row,
@@ -121,8 +158,11 @@ const AdminKycReview = () => {
           external_user_id: raw.external_user_id || null,
           external_ref: raw.external_ref || null,
           callback_url: raw.callback_url || null,
-          profile_username: profileRow?.username || null,
-          profile_avatar_url: profileRow?.avatar_url || null,
+          profile_username: openpayUsername,
+          openpay_username: openpayUsername,
+          openpay_account_number: identity?.account_number || null,
+          openpay_account_name: identity?.account_name || null,
+          profile_avatar_url: avatarMap.get(row.user_id) || null,
         };
       });
 
@@ -321,6 +361,8 @@ const AdminKycReview = () => {
           app.email.toLowerCase().includes(searchValue) ||
           app.id_document_number.toLowerCase().includes(searchValue) ||
           String(app.profile_username || "").toLowerCase().includes(searchValue) ||
+          String(app.openpay_username || "").toLowerCase().includes(searchValue) ||
+          String(app.openpay_account_number || "").toLowerCase().includes(searchValue) ||
           String(app.pi_username || "").toLowerCase().includes(searchValue) ||
           app.user_id.toLowerCase().includes(searchValue);
         const matchesStatus = statusFilter === "all" || app.status === statusFilter;
@@ -412,7 +454,7 @@ const AdminKycReview = () => {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name, email, username, Pi username, user ID, or document number..."
+              placeholder="Search by name, email, username, Pi username, account number, user ID, or document number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -539,11 +581,26 @@ const AdminKycReview = () => {
                   </div>
                   <div>
                     <p className="text-gray-600">OpenPay Username</p>
-                    <p className="font-medium">{selectedApplication.profile_username ? `@${selectedApplication.profile_username}` : "Not set"}</p>
+                    <p className="font-medium">
+                      {(selectedApplication.openpay_username || selectedApplication.profile_username)
+                        ? `@${selectedApplication.openpay_username || selectedApplication.profile_username}`
+                        : "Not set"}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-gray-400">Auto-filled from linked OpenPay account</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">OpenPay Account Number</p>
+                    <p className="font-mono text-xs font-medium break-all">
+                      {selectedApplication.openpay_account_number || "Not set"}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-gray-400">Auto-filled — no manual entry on KYC</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Pi Username</p>
-                    <p className="font-medium">{selectedApplication.pi_username ? `@${selectedApplication.pi_username}` : "Not linked"}</p>
+                    <p className="font-medium">
+                      {selectedApplication.pi_username ? `@${selectedApplication.pi_username}` : "Not linked"}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-gray-400">Auto-filled from Pi link when connected</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Partner App</p>
