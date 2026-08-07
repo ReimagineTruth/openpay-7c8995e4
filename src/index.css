@@ -3331,3 +3331,35 @@ html:not(.dark) .nft-store-banner :where(svg) { color: #ffffff !important; }
   line-height: 1.45;
   letter-spacing: -0.01em;
 }
+
+/* Attention effect for enabled hero CTA (Confirm) buttons */
+@keyframes dash-cta-ring {
+  0% { box-shadow: 0 0 0 0 hsl(0 0% 100% / 0.55), 0 8px 20px hsl(0 0% 0% / 0.15); }
+  70% { box-shadow: 0 0 0 12px hsl(0 0% 100% / 0), 0 8px 20px hsl(0 0% 0% / 0.15); }
+  100% { box-shadow: 0 0 0 0 hsl(0 0% 100% / 0), 0 8px 20px hsl(0 0% 0% / 0.15); }
+}
+@keyframes dash-cta-bob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.035); }
+}
+@keyframes dash-cta-sheen {
+  0% { transform: translateX(-120%); }
+  60%, 100% { transform: translateX(220%); }
+}
+.dash-cta-attention {
+  animation: dash-cta-ring 2s ease-out infinite, dash-cta-bob 2s ease-in-out infinite;
+  overflow: hidden;
+}
+.dash-cta-attention::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, hsl(210 100% 45% / 0.22), transparent);
+  animation: dash-cta-sheen 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-cta-attention,
+  .dash-cta-attention::after { animation: none; }
+}
