@@ -38,6 +38,7 @@ import {
   isQrPayMethodPlatformEnabled,
   type QrPayPlatformSettings,
 } from "@/lib/qrPayPlatformSettings";
+import { pushQrPayToOpenLedger } from "@/lib/openLedgerPush";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 const MOONPAY_LOGO = "/icons/moonpay.svg";
@@ -203,6 +204,7 @@ export default function QrPayCheckoutPage() {
     searchParams.get("openpay_ref") ||
     searchParams.get("note") ||
     "";
+  const partnerSuccessUrl = (searchParams.get("success_url") || "").trim();
 
   /** Link shown in QR / copy — tags Pi Browser session for return messaging */
   const checkoutUrl = useMemo(() => {
@@ -262,6 +264,10 @@ export default function QrPayCheckoutPage() {
 
       setData({ ...(res as QrPayData), ...extraAllows });
       if (res?.suggested_amount) setCustomAmount(String(res.suggested_amount));
+      const qName = new URLSearchParams(window.location.search).get("name");
+      const qEmail = new URLSearchParams(window.location.search).get("email");
+      if (qName) setPayerName(qName);
+      if (qEmail) setPayerEmail(qEmail);
       setLoading(false);
     })();
   }, [token]);
@@ -332,9 +338,10 @@ export default function QrPayCheckoutPage() {
     const currencyCode = String(opts?.currency ?? data!.currency ?? "").toUpperCase();
     const currencySymbol =
       currencies.find((c) => c.code.toUpperCase() === currencyCode)?.symbol || undefined;
+    const paidAmount = opts?.amount ?? chargeAmount;
     const receipt = {
       transactionRef: ref, method, paidAt: new Date().toISOString(),
-      amount: opts?.amount ?? chargeAmount,
+      amount: paidAmount,
       currency: currencyCode || data!.currency,
       currencySymbol,
       merchant: data!.merchant, title: data!.title, description: data!.description,
@@ -350,6 +357,20 @@ export default function QrPayCheckoutPage() {
       pi_return: piReturn || undefined,
     };
     sessionStorage.setItem(`qrp_receipt_${ref}`, JSON.stringify(receipt));
+    // Push to OpenLedger (best-effort) so /tx/ref/{QRP-…} resolves
+    void pushQrPayToOpenLedger({
+      transactionRef: ref,
+      amount: paidAmount,
+      currency: currencyCode || data!.currency,
+      method,
+      merchantUsername: data!.merchant?.username,
+      merchantName: data!.merchant?.full_name,
+      payerName: receipt.payer.name,
+      title: data!.title,
+      token: data!.token,
+      paidAt: receipt.paidAt,
+      items: data!.items,
+    });
     // Signal other same-origin tabs (original browser) that payment finished
     try {
       localStorage.setItem(`qrp_paid_${token}`, JSON.stringify({
@@ -358,6 +379,19 @@ export default function QrPayCheckoutPage() {
     } catch {}
     if (data!.after_payment_action === "redirect" && data!.redirect_url) {
       try { window.location.href = data!.redirect_url; return; } catch {}
+    }
+    // Partner API checkout-session success_url callback
+    if (partnerSuccessUrl) {
+      try {
+        const u = new URL(partnerSuccessUrl);
+        u.searchParams.set("openpay_return", "1");
+        u.searchParams.set("ref", ref);
+        u.searchParams.set("transaction_ref", ref);
+        u.searchParams.set("token", token);
+        u.searchParams.set("method", method);
+        window.location.href = u.toString();
+        return;
+      } catch {}
     }
     const q = new URLSearchParams({ ref });
     if (piReturn) q.set("pi_return", "1");

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import QrPayHeader from "@/components/qrpay/QrPayHeader";
 
@@ -12,8 +11,24 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, KeyRound, Plus, Copy, Check, Trash2, Activity, Zap, AlertTriangle, Code2, BookOpen, Sparkles,
+  KeyRound, Plus, Copy, Check, Trash2, Activity, Zap, AlertTriangle, Code2, BookOpen, Sparkles,
+  ListOrdered, Link2, ShieldCheck, Terminal,
 } from "lucide-react";
+import {
+  QR_PAY_API_BASE,
+  QR_PAY_SITE,
+  buildQrPayAiPrompt,
+  buildQrPayApiReference,
+  buildQrPayCurlSnippet,
+  buildQrPayEnvSnippet,
+  buildQrPayJsSnippet,
+  buildQrPayNodeSnippet,
+  buildQrPayPhpSnippet,
+  buildQrPayPythonSnippet,
+  buildQrPayQuickStart,
+  buildQrPayReactSnippet,
+  buildQrPayWebhookGuide,
+} from "@/lib/qrPayApiIntegrationKit";
 
 type ApiKey = {
   id: string; name: string; key_prefix: string; last4: string;
@@ -30,8 +45,6 @@ type LogRow = {
   id: string; endpoint: string; method: string; status_code: number;
   qr_pay_token: string | null; latency_ms: number | null; created_at: string;
 };
-
-const API_BASE = `https://araojncyittkahvvpdrn.supabase.co/functions/v1/qr-pay-api`;
 
 const CopyBtn = ({ text, label = "Copy" }: { text: string; label?: string }) => {
   const [copied, setCopied] = useState(false);
@@ -51,7 +64,7 @@ const CopyBtn = ({ text, label = "Copy" }: { text: string; label?: string }) => 
 
 const CodeBlock = ({ code, lang }: { code: string; lang?: string }) => (
   <div className="relative group">
-    <pre className="text-xs bg-slate-950 text-slate-100 rounded-lg p-4 overflow-x-auto max-h-[420px]">
+    <pre className="text-xs bg-slate-950 text-slate-100 rounded-lg p-4 overflow-x-auto max-h-[480px] whitespace-pre-wrap break-words">
       <code>{code}</code>
     </pre>
     <div className="absolute top-2 right-2 flex gap-2 items-center">
@@ -73,8 +86,19 @@ const Kpi = ({ icon: Icon, label, value, hint }: { icon: any; label: string; val
   </Card>
 );
 
+const Step = ({ n, title, body }: { n: number; title: string; body: string }) => (
+  <div className="flex gap-3 rounded-2xl border border-black/5 bg-white/70 p-4">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0070BA] text-sm font-bold text-white">
+      {n}
+    </div>
+    <div className="min-w-0">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{body}</p>
+    </div>
+  </div>
+);
+
 export default function QrPayApiDashboardPage() {
-  const nav = useNavigate();
   const { toast } = useToast();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [logs, setLogs] = useState<LogRow[]>([]);
@@ -84,17 +108,20 @@ export default function QrPayApiDashboardPage() {
   const [newKeyName, setNewKeyName] = useState("");
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [sampleToken, setSampleToken] = useState("QR_TOKEN");
 
   const load = async () => {
     setLoading(true);
-    const [{ data: k }, { data: l }, { data: s }] = await Promise.all([
+    const [{ data: k }, { data: l }, { data: s }, { data: pays }] = await Promise.all([
       supabase.from("qr_pay_api_keys").select("*").order("created_at", { ascending: false }),
       supabase.from("qr_pay_api_logs").select("id, endpoint, method, status_code, qr_pay_token, latency_ms, created_at").order("created_at", { ascending: false }).limit(30),
       supabase.rpc("qr_pay_api_stats"),
+      (supabase as any).from("qr_payments").select("token").order("created_at", { ascending: false }).limit(1),
     ]);
     setKeys((k as ApiKey[]) || []);
     setLogs((l as LogRow[]) || []);
     setStats((s as Stats) || null);
+    if (Array.isArray(pays) && pays[0]?.token) setSampleToken(String(pays[0].token));
     setLoading(false);
   };
 
@@ -120,106 +147,41 @@ export default function QrPayApiDashboardPage() {
     load();
   };
 
-  const sampleKey = useMemo(() => newSecret || (keys[0] ? `${keys[0].key_prefix}_••••••••${keys[0].last4}` : "qpk_live_YOUR_KEY"), [newSecret, keys]);
-
-  const snippets = {
-    curl: `curl -X GET "${API_BASE}/qr/QR_TOKEN" \\
-  -H "x-api-key: ${sampleKey}"`,
-    js: `// Fetch QR Pay info (works in any frontend)
-const res = await fetch("${API_BASE}/qr/QR_TOKEN", {
-  headers: { "x-api-key": "${sampleKey}" }
-});
-const data = await res.json();
-console.log(data.qr_pay, data.items);`,
-    node: `// Node.js / Next.js / Express
-import fetch from "node-fetch";
-
-export async function getQrPay(token) {
-  const r = await fetch("${API_BASE}/qr/" + token, {
-    headers: { "x-api-key": process.env.OPENPAY_QR_API_KEY }
-  });
-  if (!r.ok) throw new Error("OpenPay error " + r.status);
-  return r.json();
-}`,
-    python: `import requests, os
-
-def get_qr_pay(token):
-    r = requests.get(
-        f"${API_BASE}/qr/{token}",
-        headers={"x-api-key": os.environ["OPENPAY_QR_API_KEY"]},
-        timeout=10,
-    )
-    r.raise_for_status()
-    return r.json()`,
-    php: `<?php
-$ch = curl_init("${API_BASE}/qr/" . $token);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, ["x-api-key: " . getenv("OPENPAY_QR_API_KEY")]);
-$data = json_decode(curl_exec($ch), true);
-curl_close($ch);
-return $data;`,
-    checkout: `// Create a hosted checkout (Stripe/PayPal style)
-const res = await fetch("${API_BASE}/checkout-session", {
-  method: "POST",
-  headers: {
-    "x-api-key": "${sampleKey}",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    qr_pay_token: "QR_TOKEN",
-    customer_email: "buyer@example.com",
-    customer_name: "Jane Doe",
-    success_url: "https://yourshop.com/thank-you",
-    cancel_url: "https://yourshop.com/cart",
-  }),
-});
-const { checkout_url } = await res.json();
-window.location.href = checkout_url; // redirect like Stripe Checkout`,
-    react: `import { useEffect, useState } from "react";
-
-export function OpenPayButton({ token }) {
-  const [qr, setQr] = useState(null);
-  useEffect(() => {
-    fetch("${API_BASE}/qr/" + token, {
-      headers: { "x-api-key": import.meta.env.VITE_OPENPAY_QR_API_KEY }
-    }).then(r => r.json()).then(d => setQr(d.qr_pay));
-  }, [token]);
-
-  if (!qr) return <button disabled>Loading…</button>;
-  return (
-    <a href={"https://openpay.lovable.app/qr-pay/" + token}
-       className="bg-[#0070BA] text-white px-5 py-3 rounded-lg font-semibold">
-      Pay {qr.currency} {qr.amount} with OpenPay
-    </a>
+  const sampleKey = useMemo(
+    () => newSecret || (keys[0] ? `${keys[0].key_prefix}_••••••••${keys[0].last4}` : "qpk_live_YOUR_API_KEY"),
+    [newSecret, keys],
   );
-}`,
-    aiPrompt: `Integrate OpenPay QR Pay into my app.
 
-API base: ${API_BASE}
-Auth: header "x-api-key: ${sampleKey}"
+  const kitOpts = useMemo(
+    () => ({
+      site: QR_PAY_SITE,
+      apiBase: QR_PAY_API_BASE,
+      apiKey: sampleKey,
+      qrToken: sampleToken,
+    }),
+    [sampleKey, sampleToken],
+  );
 
-Endpoints:
-- GET  /qr/{token}                    → returns { qr_pay, items }
-- GET  /qr                            → list my QR payments
-- POST /checkout-session              → body { qr_pay_token, customer_email, customer_name, success_url, cancel_url } returns { checkout_url }
-- GET  /transactions                  → list my paid transactions
-- GET  /transactions/{id}             → verify one transaction
-
-Build a React component called <OpenPayCheckout token="..." /> that:
-1. Fetches /qr/{token} on mount
-2. Renders product title, price (currency + amount) and items
-3. On click, calls POST /checkout-session and redirects to checkout_url
-4. Stores the api key in VITE_OPENPAY_QR_API_KEY env var (never hardcode)
-
-Style it with Tailwind, primary color #0070BA (PayPal blue). Include error + loading states.`,
-  };
+  const snippets = useMemo(() => ({
+    ai: buildQrPayAiPrompt(kitOpts),
+    quick: buildQrPayQuickStart(kitOpts),
+    ref: buildQrPayApiReference(kitOpts),
+    webhook: buildQrPayWebhookGuide(kitOpts),
+    env: buildQrPayEnvSnippet(kitOpts),
+    curl: buildQrPayCurlSnippet(kitOpts),
+    js: buildQrPayJsSnippet(kitOpts),
+    node: buildQrPayNodeSnippet(kitOpts),
+    react: buildQrPayReactSnippet(kitOpts),
+    python: buildQrPayPythonSnippet(kitOpts),
+    php: buildQrPayPhpSnippet(kitOpts),
+  }), [kitOpts]);
 
   return (
     <div className="min-h-screen qrp-page-bg pb-24">
       <QrPayHeader
         eyebrow="OpenPay · Developers"
         title="QR Pay API"
-        subtitle="Smart-contract style API to let Stripe, PayPal, Instapay or any app read & pay your QR codes."
+        subtitle="Copy-paste kit so any app (or AI) can connect OpenPay QR Pay in minutes — beginners welcome."
         icon={Code2}
         backTo="/qr-pay"
         backLabel="Back to QR Pay"
@@ -230,15 +192,41 @@ Style it with Tailwind, primary color #0070BA (PayPal blue). Include error + loa
         }
       />
 
-
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Kpi icon={KeyRound} label="Active keys" value={stats?.active_keys ?? "—"} hint={`${stats?.total_keys ?? 0} total`} />
           <Kpi icon={Activity} label="Calls 24h" value={stats?.calls_24h ?? "—"} hint={`${stats?.calls_7d ?? 0} this week`} />
           <Kpi icon={Zap} label="Avg latency" value={`${stats?.avg_latency_ms ?? 0} ms`} />
           <Kpi icon={AlertTriangle} label="Error rate" value={`${stats?.error_rate ?? 0}%`} />
         </div>
+
+        {/* Beginner steps */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <ListOrdered className="h-5 w-5" /> Easy setup — 4 steps
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              No OAuth client id needed for QR Pay. Only an API key + a QR token.
+            </p>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-2">
+            <Step n={1} title="Create a QR Pay link" body="QR Pay → New → copy the token from /qr-pay/YOUR_TOKEN" />
+            <Step n={2} title="Create an API key here" body="Click + New API key. Copy qpk_live_… once — treat it like a password." />
+            <Step n={3} title="Paste into your AI or code" body="Use the AI prompt tab below in Lovable, Cursor, Claude, or ChatGPT." />
+            <Step n={4} title="Verify with callbacks" body="Pass success_url on checkout-session, then GET /transactions/by-ref/{ref}." />
+            <div className="md:col-span-2 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs">
+              <Label className="shrink-0">Sample QR token</Label>
+              <Input
+                className="h-9 max-w-xs font-mono text-xs"
+                value={sampleToken}
+                onChange={(e) => setSampleToken(e.target.value.trim() || "QR_TOKEN")}
+                placeholder="Paste a QR token"
+              />
+              <span className="text-muted-foreground">Snippets below auto-fill this token + your key preview.</span>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Keys */}
         <Card>
@@ -281,44 +269,53 @@ Style it with Tailwind, primary color #0070BA (PayPal blue). Include error + loa
           </CardContent>
         </Card>
 
-        {/* Integration */}
+        {/* Integration kit */}
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground flex items-center gap-2">
-              <BookOpen className="h-5 w-5" /> Integration — copy &amp; paste
+              <BookOpen className="h-5 w-5" /> Integration kit — copy &amp; paste
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Drop these into Lovable, Cursor, Bolt, Claude, ChatGPT or any codebase. Replace <code>QR_TOKEN</code> with one of your QR Pay tokens.
+              Drop into Lovable, Cursor, Bolt, Claude, ChatGPT, or any codebase. Auth header: <code>x-api-key</code>.
             </p>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="ai">
-              <TabsList className="flex-wrap h-auto">
+              <TabsList className="flex-wrap h-auto gap-1">
                 <TabsTrigger value="ai"><Sparkles className="h-3.5 w-3.5 mr-1" />AI prompt</TabsTrigger>
+                <TabsTrigger value="quick">Quick start</TabsTrigger>
+                <TabsTrigger value="env">.env</TabsTrigger>
                 <TabsTrigger value="curl">cURL</TabsTrigger>
                 <TabsTrigger value="js">JavaScript</TabsTrigger>
-                <TabsTrigger value="node">Node</TabsTrigger>
+                <TabsTrigger value="node">Node proxy</TabsTrigger>
                 <TabsTrigger value="react">React</TabsTrigger>
-                <TabsTrigger value="checkout">Checkout</TabsTrigger>
                 <TabsTrigger value="python">Python</TabsTrigger>
                 <TabsTrigger value="php">PHP</TabsTrigger>
+                <TabsTrigger value="callback"><Link2 className="h-3.5 w-3.5 mr-1" />Callbacks</TabsTrigger>
+                <TabsTrigger value="ref"><Terminal className="h-3.5 w-3.5 mr-1" />Full docs</TabsTrigger>
               </TabsList>
+
               <TabsContent value="ai" className="space-y-2">
-                <p className="text-xs text-muted-foreground">Paste this prompt into Lovable / Cursor / Claude and it will scaffold the integration for you:</p>
-                <CodeBlock code={snippets.aiPrompt} lang="prompt" />
+                <p className="text-xs text-muted-foreground">
+                  Paste this entire prompt into Lovable / Cursor / Claude / ChatGPT — it scaffolds checkout + verify.
+                </p>
+                <CodeBlock code={snippets.ai} lang="prompt" />
               </TabsContent>
+              <TabsContent value="quick"><CodeBlock code={snippets.quick} lang="md" /></TabsContent>
+              <TabsContent value="env"><CodeBlock code={snippets.env} lang="env" /></TabsContent>
               <TabsContent value="curl"><CodeBlock code={snippets.curl} lang="bash" /></TabsContent>
               <TabsContent value="js"><CodeBlock code={snippets.js} lang="js" /></TabsContent>
-              <TabsContent value="node"><CodeBlock code={snippets.node} lang="ts" /></TabsContent>
+              <TabsContent value="node"><CodeBlock code={snippets.node} lang="js" /></TabsContent>
               <TabsContent value="react"><CodeBlock code={snippets.react} lang="tsx" /></TabsContent>
-              <TabsContent value="checkout"><CodeBlock code={snippets.checkout} lang="js" /></TabsContent>
               <TabsContent value="python"><CodeBlock code={snippets.python} lang="py" /></TabsContent>
               <TabsContent value="php"><CodeBlock code={snippets.php} lang="php" /></TabsContent>
+              <TabsContent value="callback"><CodeBlock code={snippets.webhook} lang="md" /></TabsContent>
+              <TabsContent value="ref"><CodeBlock code={snippets.ref} lang="md" /></TabsContent>
             </Tabs>
           </CardContent>
         </Card>
 
-        {/* Endpoints reference */}
+        {/* Endpoints */}
         <Card>
           <CardHeader><CardTitle className="text-foreground">Endpoints</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -327,9 +324,10 @@ Style it with Tailwind, primary color #0070BA (PayPal blue). Include error + loa
               ["GET", "/qr", "List your QR payments"],
               ["GET", "/qr/{token}", "Read one QR pay + line items"],
               ["GET", "/qr/{token}/checkout-url", "Hosted checkout URL"],
-              ["POST", "/checkout-session", "Create a checkout session (Stripe-style)"],
+              ["POST", "/checkout-session", "Create checkout session (success_url / cancel_url)"],
               ["GET", "/transactions", "List your QR Pay transactions"],
-              ["GET", "/transactions/{id}", "Verify a transaction"],
+              ["GET", "/transactions/{id}", "Verify by transaction UUID"],
+              ["GET", "/transactions/by-ref/{ref}", "Verify by QRP-… reference"],
             ].map(([m, p, d]) => (
               <div key={p} className="flex items-center gap-3 py-1 border-b last:border-0">
                 <Badge className={m === "GET" ? "bg-blue-100 text-blue-700 hover:bg-blue-100" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"}>{m}</Badge>
@@ -337,8 +335,13 @@ Style it with Tailwind, primary color #0070BA (PayPal blue). Include error + loa
                 <span className="text-muted-foreground text-xs">{d}</span>
               </div>
             ))}
-            <div className="mt-3 text-xs text-muted-foreground">
-              Base URL: <code className="text-foreground">{API_BASE}</code>
+            <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+              <div>Base URL: <code className="text-foreground">{QR_PAY_API_BASE}</code></div>
+              <div>Hosted checkout: <code className="text-foreground">{QR_PAY_SITE}/qr-pay/{"{token}"}</code></div>
+              <div className="flex items-center gap-1.5 pt-1">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                QR Pay uses API key only. Partner OAuth client_id is optional (only for Sign in with OpenPay).
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -371,17 +374,17 @@ Style it with Tailwind, primary color #0070BA (PayPal blue). Include error + loa
 
         <Card className="border-blue-200 bg-blue-50/50">
           <CardContent className="p-4 text-sm text-foreground">
-            <p className="font-semibold mb-1">🛡️ Security notes</p>
+            <p className="font-semibold mb-1">Security notes</p>
             <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-              <li>Treat keys like passwords — never commit them. Use <code>.env</code> / server-side only.</li>
+              <li>Treat keys like passwords — never commit them. Prefer a server/Node proxy.</li>
               <li>Each key is scoped to <strong>your</strong> QR payments only. Revoke anytime.</li>
-              <li>All requests are logged for auditing. CORS is enabled.</li>
+              <li>Always verify payments with <code>/transactions/by-ref/{"{ref}"}</code> before fulfilling orders.</li>
+              <li>Need Sign in with OpenPay? Use Partner API client id at <code>/partner-api</code> — not required for QR checkout.</li>
             </ul>
           </CardContent>
         </Card>
       </div>
 
-      {/* Create key dialog */}
       <Dialog open={showCreate} onOpenChange={(o) => { setShowCreate(o); if (!o) setNewSecret(null); }}>
         <DialogContent>
           <DialogHeader>
@@ -402,7 +405,7 @@ Style it with Tailwind, primary color #0070BA (PayPal blue). Include error + loa
             <div className="space-y-3">
               <div>
                 <Label>Key name</Label>
-                <Input value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="My Shopify store" />
+                <Input value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="My Shopify store / Lovable app" />
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>

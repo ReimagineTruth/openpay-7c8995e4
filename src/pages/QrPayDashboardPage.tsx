@@ -19,6 +19,7 @@ import {
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import BottomNav from "@/components/BottomNav";
+import { openOpenLedger } from "@/lib/openLedger";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 interface QrPay {
@@ -665,6 +666,17 @@ export default function QrPayDashboardPage() {
                             }}
                           >
                             <Copy className="mr-1 h-3.5 w-3.5" /> Copy order ID
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 rounded-full text-[13px] text-[#0070BA] border-[#0070BA]/30"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openOpenLedger({ externalRef: t.transaction_ref });
+                            }}
+                          >
+                            <ExternalLink className="mr-1 h-3.5 w-3.5" /> OpenLedger
                           </Button>
                         </div>
                       </div>

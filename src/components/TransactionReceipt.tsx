@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2, Download, ExternalLink, X } from "lucide-react
 import { format } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { playUiSound } from "@/lib/appSounds";
+import { openOpenLedger } from "@/lib/openLedger";
 
 const OPENPAY_LOGO = "/openpay-logo.jpg";
 
@@ -25,6 +26,8 @@ const PROVIDER_LOGOS: Record<string, string> = {
 interface ReceiptData {
   transactionId: string;
   ledgerTransactionId?: string;
+  /** OpenLedger external_ref (e.g. QRP-… order id) when not a UUID */
+  externalRef?: string;
   type: "send" | "receive" | "topup";
   amount: number;
   platformFee?: number;
@@ -33,6 +36,8 @@ interface ReceiptData {
   otherPartyAvatar?: string;
   note?: string;
   date: Date;
+  /** OpenLedger hash when already synced */
+  ledgerHash?: string;
   provider?: string;
 }
 
@@ -64,7 +69,8 @@ const toPreviewText = (value: string, max = 60) => {
 const shortenTransactionId = (transactionId: string) =>
   transactionId.length > 18 ? `${transactionId.slice(0, 10)}...${transactionId.slice(-6)}` : transactionId;
 
-const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+const isUuid = (value: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptProps) => {
   const { format: formatCurrency } = useCurrency();
@@ -77,8 +83,12 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
   const ledgerTransactionId = isUuid(receipt.ledgerTransactionId || "")
     ? String(receipt.ledgerTransactionId)
     : isUuid(receipt.transactionId)
-      ? receipt.transactionId
-      : "";
+    ? receipt.transactionId
+    : "";
+  const ledgerExternalRef =
+    receipt.externalRef ||
+    (!isUuid(receipt.transactionId) ? receipt.transactionId : "") ||
+    "";
 
   const handleSave = async () => {
     const canvas = document.createElement("canvas");
@@ -222,7 +232,12 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
   };
 
   const openLedgerTransaction = () => {
+    if (ledgerExternalRef) {
+      openOpenLedger({ externalRef: ledgerExternalRef, ledgerHash: receipt.ledgerHash });
+      return;
+    }
     if (!ledgerTransactionId) return;
+    // Legacy in-app OpenPay ledger for UUID txs
     const txId = encodeURIComponent(ledgerTransactionId);
     window.location.assign(`/ledger?tx=${txId}`);
   };
@@ -353,7 +368,7 @@ const TransactionReceipt = ({ open, onOpenChange, receipt }: TransactionReceiptP
 
           {/* Actions */}
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            {!!ledgerTransactionId && (
+            {(!!ledgerTransactionId || !!ledgerExternalRef) && (
               <Button
                 variant="outline"
                 onClick={openLedgerTransaction}

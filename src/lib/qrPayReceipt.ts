@@ -1,4 +1,5 @@
 // Lightweight HTML receipt renderer + printable window for QR Pay
+import { openLedgerTxRefUrl } from "@/lib/openLedger";
 
 export interface QrPayReceiptData {
   transactionRef: string;
@@ -84,6 +85,7 @@ export function buildQrPayReceiptHtml(d: QrPayReceiptData): string {
     try { return date.toLocaleString(); } catch { return String(date); }
   })();
   const logoUrl = receiptLogoUrl();
+  const ledgerUrl = openLedgerTxRefUrl(d.transactionRef);
 
   const itemRows = d.items.map(it => `
     <tr>
@@ -103,6 +105,7 @@ export function buildQrPayReceiptHtml(d: QrPayReceiptData): string {
     .badge{display:inline-block;background:#0070ba;color:#fff;padding:4px 10px;border-radius:999px;font-size:12px}
     table{width:100%;border-collapse:collapse;margin-top:8px}
     .ref{font-family:ui-monospace,Menlo,monospace;background:#f3f4f6;padding:4px 8px;border-radius:6px;font-size:12px}
+    .ledger{display:inline-block;margin-top:12px;padding:10px 16px;border-radius:999px;background:#0070ba;color:#fff;text-decoration:none;font-size:13px;font-weight:600}
     @media print { body{margin:0} }
   </style></head><body>
   <div style="display:flex;align-items:center;gap:12px">
@@ -119,6 +122,10 @@ export function buildQrPayReceiptHtml(d: QrPayReceiptData): string {
     <div class="row"><span class="muted">Merchant</span><span>${escapeHtml(d.merchant.full_name || "")}${d.merchant.username ? ` <span class="muted">@${escapeHtml(d.merchant.username)}</span>` : ""}</span></div>
     ${d.payer?.name || d.payer?.username ? `<div class="row"><span class="muted">Payer</span><span>${escapeHtml(d.payer.name || "")}${d.payer.username ? ` <span class="muted">@${escapeHtml(d.payer.username)}</span>` : ""}</span></div>` : ""}
     ${d.payer?.email ? `<div class="row"><span class="muted">Email</span><span>${escapeHtml(d.payer.email)}</span></div>` : ""}
+    <div style="text-align:center">
+      <a class="ledger" href="${escapeHtml(ledgerUrl)}" target="_blank" rel="noopener">View on OpenLedger</a>
+      <div class="muted" style="margin-top:8px;word-break:break-all">${escapeHtml(ledgerUrl)}</div>
+    </div>
   </div>
   <div class="card">
     ${d.title ? `<div style="font-weight:600;margin-bottom:4px">${escapeHtml(d.title)}</div>` : ""}

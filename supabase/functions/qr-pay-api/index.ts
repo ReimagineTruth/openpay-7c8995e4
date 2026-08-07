@@ -1,6 +1,8 @@
-// QR Pay Public API — for third-party integrations (Stripe / PayPal / Instapay style).
+// QR Pay Public API — for third-party integrations (Stripe / PayPal style).
 // Authenticated via x-api-key header (qpk_live_... key issued from /qr-pay/api dashboard).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SITE = Deno.env.get("OPENPAY_PUBLIC_SITE_URL") || "https://openpy.space";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +22,23 @@ const sha256Hex = async (input: string) => {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 };
 
+const hostedCheckoutUrl = (
+  token: string,
+  opts?: {
+    email?: string;
+    name?: string;
+    success_url?: string;
+    cancel_url?: string;
+  },
+) => {
+  const u = new URL(`${SITE}/qr-pay/${encodeURIComponent(token)}`);
+  if (opts?.email) u.searchParams.set("email", opts.email);
+  if (opts?.name) u.searchParams.set("name", opts.name);
+  if (opts?.success_url) u.searchParams.set("success_url", opts.success_url);
+  if (opts?.cancel_url) u.searchParams.set("cancel_url", opts.cancel_url);
+  return u.toString();
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -35,15 +54,18 @@ Deno.serve(async (req: Request) => {
     return json({
       status: "ok",
       service: "qr-pay-api",
-      version: "1.0.0",
-      docs: `${url.origin.replace(/\.supabase\.co.*$/, "")}/qr-pay/api`,
+      version: "1.1.0",
+      docs: `${SITE}/qr-pay/api`,
+      site: SITE,
       endpoints: [
         "GET  /health",
-        "GET  /qr/:token            — read QR pay info (price, items, merchant)",
-        "GET  /qr/:token/checkout-url — get hosted checkout URL",
-        "POST /checkout-session     — create a checkout session",
-        "GET  /transactions         — list your QR Pay transactions",
-        "GET  /transactions/:id     — verify a single transaction",
+        "GET  /qr",
+        "GET  /qr/:token",
+        "GET  /qr/:token/checkout-url",
+        "POST /checkout-session",
+        "GET  /transactions",
+        "GET  /transactions/:id",
+        "GET  /transactions/by-ref/:transaction_ref",
       ],
       timestamp: new Date().toISOString(),
     });
@@ -90,48 +112,108 @@ Deno.serve(async (req: Request) => {
       const token = segs[1];
       const { data: qr } = await supabase
         .from("qr_payments")
-        .select("id, user_id, token, title, description, amount, currency, type, status, image_url, is_public, created_at")
+        .select(
+          "id, merchant_user_id, token, title, description, total, subtotal, currency, payment_type, status, cover_image_url, reusable, allow_custom_amount, min_amount, suggested_amount, created_at",
+        )
         .eq("token", token)
-        .eq("user_id", key.user_id)
+        .eq("merchant_user_id", key.user_id)
         .maybeSingle();
-      if (!qr) { await log(404, token); return json({ error: "QR payment not found" }, 404); }
+      if (!qr) {
+        await log(404, token);
+        return json({ error: "QR payment not found" }, 404);
+      }
       const { data: items } = await supabase
         .from("qr_payment_items")
-        .select("id, name, description, price, quantity, image_url")
-        .eq("qr_payment_id", qr.id);
+        .select("id, name, description, unit_price, quantity, line_total, image_url")
+        .eq("qr_payment_id", qr.id)
+        .order("position", { ascending: true });
+
+      const shaped = {
+        ...qr,
+        amount: qr.total,
+        type: qr.payment_type,
+        image_url: qr.cover_image_url,
+        user_id: qr.merchant_user_id,
+      };
 
       if (segs[2] === "checkout-url") {
         await log(200, token);
-        return json({ token, checkout_url: `${url.origin.replace(/araojncyittkahvvpdrn\.supabase\.co.*/, "")}/qr-pay/${token}` });
+        return json({ token, checkout_url: hostedCheckoutUrl(token) });
       }
       await log(200, token);
-      return json({ qr_pay: qr, items: items || [] });
+      return json({
+        qr_pay: shaped,
+        items: (items || []).map((it: any) => ({
+          ...it,
+          price: it.unit_price,
+        })),
+      });
     }
 
     // POST /checkout-session
     if (segs[0] === "checkout-session" && req.method === "POST") {
       const body = await req.json().catch(() => ({}));
       const { qr_pay_token, customer_email, customer_name, success_url, cancel_url } = body || {};
-      if (!qr_pay_token) { await log(400); return json({ error: "qr_pay_token required" }, 400); }
+      if (!qr_pay_token) {
+        await log(400);
+        return json({ error: "qr_pay_token required" }, 400);
+      }
       const { data: qr } = await supabase
         .from("qr_payments")
-        .select("id, user_id, token, amount, currency, title")
+        .select("id, merchant_user_id, token, total, currency, title, status")
         .eq("token", qr_pay_token)
-        .eq("user_id", key.user_id)
+        .eq("merchant_user_id", key.user_id)
         .maybeSingle();
-      if (!qr) { await log(404, qr_pay_token); return json({ error: "QR payment not found" }, 404); }
-      const checkoutUrl = `https://openpay.lovable.app/qr-pay/${qr_pay_token}` +
-        `?email=${encodeURIComponent(customer_email || "")}` +
-        `&name=${encodeURIComponent(customer_name || "")}` +
-        (success_url ? `&success_url=${encodeURIComponent(success_url)}` : "") +
-        (cancel_url ? `&cancel_url=${encodeURIComponent(cancel_url)}` : "");
+      if (!qr) {
+        await log(404, qr_pay_token);
+        return json({ error: "QR payment not found" }, 404);
+      }
+      if (qr.status !== "active") {
+        await log(400, qr_pay_token);
+        return json({ error: "QR payment is not active" }, 400);
+      }
+
+      const checkoutUrl = hostedCheckoutUrl(String(qr_pay_token), {
+        email: customer_email ? String(customer_email) : undefined,
+        name: customer_name ? String(customer_name) : undefined,
+        success_url: success_url ? String(success_url) : undefined,
+        cancel_url: cancel_url ? String(cancel_url) : undefined,
+      });
       await log(200, qr_pay_token, { customer_email });
       return json({
         id: crypto.randomUUID(),
         qr_pay_token,
-        amount: qr.amount, currency: qr.currency, title: qr.title,
+        amount: qr.total,
+        currency: qr.currency,
+        title: qr.title,
         checkout_url: checkoutUrl,
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      });
+    }
+
+    // GET /transactions/by-ref/:ref
+    if (segs[0] === "transactions" && segs[1] === "by-ref" && segs[2] && req.method === "GET") {
+      const ref = decodeURIComponent(segs[2]);
+      const { data: tx } = await supabase
+        .from("qr_payment_transactions")
+        .select(
+          "id, qr_payment_id, amount, currency, status, method, payer_email, payer_name, transaction_ref, paid_at, created_at",
+        )
+        .eq("merchant_user_id", key.user_id)
+        .eq("transaction_ref", ref)
+        .maybeSingle();
+      if (!tx) {
+        await log(404);
+        return json({ error: "Transaction not found" }, 404);
+      }
+      await log(200);
+      return json({
+        transaction: {
+          ...tx,
+          payment_method: tx.method,
+          customer_email: tx.payer_email,
+          customer_name: tx.payer_name,
+        },
       });
     }
 
@@ -140,12 +222,22 @@ Deno.serve(async (req: Request) => {
       const limit = Math.min(Number(url.searchParams.get("limit") || "50"), 100);
       const { data: txs } = await supabase
         .from("qr_payment_transactions")
-        .select("id, qr_payment_id, amount, currency, status, payment_method, customer_email, customer_name, created_at")
+        .select(
+          "id, qr_payment_id, amount, currency, status, method, payer_email, payer_name, transaction_ref, paid_at, created_at",
+        )
         .eq("merchant_user_id", key.user_id)
         .order("created_at", { ascending: false })
         .limit(limit);
       await log(200);
-      return json({ transactions: txs || [], count: txs?.length || 0 });
+      return json({
+        transactions: (txs || []).map((t: any) => ({
+          ...t,
+          payment_method: t.method,
+          customer_email: t.payer_email,
+          customer_name: t.payer_name,
+        })),
+        count: txs?.length || 0,
+      });
     }
 
     // GET /transactions/:id
@@ -156,21 +248,38 @@ Deno.serve(async (req: Request) => {
         .eq("id", segs[1])
         .eq("merchant_user_id", key.user_id)
         .maybeSingle();
-      if (!tx) { await log(404); return json({ error: "Transaction not found" }, 404); }
+      if (!tx) {
+        await log(404);
+        return json({ error: "Transaction not found" }, 404);
+      }
       await log(200);
-      return json({ transaction: tx });
+      return json({
+        transaction: {
+          ...tx,
+          payment_method: tx.method,
+          customer_email: tx.payer_email,
+          customer_name: tx.payer_name,
+        },
+      });
     }
 
     // GET /qr (list)
     if (segs[0] === "qr" && segs.length === 1 && req.method === "GET") {
       const { data: list } = await supabase
         .from("qr_payments")
-        .select("id, token, title, amount, currency, type, status, created_at")
-        .eq("user_id", key.user_id)
+        .select("id, token, title, total, currency, payment_type, status, created_at")
+        .eq("merchant_user_id", key.user_id)
         .order("created_at", { ascending: false })
         .limit(100);
       await log(200);
-      return json({ qr_payments: list || [], count: list?.length || 0 });
+      return json({
+        qr_payments: (list || []).map((q: any) => ({
+          ...q,
+          amount: q.total,
+          type: q.payment_type,
+        })),
+        count: list?.length || 0,
+      });
     }
 
     await log(404);

@@ -8,6 +8,7 @@ import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import { downloadQrPayReceipt, printQrPayReceipt, type QrPayReceiptData } from "@/lib/qrPayReceipt";
 import BrandLogo from "@/components/BrandLogo";
 import { sendQrPayReceiptEmail } from "@/lib/qrPayEmailReceipt";
+import { openLedgerTxRefUrl, openOpenLedger } from "@/lib/openLedger";
 
 interface ReceiptExtras {
   after_payment_action?: "receipt" | "download" | "redirect";
@@ -206,6 +207,17 @@ export default function QrPaySuccessPage() {
               </div>
             )}
 
+            {ref && (
+              <Button
+                variant="outline"
+                className="w-full h-11 rounded-[12px] border-[#0070BA]/30 text-[#0070BA] gap-2"
+                onClick={() => openOpenLedger({ externalRef: ref })}
+              >
+                <ExternalLink className="h-4 w-4" />
+                View on OpenLedger
+              </Button>
+            )}
+
             <Button className="qrp-primary-btn w-full gap-2" onClick={() => navigate("/dashboard")}>
               <BrandLogo variant="white" animate={false} className="h-5 w-5" />
               Done
@@ -213,6 +225,16 @@ export default function QrPaySuccessPage() {
             <Button variant="ghost" className="w-full rounded-xl text-[var(--qrp-muted)] hover:bg-black/[0.04]" onClick={() => navigate("/dashboard")}>
               <Home className="mr-1 h-4 w-4" />Back to OpenPay
             </Button>
+            <p className="text-center text-[11px] text-[var(--qrp-muted)]">
+              <a
+                href={openLedgerTxRefUrl(ref || "unknown")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline-offset-2 hover:underline"
+              >
+                {openLedgerTxRefUrl(ref || "…")}
+              </a>
+            </p>
           </div>
         </div>
 

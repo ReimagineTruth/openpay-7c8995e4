@@ -116,31 +116,62 @@ Deno.serve(async (req) => {
       if (cursor) rows = rows.filter((r) => String(r.occurred_at) < cursor);
       if (since) rows = rows.filter((r) => String(r.occurred_at) >= since);
 
-      const shaped = rows.map((r) => ({
-        id: r.id,
-        source_table: r.source_table,
-        event_type: r.event_type,
-        category: r.category,
-        amount: r.amount,
-        currency_code: r.currency_code,
-        status: r.status,
-        note: r.note,
-        sender: {
-          name: r.sender_name || null,
-          username: r.sender_username || null,
-          avatar: r.sender_avatar || null,
-        },
-        receiver: {
-          name: r.receiver_name || null,
-          username: r.receiver_username || null,
-          avatar: r.receiver_avatar || null,
-        },
-        sender_amount: r.sender_amount,
-        sender_currency_code: r.sender_currency_code,
-        receiver_amount: r.receiver_amount,
-        receiver_currency_code: r.receiver_currency_code,
-        occurred_at: r.occurred_at,
-      }));
+      const shaped = rows.map((r) => {
+        const payload = (r.payload && typeof r.payload === 'object') ? r.payload as Record<string, unknown> : {};
+        const externalRef =
+          String(payload.transaction_ref || payload.order_id || payload.external_ref || r.id || '');
+        const currency =
+          String(payload.currency || payload.currency_code || r.currency_code || 'OUSD').toUpperCase();
+        const fromUser = r.sender_username ? `@${r.sender_username}` : (r.sender_name || null);
+        const toUser = r.receiver_username ? `@${r.receiver_username}` : (r.receiver_name || null);
+        const isQr = String(r.source_table || '') === 'qr_payment_transactions' ||
+          String(r.event_type || '').startsWith('qr_pay_');
+        return {
+          // OpenLedger pull-model: stable id → external_ref for /tx/ref/{id}
+          id: externalRef || r.id,
+          external_ref: externalRef || r.id,
+          source: 'openpay',
+          type: isQr ? 'merchant_payment' : 'payment',
+          from_address: fromUser,
+          to_address: toUser,
+          amount: r.amount,
+          currency,
+          network_fee: 0,
+          status: String(r.status || 'completed') === 'succeeded' ? 'confirmed' : (r.status || 'confirmed'),
+          merchant_id: payload.token || payload.merchant_id || null,
+          timestamp: r.occurred_at,
+          created_at: r.occurred_at,
+          metadata: {
+            ...payload,
+            event_type: r.event_type,
+            source_table: r.source_table,
+            category: r.category,
+            note: r.note,
+            openpay_ledger_event_id: r.id,
+          },
+          // Keep original OpenPay fields for dashboards
+          source_table: r.source_table,
+          event_type: r.event_type,
+          category: r.category,
+          currency_code: currency,
+          note: r.note,
+          sender: {
+            name: r.sender_name || null,
+            username: r.sender_username || null,
+            avatar: r.sender_avatar || null,
+          },
+          receiver: {
+            name: r.receiver_name || null,
+            username: r.receiver_username || null,
+            avatar: r.receiver_avatar || null,
+          },
+          sender_amount: r.sender_amount,
+          sender_currency_code: r.sender_currency_code,
+          receiver_amount: r.receiver_amount,
+          receiver_currency_code: r.receiver_currency_code,
+          occurred_at: r.occurred_at,
+        };
+      });
 
       const next_cursor = shaped.length === limit ? String(shaped[shaped.length - 1].occurred_at) : null;
       const next_offset = shaped.length === limit ? offset + limit : null;

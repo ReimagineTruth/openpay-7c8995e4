@@ -2,6 +2,7 @@ import { ExternalLink, CheckCircle2 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { openOpenLedger } from "@/lib/openLedger";
 
 export type AiReceiptData = {
   transactionId: string;
@@ -108,8 +109,13 @@ const AiTransferReceipt = ({ receipt }: Props) => {
           <Button
             type="button"
             className="h-10 flex-1 rounded-xl bg-paypal-blue text-white hover:bg-[#004dc5]"
-            disabled={!ledgerReady}
-            onClick={() => navigate(`/ledger?tx=${encodeURIComponent(receipt.transactionId)}`)}
+            onClick={() => {
+              if (ledgerReady) {
+                navigate(`/ledger?tx=${encodeURIComponent(receipt.transactionId)}`);
+                return;
+              }
+              openOpenLedger({ externalRef: receipt.transactionId });
+            }}
           >
             <ExternalLink className="mr-2 h-4 w-4" />
             View on OpenLedger
