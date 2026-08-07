@@ -48,8 +48,23 @@ const TopUp = () => {
   const parsedAmount = Number(amount);
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
   const piPrice = usePiUsdPrice();
-  const piAmount = piAmountForOusd(safeAmount, piPrice.price);
+  const parsedPiSpend = Number(piSpend);
+  const safePiSpend = Number.isFinite(parsedPiSpend) && parsedPiSpend > 0 ? parsedPiSpend : 0;
+  const meetsPiMinimum = safePiSpend >= 1;
+  const piAmount = safePiSpend > 0 ? safePiSpend : piAmountForOusd(safeAmount, piPrice.price);
   const piMemo = buildPiTopupMemo(safeAmount, piAmount, piPrice.price);
+  const livePiPriceLabel = piPrice.price >= 0.01 ? piPrice.price.toFixed(4) : piPrice.price.toPrecision(4);
+
+  const applyPiSpend = (value: string) => {
+    const clean = value.replace(/[^0-9.]/g, "");
+    setPiSpend(clean);
+    const parsed = Number(clean);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setAmount("");
+      return;
+    }
+    setAmount(ousdFromPiAmount(parsed, piPrice.price).toFixed(2));
+  };
 
   const linkAccountNumber = (searchParams.get("account_number") || "").trim().toUpperCase();
   const linkUsername = (searchParams.get("username") || "")
