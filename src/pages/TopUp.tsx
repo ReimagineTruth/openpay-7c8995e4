@@ -351,6 +351,10 @@ const TopUp = () => {
   };
 
   const handleTopUp = () => {
+    if (!meetsPiMinimum) {
+      toast.error("Minimum cash in is 1 PI");
+      return;
+    }
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       toast.error("Enter a valid amount");
       return;
@@ -377,161 +381,219 @@ const TopUp = () => {
 
   const topUpButtonLabel = loading
     ? "Processing Pi payment..."
-    : safeAmount > 0
+    : meetsPiMinimum
       ? "Pay with Pi"
-      : "Enter amount to top up";
+      : "Enter at least 1 PI";
 
   return (
-    <div className="min-h-screen bg-background px-4 pt-4">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/dashboard")}>
-          <ArrowLeft className="h-6 w-6 text-foreground" />
-        </button>
-        <h1 className="text-lg font-semibold text-paypal-dark">Top Up - Pi Payment</h1>
-        <img src={PI_PAYMENT_ICON_URL} alt="Pi Payment" className="ml-auto h-12 w-auto object-contain" />
-        <button
-          onClick={() => setShowInstructions(true)}
-          className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground"
-        >
-          <HelpCircle className="h-4 w-4" />
-          How it works
-        </button>
-      </div>
-
-      <div className="paypal-surface mt-8 rounded-3xl p-6">
-        <p className="text-center text-sm text-muted-foreground">You pay</p>
-        <p className="mt-1 text-center text-5xl font-bold text-foreground">
-          π{piAmount.toFixed(4)}
-        </p>
-        <p className="mt-2 text-center text-sm font-semibold text-foreground">
-          You receive: {safeAmount.toFixed(2)} OUSD
-        </p>
-        <p className="mt-1 text-center text-xs text-muted-foreground">
-          Live π price: ${piPrice.price >= 0.01 ? piPrice.price.toFixed(4) : piPrice.price.toPrecision(4)} / π
-          {piPrice.isFallback ? " (estimate)" : ""} · 1 OUSD = $1
-        </p>
-        {safeAmount > 0 && (
-          <p className="mx-auto mt-3 max-w-md break-words rounded-2xl border border-border bg-muted/40 px-3 py-2 text-center text-[11px] font-medium text-muted-foreground">
-            Memo: {piMemo}
-          </p>
-        )}
-
-        <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4 text-center">
-          <p className="text-xs text-muted-foreground">Enter amount to add - OPEN USD</p>
-          <div className="mt-3 flex justify-center">
-            <Input
-              type="number"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="h-12 w-full max-w-md rounded-full border border-border bg-white text-center text-base"
-              min="0.01"
-              step="0.01"
-            />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Live PI/USD via CoinGecko: 1 PI = ${piPrice.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} OPEN USD
-            {piPrice.isFallback ? " (estimate - live price unavailable)" : ""}. Your credit is
-            calculated with the live price at settlement time.
-          </p>
+    <div className="min-h-screen bg-background px-4 pb-16 pt-4">
+      <div className="mx-auto w-full max-w-2xl">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
+            <ArrowLeft className="h-6 w-6 text-foreground" />
+          </button>
+          <h1 className="text-lg font-bold text-foreground">Cash in with Pi</h1>
+          <button
+            onClick={() => setShowInstructions(true)}
+            className="ml-auto inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground"
+          >
+            <HelpCircle className="h-4 w-4" />
+            How it works
+          </button>
         </div>
 
-        {safeAmount > 0 && (
-          <div ref={piSectionRef} className="mt-5 rounded-2xl border border-border bg-blue-50 p-4">
-            <p className="text-center text-xs font-semibold text-muted-foreground">Pay with Pi Payment</p>
-            <div className="mt-3 flex justify-center">
-              <Button
-                onClick={handleTopUp}
-                disabled={loading || safeAmount <= 0}
-                className="h-12 w-full max-w-md rounded-full bg-paypal-blue text-base font-semibold text-white hover:bg-[#004dc5]"
+        {/* Hero — matches the dashboard section hero */}
+        <div className="dash-balance-wrap mt-4">
+          <DashboardSectionHero
+            badge="Buy OpenUSD"
+            badgeIcon={CircleDollarSign}
+            metricLabel="You get (OPEN USD)"
+            metricValue={safeAmount > 0 ? safeAmount.toFixed(2) : "0.00"}
+            metricSubtitle="Pi Payment"
+            showBrandLogo
+            trailing={
+              <span
+                className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm"
+                title={piPrice.isFallback ? "Estimated price (live feed unavailable)" : "Live CoinGecko PI/USD"}
               >
-                {!loading && safeAmount > 0 && (
-                  <img src={PI_PAYMENT_ICON_URL} alt="Pi Payment" className="mr-2 h-8 w-auto object-contain" />
-                )}
-                {topUpButtonLabel}
-              </Button>
+                PI ${livePiPriceLabel}
+                {piPrice.isFallback ? " (est.)" : ""}
+              </span>
+            }
+            action={{
+              label: "+ Confirm",
+              onClick: handleTopUp,
+              disabled: loading || !meetsPiMinimum,
+            }}
+            stats={[
+              { label: "You spend", value: `${piSpend || "0"} PI` },
+              { label: "Minimum", value: "1 PI" },
+              { label: "Rate", value: `1 PI = ${piPrice.price.toFixed(4)} OUSD` },
+            ]}
+          />
+        </div>
+
+        <div className="dash-panel mt-4 space-y-4">
+          {/* Payment method tile */}
+          <div className="dash-tile space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-foreground">Payment method</p>
+              <span className="text-xs font-bold text-paypal-blue">Pi Network</span>
+            </div>
+            <div className="dash-tile flex w-full items-center justify-between">
+              <span className="inline-flex items-center gap-2 text-sm font-bold text-foreground">
+                <img src={PI_PAYMENT_ICON_URL} alt="" className="h-6 w-auto object-contain" />
+                Pi Payment
+              </span>
+              <span className="text-xs font-semibold text-muted-foreground">Pi Browser</span>
             </div>
           </div>
-        )}
-        <p className="mt-3 text-center text-sm font-medium text-foreground">
-          Note: Pi payment completes in Pi Browser. If you are not in Pi Browser, generate a top-up link and open it there.
-        </p>
 
-        {paymentCompleted && (
-          <div className="mt-5 rounded-2xl border border-border bg-blue-50 p-4">
-            <TopUpAccountDetails providerName="Pi Payment" amount={safeAmount} submitLabel="Submit Pi Top Up Request" />
+          {/* Spend tile */}
+          <div className="dash-tile" ref={piSectionRef}>
+            <p className="text-sm text-muted-foreground">You spend (PI)</p>
+            <input
+              value={piSpend}
+              onChange={(e) => applyPiSpend(e.target.value)}
+              type="text"
+              inputMode="decimal"
+              placeholder="Min 1"
+              className="mt-1 h-10 w-full bg-transparent text-3xl font-bold text-foreground outline-none"
+            />
+            <p className="mt-1 text-xs font-medium text-muted-foreground">
+              1 PI = {piPrice.price.toFixed(4)} OPEN USD{piPrice.isFallback ? " (estimate)" : ""} · 1 OUSD = $1
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {["1", "5", "10", "25", "50", "100"].map((preset) => {
+                const isActive = piSpend === preset;
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => applyPiSpend(preset)}
+                    className={`ios-active rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                      isActive
+                        ? "bg-paypal-blue text-primary-foreground shadow-md shadow-paypal-blue/25"
+                        : "bg-muted text-foreground ring-1 ring-border/60"
+                    }`}
+                  >
+                    {preset} PI
+                  </button>
+                );
+              })}
+            </div>
+            {safePiSpend > 0 && !meetsPiMinimum && (
+              <p className="mt-2 text-xs font-semibold text-destructive">Minimum cash in is 1 PI.</p>
+            )}
           </div>
-        )}
 
-        <TopUpActionGrid
-          actions={[
-            {
-              label: "Pay with Pi",
-              onClick: () => {
-                piSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                handleTopUp();
-              },
-              icon: <CreditCard className="h-4 w-4" />,
-              disabled: loading || safeAmount <= 0,
-            },
-            {
-              label: "Generate Link",
-              onClick: createTopUpLink,
-              icon: <Link2 className="h-4 w-4" />,
-              disabled: safeAmount <= 0,
-            },
-            {
-              label: "Copy Link",
-              onClick: copyGeneratedTopUpLink,
-              icon: <Copy className="h-4 w-4" />,
-              disabled: !generatedTopUpLink,
-            },
-            {
-              label: "Open Link",
-              onClick: () => window.open(generatedTopUpLink, "_blank"),
-              icon: <ExternalLink className="h-4 w-4" />,
-              disabled: !generatedTopUpLink,
-            },
-            {
-              label: "Support Chat",
-              onClick: openSupportWidget,
-              icon: <LifeBuoy className="h-4 w-4" />,
-            },
-            {
-              label: "Telegram Support",
-              onClick: openTelegramSupport,
-              icon: <MessageCircle className="h-4 w-4" />,
-            },
-            {
-              label: "Top-Up History",
-              onClick: openTopUpHistory,
-              icon: <History className="h-4 w-4" />,
-            },
-            {
-              label: "Instructions",
-              onClick: () => setShowInstructions(true),
-              icon: <HelpCircle className="h-4 w-4" />,
-            },
-            {
-              label: "Regulatory",
-              onClick: () => setShowRegulatoryModal(true),
-              icon: <FileText className="h-4 w-4" />,
-            },
-          ]}
-        />
+          {/* Summary tile */}
+          <div className="dash-tile space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">You pay</span>
+              <span className="font-bold text-foreground">π{piAmount.toFixed(4)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">You receive</span>
+              <span className="font-bold text-foreground">{safeAmount.toFixed(2)} OUSD</span>
+            </div>
+            {safeAmount > 0 && (
+              <p className="break-words rounded-2xl bg-muted/50 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+                Memo: {piMemo}
+              </p>
+            )}
+            <Button
+              onClick={handleTopUp}
+              disabled={loading || !meetsPiMinimum}
+              className="mt-1 h-12 w-full rounded-full bg-paypal-blue text-base font-semibold text-white hover:bg-[#004dc5]"
+            >
+              {!loading && meetsPiMinimum && (
+                <img src={PI_PAYMENT_ICON_URL} alt="" className="mr-2 h-7 w-auto object-contain" />
+              )}
+              {topUpButtonLabel}
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Pi payment completes in Pi Browser. If you are not in Pi Browser, generate a top-up link and open it there.
+            </p>
+          </div>
 
-        {!!generatedTopUpLink && (
-          <p className="mt-2 break-all text-xs text-muted-foreground">{generatedTopUpLink}</p>
-        )}
+          {paymentCompleted && (
+            <div className="dash-tile">
+              <TopUpAccountDetails providerName="Pi Payment" amount={safeAmount} submitLabel="Submit Pi Top Up Request" />
+            </div>
+          )}
 
-        <Button
-          type="button"
-          className="mt-2 h-11 w-full rounded-2xl bg-paypal-blue text-white hover:bg-[#004dc5]"
-          onClick={() => navigate("/dashboard")}
-        >
-          Done
-        </Button>
+          <div className="dash-tile">
+            <TopUpActionGrid
+              actions={[
+                {
+                  label: "Pay with Pi",
+                  onClick: () => {
+                    piSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    handleTopUp();
+                  },
+                  icon: <CreditCard className="h-4 w-4" />,
+                  disabled: loading || !meetsPiMinimum,
+                },
+                {
+                  label: "Generate Link",
+                  onClick: createTopUpLink,
+                  icon: <Link2 className="h-4 w-4" />,
+                  disabled: safeAmount <= 0,
+                },
+                {
+                  label: "Copy Link",
+                  onClick: copyGeneratedTopUpLink,
+                  icon: <Copy className="h-4 w-4" />,
+                  disabled: !generatedTopUpLink,
+                },
+                {
+                  label: "Open Link",
+                  onClick: () => window.open(generatedTopUpLink, "_blank"),
+                  icon: <ExternalLink className="h-4 w-4" />,
+                  disabled: !generatedTopUpLink,
+                },
+                {
+                  label: "Support Chat",
+                  onClick: openSupportWidget,
+                  icon: <LifeBuoy className="h-4 w-4" />,
+                },
+                {
+                  label: "Telegram Support",
+                  onClick: openTelegramSupport,
+                  icon: <MessageCircle className="h-4 w-4" />,
+                },
+                {
+                  label: "Top-Up History",
+                  onClick: openTopUpHistory,
+                  icon: <History className="h-4 w-4" />,
+                },
+                {
+                  label: "Instructions",
+                  onClick: () => setShowInstructions(true),
+                  icon: <HelpCircle className="h-4 w-4" />,
+                },
+                {
+                  label: "Regulatory",
+                  onClick: () => setShowRegulatoryModal(true),
+                  icon: <FileText className="h-4 w-4" />,
+                },
+              ]}
+            />
+            {!!generatedTopUpLink && (
+              <p className="mt-2 break-all text-xs text-muted-foreground">{generatedTopUpLink}</p>
+            )}
+            <Button
+              type="button"
+              className="mt-3 h-11 w-full rounded-full bg-paypal-blue text-white hover:bg-[#004dc5]"
+              onClick={() => navigate("/dashboard")}
+            >
+              Done
+            </Button>
+          </div>
+        </div>
       </div>
+
 
       <TransactionReceipt
         open={receiptOpen}
