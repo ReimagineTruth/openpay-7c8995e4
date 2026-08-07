@@ -102,11 +102,15 @@ const DashboardSectionHero = ({
             type="button"
             onClick={action.onClick}
             disabled={action.disabled}
-            className="dash-hero-cta ios-active shrink-0 rounded-full bg-white px-4 py-2 text-xs font-black text-paypal-blue shadow-lg shadow-black/10 hover:bg-white/95 disabled:opacity-50"
+            className={cn(
+              "dash-hero-cta ios-active relative shrink-0 rounded-full bg-white px-4 py-2 text-xs font-black text-paypal-blue shadow-lg shadow-black/10 hover:bg-white/95 disabled:opacity-50",
+              !action.disabled && "dash-cta-attention",
+            )}
           >
             {action.label}
           </button>
         ) : null}
+
       </div>
 
       {stats && stats.length > 0 ? (
