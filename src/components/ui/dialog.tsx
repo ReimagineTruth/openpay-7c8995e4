@@ -19,7 +19,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -42,15 +42,15 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         // Center with inset + margin (not translate) so zoom/slide animations cannot knock modals off-center on mobile
-        "fixed inset-0 z-50 m-auto grid h-fit w-[calc(100%-1.5rem)] max-w-lg min-w-0 gap-4 border bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 shadow-lg duration-200 max-h-[min(90dvh,calc(100dvh-1.5rem))] overflow-y-auto overflow-x-hidden overscroll-contain rounded-2xl box-border data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:p-6 sm:rounded-lg",
+        "fixed inset-0 z-50 m-auto grid h-fit w-[calc(100%-1.5rem)] max-w-lg min-w-0 gap-4 border-0 bg-background p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 shadow-[0_28px_80px_-24px_rgba(0,0,0,0.45)] duration-200 max-h-[min(90dvh,calc(100dvh-1.5rem))] overflow-y-auto overflow-x-hidden overscroll-contain rounded-[28px] box-border data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:p-6",
         className,
       )}
       {...props}
     >
       {children}
       {showCloseButton ? (
-        <DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-accent data-[state=open]:text-muted-foreground hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none sm:right-4 sm:top-4">
-          <X className="h-4 w-4" />
+        <DialogPrimitive.Close className="absolute right-3.5 top-3.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-[rgba(120,120,128,0.16)] text-[#3a3a3c] opacity-100 transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none dark:bg-white/15 dark:text-white/80">
+          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
       ) : null}
@@ -60,12 +60,12 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
+  <div className={cn("flex flex-col space-y-1 text-center sm:text-left", className)} {...props} />
 );
 DialogHeader.displayName = "DialogHeader";
 
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
+  <div className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)} {...props} />
 );
 DialogFooter.displayName = "DialogFooter";
 
@@ -75,7 +75,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold leading-snug tracking-tight break-words", className)}
+    className={cn("text-[17px] font-semibold leading-snug tracking-[-0.02em] break-words", className)}
     {...props}
   />
 ));
@@ -87,7 +87,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-muted-foreground whitespace-normal break-words leading-relaxed", className)}
+    className={cn("text-[13px] text-muted-foreground whitespace-normal break-words leading-relaxed", className)}
     {...props}
   />
 ));

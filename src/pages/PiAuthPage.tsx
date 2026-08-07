@@ -9,12 +9,13 @@ import { setAppCookie } from "@/lib/userPreferences";
 import AuthFooter from "@/components/AuthFooter";
 import {
   Loader2, Mail, Download, Globe, BookOpen, Users, KeyRound, ChevronRight,
-  Coins, Info, Newspaper, Library,
+  Info, Newspaper, Library,
 } from "lucide-react";
 import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { isPiOAuthEnabled } from "@/lib/piOAuth";
 import { openExternalUrl } from "@/lib/externalLink";
+import { OUSD_TOKEN } from "@/lib/ousdPrice";
 import {
   Dialog,
   DialogContent,
@@ -49,10 +50,16 @@ const OPENPAY_PRO_LINKS: {
   },
   {
     id: "openusd",
-    label: "OpenUSD ($OUSD)",
-    hint: "Learn about OUSD",
+    label: "OpenUSD",
+    hint: "Learn about OpenUSD",
     href: "http://openpaypro.space/openusd",
-    icon: <Coins className="h-4 w-4" strokeWidth={2.25} />,
+    icon: (
+      <img
+        src={OUSD_TOKEN.logoUrl}
+        alt=""
+        className="h-5 w-5 rounded-full object-cover"
+      />
+    ),
   },
   {
     id: "about",
@@ -308,14 +315,14 @@ const PiAuthPage = () => {
         </div>
 
         {/* Main card */}
-        <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-black/20 dark:bg-[#0f172a]">
+        <div className="rounded-[28px] bg-white p-6 shadow-[0_28px_80px_-24px_rgba(0,0,0,0.35)] dark:bg-[#1c1c1e]">
           {refParam && (
-            <div className="mb-4 rounded-xl bg-paypal-blue/10 px-3 py-2 text-xs font-medium text-paypal-blue">
+            <div className="mb-4 rounded-xl bg-[#007AFF]/10 px-3 py-2 text-[13px] font-medium text-[#007AFF]">
               Referral: {refParam}
             </div>
           )}
           {inPiBrowser && !sdkReady && (
-            <div className="mb-4 rounded-xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+            <div className="mb-4 rounded-xl bg-[#FF3B30]/10 px-3 py-2 text-[13px] font-medium text-[#FF3B30]">
               Pi SDK unavailable. Please reopen in Pi Browser.
             </div>
           )}
@@ -324,7 +331,7 @@ const PiAuthPage = () => {
           <Button
             onClick={handlePiAuthClick}
             disabled={busyAuth || (inPiBrowser && !sdkReady)}
-            className="mb-3 h-12 w-full rounded-2xl bg-violet-600 text-base font-semibold text-white shadow-md shadow-violet-600/35 hover:bg-violet-700"
+            className="mb-3 h-12 w-full rounded-2xl bg-[#007AFF] text-[17px] font-semibold tracking-[-0.01em] text-white shadow-[0_1px_2px_rgba(0,122,255,0.28)] hover:bg-[#0066d6]"
           >
             {busyAuth ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Authenticating…</>
@@ -332,11 +339,13 @@ const PiAuthPage = () => {
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Pi SDK…</>
             ) : (
               <>
-                <img
-                  src={PURE_PI_ICON_URL}
-                  alt=""
-                  className="mr-2 h-5 w-5 rounded-full object-cover ring-1 ring-white/25"
-                />
+                <span className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5">
+                  <img
+                    src={PURE_PI_ICON_URL}
+                    alt=""
+                    className="h-5 w-5 rounded-full object-cover"
+                  />
+                </span>
                 Authenticate with Pi
               </>
             )}
@@ -344,11 +353,11 @@ const PiAuthPage = () => {
 
           <Button
             type="button"
-            variant="outline"
-            className="mb-3 h-12 w-full rounded-2xl border-[#1d1d1f]/15 bg-[#1d1d1f] text-base font-semibold text-white hover:bg-[#2c2c2e] hover:text-white"
+            variant="secondary"
+            className="mb-3 h-12 w-full rounded-2xl text-[17px] font-semibold tracking-[-0.01em]"
             onClick={() => setProOpen(true)}
           >
-            <BrandLogo variant="white" animate={false} className="mr-2 h-5 w-5" />
+            <BrandLogo animate={false} className="mr-2 h-5 w-5 text-[#007AFF]" />
             OpenPay Pro
           </Button>
 
@@ -356,7 +365,7 @@ const PiAuthPage = () => {
             <Button
               asChild
               variant="outline"
-              className="mb-3 h-12 w-full rounded-2xl border-border/60 text-base font-semibold"
+              className="mb-3 h-12 w-full rounded-2xl border-0 bg-transparent text-[17px] font-semibold tracking-[-0.01em] text-[#1d1d1f] ring-1 ring-black/[0.08] hover:bg-[#f2f2f7] hover:text-[#1d1d1f]"
             >
               <Link to={emailHref}>
                 <Mail className="mr-2 h-4 w-4" /> Sign In with Email
