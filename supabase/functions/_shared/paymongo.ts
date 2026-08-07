@@ -212,7 +212,17 @@ export async function paymongoFetch(
       data?.errors?.[0]?.code ||
       data?.error ||
       `PayMongo ${res.status}`;
-    throw new Error(String(detail));
+    const code = String(data?.errors?.[0]?.code || "");
+    const msg = String(detail);
+    if (
+      code === "payment_method_not_allowed" ||
+      /payment method is not allowed/i.test(msg)
+    ) {
+      throw new Error(
+        `${msg} Enable this e-wallet in PayMongo Dashboard → Settings → Payment methods (live account), then retry. GCash often needs PayMongo support approval.`,
+      );
+    }
+    throw new Error(msg);
   }
   return data;
 }
