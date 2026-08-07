@@ -161,6 +161,8 @@ export const buildProPayUrl = (opts: {
   amount: number;
   asset?: ProPayAsset | string;
   note?: string;
+  /** Return here after Pro payment (Pro may honor success_url / return_url). */
+  successUrl?: string;
 }) => {
   const dest = formatProDestinationForApi(opts.to);
   if (!dest) return "";
@@ -168,5 +170,9 @@ export const buildProPayUrl = (opts: {
   url.searchParams.set("amount", String(Number(opts.amount || 0).toFixed(2)));
   url.searchParams.set("asset", String(opts.asset || "OUSD"));
   if (opts.note) url.searchParams.set("note", opts.note);
+  if (opts.successUrl) {
+    url.searchParams.set("success_url", opts.successUrl);
+    url.searchParams.set("return_url", opts.successUrl);
+  }
   return url.toString();
 };

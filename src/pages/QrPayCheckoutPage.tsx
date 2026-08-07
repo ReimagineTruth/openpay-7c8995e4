@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import QrPayPiBrowserDialog from "@/components/qrpay/QrPayPiBrowserDialog";
 import QrPayQrPhDialog from "@/components/qrpay/QrPayQrPhDialog";
+import QrPayProDialog from "@/components/qrpay/QrPayProDialog";
 import { toast } from "sonner";
 import { isPiBrowserUAOnly } from "@/lib/appSecurity";
 import BrandLogo from "@/components/BrandLogo";
@@ -20,6 +21,8 @@ import {
   buildProXferNote,
   makeProXferRef,
   formatProDestinationPreview,
+  formatProDestinationForApi,
+  parseProXferNote,
 } from "@/lib/openpayProTransfer";
 import {
   authenticatePiForPayments,
@@ -164,6 +167,13 @@ export default function QrPayCheckoutPage() {
   const [piBrowserOpen, setPiBrowserOpen] = useState(false);
   const [waitingPiCallback, setWaitingPiCallback] = useState(false);
   const piCallbackHandled = useRef(false);
+  const [proOpen, setProOpen] = useState(false);
+  const [waitingProCallback, setWaitingProCallback] = useState(false);
+  const [confirmingPro, setConfirmingPro] = useState(false);
+  const [proPayUrl, setProPayUrl] = useState("");
+  const [proXferRef, setProXferRef] = useState("");
+  const proCallbackHandled = useRef(false);
+  const completeProPaymentRef = useRef<(xferRefRaw: string) => Promise<boolean>>(async () => false);
 
   const [customAmount, setCustomAmount] = useState<string>("");
   const [payerPhone, setPayerPhone] = useState("");
@@ -187,6 +197,12 @@ export default function QrPayCheckoutPage() {
   }, []);
 
   const piReturn = searchParams.get("pi_return") === "1";
+  const proReturn = searchParams.get("pro_return") === "1" || searchParams.get("openpay_return") === "1";
+  const proReturnRef =
+    searchParams.get("pro_ref") ||
+    searchParams.get("openpay_ref") ||
+    searchParams.get("note") ||
+    "";
 
   /** Link shown in QR / copy — tags Pi Browser session for return messaging */
   const checkoutUrl = useMemo(() => {
@@ -293,7 +309,9 @@ export default function QrPayCheckoutPage() {
     navigate(`/auth?return=/qr-pay/${token}`);
   };
 
-  const settleToPro = async (ref: string) => {
+  const settleToPro = async (ref: string, method?: string) => {
+    // Buyer already paid the merchant on OpenPay Pro — don't inbound again.
+    if (method === "pro") return;
     if (!data?.pro_settlement_to) return;
     try {
       await supabase.functions.invoke("qr-pay-pro-settle", {
@@ -310,7 +328,7 @@ export default function QrPayCheckoutPage() {
     payerName?: string | null;
     payerEmail?: string | null;
   }) => {
-    await settleToPro(ref);
+    await settleToPro(ref, method);
     const currencyCode = String(opts?.currency ?? data!.currency ?? "").toUpperCase();
     const currencySymbol =
       currencies.find((c) => c.code.toUpperCase() === currencyCode)?.symbol || undefined;
@@ -428,6 +446,105 @@ export default function QrPayCheckoutPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [piBrowserOpen, inPiBrowser, token, data?.id]);
+
+  // Poll while OpenPay Pro modal is waiting (other tab / return completes payment)
+  useEffect(() => {
+    if (!proOpen || !token || !data) return;
+
+    const finishFromResult = async (res: any) => {
+      if (proCallbackHandled.current || !res?.paid || !res?.transaction_ref) return;
+      if (res.method && res.method !== "pro") return;
+      proCallbackHandled.current = true;
+      setProOpen(false);
+      setWaitingProCallback(false);
+      toast.success("OpenPay Pro payment received — returning here");
+      await goAfterPayment(res.transaction_ref, "pro", {
+        amount: res.amount != null ? Number(res.amount) : undefined,
+        currency: res.currency || undefined,
+        payerName: res.payer_name,
+        payerEmail: res.payer_email,
+      });
+    };
+
+    const poll = async () => {
+      try {
+        const { data: res, error } = await (supabase as any).rpc("qr_pay_check_result", {
+          p_token: token,
+        });
+        if (!error && res) await finishFromResult(res);
+      } catch {}
+    };
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== `qrp_paid_${token}` || !e.newValue) return;
+      try {
+        const payload = JSON.parse(e.newValue);
+        if (payload?.ref && (payload.method === "pro" || !payload.method)) {
+          void finishFromResult({
+            paid: true,
+            transaction_ref: payload.ref,
+            method: "pro",
+          });
+        }
+      } catch {}
+    };
+
+    void poll();
+    const id = window.setInterval(poll, 2500);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("storage", onStorage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proOpen, token, data?.id]);
+
+  // Return from OpenPay Pro pay page → confirm QR Pay order
+  useEffect(() => {
+    if (!proReturn || !token || !data || loading) return;
+    if (proCallbackHandled.current) return;
+
+    let cancelled = false;
+    (async () => {
+      let ref = String(proReturnRef || "").trim();
+      if (!ref) {
+        try {
+          const raw = sessionStorage.getItem(`qrp_pro_${token}`);
+          if (raw) ref = String(JSON.parse(raw)?.ref || "");
+        } catch {}
+      }
+      const parsed = parseProXferNote(ref);
+      if (parsed?.ref) ref = parsed.ref;
+      if (!ref) return;
+
+      setMethod("pro");
+      setProOpen(true);
+      setWaitingProCallback(true);
+      setProXferRef(ref);
+      try {
+        const raw = sessionStorage.getItem(`qrp_pro_${token}`);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          if (saved?.url) setProPayUrl(String(saved.url));
+          if (saved?.asset) setProAsset(String(saved.asset));
+        }
+      } catch {}
+
+      if (cancelled) return;
+      await completeProPaymentRef.current(ref);
+      // Clean return params from URL without reload
+      try {
+        const u = new URL(window.location.href);
+        ["pro_return", "openpay_return", "pro_ref", "openpay_ref", "openpay_tx", "note", "pm_method"].forEach((k) =>
+          u.searchParams.delete(k),
+        );
+        window.history.replaceState({}, "", u.pathname + u.search);
+      } catch {}
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proReturn, token, data?.id, loading]);
 
 
   const payWallet = async () => {
@@ -566,18 +683,84 @@ export default function QrPayCheckoutPage() {
     }
   };
 
+  const completeProPayment = async (xferRefRaw: string) => {
+    const parsed = parseProXferNote(xferRefRaw);
+    const xferRef = (parsed?.ref || String(xferRefRaw || "").trim()).replace(/^pro_xfer:/i, "");
+    const refOnly = xferRef.includes(":") ? (parseProXferNote(xferRefRaw)?.ref || xferRef) : xferRef;
+    if (!refOnly) {
+      toast.error("Missing OpenPay Pro payment reference");
+      return false;
+    }
+    if (proCallbackHandled.current) return true;
+    setConfirmingPro(true);
+    try {
+      const { data: res, error } = await (supabase as any).rpc("qr_pay_complete_pro", {
+        p_token: token,
+        p_pro_xfer_ref: refOnly,
+        p_asset: proAsset,
+        p_payer_name: payerName || null,
+        p_payer_email: payerEmail || null,
+        p_amount: isFlexible ? chargeAmount : null,
+        ...deliveryPayload(),
+      });
+      if (error) throw new Error(error.message);
+      if (!res?.transaction_ref) throw new Error("Pro payment could not be confirmed");
+      proCallbackHandled.current = true;
+      setProOpen(false);
+      setWaitingProCallback(false);
+      try { sessionStorage.removeItem(`qrp_pro_${token}`); } catch {}
+      toast.success("OpenPay Pro payment received");
+      await goAfterPayment(String(res.transaction_ref), "pro", {
+        amount: res.amount != null ? Number(res.amount) : undefined,
+      });
+      return true;
+    } catch (e: any) {
+      toast.error(e?.message || "Could not confirm OpenPay Pro payment");
+      return false;
+    } finally {
+      setConfirmingPro(false);
+    }
+  };
+  completeProPaymentRef.current = completeProPayment;
+
   const payPro = () => {
     if (!validateAmount() || !validateDelivery()) return;
     const dest = data?.pro_settlement_to || "";
+    if (!dest) {
+      toast.error("Merchant has no OpenPay Pro destination");
+      return;
+    }
+    const xferRef = makeProXferRef();
+    const note = buildProXferNote(dest, xferRef);
+    const returnUrl = `${window.location.origin}/qr-pay/${token}?pro_return=1&pro_ref=${encodeURIComponent(xferRef)}&pm_method=pro`;
     const url = buildProPayUrl({
       to: dest,
       amount: chargeAmount,
       asset: proAsset,
-      note: buildProXferNote(dest, makeProXferRef()),
+      note,
+      successUrl: returnUrl,
     });
-    if (!url) { toast.error("Merchant has no OpenPay Pro destination"); return; }
-    toast.success("Opening OpenPay Pro to complete your payment");
-    openExternalUrl(url);
+    if (!url) {
+      toast.error("Merchant has no OpenPay Pro destination");
+      return;
+    }
+    proCallbackHandled.current = false;
+    setProXferRef(xferRef);
+    setProPayUrl(url);
+    setProOpen(true);
+    setWaitingProCallback(false);
+    try {
+      sessionStorage.setItem(`qrp_pro_${token}`, JSON.stringify({
+        ref: xferRef, note, dest, amount: chargeAmount, asset: proAsset, url, at: Date.now(),
+      }));
+    } catch {}
+  };
+
+  const openProWallet = () => {
+    if (!proPayUrl) return;
+    setWaitingProCallback(true);
+    toast.message("Complete payment in OpenPay Pro, then return here");
+    openExternalUrl(proPayUrl);
   };
 
   const confirmPaymongo = async (intentId: string, method: PaymongoCheckoutMethod) => {
@@ -1154,7 +1337,7 @@ export default function QrPayCheckoutPage() {
 
   const payBtnClass = `h-[54px] min-[900px]:h-[56px] w-full gap-2 text-[16px] min-[900px]:text-[17px] ${activeMethod === "pi" ? "qrp-pi-btn" : activeMethod === "card" ? "qrp-card-btn" : activeMethod === "pro" ? "qrp-pro-btn" : "qrp-primary-btn"}`;
   const payHint = activeMethod === "pro"
-    ? "You'll finish securely on OpenPay Pro."
+    ? "Scan the merchant Pro wallet QR or open OpenPay Pro to pay."
     : activeMethod === "pi" && !inPiBrowser
       ? "Copy the link and complete in Pi Browser."
     : activeMethod === "qr_ph"
@@ -1396,6 +1579,28 @@ export default function QrPayCheckoutPage() {
           setPiBrowserOpen(false);
           setWaitingPiCallback(false);
           const fallback = tabs.find((t) => t !== "pi") || null;
+          if (fallback) setMethod(fallback);
+        }}
+      />
+
+      <QrPayProDialog
+        open={proOpen}
+        onOpenChange={(o) => {
+          setProOpen(o);
+          if (!o) setWaitingProCallback(false);
+        }}
+        payUrl={proPayUrl}
+        destination={formatProDestinationForApi(data.pro_settlement_to || "") || String(data.pro_settlement_to || "")}
+        amountLabel={`${data.currency} ${chargeAmount.toFixed(2)}`}
+        assetLabel={proAsset}
+        waitingForPayment={waitingProCallback}
+        confirming={confirmingPro}
+        onOpenPro={openProWallet}
+        onConfirmPaid={() => { void completeProPayment(proXferRef); }}
+        onUseOtherMethod={() => {
+          setProOpen(false);
+          setWaitingProCallback(false);
+          const fallback = tabs.find((t) => t !== "pro") || null;
           if (fallback) setMethod(fallback);
         }}
       />
