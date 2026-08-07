@@ -28,6 +28,8 @@ import {
   initPiSdk,
 } from "@/lib/piPayment";
 import { invokePaymongoQrPay } from "@/lib/paymongoQrPay";
+import { requestGooglePayToken } from "@/lib/googlePay";
+import { currencies } from "@/contexts/CurrencyContext";
 
 const PURE_PI_ICON_URL = "https://i.ibb.co/BV8PHjB4/Pi-200x200.png";
 const MOONPAY_LOGO = "/icons/moonpay.svg";
@@ -40,12 +42,36 @@ const PAYPAL_LOGO =
 const QR_PH_LOGO =
   "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/QR_Ph_Logo.svg/960px-QR_Ph_Logo.svg.png?20250310160234";
 const GCASH_LOGO = "/icons/gcash.svg";
+const MAYA_LOGO = "/icons/maya.svg";
+const GRABPAY_LOGO = "/icons/grabpay.svg";
+const SHOPEEPAY_LOGO = "/icons/shopeepay.svg";
 const BILLEASE_LOGO = "/icons/billease.svg";
 const BANK_LOGO = "/icons/bank.svg";
 
-const EXTRA_METHOD_KEYS = ["moonpay", "google_pay", "apple_pay", "paypal", "qr_ph", "gcash", "billease", "bank"] as const;
+const EXTRA_METHOD_KEYS = [
+  "moonpay",
+  "google_pay",
+  "apple_pay",
+  "paypal",
+  "qr_ph",
+  "gcash",
+  "maya",
+  "grab_pay",
+  "shopee_pay",
+  "billease",
+  "bank",
+] as const;
 type ExtraMethod = (typeof EXTRA_METHOD_KEYS)[number];
-const PAYMONGO_METHODS = ["qr_ph", "gcash", "billease", "bank"] as const;
+const PAYMONGO_METHODS = [
+  "qr_ph",
+  "gcash",
+  "maya",
+  "grab_pay",
+  "shopee_pay",
+  "billease",
+  "bank",
+  "google_pay",
+] as const;
 type PaymongoCheckoutMethod = (typeof PAYMONGO_METHODS)[number];
 
 const BANK_OPTIONS = [
@@ -58,11 +84,14 @@ const BANK_OPTIONS = [
 
 const EXTRA_METHOD_META: Record<ExtraMethod, { label: string; hint: string; logo: string }> = {
   moonpay: { label: "MoonPay", hint: "Buy crypto & pay", logo: MOONPAY_LOGO },
-  google_pay: { label: "Google Pay", hint: "Fast checkout with Google", logo: GOOGLE_PAY_LOGO },
+  google_pay: { label: "Google Pay", hint: "Pay with cards saved in Google", logo: GOOGLE_PAY_LOGO },
   apple_pay: { label: "Apple Pay", hint: "Pay with Apple devices", logo: APPLE_PAY_LOGO },
   paypal: { label: "PayPal", hint: "PayPal balance or linked card", logo: PAYPAL_LOGO },
   qr_ph: { label: "QR PH", hint: "Scan with any PH bank / e-wallet", logo: QR_PH_LOGO },
-  gcash: { label: "GCash", hint: "Pay with GCash via PayMongo", logo: GCASH_LOGO },
+  gcash: { label: "GCash", hint: "Authorize in the GCash app", logo: GCASH_LOGO },
+  maya: { label: "Maya", hint: "Pay with Maya via PayMongo", logo: MAYA_LOGO },
+  grab_pay: { label: "GrabPay", hint: "Pay with GrabPay via PayMongo", logo: GRABPAY_LOGO },
+  shopee_pay: { label: "ShopeePay", hint: "Pay with ShopeePay via PayMongo", logo: SHOPEEPAY_LOGO },
   billease: { label: "Buy Now, Pay Later", hint: "BillEase installments", logo: BILLEASE_LOGO },
   bank: { label: "Online Banking", hint: "Pay from your PH bank account", logo: BANK_LOGO },
 };
@@ -85,6 +114,9 @@ interface QrPayData {
   allow_paypal?: boolean;
   allow_qr_ph?: boolean;
   allow_gcash?: boolean;
+  allow_maya?: boolean;
+  allow_grab_pay?: boolean;
+  allow_shopee_pay?: boolean;
   allow_billease?: boolean;
   allow_bank?: boolean;
   payment_type: "product" | "digital" | "donation" | "tip";
@@ -193,6 +225,9 @@ export default function QrPayCheckoutPage() {
           allow_paypal: !!meta.allow_paypal,
           allow_qr_ph: !!meta.allow_qr_ph,
           allow_gcash: !!meta.allow_gcash,
+          allow_maya: !!meta.allow_maya,
+          allow_grab_pay: !!meta.allow_grab_pay,
+          allow_shopee_pay: !!meta.allow_shopee_pay,
           allow_billease: !!meta.allow_billease,
           allow_bank: !!meta.allow_bank,
         };
@@ -267,10 +302,14 @@ export default function QrPayCheckoutPage() {
     payerEmail?: string | null;
   }) => {
     await settleToPro(ref);
+    const currencyCode = String(opts?.currency ?? data!.currency ?? "").toUpperCase();
+    const currencySymbol =
+      currencies.find((c) => c.code.toUpperCase() === currencyCode)?.symbol || undefined;
     const receipt = {
       transactionRef: ref, method, paidAt: new Date().toISOString(),
       amount: opts?.amount ?? chargeAmount,
-      currency: opts?.currency ?? data!.currency,
+      currency: currencyCode || data!.currency,
+      currencySymbol,
       merchant: data!.merchant, title: data!.title, description: data!.description,
       items: data!.items,
       payer: {
@@ -562,8 +601,8 @@ export default function QrPayCheckoutPage() {
     setPaying(true);
     try {
       const returnUrl = `${window.location.origin}/qr-pay/${token}?paymongo_return=1&pm_method=${method}`;
-      const res = await invokePaymongoQrPay({
-        action: "create",
+      const basePayload = {
+        action: "create" as const,
         token,
         method,
         bank_code: method === "bank" ? bankCode : undefined,
@@ -574,7 +613,72 @@ export default function QrPayCheckoutPage() {
         payer_phone: payerPhone || null,
         delivery_address: deliveryAddress || null,
         delivery_notes: deliveryNotes || null,
-      });
+      };
+
+      // Google Pay: prepare intent → Google sheet → attach token
+      // https://docs.paymongo.com/docs/payment-acceptance-google-pay
+      if (method === "google_pay") {
+        const prep = await invokePaymongoQrPay(basePayload);
+        const intentId = String(prep?.intent_id || "");
+        const phpAmt = Number(prep?.php_amount);
+        if (!intentId || !Number.isFinite(phpAmt)) {
+          throw new Error("Could not prepare Google Pay");
+        }
+        setPaymongoIntentId(intentId);
+        setPaymongoPhpAmount(phpAmt);
+
+        let gToken: string;
+        try {
+          gToken = await requestGooglePayToken({
+            phpAmount: phpAmt,
+            merchantName: data?.merchant?.full_name || data?.merchant?.username || "OpenPay",
+          });
+        } catch (gErr: any) {
+          const msg = String(gErr?.message || gErr || "");
+          if (/cancel|closed|abort/i.test(msg)) {
+            toast.message("Google Pay cancelled");
+            return;
+          }
+          throw gErr;
+        }
+
+        const res = await invokePaymongoQrPay({
+          ...basePayload,
+          intent_id: intentId,
+          google_pay_token: gToken,
+        });
+
+        const status = String(res?.status || "");
+        if (status === "succeeded") {
+          const paid = await confirmPaymongo(intentId, "google_pay");
+          if (!paid) toast.message("Payment received — confirming…");
+          return;
+        }
+
+        const redirect = String(res?.redirect_url || "");
+        if (redirect) {
+          sessionStorage.setItem(`qrp_paymongo_${token}`, JSON.stringify({
+            intent_id: intentId,
+            method: "google_pay",
+            amount: chargeAmount,
+          }));
+          toast.success("Complete card verification…");
+          window.location.href = redirect;
+          return;
+        }
+
+        // No redirect — poll confirm
+        sessionStorage.setItem(`qrp_paymongo_${token}`, JSON.stringify({
+          intent_id: intentId,
+          method: "google_pay",
+          amount: chargeAmount,
+        }));
+        const paid = await confirmPaymongo(intentId, "google_pay");
+        if (!paid) toast.message("Waiting for Google Pay confirmation…");
+        return;
+      }
+
+      const res = await invokePaymongoQrPay(basePayload);
 
       const intentId = String(res?.intent_id || "");
       if (!intentId) throw new Error("No payment intent returned");
@@ -601,6 +705,9 @@ export default function QrPayCheckoutPage() {
       }));
       const openLabel =
         method === "gcash" ? "Opening GCash…"
+        : method === "maya" ? "Opening Maya…"
+        : method === "grab_pay" ? "Opening GrabPay…"
+        : method === "shopee_pay" ? "Opening ShopeePay…"
         : method === "billease" ? "Opening BillEase…"
         : "Opening your bank…";
       toast.success(openLabel);
@@ -697,6 +804,9 @@ export default function QrPayCheckoutPage() {
     data.allow_paypal ? "paypal" : null,
     data.allow_qr_ph ? "qr_ph" : null,
     data.allow_gcash ? "gcash" : null,
+    data.allow_maya ? "maya" : null,
+    data.allow_grab_pay ? "grab_pay" : null,
+    data.allow_shopee_pay ? "shopee_pay" : null,
     data.allow_billease ? "billease" : null,
     data.allow_bank ? "bank" : null,
     data.pro_settlement_to ? "pro" : null,
@@ -722,6 +832,14 @@ export default function QrPayCheckoutPage() {
           ? (qrPhImageUrl ? "Waiting for QR PH payment…" : `Pay with QR PH`)
           : activeMethod === "gcash"
             ? `Continue with GCash`
+            : activeMethod === "maya"
+              ? `Continue with Maya`
+            : activeMethod === "grab_pay"
+              ? `Continue with GrabPay`
+            : activeMethod === "shopee_pay"
+              ? `Continue with ShopeePay`
+            : activeMethod === "google_pay"
+              ? `Pay with Google Pay`
             : activeMethod === "billease"
               ? `Continue with BillEase`
               : activeMethod === "bank"
@@ -1006,8 +1124,16 @@ export default function QrPayCheckoutPage() {
       ? "Copy the link and complete in Pi Browser."
     : activeMethod === "qr_ph"
       ? "Powered by PayMongo QR PH · code expires in ~30 minutes."
+    : activeMethod === "google_pay"
+      ? "Powered by PayMongo Google Pay · Visa & Mastercard."
     : activeMethod === "gcash"
-      ? "You'll authorize in the GCash app, then return here."
+      ? "You'll authorize in the GCash app, then return here. Mobile browsers open GCash automatically."
+    : activeMethod === "maya"
+      ? "You'll authorize in Maya, then return here. Expires in ~30 minutes."
+    : activeMethod === "grab_pay"
+      ? "You'll authorize in GrabPay, then return here. Expires in ~15 minutes."
+    : activeMethod === "shopee_pay"
+      ? "You'll authorize in ShopeePay, then return here. Expires in ~20 minutes."
     : activeMethod === "billease"
       ? "Powered by BillEase · eligibility checked on redirect."
     : activeMethod === "bank"

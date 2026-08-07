@@ -68,6 +68,9 @@ function methodLabel(method: string) {
   if (m === "paypal") return "PayPal";
   if (m === "qr_ph" || m === "qrph") return "QR PH";
   if (m === "gcash") return "GCash";
+  if (m === "maya" || m === "paymaya") return "Maya";
+  if (m === "grab_pay" || m === "grabpay") return "GrabPay";
+  if (m === "shopee_pay" || m === "shopeepay") return "ShopeePay";
   if (m === "billease") return "Buy Now, Pay Later";
   if (m === "bank") return "Online Banking";
   return method.replace(/_/g, " ");

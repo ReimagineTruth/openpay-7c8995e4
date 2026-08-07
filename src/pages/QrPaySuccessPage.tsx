@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Download, Printer, Mail, Home, ExternalLink } from "lucide-react";
+import { Download, Printer, Mail, Home, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import QrPaySteps from "@/components/qrpay/QrPaySteps";
 import { downloadQrPayReceipt, printQrPayReceipt, type QrPayReceiptData } from "@/lib/qrPayReceipt";
 import BrandLogo from "@/components/BrandLogo";
+import { sendQrPayReceiptEmail } from "@/lib/qrPayEmailReceipt";
 
 interface ReceiptExtras {
   after_payment_action?: "receipt" | "download" | "redirect";
@@ -22,6 +23,7 @@ export default function QrPaySuccessPage() {
   const piReturn = params.get("pi_return") === "1";
   const [data, setData] = useState<(QrPayReceiptData & ReceiptExtras) | null>(null);
   const [emailTo, setEmailTo] = useState("");
+  const [emailing, setEmailing] = useState(false);
   const [inPiBrowser, setInPiBrowser] = useState(false);
 
   useEffect(() => {
@@ -41,24 +43,36 @@ export default function QrPaySuccessPage() {
 
   const showReturnHint = piReturn || data?.pi_return || inPiBrowser;
 
-  const emailReceipt = () => {
-    if (!data) return;
-    if (!emailTo) { toast.error("Enter an email"); return; }
-    const subject = `OpenPay receipt ${data.transactionRef}`;
-    const body = [
-      `OpenPay Receipt`,
-      ``,
-      `Transaction ID: ${data.transactionRef}`,
-      `Date: ${new Date(data.paidAt).toLocaleString()}`,
-      `Method: ${data.method}`,
-      `Merchant: ${data.merchant.full_name || ""}${data.merchant.username ? ` (@${data.merchant.username})` : ""}`,
-      `Amount: ${data.currency} ${Number(data.amount).toFixed(2)}`,
-      ``,
-      `Keep this Transaction ID for any disputes or claims.`,
-    ].join("\n");
-    window.location.href = `mailto:${encodeURIComponent(emailTo)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    try { downloadQrPayReceipt(data); } catch {}
-    toast.success("Receipt opened in your email app");
+  const emailReceipt = async () => {
+    if (!data && !ref) return;
+    const to = emailTo.trim();
+    if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    setEmailing(true);
+    try {
+      const res = await sendQrPayReceiptEmail({
+        to,
+        transactionRef: data?.transactionRef || ref,
+        receipt: data
+          ? {
+              paidAt: data.paidAt,
+              method: data.method,
+              amount: data.amount,
+              currency: data.currency,
+              merchant: data.merchant,
+              title: data.title,
+              items: data.items,
+            }
+          : undefined,
+      });
+      toast.success(`Receipt sent to ${res.to}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not send receipt email");
+    } finally {
+      setEmailing(false);
+    }
   };
 
   return (
@@ -172,10 +186,20 @@ export default function QrPaySuccessPage() {
                         <Printer className="mr-1 h-4 w-4" />Print
                       </Button>
                     </div>
-                    <Input className="qrp-input" type="email" placeholder="Email receipt to…" value={emailTo} onChange={e => setEmailTo(e.target.value)} />
-                    <Button className="qrp-primary-btn w-full gap-2" onClick={emailReceipt}>
-                      <BrandLogo variant="white" animate={false} className="h-5 w-5" />
-                      <Mail className="h-4 w-4" />Email receipt
+                    <Input className="qrp-input" type="email" placeholder="Email receipt to…" value={emailTo} onChange={e => setEmailTo(e.target.value)} disabled={emailing} />
+                    <p className="text-[11px] text-[var(--qrp-muted)]">
+                      Sent from OpenPay Receipts · receipts@notify.openpy.space
+                    </p>
+                    <Button className="qrp-primary-btn w-full gap-2" onClick={() => void emailReceipt()} disabled={emailing}>
+                      {emailing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <BrandLogo variant="white" animate={false} className="h-5 w-5" />
+                          <Mail className="h-4 w-4" />
+                        </>
+                      )}
+                      {emailing ? "Sending…" : "Email receipt"}
                     </Button>
                   </div>
                 </div>

@@ -3,7 +3,7 @@
 export interface QrPayReceiptData {
   transactionRef: string;
   paidAt: string | Date;
-  method: "pi" | "wallet" | "virtual_card";
+  method: string;
   amount: number;
   currency: string;
   currencySymbol?: string;
@@ -14,17 +14,76 @@ export interface QrPayReceiptData {
   items: Array<{ name: string; quantity: number; unit_price: number; line_total: number }>;
 }
 
-const methodLabel = (m: QrPayReceiptData["method"]) =>
-  m === "pi" ? "Pi Network" : m === "wallet" ? "OpenPay Wallet" : "Virtual Card";
+const methodLabel = (m: string) => {
+  const key = String(m || "").toLowerCase();
+  if (key === "pi") return "Pi Network";
+  if (key === "wallet") return "OpenPay Wallet";
+  if (key === "virtual_card" || key === "card") return "Virtual Card";
+  if (key === "qr_ph" || key === "qrph") return "QR PH";
+  if (key === "gcash") return "GCash";
+  if (key === "maya" || key === "paymaya") return "Maya";
+  if (key === "grab_pay") return "GrabPay";
+  if (key === "shopee_pay") return "ShopeePay";
+  if (key === "google_pay") return "Google Pay";
+  if (key === "billease") return "Buy Now, Pay Later";
+  if (key === "bank") return "Online Banking";
+  if (key === "pro") return "OpenPay Pro";
+  return key.replace(/_/g, " ") || "OpenPay";
+};
+
+function receiptLogoUrl() {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}/openpay-o.svg`;
+  }
+  return "/openpay-o.svg";
+}
+
+function resolveCurrencySymbol(currency?: string, override?: string | null): string {
+  if (override && String(override).trim()) return String(override).trim();
+  const code = String(currency || "").trim().toUpperCase();
+  const map: Record<string, string> = {
+    USD: "$",
+    OUSD: "$",
+    USDC: "$",
+    USDT: "$",
+    PHP: "₱",
+    EUR: "€",
+    GBP: "£",
+    JPY: "¥",
+    CNY: "¥",
+    KRW: "₩",
+    INR: "₹",
+    AUD: "A$",
+    CAD: "C$",
+    SGD: "S$",
+    HKD: "HK$",
+    THB: "฿",
+    VND: "₫",
+    MYR: "RM",
+    IDR: "Rp",
+    PI: "π",
+  };
+  return map[code] || (code ? `${code} ` : "$");
+}
+
+function formatMoney(amount: number, currency?: string, symbolOverride?: string | null): string {
+  const code = String(currency || "").trim().toUpperCase() || "USD";
+  const sym = resolveCurrencySymbol(code, symbolOverride);
+  const value = Number(amount).toFixed(2);
+  // Avoid "$1.00 USD" duplication when symbol already embeds the code (e.g. "A$")
+  // Always show matching symbol + code: ₱1.00 PHP
+  if (sym.endsWith(" ")) return `${sym}${value}`;
+  return `${sym}${value} ${code}`;
+}
 
 export function buildQrPayReceiptHtml(d: QrPayReceiptData): string {
-  const sym = d.currencySymbol ?? "$";
-  const fmt = (n: number) => `${sym}${Number(n).toFixed(2)} ${d.currency}`;
+  const fmt = (n: number) => formatMoney(n, d.currency, d.currencySymbol);
   const date =
     typeof d.paidAt === "string" ? new Date(d.paidAt) : d.paidAt;
   const dateStr = (() => {
     try { return date.toLocaleString(); } catch { return String(date); }
   })();
+  const logoUrl = receiptLogoUrl();
 
   const itemRows = d.items.map(it => `
     <tr>
@@ -47,7 +106,7 @@ export function buildQrPayReceiptHtml(d: QrPayReceiptData): string {
     @media print { body{margin:0} }
   </style></head><body>
   <div style="display:flex;align-items:center;gap:12px">
-    <img src="/openpay-logo.jpg" alt="OpenPay" width="44" height="44" style="border-radius:8px"/>
+    <img src="${escapeHtml(logoUrl)}" alt="OpenPay" width="44" height="44" style="border-radius:8px;display:block;object-fit:contain;background:#f5f5f7"/>
     <div>
       <h1>OpenPay Receipt</h1>
       <div class="muted">QR Payment · <span class="badge">Paid</span></div>
@@ -56,7 +115,7 @@ export function buildQrPayReceiptHtml(d: QrPayReceiptData): string {
   <div class="card">
     <div class="row"><span class="muted">Transaction ID</span><span class="ref">${escapeHtml(d.transactionRef)}</span></div>
     <div class="row"><span class="muted">Date</span><span>${escapeHtml(dateStr)}</span></div>
-    <div class="row"><span class="muted">Method</span><span>${methodLabel(d.method)}</span></div>
+    <div class="row"><span class="muted">Method</span><span>${escapeHtml(methodLabel(d.method))}</span></div>
     <div class="row"><span class="muted">Merchant</span><span>${escapeHtml(d.merchant.full_name || "")}${d.merchant.username ? ` <span class="muted">@${escapeHtml(d.merchant.username)}</span>` : ""}</span></div>
     ${d.payer?.name || d.payer?.username ? `<div class="row"><span class="muted">Payer</span><span>${escapeHtml(d.payer.name || "")}${d.payer.username ? ` <span class="muted">@${escapeHtml(d.payer.username)}</span>` : ""}</span></div>` : ""}
     ${d.payer?.email ? `<div class="row"><span class="muted">Email</span><span>${escapeHtml(d.payer.email)}</span></div>` : ""}

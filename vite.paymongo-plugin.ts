@@ -43,13 +43,40 @@ async function paymongoFetch(path, { method = "GET", key, body }) {
 
 function resolveMethod(method, bankCode) {
   if (method === "qr_ph") {
-    return { pmType: "qrph", allowed: ["qrph"], needsReturnUrl: false, minPhp: 1, allowKey: "allow_qr_ph" };
+    return { pmType: "qrph", allowed: ["qrph"], needsReturnUrl: false, deferPm: false, minPhp: 1, allowKey: "allow_qr_ph" };
   }
   if (method === "gcash") {
-    return { pmType: "gcash", allowed: ["gcash"], needsReturnUrl: true, minPhp: 1, allowKey: "allow_gcash" };
+    return { pmType: "gcash", allowed: ["gcash"], needsReturnUrl: true, deferPm: false, minPhp: 1, allowKey: "allow_gcash" };
+  }
+  if (method === "maya") {
+    return { pmType: "paymaya", allowed: ["paymaya"], needsReturnUrl: true, deferPm: false, minPhp: 1, allowKey: "allow_maya" };
+  }
+  if (method === "grab_pay") {
+    return { pmType: "grab_pay", allowed: ["grab_pay"], needsReturnUrl: true, deferPm: false, minPhp: 1, allowKey: "allow_grab_pay" };
+  }
+  if (method === "shopee_pay") {
+    return {
+      pmType: "shopeepay",
+      allowed: ["shopeepay"],
+      needsReturnUrl: true,
+      deferPm: false,
+      minPhp: 1,
+      allowKey: "allow_shopee_pay",
+      attachOptions: { payment_method_options: { shopeepay: { expiry_seconds: 1200 } } },
+    };
   }
   if (method === "billease") {
-    return { pmType: "billease", allowed: ["billease"], needsReturnUrl: true, minPhp: 100, allowKey: "allow_billease" };
+    return { pmType: "billease", allowed: ["billease"], needsReturnUrl: true, deferPm: false, minPhp: 100, allowKey: "allow_billease" };
+  }
+  if (method === "google_pay") {
+    return {
+      pmType: "google_pay_card",
+      allowed: ["google_pay_card"],
+      needsReturnUrl: true,
+      deferPm: true,
+      minPhp: 1,
+      allowKey: "allow_google_pay",
+    };
   }
   if (method === "bank") {
     const bank = BANK_OPTIONS[String(bankCode || "").toLowerCase()];
@@ -59,11 +86,12 @@ function resolveMethod(method, bankCode) {
       allowed: [bank.type],
       details: { bank_code: String(bankCode).toLowerCase() },
       needsReturnUrl: true,
+      deferPm: false,
       minPhp: bank.minPhp,
       allowKey: "allow_bank",
     };
   }
-  throw new Error("method must be qr_ph, gcash, billease, or bank");
+  throw new Error("method must be qr_ph, gcash, maya, grab_pay, shopee_pay, billease, bank, or google_pay");
 }
 
 function toPhpCentavos(amount, currency, minPhp = 1) {
@@ -137,6 +165,7 @@ async function handlePaymongo(req, res, env) {
   }
 
   const secret = env.PAYMONGO_SECRET_KEY || env.PAYMONGO_SECRET;
+  const publicKey = env.PAYMONGO_PUBLIC_KEY || env.PAYMONGO_PK || env.VITE_PAYMONGO_PUBLIC_KEY || "";
   if (!secret) {
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
@@ -245,6 +274,8 @@ async function handlePaymongo(req, res, env) {
     const token = String(body.token || "").trim();
     const method = String(body.method || "").trim();
     const bankCode = body.bank_code ? String(body.bank_code).trim().toLowerCase() : null;
+    const googlePayToken = body.google_pay_token ? String(body.google_pay_token) : "";
+    const existingIntentId = body.intent_id ? String(body.intent_id).trim() : "";
     if (!token) throw new Error("token required");
     const resolved = resolveMethod(method, bankCode);
 
@@ -288,8 +319,71 @@ async function handlePaymongo(req, res, env) {
 
     const { php, centavos, rate } = toPhpCentavos(chargeAmount, pay.currency, resolved.minPhp);
     const returnUrl = String(body.return_url || "").trim();
-    if (resolved.needsReturnUrl && !returnUrl.startsWith("http")) {
+    if (resolved.needsReturnUrl && !resolved.deferPm && !returnUrl.startsWith("http")) {
       throw new Error("return_url required for this payment method");
+    }
+    if (method === "google_pay" && googlePayToken && !returnUrl.startsWith("http")) {
+      throw new Error("return_url required for Google Pay");
+    }
+
+    // Google Pay attach step
+    if (method === "google_pay" && googlePayToken && existingIntentId) {
+      if (!publicKey) throw new Error("PAYMONGO_PUBLIC_KEY / VITE_PAYMONGO_PUBLIC_KEY required for Google Pay");
+      const billing = {};
+      if (body.payer_name) billing.name = String(body.payer_name);
+      if (body.payer_email) billing.email = String(body.payer_email);
+      if (body.payer_phone) billing.phone = String(body.payer_phone);
+
+      const pmRes = await paymongoFetch("/payment_methods", {
+        key: publicKey,
+        method: "POST",
+        body: {
+          data: {
+            attributes: {
+              type: "google_pay_card",
+              details: { token: googlePayToken },
+              ...(Object.keys(billing).length ? { billing } : {}),
+            },
+          },
+        },
+      });
+      const paymentMethodId = pmRes?.data?.id;
+      if (!paymentMethodId) throw new Error("PayMongo did not return a Google Pay method");
+
+      const intentLookup = await paymongoFetch(`/payment_intents/${existingIntentId}`, { key: secret });
+      const clientKey = intentLookup?.data?.attributes?.client_key;
+
+      const attachRes = await paymongoFetch(`/payment_intents/${existingIntentId}/attach`, {
+        key: secret,
+        method: "POST",
+        body: {
+          data: {
+            attributes: {
+              payment_method: paymentMethodId,
+              client_key: clientKey,
+              return_url: returnUrl,
+            },
+          },
+        },
+      });
+      const out = attachRes?.data?.attributes || {};
+      const next = out.next_action || {};
+
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({
+        intent_id: existingIntentId,
+        client_key: clientKey,
+        status: out.status || "awaiting_next_action",
+        method,
+        amount: chargeAmount,
+        currency: pay.currency,
+        php_amount: php,
+        php_rate: rate,
+        redirect_url: next?.redirect?.url || null,
+        public_key: publicKey,
+      }));
+      return;
     }
 
     const intentRes = await paymongoFetch("/payment_intents", {
@@ -322,6 +416,48 @@ async function handlePaymongo(req, res, env) {
     const clientKey = intentRes?.data?.attributes?.client_key;
     if (!intentId) throw new Error("PayMongo did not return a payment intent");
 
+    // Google Pay prepare step — client opens Google Pay sheet next
+    if (resolved.deferPm && !googlePayToken) {
+      if (admin.isService) {
+        await sbFetch(admin, `/rest/v1/qr_payments?id=eq.${pay.id}`, {
+          method: "PATCH",
+          prefer: "return=minimal",
+          body: {
+            metadata: {
+              ...meta,
+              paymongo_pending: {
+                intent_id: intentId,
+                method,
+                amount: chargeAmount,
+                php_amount: php,
+                created_at: new Date().toISOString(),
+                payer_name: body.payer_name || null,
+                payer_email: body.payer_email || null,
+                payer_phone: body.payer_phone || null,
+                delivery_address: body.delivery_address || null,
+                delivery_notes: body.delivery_notes || null,
+              },
+            },
+          },
+        });
+      }
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({
+        intent_id: intentId,
+        client_key: clientKey,
+        status: "awaiting_payment_method",
+        method,
+        amount: chargeAmount,
+        currency: pay.currency,
+        php_amount: php,
+        php_rate: rate,
+        public_key: publicKey || null,
+        needs_google_pay_token: true,
+      }));
+      return;
+    }
+
     const pmAttrs = { type: resolved.pmType };
     if (resolved.details) pmAttrs.details = resolved.details;
     const billing = {};
@@ -343,6 +479,7 @@ async function handlePaymongo(req, res, env) {
       client_key: clientKey,
     };
     if (resolved.needsReturnUrl) attachAttrs.return_url = returnUrl;
+    if (resolved.attachOptions) Object.assign(attachAttrs, resolved.attachOptions);
 
     const attachRes = await paymongoFetch(`/payment_intents/${intentId}/attach`, {
       key: secret,
@@ -399,7 +536,7 @@ async function handlePaymongo(req, res, env) {
   }
 }
 
-/** Vite plugin: POST /api/paymongo-qr-pay */
+/** Vite plugin: POST /api/paymongo-qr-pay + /api/qr-pay-email-receipt */
 export function paymongoLocalPlugin() {
   return {
     name: "paymongo-local-api",
@@ -410,15 +547,125 @@ export function paymongoLocalPlugin() {
       };
       server.middlewares.use(async (req, res, next) => {
         const url = req.url?.split("?")[0] || "";
-        if (url !== "/api/paymongo-qr-pay" && url !== "/functions/v1/paymongo-qr-pay") {
+        const isPaymongo =
+          url === "/api/paymongo-qr-pay" || url === "/functions/v1/paymongo-qr-pay";
+        const isEmail =
+          url === "/api/qr-pay-email-receipt" || url === "/functions/v1/qr-pay-email-receipt";
+        if (!isPaymongo && !isEmail) {
           next();
           return;
         }
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Headers", "authorization, content-type, apikey, x-client-info");
         res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+        if (isEmail) {
+          await handleEmailReceipt(req, res, env);
+          return;
+        }
         await handlePaymongo(req, res, env);
       });
     },
   };
+}
+
+async function handleEmailReceipt(req, res, env) {
+  if (req.method === "OPTIONS") {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+  if (req.method !== "POST") {
+    res.statusCode = 405;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: "Method not allowed" }));
+    return;
+  }
+
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  let body = {};
+  try {
+    body = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  } catch {
+    res.statusCode = 400;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: "Invalid JSON body" }));
+    return;
+  }
+
+  try {
+    const admin = supabaseAdmin(env);
+    const to = String(body.to || body.email || "").trim().toLowerCase();
+    const ref = String(body.transaction_ref || body.ref || "").trim();
+    if (!to || !ref) throw new Error("to and transaction_ref required");
+
+    // Prefer SQL RPC (same as production path)
+    try {
+      const result = await sbFetch(admin, "/rest/v1/rpc/qr_pay_email_receipt", {
+        method: "POST",
+        body: { p_transaction_ref: ref, p_email: to },
+      });
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify(result?.ok != null ? result : { ok: true, to, ...(result || {}) }));
+      return;
+    } catch (rpcErr) {
+      // Fallback: write outbox directly when RPC isn't migrated yet
+      if (!admin.isService) throw rpcErr;
+      const rows = await sbFetch(
+        admin,
+        `/rest/v1/qr_payment_transactions?transaction_ref=eq.${encodeURIComponent(ref)}&status=eq.succeeded&select=*`,
+      );
+      const tx = Array.isArray(rows) ? rows[0] : null;
+      if (!tx) throw new Error("Receipt not found");
+      const amountStr = `${tx.currency || "USD"} ${Number(tx.amount || 0).toFixed(2)}`;
+      const subject = `Your OpenPay receipt · ${amountStr}`;
+      const textBody = [
+        "OpenPay Receipt",
+        "",
+        `Transaction ID: ${tx.transaction_ref}`,
+        `Method: ${tx.method}`,
+        `Amount: ${amountStr}`,
+        "",
+        "Thank you for paying with OpenPay.",
+      ].join("\n");
+      await sbFetch(admin, "/rest/v1/email_notifications_outbox", {
+        method: "POST",
+        prefer: "return=minimal",
+        body: {
+          user_id: tx.merchant_user_id,
+          to_email: to,
+          subject,
+          body: textBody,
+          status: "pending",
+          payload: {
+            kind: "qr_pay_customer_receipt",
+            ref: tx.transaction_ref,
+            provider: "lovable",
+            from: "OpenPay Receipts <receipts@notify.openpy.space>",
+          },
+        },
+      });
+      try {
+        await sbFetch(admin, "/rest/v1/rpc/dispatch_outbox_to_pgmq", {
+          method: "POST",
+          body: { p_limit: 50 },
+        });
+      } catch {
+        /* cron will pick it up */
+      }
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({
+        ok: true,
+        to,
+        from: "OpenPay Receipts <receipts@notify.openpy.space>",
+        subject,
+      }));
+    }
+  } catch (e) {
+    res.statusCode = 400;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: e instanceof Error ? e.message : "Unexpected error" }));
+  }
 }

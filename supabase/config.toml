@@ -30,5 +30,7 @@ project_id = "araojncyittkahvvpdrn"
     verify_jwt = false
   [functions.paymongo-webhook]
     verify_jwt = false
+  [functions.qr-pay-email-receipt]
+    verify_jwt = false
 
 

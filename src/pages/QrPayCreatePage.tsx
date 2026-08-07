@@ -46,7 +46,7 @@ interface Item { name: string; description?: string; quantity: number; unit_pric
 
 type AfterAction = "receipt" | "download" | "redirect";
 
-type AllowKey = "pi" | "wallet" | "card" | "moonpay" | "google_pay" | "apple_pay" | "paypal" | "qr_ph" | "gcash" | "billease" | "bank" | "guest";
+type AllowKey = "pi" | "wallet" | "card" | "moonpay" | "google_pay" | "apple_pay" | "paypal" | "qr_ph" | "gcash" | "maya" | "grab_pay" | "shopee_pay" | "billease" | "bank" | "guest";
 
 const PI_METHOD_LOGO =
   "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-logo-design-illustration-trendy-and-modern-crypto-currency-pi-symbol-for-logo.png";
@@ -60,6 +60,9 @@ const PAYPAL_LOGO =
 const QR_PH_LOGO =
   "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/QR_Ph_Logo.svg/960px-QR_Ph_Logo.svg.png?20250310160234";
 const GCASH_LOGO = "/icons/gcash.svg";
+const MAYA_LOGO = "/icons/maya.svg";
+const GRABPAY_LOGO = "/icons/grabpay.svg";
+const SHOPEEPAY_LOGO = "/icons/shopeepay.svg";
 const BILLEASE_LOGO = "/icons/billease.svg";
 const BANK_LOGO = "/icons/bank.svg";
 
@@ -74,11 +77,14 @@ const PAYMENT_METHOD_OPTIONS: {
   { k: "wallet", l: "OpenPay Wallet", d: "Instant internal transfer", brand: "openpay" },
   { k: "card", l: "Virtual Card", d: "Card checkout", brand: "openpay" },
   { k: "moonpay", l: "MoonPay", d: "Buy crypto & pay", logo: MOONPAY_LOGO },
-  { k: "google_pay", l: "Google Pay", d: "Fast checkout with Google", logo: GOOGLE_PAY_LOGO },
+  { k: "google_pay", l: "Google Pay", d: "PayMongo · Visa & Mastercard via Google", logo: GOOGLE_PAY_LOGO },
   { k: "apple_pay", l: "Apple Pay", d: "Pay with Apple devices", logo: APPLE_PAY_LOGO },
   { k: "paypal", l: "PayPal", d: "Pay with PayPal balance or linked card", logo: PAYPAL_LOGO },
   { k: "qr_ph", l: "QR PH", d: "Scan with any PH bank / e-wallet app", logo: QR_PH_LOGO },
-  { k: "gcash", l: "GCash", d: "Pay with GCash via PayMongo", logo: GCASH_LOGO },
+  { k: "gcash", l: "GCash", d: "PayMongo e-wallet · opens GCash app", logo: GCASH_LOGO },
+  { k: "maya", l: "Maya", d: "PayMongo e-wallet · Maya (PayMaya)", logo: MAYA_LOGO },
+  { k: "grab_pay", l: "GrabPay", d: "PayMongo e-wallet · GrabPay", logo: GRABPAY_LOGO },
+  { k: "shopee_pay", l: "ShopeePay", d: "PayMongo e-wallet · ShopeePay", logo: SHOPEEPAY_LOGO },
   { k: "billease", l: "Buy Now, Pay Later", d: "BillEase installments via PayMongo", logo: BILLEASE_LOGO },
   { k: "bank", l: "Online Banking", d: "BPI, UnionBank, BDO, Land Bank, Metrobank", logo: BANK_LOGO },
   { k: "guest", l: "Allow guest checkout", d: "No OpenPay sign-in (recommended for public links)" },
@@ -133,6 +139,9 @@ export default function QrPayCreatePage() {
     paypal: false,
     qr_ph: false,
     gcash: false,
+    maya: false,
+    grab_pay: false,
+    shopee_pay: false,
     billease: false,
     bank: false,
     guest: true,
@@ -274,6 +283,9 @@ export default function QrPayCreatePage() {
           allow_paypal: allow.paypal,
           allow_qr_ph: allow.qr_ph,
           allow_gcash: allow.gcash,
+          allow_maya: allow.maya,
+          allow_grab_pay: allow.grab_pay,
+          allow_shopee_pay: allow.shopee_pay,
           allow_billease: allow.billease,
           allow_bank: allow.bank,
         },
@@ -901,6 +913,9 @@ export default function QrPayCreatePage() {
                   {allow.paypal && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">PayPal</span>}
                   {allow.qr_ph && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">QR PH</span>}
                   {allow.gcash && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">GCash</span>}
+                  {allow.maya && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Maya</span>}
+                  {allow.grab_pay && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">GrabPay</span>}
+                  {allow.shopee_pay && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">ShopeePay</span>}
                   {allow.billease && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">BNPL</span>}
                   {allow.bank && <span className="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-semibold">Bank</span>}
                 </div>

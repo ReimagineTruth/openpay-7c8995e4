@@ -1,11 +1,13 @@
 /**
- * PayMongo QR Pay — QR PH, GCash, BillEase BNPL, Online Banking.
+ * PayMongo QR Pay — QR PH, e-wallets (GCash/Maya/GrabPay/ShopeePay), BillEase, banking, Google Pay.
  *
  * Docs:
  *   https://docs.paymongo.com/docs/payment-acceptance-qr-ph-api
  *   https://docs.paymongo.com/docs/payment-acceptance-e-wallets
+ *   https://docs.paymongo.com/docs/payment-acceptance-integrating-gcash-on-mobile
  *   https://docs.paymongo.com/docs/payment-acceptance-bnpl
  *   https://docs.paymongo.com/docs/payment-acceptance-direct-online-banking
+ *   https://docs.paymongo.com/docs/payment-acceptance-google-pay
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
@@ -18,7 +20,16 @@ import {
   type PaymongoMethod,
 } from "../_shared/paymongo.ts";
 
-const ALLOWED: PaymongoMethod[] = ["qr_ph", "gcash", "billease", "bank"];
+const ALLOWED: PaymongoMethod[] = [
+  "qr_ph",
+  "gcash",
+  "maya",
+  "grab_pay",
+  "shopee_pay",
+  "billease",
+  "bank",
+  "google_pay",
+];
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -32,7 +43,7 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const action = String(body?.action || "create").toLowerCase();
-    const { secret } = getPaymongoKeys();
+    const { secret, publicKey } = getPaymongoKeys();
 
     let payerUserId: string | null = null;
     const authHeader = req.headers.get("Authorization");
@@ -92,9 +103,14 @@ Deno.serve(async (req: Request) => {
     const token = String(body?.token || "").trim();
     const method = String(body?.method || "").trim() as PaymongoMethod;
     const bankCode = body?.bank_code ? String(body.bank_code).trim().toLowerCase() : null;
+    const googlePayToken = body?.google_pay_token ? String(body.google_pay_token) : "";
+    const existingIntentId = body?.intent_id ? String(body.intent_id).trim() : "";
+
     if (!token) return json({ error: "token required" }, 400);
     if (!ALLOWED.includes(method)) {
-      return json({ error: "method must be qr_ph, gcash, billease, or bank" }, 400);
+      return json({
+        error: "method must be qr_ph, gcash, maya, grab_pay, shopee_pay, billease, bank, or google_pay",
+      }, 400);
     }
 
     const resolved = resolvePaymongoMethod(method, bankCode);
@@ -136,10 +152,75 @@ Deno.serve(async (req: Request) => {
     }
 
     const returnUrl = String(body?.return_url || "").trim();
-    if (resolved.needsReturnUrl && !returnUrl.startsWith("http")) {
+    if (resolved.needsReturnUrl && googlePayToken && !returnUrl.startsWith("http")) {
+      return json({ error: "return_url required for this payment method" }, 400);
+    }
+    if (resolved.needsReturnUrl && !resolved.deferPaymentMethod && !returnUrl.startsWith("http")) {
       return json({ error: "return_url required for this payment method" }, 400);
     }
 
+    // Google Pay step 2: attach token to an existing intent
+    if (method === "google_pay" && googlePayToken && existingIntentId) {
+      if (!publicKey) throw new Error("PAYMONGO_PUBLIC_KEY is required for Google Pay");
+
+      const billing: Record<string, string> = {};
+      if (body?.payer_name) billing.name = String(body.payer_name);
+      if (body?.payer_email) billing.email = String(body.payer_email);
+      if (body?.payer_phone) billing.phone = String(body.payer_phone);
+
+      // Docs: create PM with public key + encrypted Google token
+      const pmRes = await paymongoFetch("/payment_methods", {
+        key: publicKey,
+        method: "POST",
+        body: {
+          data: {
+            attributes: {
+              type: "google_pay_card",
+              details: { token: googlePayToken },
+              ...(Object.keys(billing).length ? { billing } : {}),
+            },
+          },
+        },
+      });
+      const paymentMethodId = pmRes?.data?.id as string;
+      if (!paymentMethodId) throw new Error("PayMongo did not return a Google Pay method");
+
+      const intentLookup = await paymongoFetch(`/payment_intents/${existingIntentId}`, { key: secret });
+      const clientKey = intentLookup?.data?.attributes?.client_key as string;
+
+      const attachRes = await paymongoFetch(`/payment_intents/${existingIntentId}/attach`, {
+        key: secret,
+        method: "POST",
+        body: {
+          data: {
+            attributes: {
+              payment_method: paymentMethodId,
+              client_key: clientKey,
+              return_url: returnUrl,
+            },
+          },
+        },
+      });
+
+      const attachAttrsOut = attachRes?.data?.attributes || {};
+      const next = attachAttrsOut.next_action || {};
+      const redirectUrl = next?.redirect?.url || null;
+
+      return json({
+        intent_id: existingIntentId,
+        client_key: clientKey,
+        status: attachAttrsOut.status || "awaiting_next_action",
+        method,
+        amount: chargeAmount,
+        currency: pay.currency,
+        php_amount: php,
+        php_rate: rate,
+        redirect_url: redirectUrl,
+        public_key: publicKey,
+      });
+    }
+
+    // Create Payment Intent
     const intentRes = await paymongoFetch("/payment_intents", {
       key: secret,
       method: "POST",
@@ -170,6 +251,44 @@ Deno.serve(async (req: Request) => {
     const clientKey = intentRes?.data?.attributes?.client_key as string;
     if (!intentId) throw new Error("PayMongo did not return a payment intent");
 
+    // Google Pay step 1: return intent so the client can open Google Pay sheet
+    if (resolved.deferPaymentMethod && !googlePayToken) {
+      await supabase
+        .from("qr_payments")
+        .update({
+          metadata: {
+            ...meta,
+            paymongo_pending: {
+              intent_id: intentId,
+              method,
+              amount: chargeAmount,
+              php_amount: php,
+              created_at: new Date().toISOString(),
+              payer_name: body?.payer_name || null,
+              payer_email: body?.payer_email || null,
+              payer_phone: body?.payer_phone || null,
+              delivery_address: body?.delivery_address || null,
+              delivery_notes: body?.delivery_notes || null,
+              payer_user_id: payerUserId,
+            },
+          },
+        })
+        .eq("id", pay.id);
+
+      return json({
+        intent_id: intentId,
+        client_key: clientKey,
+        status: "awaiting_payment_method",
+        method,
+        amount: chargeAmount,
+        currency: pay.currency,
+        php_amount: php,
+        php_rate: rate,
+        public_key: publicKey || null,
+        needs_google_pay_token: true,
+      });
+    }
+
     const billing: Record<string, string> = {};
     if (body?.payer_name) billing.name = String(body.payer_name);
     if (body?.payer_email) billing.email = String(body.payer_email);
@@ -180,9 +299,17 @@ Deno.serve(async (req: Request) => {
       ...(Object.keys(billing).length ? { billing } : {}),
     };
     if (resolved.details) pmAttrs.details = resolved.details;
+    if (method === "google_pay" && googlePayToken) {
+      pmAttrs.details = { token: googlePayToken };
+    }
+
+    const pmKey = method === "google_pay" ? (publicKey || secret) : secret;
+    if (method === "google_pay" && !publicKey) {
+      throw new Error("PAYMONGO_PUBLIC_KEY is required for Google Pay");
+    }
 
     const pmRes = await paymongoFetch("/payment_methods", {
-      key: secret,
+      key: pmKey,
       method: "POST",
       body: { data: { attributes: pmAttrs } },
     });
@@ -194,6 +321,9 @@ Deno.serve(async (req: Request) => {
       client_key: clientKey,
     };
     if (resolved.needsReturnUrl) attachAttrs.return_url = returnUrl;
+    if (resolved.attachOptions) {
+      Object.assign(attachAttrs, resolved.attachOptions);
+    }
 
     const attachRes = await paymongoFetch(`/payment_intents/${intentId}/attach`, {
       key: secret,

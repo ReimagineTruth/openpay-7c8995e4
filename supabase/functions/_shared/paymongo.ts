@@ -1,11 +1,19 @@
-/** Shared PayMongo helpers for QR Pay (QR PH, GCash, BillEase, Online Banking). */
+/** Shared PayMongo helpers for QR Pay e-wallets, QR PH, BNPL, banking, Google Pay. */
 
 export const PAYMONGO_API = "https://api.paymongo.com/v1";
 
 /** Default PHP per 1 USD / OUSD — matches OpenPay e-wallet top-up rate. */
 export const DEFAULT_PHP_PER_USD = 57;
 
-export type PaymongoMethod = "qr_ph" | "gcash" | "billease" | "bank";
+export type PaymongoMethod =
+  | "qr_ph"
+  | "gcash"
+  | "maya"
+  | "grab_pay"
+  | "shopee_pay"
+  | "billease"
+  | "bank"
+  | "google_pay";
 
 /** Online banking bank codes — https://docs.paymongo.com/docs/payment-acceptance-direct-online-banking */
 export type BankCode = "bpi" | "ubp" | "bdo" | "landbank" | "metrobank";
@@ -17,6 +25,14 @@ export const BANK_OPTIONS: { code: BankCode; label: string; type: "dob" | "brank
   { code: "landbank", label: "Land Bank", type: "brankas", minPhp: 1 },
   { code: "metrobank", label: "Metrobank", type: "brankas", minPhp: 1 },
 ];
+
+/** E-wallet labels for UI / toasts */
+export const EWALLET_LABELS: Record<"gcash" | "maya" | "grab_pay" | "shopee_pay", string> = {
+  gcash: "GCash",
+  maya: "Maya",
+  grab_pay: "GrabPay",
+  shopee_pay: "ShopeePay",
+};
 
 export const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -55,21 +71,93 @@ export function resolvePaymongoMethod(
   allowed: string[];
   details?: { bank_code: string };
   needsReturnUrl: boolean;
+  /** Google Pay creates the intent first; PM is created after the Google token arrives */
+  deferPaymentMethod: boolean;
   minPhp: number;
   allowMetaKey: string;
+  /** Optional attach options (e.g. ShopeePay expiry) */
+  attachOptions?: Record<string, unknown>;
 } {
   if (method === "qr_ph") {
-    return { pmType: "qrph", allowed: ["qrph"], needsReturnUrl: false, minPhp: 1, allowMetaKey: "allow_qr_ph" };
-  }
-  if (method === "gcash") {
-    return { pmType: "gcash", allowed: ["gcash"], needsReturnUrl: true, minPhp: 1, allowMetaKey: "allow_gcash" };
-  }
-  if (method === "billease") {
-    // BillEase BNPL — https://docs.paymongo.com/docs/payment-acceptance-bnpl
-    return { pmType: "billease", allowed: ["billease"], needsReturnUrl: true, minPhp: 100, allowMetaKey: "allow_billease" };
+    return {
+      pmType: "qrph",
+      allowed: ["qrph"],
+      needsReturnUrl: false,
+      deferPaymentMethod: false,
+      minPhp: 1,
+      allowMetaKey: "allow_qr_ph",
+    };
   }
 
-  // Online banking
+  // E-wallets — https://docs.paymongo.com/docs/payment-acceptance-e-wallets
+  if (method === "gcash") {
+    return {
+      pmType: "gcash",
+      allowed: ["gcash"],
+      needsReturnUrl: true,
+      deferPaymentMethod: false,
+      minPhp: 1,
+      allowMetaKey: "allow_gcash",
+    };
+  }
+  if (method === "maya") {
+    return {
+      pmType: "paymaya",
+      allowed: ["paymaya"],
+      needsReturnUrl: true,
+      deferPaymentMethod: false,
+      minPhp: 1,
+      allowMetaKey: "allow_maya",
+    };
+  }
+  if (method === "grab_pay") {
+    return {
+      pmType: "grab_pay",
+      allowed: ["grab_pay"],
+      needsReturnUrl: true,
+      deferPaymentMethod: false,
+      minPhp: 1,
+      allowMetaKey: "allow_grab_pay",
+    };
+  }
+  if (method === "shopee_pay") {
+    return {
+      pmType: "shopeepay",
+      allowed: ["shopeepay"],
+      needsReturnUrl: true,
+      deferPaymentMethod: false,
+      minPhp: 1,
+      allowMetaKey: "allow_shopee_pay",
+      // Default ~20 min; configurable 1–3600s
+      attachOptions: {
+        payment_method_options: {
+          shopeepay: { expiry_seconds: 1200 },
+        },
+      },
+    };
+  }
+
+  if (method === "billease") {
+    return {
+      pmType: "billease",
+      allowed: ["billease"],
+      needsReturnUrl: true,
+      deferPaymentMethod: false,
+      minPhp: 100,
+      allowMetaKey: "allow_billease",
+    };
+  }
+  if (method === "google_pay") {
+    return {
+      pmType: "google_pay_card",
+      allowed: ["google_pay_card"],
+      needsReturnUrl: true,
+      deferPaymentMethod: true,
+      minPhp: 1,
+      allowMetaKey: "allow_google_pay",
+    };
+  }
+
   const code = String(bankCode || "").toLowerCase() as BankCode;
   const bank = BANK_OPTIONS.find((b) => b.code === code);
   if (!bank) {
@@ -80,6 +168,7 @@ export function resolvePaymongoMethod(
     allowed: [bank.type],
     details: { bank_code: bank.code },
     needsReturnUrl: true,
+    deferPaymentMethod: false,
     minPhp: bank.minPhp,
     allowMetaKey: "allow_bank",
   };

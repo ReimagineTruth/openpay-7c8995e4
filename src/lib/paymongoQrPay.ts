@@ -21,19 +21,37 @@ export async function invokePaymongoQrPay(body: PaymongoBody): Promise<any> {
     return data;
   };
 
+  const isMissingFunction = (err: unknown) => {
+    const msg = String((err as any)?.message || err || "");
+    return /Failed to send a request to the Edge Function|NOT_FOUND|404|FunctionsHttpError|FunctionsFetchError/i.test(msg);
+  };
+
   // Dev: use local bridge first (function is often not deployed yet)
   if (import.meta.env.DEV) {
     try {
       return await tryLocal();
     } catch (localErr) {
-      // Fall through to edge function
       console.warn("Local PayMongo bridge failed, trying Edge Function:", localErr);
     }
   }
 
   const { data, error } = await supabase.functions.invoke("paymongo-qr-pay", { body });
+  if (!error && !data?.error) return data;
+  if (data?.error) throw new Error(String(data.error));
+
+  // Edge missing / unreachable → local bridge (even in preview builds)
+  if (error && isMissingFunction(error)) {
+    try {
+      return await tryLocal();
+    } catch (localErr: any) {
+      throw new Error(
+        localErr?.message ||
+          "PayMongo backend unavailable. Use local Vite (`npm run dev`) or deploy paymongo-qr-pay.",
+      );
+    }
+  }
+
   if (error) {
-    // Last resort: local bridge even outside DEV detection
     try {
       return await tryLocal();
     } catch {
