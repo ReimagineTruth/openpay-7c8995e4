@@ -183,7 +183,8 @@ const AppRoutes = () => {
   const location = useLocation();
   const navigate = useNavigate();
   usePiOAuthAutoLink();
-  // Pi Ad Network is disabled globally via PI_ADS_DISABLED.
+  // Pi Ad Network: global auto/interstitial ads stay off (PI_ADS_DISABLED).
+  // Mining rewarded ads are allowed separately via PI_ADS_MINING_ENABLED.
   usePiAdsAutoShow(false);
   const routeLoaderReady = useRef(false);
   const [showRouteSplash, setShowRouteSplash] = useState(true);

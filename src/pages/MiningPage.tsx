@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Play, Timer, TrendingUp, Users, History, AlertCircle, CheckCircle2, Zap, Cpu, CircleDollarSign, ShieldCheck, Pickaxe } from "lucide-react";
+import { ArrowLeft, Play, Timer, TrendingUp, Users, History, AlertCircle, CheckCircle2, Zap, Cpu, CircleDollarSign, ShieldCheck, Pickaxe, ShieldAlert } from "lucide-react";
 // Forced refresh to clear stale state
 import { toast } from "sonner";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { format, differenceInSeconds, addHours } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { isPiBrowserUserAgent } from "@/lib/appSecurity";
 import BrandLogo from "@/components/BrandLogo";
-import { PI_ADS_DISABLED } from "@/lib/piAds";
+import { isMiningAdsEnabled } from "@/lib/piAds";
 
 interface MiningSession {
   id: string;
@@ -69,6 +69,10 @@ const MiningPage = () => {
   const [piAuthUser, setPiAuthUser] = useState(false);
   const [adsWatched, setAdsWatched] = useState(0);
   const [requiredAds, setRequiredAds] = useState(2);
+  const [kycStatus, setKycStatus] = useState<
+    "not_submitted" | "pending" | "under_review" | "approved" | "rejected" | "additional_info_required"
+  >("not_submitted");
+  const [kycModalOpen, setKycModalOpen] = useState(false);
 
   const persistLocalSession = (session: MiningSession) => {
     if (!session?.user_id || !session?.expires_at) return;
@@ -89,6 +93,29 @@ const MiningPage = () => {
     if (!user) return;
 
     setPiAuthUser(Boolean((user as any)?.user_metadata?.pi_uid));
+
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("kyc_status")
+        .eq("id", user.id)
+        .maybeSingle();
+      const raw = String((profile as { kyc_status?: string } | null)?.kyc_status || "not_submitted");
+      if (raw === "verified" || raw === "approved") {
+        setKycStatus("approved");
+      } else if (
+        raw === "pending" ||
+        raw === "under_review" ||
+        raw === "rejected" ||
+        raw === "additional_info_required"
+      ) {
+        setKycStatus(raw);
+      } else {
+        setKycStatus("not_submitted");
+      }
+    } catch (kycErr) {
+      console.warn("KYC status load failed:", kycErr);
+    }
     
     // Load ad watch count from localStorage first, then sync with database
     const adCount = loadAdWatchCount();
@@ -492,49 +519,34 @@ const MiningPage = () => {
 
   const getTimeUntilNextAd = (): string => "Ready to watch";
 
-  const runRewardedAd = async () => {
-    // Pi Ad Network temporarily disabled — auto-grant reward without showing an ad.
-    if (!PI_ADS_DISABLED) {
-      return _runRewardedAdOriginal();
+  const loadKycStatusFresh = async (userId: string) => {
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("kyc_status")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error) throw error;
+    const raw = String((profile as { kyc_status?: string } | null)?.kyc_status || "not_submitted");
+    if (raw === "verified" || raw === "approved") return "approved" as const;
+    if (
+      raw === "pending" ||
+      raw === "under_review" ||
+      raw === "rejected" ||
+      raw === "additional_info_required"
+    ) {
+      return raw as typeof kycStatus;
     }
-    const fallbackAdId = `noad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    try {
-      window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
-      window.localStorage.setItem("pi_ad_rewarded_id", fallbackAdId);
-      window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
-    } catch {
-      // ignore
-    }
-    try {
-      const progress = await recordAdCompletion(fallbackAdId, {
-        rewarded_at: Date.now(),
-        fallback_used: true,
-        ads_disabled: true,
-      });
-      const progressPayload = progress as AdProgressPayload | null;
-      const newAdCount = Math.max(Number(progressPayload?.ads_completed || 0), adsWatched + 1);
-      rewardedAdCountRef.current = newAdCount;
-      setAdsWatched(newAdCount);
-      persistAdWatchCount(newAdCount);
-      if (newAdCount < requiredAds) {
-        toast.success(`Progress ${newAdCount}/${requiredAds} — tap Continue to proceed.`);
-        return false;
-      }
-    } catch {
-      // ignore
-    }
-    return true;
+    return "not_submitted" as const;
   };
 
-  const _runRewardedAdOriginal = async () => {
-    if (PI_ADS_DISABLED) {
-      throw new Error("Pi Ad Network is temporarily disabled.");
+  /** Always uses real Pi rewarded ads for mining (global PI_ADS_DISABLED does not apply here). */
+  const runRewardedAd = async (): Promise<boolean> => {
+    if (!isMiningAdsEnabled()) {
+      throw new Error("Mining ads are disabled.");
     }
     if (!initPi() || !window.Pi?.Ads?.showAd) {
       throw new Error("Pi Ad Network is not available. Please update Pi Browser or try again later.");
     }
-
-
 
     await window.Pi.authenticate(["username"]);
 
@@ -568,122 +580,139 @@ const MiningPage = () => {
       throw new Error(`Ad result: ${adResult.result}. You must watch the full video to start mining.`);
     }
 
+    const adId =
+      adResult.adId ||
+      `pi_ad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     if (!adResult.adId) {
-      // Generate a fallback adId for tracking when Pi Network doesn't provide one
-      const fallbackAdId = `pi_ad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.warn('Pi Network did not return adId, using fallback:', fallbackAdId);
-      
-      // Still record the ad completion with the fallback ID
-      try {
-        window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
-        window.localStorage.setItem("pi_ad_rewarded_id", fallbackAdId);
-        window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
-      } catch {
-        // ignore localStorage failures
+      console.warn("Pi Network did not return adId, using fallback:", adId);
+    }
+
+    try {
+      window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
+      window.localStorage.setItem("pi_ad_rewarded_id", String(adId));
+      window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
+    } catch {
+      // ignore
+    }
+
+    if (adResult.adId) {
+      const verification = await verifyRewardedAd(adResult.adId);
+      if (!verification.rewarded) {
+        try {
+          window.localStorage.removeItem("pi_ad_rewarded_at");
+          window.localStorage.removeItem("pi_ad_rewarded_id");
+        } catch {
+          // ignore
+        }
+        throw new Error(`Ad verification status: ${verification.data.mediator_ack_status ?? "null"}`);
       }
-      
-      // Record in database without Pi Network verification
-      const progress = await recordAdCompletion(fallbackAdId, {
+      const progress = await recordAdCompletion(String(adResult.adId), {
         rewarded_at: Date.now(),
-        fallback_used: true,
-        pi_result: adResult.result
+        pi_result: adResult.result,
+        verification: verification.data,
       });
-      
-      // Increment ad count locally
       const progressPayload = progress as AdProgressPayload | null;
       const newAdCount = Math.max(Number(progressPayload?.ads_completed || 0), adsWatched + 1);
       rewardedAdCountRef.current = newAdCount;
       setAdsWatched(newAdCount);
       persistAdWatchCount(newAdCount);
-      
-      if (newAdCount < requiredAds) {
-        toast.success(`Ad ${newAdCount}/${requiredAds} completed! Watch ${requiredAds - newAdCount} more ad${requiredAds - newAdCount > 1 ? 's' : ''} to start mining.`);
-        return false;
-      }
-      
-      return true; // Return success even without verification
+      return newAdCount >= requiredAds;
     }
 
-    // Persist a short-lived marker as soon as the ad is rewarded (helps if Pi Browser reloads after the video)
-    try {
-      window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
-      window.localStorage.setItem("pi_ad_rewarded_id", String(adResult.adId));
-      window.localStorage.setItem("openpay:pi-ads:last-rewarded", String(Date.now()));
-    } catch {
-      // ignore localStorage failures
-    }
-
-    const verification = await verifyRewardedAd(adResult.adId);
-    if (!verification.rewarded) {
-      try {
-        window.localStorage.removeItem("pi_ad_rewarded_at");
-        window.localStorage.removeItem("pi_ad_rewarded_id");
-      } catch {
-        // ignore localStorage failures
-      }
-      throw new Error(`Ad verification status: ${verification.data.mediator_ack_status ?? "null"}`);
-    }
-
-    const progress = await recordAdCompletion(String(adResult.adId), {
+    const progress = await recordAdCompletion(adId, {
       rewarded_at: Date.now(),
+      fallback_used: true,
       pi_result: adResult.result,
-      verification: verification.data,
     });
     const progressPayload = progress as AdProgressPayload | null;
     const newAdCount = Math.max(Number(progressPayload?.ads_completed || 0), adsWatched + 1);
     rewardedAdCountRef.current = newAdCount;
     setAdsWatched(newAdCount);
     persistAdWatchCount(newAdCount);
+    return newAdCount >= requiredAds;
+  };
 
-    if (newAdCount < requiredAds) {
-      toast.success(`Ad ${newAdCount}/${requiredAds} completed! Watch ${requiredAds - newAdCount} more ad${requiredAds - newAdCount > 1 ? 's' : ''} to start mining.`);
+  const adCountdownTimerRef = useRef<number | null>(null);
+
+  const waitForAdModalContinue = () =>
+    new Promise<boolean>((resolve) => {
+      if (adCountdownTimerRef.current) {
+        window.clearInterval(adCountdownTimerRef.current);
+        adCountdownTimerRef.current = null;
+      }
+      adResolveRef.current = (ok) => {
+        if (adCountdownTimerRef.current) {
+          window.clearInterval(adCountdownTimerRef.current);
+          adCountdownTimerRef.current = null;
+        }
+        resolve(ok);
+      };
+      let seconds = 5;
+      setAdCountdown(seconds);
+      setAdModalOpen(true);
+      setAdLoading(false);
+      adCountdownTimerRef.current = window.setInterval(() => {
+        seconds -= 1;
+        setAdCountdown(seconds);
+        if (seconds <= 0 && adCountdownTimerRef.current) {
+          window.clearInterval(adCountdownTimerRef.current);
+          adCountdownTimerRef.current = null;
+        }
+      }, 1000);
+    });
+
+  /** Shows countdown modal and requires watching `requiredAds` (2) rewarded ads. */
+  const runAdGate = async (): Promise<boolean> => {
+    if (!isMiningAdsEnabled()) {
+      toast.error("Mining ads are currently unavailable.");
       return false;
     }
 
-    return true;
-  };
+    while (true) {
+      const currentCount = Math.max(
+        adsWatched,
+        loadAdWatchCount(),
+        rewardedAdCountRef.current || 0,
+      );
+      if (currentCount >= requiredAds) {
+        setAdModalOpen(false);
+        return true;
+      }
 
-  const runAdGate = async (options?: { usePiAd?: boolean }) => {
-    const usePiAd = Boolean(options?.usePiAd);
-    setAdCountdown(5);
-    setAdModalOpen(true);
-    return await new Promise<boolean>((resolve) => {
-      adResolveRef.current = resolve;
-      let seconds = 5;
-      const timer = setInterval(() => {
-        seconds -= 1;
-        setAdCountdown(seconds);
-        if (seconds <= 0) {
-          clearInterval(timer);
-        }
-      }, 1000);
+      const ok = await waitForAdModalContinue();
+      if (!ok) {
+        setAdModalOpen(false);
+        return false;
+      }
 
-      const originalResolver = adResolveRef.current;
-      adResolveRef.current = async (ok) => {
-        if (!ok) {
-          originalResolver?.(false);
-          return;
+      try {
+        setAdLoading(true);
+        const done = await runRewardedAd();
+        setAdLoading(false);
+        if (done) {
+          setAdModalOpen(false);
+          return true;
         }
-        if (!usePiAd) {
-          originalResolver?.(true);
-          return;
-        }
-        try {
-          // Run actual Pi ad network when user clicks Continue
-          setAdLoading(true);
-          console.log('Starting Pi ad network verification...');
-          const adResult = await runRewardedAd();
-          console.log('Pi ad verification successful, proceeding to mining start', adResult);
-          originalResolver?.(true);
-        } catch (adError) {
-          console.error("Pi Ad Network error:", adError);
-          toast.error(adError instanceof Error ? adError.message : "Ad Network error. Please try again.");
-          originalResolver?.(false);
-        } finally {
-          setAdLoading(false);
-        }
-      };
-    });
+        const current = Math.max(
+          loadAdWatchCount(),
+          rewardedAdCountRef.current || 0,
+        );
+        const remaining = Math.max(0, requiredAds - current);
+        toast.success(
+          remaining > 0
+            ? `Ad watched! Watch ${remaining} more ad${remaining === 1 ? "" : "s"} to mine.`
+            : "Ads complete!",
+        );
+        // Loop → next countdown + next ad
+      } catch (adError) {
+        setAdLoading(false);
+        setAdModalOpen(false);
+        console.error("Pi Ad Network error:", adError);
+        toast.error(adError instanceof Error ? adError.message : "Failed to show rewarded ad.");
+        return false;
+      }
+    }
   };
 
   const startMiningSessionRpc = async (args: {
@@ -752,6 +781,21 @@ const MiningPage = () => {
         }
         return;
       }
+
+      // KYC required before mining
+      let freshKyc = kycStatus;
+      try {
+        freshKyc = await loadKycStatusFresh(user.id);
+        setKycStatus(freshKyc);
+      } catch (kycErr) {
+        console.warn("Fresh KYC check failed:", kycErr);
+      }
+      if (freshKyc !== "approved") {
+        setStarting(false);
+        setKycModalOpen(true);
+        return;
+      }
+
       if (activeSession && timeLeft > 0) {
         if (!isAuto) {
           toast.error("Mining already active. Please wait for the 24-hour timer to finish.");
@@ -773,16 +817,28 @@ const MiningPage = () => {
 
       let adVerifiedFlag = adVerified;
 
+      // Auto-start after ads still requires KYC (already checked) and enough ads watched
       if (adVerifiedFlag) {
-        console.log('Ad already verified, proceeding directly to mining start');
-        toast.success("Ad verified! Starting mining session...");
+        const effectiveAds = Math.max(
+          adsWatched,
+          loadAdWatchCount(),
+          rewardedAdCountRef.current || 0,
+        );
+        if (effectiveAds < requiredAds) {
+          adVerifiedFlag = false;
+        }
+      }
+
+      if (adVerifiedFlag) {
+        console.log("Ad already verified, proceeding directly to mining start");
+        if (!isAuto) toast.success("Ads verified! Starting mining session...");
       } else {
-        console.log('Ad not verified, running ad gate');
-        const ok = await runAdGate({ usePiAd: true });
-        console.log('Ad gate completed with result:', ok);
+        console.log("Running mining ad gate (watch 2 ads)");
+        const ok = await runAdGate();
+        console.log("Ad gate completed with result:", ok);
         if (!ok) {
           if (!isAuto) {
-            toast.error("Ad verification required to start mining.");
+            toast.error("Watch 2 rewarded ads to start mining.");
           }
           setStarting(false);
           return;
@@ -791,10 +847,10 @@ const MiningPage = () => {
         try {
           window.localStorage.setItem("pi_ad_rewarded_at", String(Date.now()));
         } catch {
-          // ignore localStorage failures
+          // ignore
         }
         if (!isAuto) {
-          toast.success("Rewarded ad verified successfully! Starting mining...");
+          toast.success("2 ads completed! Starting mining...");
         }
       }
 
@@ -1068,7 +1124,7 @@ const MiningPage = () => {
                 )}
               </div>
               <p className="mt-3 max-w-[320px] text-xs font-semibold text-white/80">
-                Note: Mining works only in Pi Browser using a Pi-auth OpenPay account.
+                Note: Mining requires KYC + Pi Browser. Watch 2 rewarded ads to engage.
               </p>
             </div>
 
@@ -1302,53 +1358,110 @@ const MiningPage = () => {
       </div>
 
       <BottomNav active="menu" />
-      <Dialog open={adModalOpen} onOpenChange={(open) => {
-        setAdModalOpen(open);
-        if (!open && adResolveRef.current) {
-          adResolveRef.current(false);
-          adResolveRef.current = null;
-        }
-      }}>
-        <DialogContent className="rounded-2xl">
-          <DialogTitle>Watch Ads to Start Mining</DialogTitle>
-          <div className="mt-2 text-sm text-muted-foreground">
-            Watch {requiredAds} rewarded ads to unlock your mining session. Progress: {adsWatched}/{requiredAds}
+
+      {/* Complete Your KYC modal */}
+      <Dialog open={kycModalOpen} onOpenChange={setKycModalOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="w-[calc(100vw-2rem)] max-w-[360px] gap-0 overflow-hidden rounded-[28px] border-0 bg-white p-0 shadow-[0_28px_80px_-24px_rgba(0,0,0,0.45)]"
+        >
+          <div className="px-6 pb-2 pt-8 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#FF9500]/15">
+              <ShieldAlert className="h-7 w-7 text-[#FF9500]" strokeWidth={2.25} />
+            </div>
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-center text-[22px] font-bold tracking-[-0.03em] text-[#1d1d1f]">
+                Complete Your KYC
+              </DialogTitle>
+              <DialogDescription className="text-center text-[14px] leading-relaxed text-[#6e6e73]">
+                Only verified accounts can mine. Finish KYC to unlock Engage Mining and earn OPEN rewards.
+              </DialogDescription>
+            </DialogHeader>
           </div>
-          
-          {/* Progress indicator */}
-          <div className="mt-3">
-            <div className="flex gap-1">
+          <div className="space-y-2 px-4 pb-6 pt-2">
+            <Button
+              className="h-12 w-full rounded-2xl bg-[#007AFF] text-[17px] font-semibold text-white hover:bg-[#0066d6]"
+              onClick={() => {
+                setKycModalOpen(false);
+                navigate(kycStatus === "not_submitted" ? "/kyc" : "/kyc-status");
+              }}
+            >
+              {kycStatus === "not_submitted" ? "Start KYC" : "View KYC Status"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => setKycModalOpen(false)}
+              className="flex h-11 w-full items-center justify-center text-[16px] font-medium text-[#007AFF]"
+            >
+              Cancel
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Watch 2 ads + countdown modal */}
+      <Dialog
+        open={adModalOpen}
+        onOpenChange={(open) => {
+          setAdModalOpen(open);
+          if (!open && adResolveRef.current) {
+            adResolveRef.current(false);
+            adResolveRef.current = null;
+          }
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          className="w-[calc(100vw-2rem)] max-w-[380px] gap-0 overflow-hidden rounded-[28px] border-0 bg-white p-0 shadow-[0_28px_80px_-24px_rgba(0,0,0,0.45)]"
+        >
+          <div className="px-6 pb-2 pt-8 text-center">
+            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[#007AFF]/10">
+              {adCountdown > 0 ? (
+                <span className="text-2xl font-bold tabular-nums text-[#007AFF]">{adCountdown}</span>
+              ) : (
+                <Play className="h-7 w-7 text-[#007AFF]" fill="currentColor" />
+              )}
+            </div>
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-center text-[22px] font-bold tracking-[-0.03em] text-[#1d1d1f]">
+                Watch 2 Ads to Mine
+              </DialogTitle>
+              <DialogDescription className="text-center text-[14px] text-[#6e6e73]">
+                Progress {Math.min(adsWatched, requiredAds)}/{requiredAds} · Pi Ad Network
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="px-5 pb-2">
+            <div className="flex gap-1.5">
               {Array.from({ length: requiredAds }).map((_, index) => (
                 <div
                   key={index}
-                  className={`h-2 flex-1 rounded-full ${
-                    index < adsWatched 
-                      ? 'bg-green-500' 
-                      : 'bg-gray-200'
+                  className={`h-1.5 flex-1 rounded-full ${
+                    index < adsWatched ? "bg-[#34C759]" : "bg-[#e5e5ea]"
                   }`}
                 />
               ))}
             </div>
-            <p className="mt-2 text-xs font-medium text-muted-foreground text-center">
-              {adsWatched === 0 
-                ? `Watch ${requiredAds} ads to start mining`
-                : adsWatched < requiredAds 
-                  ? `${requiredAds - adsWatched} more ad${requiredAds - adsWatched > 1 ? 's' : ''} needed`
-                  : 'All ads completed! Starting mining...'
-              }
+            <p className="mt-2 text-center text-[12px] font-medium text-[#8e8e93]">
+              {adsWatched >= requiredAds
+                ? "All ads completed — starting mining…"
+                : adCountdown > 0
+                  ? `Starting in ${adCountdown}s…`
+                  : `Ready for ad ${Math.min(adsWatched + 1, requiredAds)} of ${requiredAds}`}
             </p>
           </div>
-          
-          <div className="mt-4 h-40 w-full overflow-hidden rounded-xl bg-secondary/40">
+
+          <div className="mx-5 mb-3 h-36 overflow-hidden rounded-[16px] bg-[#f2f2f7]">
             {adImgError ? (
-              <div className="flex h-full w-full items-center justify-center gap-2 text-muted-foreground">
-                <BrandLogo className="h-6 w-6 text-paypal-blue" />
-                <span className="text-sm font-semibold">OpenApp</span>
+              <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-[#8e8e93]">
+                <BrandLogo className="h-8 w-8 text-[#007AFF]" />
+                <span className="text-[13px] font-semibold">OpenPay Mining</span>
               </div>
             ) : (
               <img
                 src="https://i.ibb.co/67FqBTmD/photo-2026-03-02-01-43-56.jpg"
-                alt="OpenApp — Discover Pi Ecosystem apps"
+                alt="Watch rewarded ads to mine"
                 className="h-full w-full object-cover"
                 loading="eager"
                 referrerPolicy="no-referrer"
@@ -1356,46 +1469,39 @@ const MiningPage = () => {
               />
             )}
           </div>
-          <div className="mt-3">
-            <p className="text-base font-semibold text-foreground">Watch Rewarded Ad {adsWatched + 1}/{requiredAds}</p>
-            <p className="text-sm text-muted-foreground">
-              Click Continue to watch a Pi Network rewarded ad. Complete {requiredAds} ads to start mining!
-            </p>
-          </div>
-          <div className="mt-2 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground text-sm">
-            {adLoading ? "Loading ad..." : 
-             canWatchAd() ? 
-               `Ready to watch ad ${adsWatched + 1}/${requiredAds}` : 
-               `Wait before next ad: ${getTimeUntilNextAd()}`
-            }
-          </div>
-          <Button asChild variant="outline" className="mt-3 w-full rounded-2xl">
-            <a
-              href="https://openappdev.space/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open App
-            </a>
-          </Button>
-          <div className="mt-4">
+
+          <div className="space-y-2 px-4 pb-6">
             <Button
-              className="w-full rounded-2xl"
-              disabled={adCountdown > 0 || adLoading || !canWatchAd()}
+              className="h-12 w-full rounded-2xl bg-[#007AFF] text-[17px] font-semibold text-white hover:bg-[#0066d6]"
+              disabled={adCountdown > 0 || adLoading}
               onClick={() => {
-                setAdModalOpen(false);
                 if (adResolveRef.current) {
-                  adResolveRef.current(true);
+                  const resolve = adResolveRef.current;
                   adResolveRef.current = null;
+                  resolve(true);
                 }
               }}
             >
-              {adLoading ? "Loading Ad..." : 
-               canWatchAd() ? 
-                 `Watch Ad ${adsWatched + 1}/${requiredAds}` : 
-                 `Wait: ${getTimeUntilNextAd()}`
-              }
+              {adLoading
+                ? "Opening Pi Ad…"
+                : adCountdown > 0
+                  ? `Wait ${adCountdown}s`
+                  : `Watch Ad ${Math.min(adsWatched + 1, requiredAds)}/${requiredAds}`}
             </Button>
+            <button
+              type="button"
+              disabled={adLoading}
+              onClick={() => {
+                setAdModalOpen(false);
+                if (adResolveRef.current) {
+                  adResolveRef.current(false);
+                  adResolveRef.current = null;
+                }
+              }}
+              className="flex h-11 w-full items-center justify-center text-[16px] font-medium text-[#007AFF] disabled:opacity-40"
+            >
+              Cancel
+            </button>
           </div>
         </DialogContent>
       </Dialog>

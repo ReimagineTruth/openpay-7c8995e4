@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, useRef } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock, Hexagon, Brain, Send, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, CircleDollarSign, FileText, Wallet, Activity, HelpCircle, Info, Scale, LogOut, Clapperboard, ShieldAlert, FileCheck, Lock, Users, BookOpen, Download, Megaphone, Smartphone, CreditCard, ShieldCheck, Handshake, Monitor, Copy, X, TrendingUp, Pickaxe, Coins, Pointer, CheckCircle, XCircle, AlertCircle, RefreshCw, Bell, Settings, ChevronUp, ChevronDown, ExternalLink, PiggyBank, Eye, QrCode, Check, LayoutGrid, Store, EyeOff, HandCoins, Clock, Hexagon, Brain, Send, MoreHorizontal, Layers } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import CurrencySelector from "@/components/CurrencySelector";
 import { PI_TO_USD, useCurrency } from "@/contexts/CurrencyContext";
@@ -37,6 +37,7 @@ import { PI_ADS_DISABLED } from "@/lib/piAds";
 import { usePiUsdPrice } from "@/lib/piPrice";
 import PiTokenCard from "@/components/dashboard/PiTokenCard";
 import OusdTokenCard from "@/components/dashboard/OusdTokenCard";
+import AssetsSection from "@/components/dashboard/AssetsSection";
 import {
   DASHBOARD_SECTION_NAV,
   DASHBOARD_SECTION_TITLES,
@@ -2224,6 +2225,15 @@ const Dashboard = () => {
       onClick: () => setActiveSection("wallet"),
     },
     {
+      id: "assets",
+      title: "Assets",
+      description: "Track OpenPay and OpenPay Pro tokens in one place.",
+      stat: `${balanceHidden ? "****" : formatCompactCurrency(balance)} OUSD`,
+      badge: "Pro linked",
+      icon: Layers,
+      onClick: () => setActiveSection("assets"),
+    },
+    {
       id: "savings",
       title: "Savings",
       description: "Move funds and track APY on your savings wallet.",
@@ -2395,7 +2405,7 @@ const Dashboard = () => {
 
 
       {activeSection === "wallet" && (
-      <div key="wallet-balance" className="dash-balance-wrap mx-4 mt-4">
+        <div key="wallet-balance" className="dash-balance-wrap mx-4 mt-4">
         <div className="dash-hero relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-paypal-blue to-[#0059c1] p-5 text-white shadow-lg shadow-black/15">
           {/* Toggles row */}
           <div className="flex flex-wrap items-center gap-2">
@@ -2571,6 +2581,48 @@ const Dashboard = () => {
       )}
 
       {/* Top balance card (Wallet style) for every section */}
+      {activeSection === "assets" && (
+        <div key="assets-balance" className="dash-balance-wrap mx-4 mt-4">
+          <DashboardSectionHero
+            badge="Token balances"
+            badgeIcon={Layers}
+            metricLabel="Total assets (USD)"
+            metricValue={
+              balanceHidden
+                ? "••••••"
+                : (
+                  <AnimatedCounter
+                    value={
+                      Number((savings?.wallet_balance ?? balance) || 0) +
+                      Number(savings?.savings_balance ?? 0) +
+                      Number(miningBalance || 0) +
+                      Number(selectedMerchantBalance?.available_balance ?? 0)
+                    }
+                  />
+                )
+            }
+            metricSubtitle="Wallet · Savings · Mining · Merchant"
+            icon={Layers}
+            balanceHidden={balanceHidden}
+            onToggleHidden={toggleBalanceHidden}
+            action={{
+              label: "Open Pro",
+              onClick: () => window.open("https://openpaypro.space/wallet", "_blank", "noopener,noreferrer"),
+            }}
+            stats={[
+              {
+                label: "Wallet OUSD",
+                value: balanceHidden ? "****" : <AnimatedCounter value={Number(savings?.wallet_balance ?? balance) || 0} />,
+              },
+              {
+                label: "Mining OUSD",
+                value: balanceHidden ? "****" : <AnimatedCounter value={miningBalance} codeOverride="OUSD" />,
+              },
+            ]}
+          />
+        </div>
+      )}
+
       {activeSection === "savings" && (
         <div key="savings-balance" className="dash-balance-wrap mx-4 mt-4">
           <DashboardSectionHero
@@ -2883,6 +2935,19 @@ const Dashboard = () => {
 
 
       <div key={activeSection} className="dashboard-section-enter">
+      {activeSection === "assets" && (
+        <AssetsSection
+          username={username}
+          balances={{
+            walletOusd: Number(savings?.wallet_balance ?? balance) || 0,
+            savingsOusd: Number(savings?.savings_balance ?? 0) || 0,
+            miningOusd: Number(miningBalance) || 0,
+            merchantOusd: Number(selectedMerchantBalance?.available_balance ?? 0) || 0,
+          }}
+          balanceHidden={balanceHidden}
+        />
+      )}
+
       {activeSection === "savings" && (
         <div className="mx-4 mt-4">
           <div id="savings-move-panel" className="dash-panel text-foreground">

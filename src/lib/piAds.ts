@@ -1,8 +1,19 @@
 // Pi Ad Network verification utilities
 // These functions should be implemented in your backend for production use
 
-/** Global kill switch — when true, no Pi interstitial/rewarded ads are shown anywhere. */
+/** Global kill switch — when true, no Pi interstitial/auto ads are shown app-wide. */
 export const PI_ADS_DISABLED = true;
+
+/**
+ * Mining is the only surface allowed to show Pi rewarded ads while the global
+ * kill switch is on. Keep this true to enable the Engage Mining → watch 2 ads flow.
+ */
+export const PI_ADS_MINING_ENABLED = true;
+
+/** True when mining may call Pi.Ads.showAd("rewarded"). */
+export function isMiningAdsEnabled(): boolean {
+  return PI_ADS_MINING_ENABLED;
+}
 
 export interface PiAdVerificationRequest {
   adId: string;
@@ -92,7 +103,7 @@ export function isPiBrowser(): boolean {
  * Check if Pi Ad Network is available
  */
 export async function isPiAdNetworkAvailable(): Promise<boolean> {
-  if (PI_ADS_DISABLED) return false;
+  if (PI_ADS_DISABLED && !PI_ADS_MINING_ENABLED) return false;
   if (!isPiBrowser() || !window.Pi?.Ads) {
     return false;
   }
@@ -102,6 +113,18 @@ export async function isPiAdNetworkAvailable(): Promise<boolean> {
     return features.includes("ad_network");
   } catch {
     return false;
+  }
+}
+
+/** Mining-only availability check (ignores global interstitial kill switch). */
+export async function isMiningPiAdNetworkAvailable(): Promise<boolean> {
+  if (!PI_ADS_MINING_ENABLED) return false;
+  if (!isPiBrowser() || !window.Pi?.Ads) return false;
+  try {
+    const features = await window.Pi.nativeFeaturesList();
+    return features.includes("ad_network");
+  } catch {
+    return Boolean(window.Pi?.Ads?.showAd);
   }
 }
 

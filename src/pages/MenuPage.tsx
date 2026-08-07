@@ -18,8 +18,6 @@ import { getShowApkBanner, setShowApkBanner, getShowOpenAppBanner, setShowOpenAp
 
 import { useCurrency } from "@/contexts/CurrencyContext";
 
-import { PI_TO_USD } from "@/contexts/CurrencyContext";
-
 import { CompactDigitalRateDisplay } from "@/components/ui/DigitalRateDisplay";
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -765,14 +763,7 @@ const MenuPage = () => {
         {/* Compact Rate Display */}
 
         <CompactDigitalRateDisplay
-
-          rates={{
-
-            piToOusd: PI_TO_USD,
-
-            usdToOusd: 1
-
-          }}
+          liveRateClosed={liveRateClosed}
           className="mb-6"
         />
 

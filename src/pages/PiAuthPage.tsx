@@ -15,6 +15,7 @@ import { isPiBrowserUserAgent, isPiBrowserUAOnly } from "@/lib/appSecurity";
 import { getFunctionErrorMessage } from "@/lib/supabaseFunctionError";
 import { isPiOAuthEnabled } from "@/lib/piOAuth";
 import { openExternalUrl } from "@/lib/externalLink";
+import { APP_VERSION_LABEL } from "@/lib/appVersion";
 import { OUSD_TOKEN } from "@/lib/ousdPrice";
 import {
   Dialog,
@@ -311,6 +312,9 @@ const PiAuthPage = () => {
           <h1 className="text-2xl font-bold tracking-tight text-white">OpenPay</h1>
           <p className="mt-1 text-sm text-white/75">
             {inPiBrowser ? "Sign in with your Pi account" : "Sign in to your wallet"}
+          </p>
+          <p className="mt-2 text-[11px] font-medium tracking-[-0.01em] text-white/55">
+            {APP_VERSION_LABEL}
           </p>
         </div>
 

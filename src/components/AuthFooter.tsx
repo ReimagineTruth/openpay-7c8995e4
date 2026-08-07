@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { APP_VERSION_LABEL } from "@/lib/appVersion";
 
 const AuthFooter = () => {
   return (
@@ -38,6 +39,9 @@ const AuthFooter = () => {
           User Guide
         </Link>
       </div>
+      <p className="pt-1 text-[11px] font-medium tracking-[-0.01em] text-[#8e8e93]">
+        OpenPay {APP_VERSION_LABEL}
+      </p>
     </div>
   );
 };

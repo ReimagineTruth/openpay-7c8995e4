@@ -4,8 +4,8 @@ import {
   BadgeCheck,
   Brain,
   CircleDollarSign,
-  
   HandCoins,
+  Layers,
   Paintbrush,
   Pickaxe,
   QrCode,
@@ -17,6 +17,7 @@ import {
 
 export type DashboardSection =
   | "wallet"
+  | "assets"
   | "savings"
   | "credit"
   | "loans"
@@ -39,10 +40,10 @@ export type DashboardSectionNavItem = {
 
 export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
   { key: "wallet", label: "Wallet", icon: Wallet, description: "Balances & transfers" },
+  { key: "assets", label: "Assets", icon: Layers, description: "OpenPay + Pro tokens" },
   { key: "savings", label: "Savings", icon: PiggyBank, description: "Grow & move funds" },
   { key: "credit", label: "Credit", icon: Scale, description: "Score & trust" },
   { key: "loans", label: "Loans", icon: HandCoins, description: "Borrow & repay" },
-  
   { key: "buy", label: "Buy", icon: CircleDollarSign, description: "Add OpenUSD" },
   { key: "swap", label: "Withdraw OUSD", icon: ArrowLeftRight, description: "OUSD payout" },
   { key: "mining", label: "Mining", icon: Pickaxe, description: "Earn OUSD rewards" },
@@ -61,6 +62,7 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
 
 export const DASHBOARD_SECTION_TITLES: Record<DashboardSection, string> = {
   wallet: "Wallet",
+  assets: "Assets",
   savings: "Savings",
   credit: "Credit Profile",
   loans: "Loans",
@@ -78,6 +80,8 @@ export const getDashboardSectionSubtitle = (
   switch (section) {
     case "wallet":
       return username ? `@${username} · Personal & merchant balances` : "Personal & merchant balances";
+    case "assets":
+      return "Track OpenPay wallet and OpenPay Pro tokens in one place";
     case "savings":
       return "Earn yield and move funds between wallet and savings";
     case "credit":
