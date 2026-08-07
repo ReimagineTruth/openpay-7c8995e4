@@ -165,7 +165,7 @@ export default function QrPayCreatePage() {
     const createArgs: Record<string, unknown> = {
       p_title: title || defaultTitleForPurpose(purposeId),
       p_description: description || null,
-      p_currency: cur,
+      p_currency: String(cur || "").trim().toUpperCase(),
       p_items: cleaned,
       p_allow_pi: allow.pi,
       p_allow_wallet: allow.wallet,
@@ -192,7 +192,16 @@ export default function QrPayCreatePage() {
       const { p_payment_purpose: _drop, ...legacyArgs } = createArgs;
       ({ data, error } = await (supabase as any).rpc("qr_pay_create", legacyArgs));
     }
-    if (error) { setLoading(false); toast.error(error.message); return; }
+    if (error) {
+      setLoading(false);
+      const msg = String(error.message || "");
+      toast.error(
+        /currency_required/i.test(msg)
+          ? "PI currency needs a quick server update. Ask admin to apply the latest QR Pay migration, or try OPEN USD for now."
+          : msg,
+      );
+      return;
+    }
 
     if (proEnabled && proTo.trim()) {
       const { error: proErr } = await (supabase as any).rpc("qr_pay_set_pro_settlement", {

@@ -325,7 +325,8 @@ DECLARE
   v_title text;
 BEGIN
   IF v_user IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
-  IF p_currency IS NULL OR length(p_currency) < 3 THEN RAISE EXCEPTION 'currency_required'; END IF;
+  -- Allow 2-char codes like PI (ISO-4217 is usually 3, but OpenPay uses PI)
+  IF p_currency IS NULL OR length(btrim(p_currency)) < 2 THEN RAISE EXCEPTION 'currency_required'; END IF;
 
   -- Resolve purpose (prefer explicit purpose, else treat payment_type as purpose id)
   v_purpose := NULLIF(btrim(COALESCE(p_payment_purpose, '')), '');
