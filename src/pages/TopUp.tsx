@@ -125,7 +125,14 @@ const TopUp = () => {
     const parsed = Number(amountFromLink);
     if (!Number.isFinite(parsed) || parsed <= 0) return;
     setAmount(parsed.toFixed(2));
-  }, [searchParams]);
+    setPiSpend(piAmountForOusd(parsed, piPrice.price).toFixed(4));
+  }, [searchParams, piPrice.price]);
+
+  // Keep the OUSD credit in sync with the live Pi price while the user is typing PI.
+  useEffect(() => {
+    if (!(safePiSpend > 0)) return;
+    setAmount(ousdFromPiAmount(safePiSpend, piPrice.price).toFixed(2));
+  }, [safePiSpend, piPrice.price]);
 
   const initPi = () => {
     if (!window.Pi) {
