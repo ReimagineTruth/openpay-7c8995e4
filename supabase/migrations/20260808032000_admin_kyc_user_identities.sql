@@ -1,5 +1,30 @@
 -- Admin KYC identity lookup: bypass RLS so reviewers see linked OpenPay/Pi account data.
 -- OpenPay username, Pi username, and account number are system-linked — never manually entered on KYC.
+--
+-- NOTE: RETURNS TABLE out-params collide with SELECT aliases in plpgsql — select by position only.
+
+CREATE OR REPLACE FUNCTION public.is_openpay_core_admin()
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_user_id UUID := auth.uid();
+  v_username TEXT;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN false;
+  END IF;
+
+  SELECT LOWER(regexp_replace(COALESCE(p.username, ''), '^@+', '', 'g'))
+    INTO v_username
+  FROM public.profiles p
+  WHERE p.id = v_user_id;
+
+  RETURN COALESCE(v_username, '') IN ('openpay', 'wainfoundation');
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION public.admin_kyc_user_identities(p_user_ids UUID[])
 RETURNS TABLE (
@@ -15,31 +40,49 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+
   IF NOT public.is_openpay_core_admin() THEN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
 
-  IF p_user_ids IS NULL OR cardinality(p_user_ids) = 0 THEN
+  IF p_user_ids IS NULL OR COALESCE(array_length(p_user_ids, 1), 0) = 0 THEN
     RETURN;
   END IF;
 
+  -- Select by position (no AS aliases matching OUT params — avoids plpgsql ambiguity).
   RETURN QUERY
   SELECT
-    u.id AS user_id,
-    NULLIF(LOWER(TRIM(BOTH FROM COALESCE(p.username, ''))), '') AS profile_username,
-    NULLIF(LOWER(TRIM(BOTH FROM COALESCE(ua.account_username, ''))), '') AS account_username,
-    NULLIF(UPPER(TRIM(BOTH FROM COALESCE(ua.account_number, ''))), '') AS account_number,
-    NULLIF(TRIM(BOTH FROM COALESCE(ua.account_name, '')), '') AS account_name,
-    NULLIF(TRIM(BOTH FROM COALESCE(pa.pi_username, '')), '') AS pi_username
+    u.id,
+    NULLIF(LOWER(regexp_replace(TRIM(BOTH FROM COALESCE(p.username, '')), '^@+', '', 'g')), ''),
+    NULLIF(LOWER(regexp_replace(TRIM(BOTH FROM COALESCE(ua.account_username, '')), '^@+', '', 'g')), ''),
+    NULLIF(UPPER(TRIM(BOTH FROM COALESCE(ua.account_number, ''))), ''),
+    NULLIF(TRIM(BOTH FROM COALESCE(ua.account_name, '')), ''),
+    NULLIF(regexp_replace(TRIM(BOTH FROM COALESCE(pa.pi_username, '')), '^@+', '', 'g'), '')
   FROM UNNEST(p_user_ids) AS u(id)
   LEFT JOIN public.profiles p ON p.id = u.id
-  LEFT JOIN public.user_accounts ua ON ua.user_id = u.id
-  LEFT JOIN public.pi_accounts pa ON pa.user_id = u.id;
+  LEFT JOIN LATERAL (
+    SELECT ua1.account_username, ua1.account_number, ua1.account_name
+    FROM public.user_accounts ua1
+    WHERE ua1.user_id = u.id
+    ORDER BY ua1.created_at DESC NULLS LAST
+    LIMIT 1
+  ) ua ON true
+  LEFT JOIN LATERAL (
+    SELECT pa1.pi_username
+    FROM public.pi_accounts pa1
+    WHERE pa1.user_id = u.id
+    ORDER BY pa1.updated_at DESC NULLS LAST
+    LIMIT 1
+  ) pa ON true;
 END;
 $$;
 
 REVOKE ALL ON FUNCTION public.admin_kyc_user_identities(UUID[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.admin_kyc_user_identities(UUID[]) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_openpay_core_admin() TO authenticated, service_role;
 
 COMMENT ON FUNCTION public.admin_kyc_user_identities(UUID[]) IS
   'KYC admin: auto-resolve OpenPay username, account number, and Pi username for applicants (no manual fill).';

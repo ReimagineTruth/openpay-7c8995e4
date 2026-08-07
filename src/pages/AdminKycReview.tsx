@@ -42,10 +42,37 @@ const channelBadgeClass = (channel?: KycChannel) => {
   }
 };
 
-const chunkIds = <T,>(items: T[], size = 200): T[][] => {
-  const out: T[][] = [];
+const chunkIds = (items: string[], size = 200): string[][] => {
+  const out: string[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
   return out;
+};
+
+const applyIdentity = (
+  row: ReturnType<typeof normalizeKycApplication>,
+  raw: Record<string, unknown>,
+  identity: AdminKycIdentityRow | undefined,
+  avatarUrl: string | null | undefined,
+): AdminKycApplicationRecord => {
+  const source = String(raw.source || "openpay");
+  const openpayUsername = resolveOpenPayUsername(identity);
+  const piUsername = identity?.pi_username || null;
+  const channel: KycChannel = source === "partner" ? "pro" : piUsername ? "pi" : "openpay";
+  return {
+    ...row,
+    source,
+    channel,
+    pi_username: piUsername,
+    partner_app_id: (raw.partner_app_id as string | null) || null,
+    external_user_id: (raw.external_user_id as string | null) || null,
+    external_ref: (raw.external_ref as string | null) || null,
+    callback_url: (raw.callback_url as string | null) || null,
+    profile_username: openpayUsername,
+    openpay_username: openpayUsername,
+    openpay_account_number: identity?.account_number || null,
+    openpay_account_name: identity?.account_name || null,
+    profile_avatar_url: avatarUrl || null,
+  };
 };
 
 const AdminKycReview = () => {
@@ -84,46 +111,35 @@ const AdminKycReview = () => {
         return;
       }
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("kyc_applications")
         .select("*")
         .order("submitted_at", { ascending: false });
 
       if (error) throw error;
 
-      const normalized = (Array.isArray(data) ? data : []).map((row: any) => normalizeKycApplication(row));
+      const normalized = (Array.isArray(data) ? data : []).map((row) => normalizeKycApplication(row as Record<string, unknown>));
       const userIds = [...new Set(normalized.map((row) => row.user_id).filter(Boolean))];
+      const rawRows = (Array.isArray(data) ? data : []) as unknown as Record<string, unknown>[];
 
       // SECURITY DEFINER RPC bypasses RLS so admins see linked OpenPay/Pi identity (auto, not form-filled).
       const identityMap = new Map<string, AdminKycIdentityRow>();
       const avatarMap = new Map<string, string | null>();
+      let identityRpcFailed = false;
+
       if (userIds.length > 0) {
-        for (const batch of chunkIds(userIds, 250)) {
+        for (const batch of chunkIds(userIds, 100)) {
           const { data: identities, error: idErr } = await (supabase as any).rpc("admin_kyc_user_identities", {
             p_user_ids: batch,
           });
           if (idErr) {
+            identityRpcFailed = true;
             console.warn("admin_kyc_user_identities failed", idErr);
-            // Fallback: profiles only (may miss account # / Pi due to RLS)
-            const { data: profiles } = await supabase
-              .from("profiles")
-              .select("id, username, avatar_url")
-              .in("id", batch);
-            (profiles || []).forEach((row: any) => {
-              identityMap.set(String(row.id), {
-                user_id: String(row.id),
-                profile_username: row.username || null,
-                account_username: null,
-                account_number: null,
-                account_name: null,
-                pi_username: null,
-              });
-              avatarMap.set(String(row.id), row.avatar_url || null);
-            });
-            continue;
+            break;
           }
-          (Array.isArray(identities) ? identities : []).forEach((row: any) => {
-            const uid = String(row.user_id || "");
+          const rows = (Array.isArray(identities) ? identities : []) as AdminKycIdentityRow[];
+          rows.forEach((row) => {
+            const uid = String(row?.user_id || "");
             if (!uid) return;
             identityMap.set(uid, {
               user_id: uid,
@@ -135,36 +151,34 @@ const AdminKycReview = () => {
             });
           });
         }
-        for (const batch of chunkIds(userIds, 250)) {
-          const { data: profiles } = await supabase.from("profiles").select("id, avatar_url").in("id", batch);
-          (profiles || []).forEach((row: any) => avatarMap.set(String(row.id), row.avatar_url || null));
+
+        // Avatars are optional (profiles may be RLS-limited); never block the page.
+        for (const batch of chunkIds(userIds, 100)) {
+          const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", batch);
+          (profiles || []).forEach((row) => {
+            const uid = String(row.id);
+            avatarMap.set(uid, row.avatar_url || null);
+            if (!identityMap.has(uid) && row.username) {
+              identityMap.set(uid, {
+                user_id: uid,
+                profile_username: row.username,
+                account_username: null,
+                account_number: null,
+                account_name: null,
+                pi_username: null,
+              });
+            }
+          });
         }
       }
 
-      const rawRows = Array.isArray(data) ? data : [];
-      const merged = normalized.map((row, index) => {
-        const identity = identityMap.get(row.user_id);
-        const raw = (rawRows[index] || {}) as any;
-        const source = raw.source || "openpay";
-        const openpayUsername = resolveOpenPayUsername(identity);
-        const piUsername = identity?.pi_username || null;
-        const channel: KycChannel = source === "partner" ? "pro" : piUsername ? "pi" : "openpay";
-        return {
-          ...row,
-          source,
-          channel,
-          pi_username: piUsername,
-          partner_app_id: raw.partner_app_id || null,
-          external_user_id: raw.external_user_id || null,
-          external_ref: raw.external_ref || null,
-          callback_url: raw.callback_url || null,
-          profile_username: openpayUsername,
-          openpay_username: openpayUsername,
-          openpay_account_number: identity?.account_number || null,
-          openpay_account_name: identity?.account_name || null,
-          profile_avatar_url: avatarMap.get(row.user_id) || null,
-        };
-      });
+      if (identityRpcFailed) {
+        toast.error("Identity auto-fill RPC missing or unauthorized. Run admin_kyc_user_identities_install.sql in Supabase.");
+      }
+
+      const merged = normalized.map((row, index) =>
+        applyIdentity(row, rawRows[index] || {}, identityMap.get(row.user_id), avatarMap.get(row.user_id)),
+      );
 
 
 
@@ -357,14 +371,14 @@ const AdminKycReview = () => {
         const searchValue = searchTerm.trim().toLowerCase();
         const matchesSearch =
           !searchValue ||
-          app.full_name.toLowerCase().includes(searchValue) ||
-          app.email.toLowerCase().includes(searchValue) ||
-          app.id_document_number.toLowerCase().includes(searchValue) ||
+          String(app.full_name || "").toLowerCase().includes(searchValue) ||
+          String(app.email || "").toLowerCase().includes(searchValue) ||
+          String(app.id_document_number || "").toLowerCase().includes(searchValue) ||
           String(app.profile_username || "").toLowerCase().includes(searchValue) ||
           String(app.openpay_username || "").toLowerCase().includes(searchValue) ||
           String(app.openpay_account_number || "").toLowerCase().includes(searchValue) ||
           String(app.pi_username || "").toLowerCase().includes(searchValue) ||
-          app.user_id.toLowerCase().includes(searchValue);
+          String(app.user_id || "").toLowerCase().includes(searchValue);
         const matchesStatus = statusFilter === "all" || app.status === statusFilter;
         const matchesChannel = channelFilter === "all" || (app.channel || "openpay") === channelFilter;
         return matchesSearch && matchesStatus && matchesChannel;
@@ -524,7 +538,7 @@ const AdminKycReview = () => {
                       </p>
 
                       <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                        <span>{application.id_document_type.replace(/_/g, " ")}</span>
+                        <span>{String(application.id_document_type || "").replace(/_/g, " ") || "—"}</span>
                         <span>{new Date(application.submitted_at).toLocaleDateString()}</span>
                       </div>
                     </div>
@@ -538,7 +552,7 @@ const AdminKycReview = () => {
 
 
         {selectedApplication ? (
-          <div className="fixed inset-0 z-50 flex flex-col bg-white lg:static lg:z-auto lg:flex-1 lg:sticky lg:top-0 lg:max-h-screen">
+          <div className="flex max-h-screen flex-col bg-white max-lg:fixed max-lg:inset-0 max-lg:z-50 lg:sticky lg:top-0 lg:flex-1">
             <div className="flex-shrink-0 border-b border-gray-200 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
