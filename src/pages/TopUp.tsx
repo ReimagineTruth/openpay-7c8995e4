@@ -26,6 +26,7 @@ const PI_PAYMENT_ICON_URL = "https://i.ibb.co/jk8XtTPj/pi-network-pi-icons-pi-lo
 
 const TopUp = () => {
   const [amount, setAmount] = useState("");
+  const [piSpend, setPiSpend] = useState("");
   const [loading, setLoading] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
