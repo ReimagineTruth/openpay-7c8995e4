@@ -3684,6 +3684,78 @@ export type Database = {
           },
         ]
       }
+      qr_pay_platform_settings: {
+        Row: {
+          allow_apple_pay: boolean
+          allow_bank: boolean
+          allow_billease: boolean
+          allow_gcash: boolean
+          allow_google_pay: boolean
+          allow_grab_pay: boolean
+          allow_guest: boolean
+          allow_maya: boolean
+          allow_moonpay: boolean
+          allow_paypal: boolean
+          allow_pi: boolean
+          allow_pro: boolean
+          allow_qr_ph: boolean
+          allow_shopee_pay: boolean
+          allow_virtual_card: boolean
+          allow_wallet: boolean
+          id: boolean
+          maintenance_message: string
+          maintenance_mode: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allow_apple_pay?: boolean
+          allow_bank?: boolean
+          allow_billease?: boolean
+          allow_gcash?: boolean
+          allow_google_pay?: boolean
+          allow_grab_pay?: boolean
+          allow_guest?: boolean
+          allow_maya?: boolean
+          allow_moonpay?: boolean
+          allow_paypal?: boolean
+          allow_pi?: boolean
+          allow_pro?: boolean
+          allow_qr_ph?: boolean
+          allow_shopee_pay?: boolean
+          allow_virtual_card?: boolean
+          allow_wallet?: boolean
+          id?: boolean
+          maintenance_message?: string
+          maintenance_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allow_apple_pay?: boolean
+          allow_bank?: boolean
+          allow_billease?: boolean
+          allow_gcash?: boolean
+          allow_google_pay?: boolean
+          allow_grab_pay?: boolean
+          allow_guest?: boolean
+          allow_maya?: boolean
+          allow_moonpay?: boolean
+          allow_paypal?: boolean
+          allow_pi?: boolean
+          allow_pro?: boolean
+          allow_qr_ph?: boolean
+          allow_shopee_pay?: boolean
+          allow_virtual_card?: boolean
+          allow_wallet?: boolean
+          id?: boolean
+          maintenance_message?: string
+          maintenance_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       qr_pay_purposes: {
         Row: {
           active: boolean
@@ -4966,6 +5038,17 @@ export type Database = {
       admin_dashboard_history:
         | { Args: never; Returns: Json }
         | { Args: { p_limit: number; p_offset: number }; Returns: Json }
+      admin_kyc_user_identities: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          account_name: string
+          account_number: string
+          account_username: string
+          pi_username: string
+          profile_username: string
+          user_id: string
+        }[]
+      }
       admin_list_loan_applications: {
         Args: { p_limit?: number; p_offset?: number; p_status?: string }
         Returns: {
@@ -6106,6 +6189,16 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      qr_pay__ledger_payload: {
+        Args: {
+          p_method: string
+          p_pay: Database["public"]["Tables"]["qr_payments"]["Row"]
+          p_payer_email: string
+          p_payer_name: string
+          p_ref: string
+        }
+        Returns: Json
+      }
       qr_pay__notify_and_email:
         | {
             Args: {
@@ -6160,6 +6253,22 @@ export type Database = {
         Returns: number
       }
       qr_pay_check_result: { Args: { p_token: string }; Returns: Json }
+      qr_pay_complete_paymongo: {
+        Args: {
+          p_amount?: number
+          p_delivery_address?: string
+          p_delivery_notes?: string
+          p_method: string
+          p_payer_email?: string
+          p_payer_name?: string
+          p_payer_phone?: string
+          p_payer_user_id?: string
+          p_paymongo_intent_id: string
+          p_paymongo_payment_id?: string
+          p_token: string
+        }
+        Returns: Json
+      }
       qr_pay_complete_pi: {
         Args: {
           p_amount?: number
@@ -6171,6 +6280,21 @@ export type Database = {
           p_payer_username?: string
           p_pi_payment_id: string
           p_pi_txid: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      qr_pay_complete_pro: {
+        Args: {
+          p_amount?: number
+          p_asset?: string
+          p_delivery_address?: string
+          p_delivery_notes?: string
+          p_payer_email?: string
+          p_payer_name?: string
+          p_payer_phone?: string
+          p_payer_user_id?: string
+          p_pro_xfer_ref: string
           p_token: string
         }
         Returns: Json
@@ -6228,8 +6352,44 @@ export type Database = {
         Returns: Json
       }
       qr_pay_delete: { Args: { p_id: string }; Returns: Json }
+      qr_pay_email_receipt: {
+        Args: { p_email: string; p_transaction_ref: string }
+        Returns: Json
+      }
       qr_pay_gen_token: { Args: never; Returns: string }
       qr_pay_get_by_token: { Args: { p_token: string }; Returns: Json }
+      qr_pay_get_platform_settings: {
+        Args: never
+        Returns: {
+          allow_apple_pay: boolean
+          allow_bank: boolean
+          allow_billease: boolean
+          allow_gcash: boolean
+          allow_google_pay: boolean
+          allow_grab_pay: boolean
+          allow_guest: boolean
+          allow_maya: boolean
+          allow_moonpay: boolean
+          allow_paypal: boolean
+          allow_pi: boolean
+          allow_pro: boolean
+          allow_qr_ph: boolean
+          allow_shopee_pay: boolean
+          allow_virtual_card: boolean
+          allow_wallet: boolean
+          id: boolean
+          maintenance_message: string
+          maintenance_mode: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "qr_pay_platform_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       qr_pay_is_flexible_payment: {
         Args: { p_pay: Database["public"]["Tables"]["qr_payments"]["Row"] }
         Returns: boolean
@@ -6240,9 +6400,64 @@ export type Database = {
         Args: { p_to: string }
         Returns: string
       }
+      qr_pay_platform_method_allowed: {
+        Args: { p_method: string }
+        Returns: boolean
+      }
       qr_pay_resolve_api_type: {
         Args: { p_payment_type?: string; p_purpose: string }
         Returns: string
+      }
+      qr_pay_set_platform_settings: {
+        Args: {
+          p_allow_apple_pay?: boolean
+          p_allow_bank?: boolean
+          p_allow_billease?: boolean
+          p_allow_gcash?: boolean
+          p_allow_google_pay?: boolean
+          p_allow_grab_pay?: boolean
+          p_allow_guest?: boolean
+          p_allow_maya?: boolean
+          p_allow_moonpay?: boolean
+          p_allow_paypal?: boolean
+          p_allow_pi?: boolean
+          p_allow_pro?: boolean
+          p_allow_qr_ph?: boolean
+          p_allow_shopee_pay?: boolean
+          p_allow_virtual_card?: boolean
+          p_allow_wallet?: boolean
+          p_maintenance_message?: string
+          p_maintenance_mode?: boolean
+        }
+        Returns: {
+          allow_apple_pay: boolean
+          allow_bank: boolean
+          allow_billease: boolean
+          allow_gcash: boolean
+          allow_google_pay: boolean
+          allow_grab_pay: boolean
+          allow_guest: boolean
+          allow_maya: boolean
+          allow_moonpay: boolean
+          allow_paypal: boolean
+          allow_pi: boolean
+          allow_pro: boolean
+          allow_qr_ph: boolean
+          allow_shopee_pay: boolean
+          allow_virtual_card: boolean
+          allow_wallet: boolean
+          id: boolean
+          maintenance_message: string
+          maintenance_mode: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "qr_pay_platform_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       qr_pay_set_pro_settlement: {
         Args: { p_to: string; p_token: string }
