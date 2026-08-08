@@ -3,17 +3,21 @@ import { applyStoredAppLanguage, getStoredAppLanguage } from "@/lib/appLanguage"
 
 declare global {
   interface Window {
-    google?: {
-      translate?: {
-        TranslateElement?: new (
-          options: Record<string, unknown>,
-          elementId: string,
-        ) => unknown;
-      };
-    };
     googleTranslateElementInit?: () => void;
   }
 }
+
+type GoogleTranslateApi = {
+  translate?: {
+    TranslateElement?: new (
+      options: Record<string, unknown>,
+      elementId: string,
+    ) => unknown;
+  };
+};
+
+const googleTranslate = () =>
+  (window as unknown as { google?: GoogleTranslateApi }).google;
 
 const CONTAINER_ID = "google_translate_element";
 const SCRIPT_ID = "google-translate-script";
