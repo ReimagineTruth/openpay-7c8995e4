@@ -27,7 +27,15 @@ export type DashboardSection =
   | "mining"
   | "analytics";
 
-export type DashboardNavKey = DashboardSection | "opennft" | "ai" | "pro" | "qrpay";
+export type DashboardNavKey =
+  | DashboardSection
+  | "opennft"
+  | "ai"
+  | "pro"
+  | "qrpay"
+  | "merchantpos"
+  | "paymentlinks"
+  | "remittance";
 
 export type DashboardSectionNavItem = {
   key: DashboardNavKey;
