@@ -1001,6 +1001,39 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_maintenance: {
+        Row: {
+          feature_group: string
+          feature_key: string
+          label: string
+          maintenance: boolean
+          message: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          feature_group?: string
+          feature_key: string
+          label: string
+          maintenance?: boolean
+          message?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          feature_group?: string
+          feature_key?: string
+          label?: string
+          maintenance?: boolean
+          message?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       feature_quest_progress: {
         Row: {
           claimed: boolean
@@ -5416,6 +5449,25 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      get_feature_maintenance: {
+        Args: never
+        Returns: {
+          feature_group: string
+          feature_key: string
+          label: string
+          maintenance: boolean
+          message: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "feature_maintenance"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_my_credit_score: { Args: never; Returns: number }
       get_my_latest_loan: {
         Args: never
@@ -6545,6 +6597,48 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "virtual_cards"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_all_feature_maintenance: {
+        Args: { p_maintenance: boolean }
+        Returns: {
+          feature_group: string
+          feature_key: string
+          label: string
+          maintenance: boolean
+          message: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "feature_maintenance"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      set_feature_maintenance: {
+        Args: {
+          p_feature_key: string
+          p_maintenance: boolean
+          p_message?: string
+        }
+        Returns: {
+          feature_group: string
+          feature_key: string
+          label: string
+          maintenance: boolean
+          message: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "feature_maintenance"
           isOneToOne: true
           isSetofReturn: false
         }
