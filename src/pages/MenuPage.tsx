@@ -699,6 +699,8 @@ const MenuPage = () => {
 
             { icon: ShieldCheck, label: "QR Pay", action: () => navigate("/admin-qr-pay") },
 
+            { icon: ShieldCheck, label: "Maintenance", action: () => navigate("/admin-maintenance") },
+
 
             { icon: ShieldCheck, label: "Withdrawals", action: () => navigate("/admin-swap-withrawals") },
 
