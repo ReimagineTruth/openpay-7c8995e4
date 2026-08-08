@@ -170,6 +170,7 @@ import SupportWidget from "./components/SupportWidget";
 import SupportPage from "./pages/SupportPage";
 import TopUpHistoryPage from "./pages/TopUpHistoryPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import FeatureMaintenanceGate from "./components/FeatureMaintenanceGate";
 import { CookieConsentProvider } from "./contexts/CookieConsentContext";
 import { ThankYouModalProvider } from "./contexts/ThankYouModalContext";
 import ThankYouModal from "./components/ThankYouModal";
@@ -182,6 +183,18 @@ import {
 } from "@/lib/postAuthLanding";
 
 const queryClient = new QueryClient();
+
+/** Auth + feature maintenance gate for a route. */
+const guarded = (featureKey: string, page: React.ReactNode) => (
+  <ProtectedRoute>
+    <FeatureMaintenanceGate featureKey={featureKey}>{page}</FeatureMaintenanceGate>
+  </ProtectedRoute>
+);
+
+/** Maintenance gate without requiring auth (public pages). */
+const maintenanceOnly = (featureKey: string, page: React.ReactNode) => (
+  <FeatureMaintenanceGate featureKey={featureKey}>{page}</FeatureMaintenanceGate>
+);
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -335,7 +348,7 @@ const AppRoutes = () => {
         <Route path="/admin-loan-applications" element={<AdminLoanApplicationsPage />} />
         <Route path="/admin-topup-requests" element={<AdminTopUpRequestsPage />} />
         <Route path="/master-topup" element={<AdminMasterTopUp />} />
-        <Route path="/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
+        <Route path="/feedback" element={guarded("feedback", <FeedbackPage />)} />
         <Route path="/admin-feedback" element={<AdminFeedbackPage />} />
         <Route path="/signin" element={<Navigate to="/sign-in?mode=signin" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-in?mode=signup" replace />} />
@@ -348,130 +361,46 @@ const AppRoutes = () => {
             <DashboardSwitcher />
           </ProtectedRoute>
         } />
-        <Route path="/web3/nft" element={<NftMarketplacePage />} />
+        <Route path="/web3/nft" element={maintenanceOnly("nft_marketplace", <NftMarketplacePage />)} />
         <Route path="/web3/nft/api/collectibles" element={<NftCollectiblesApiPage />} />
         <Route path="/web3/nft/api" element={<NftApiPage />} />
-        <Route path="/web3/nft/create" element={<ProtectedRoute><NftCreatePage /></ProtectedRoute>} />
-       <Route path="/web3/nft/how-to" element={<ProtectedRoute><NftHowToPage /></ProtectedRoute>} />
-       <Route path="/web3/nft/chat" element={<ProtectedRoute><NftChatPage /></ProtectedRoute>} />
+        <Route path="/web3/nft/create" element={guarded("nft_mint", <NftCreatePage />)} />
+        <Route path="/web3/nft/how-to" element={<ProtectedRoute><NftHowToPage /></ProtectedRoute>} />
+        <Route path="/web3/nft/chat" element={<ProtectedRoute><NftChatPage /></ProtectedRoute>} />
         <Route path="/web3/nft/dashboard" element={<ProtectedRoute><NftCreatorDashboardPage /></ProtectedRoute>} />
         <Route path="/web3/nft/stats" element={<ProtectedRoute><NftCreatorStatsPage /></ProtectedRoute>} />
-        <Route path="/web3/nft/store/settings" element={<ProtectedRoute><NftStoreSettingsPage /></ProtectedRoute>} />
-        <Route path="/web3/nft/store" element={<NftStorePage />} />
-        <Route path="/web3/nft/stores" element={<NftStoresPage />} />
-        <Route path="/web3/nft/leaderboard" element={<NftStoresPage />} />
-        <Route path="/web3/nft/following" element={<NftStoresPage />} />
-        <Route path="/web3/nft/auctions" element={<NftMarketplacePage />} />
-        <Route path="/web3/nft/my-nfts" element={<ProtectedRoute><NftStorePage /></ProtectedRoute>} />
-        <Route path="/web3/nft/gifts" element={<ProtectedRoute><NftStorePage /></ProtectedRoute>} />
-        <Route path="/web3/nft/store/:handle" element={<NftStorePage />} />
-        <Route path="/web3/nft/:id" element={<NftDetailPage />} />
-        <Route path="/send" element={
-          <ProtectedRoute>
-            <SendMoney />
-          </ProtectedRoute>
-        } />
-        <Route path="/send/pro" element={
-          <ProtectedRoute>
-            <SendToOpenPayProPage />
-          </ProtectedRoute>
-        } />
+        <Route path="/web3/nft/store/settings" element={guarded("nft_store", <NftStoreSettingsPage />)} />
+        <Route path="/web3/nft/store" element={maintenanceOnly("nft_store", <NftStorePage />)} />
+        <Route path="/web3/nft/stores" element={maintenanceOnly("nft_store", <NftStoresPage />)} />
+        <Route path="/web3/nft/leaderboard" element={maintenanceOnly("nft_store", <NftStoresPage />)} />
+        <Route path="/web3/nft/following" element={maintenanceOnly("nft_store", <NftStoresPage />)} />
+        <Route path="/web3/nft/auctions" element={maintenanceOnly("nft_auction", <NftMarketplacePage />)} />
+        <Route path="/web3/nft/my-nfts" element={guarded("nft_store", <NftStorePage />)} />
+        <Route path="/web3/nft/gifts" element={guarded("nft_store", <NftStorePage />)} />
+        <Route path="/web3/nft/store/:handle" element={maintenanceOnly("nft_store", <NftStorePage />)} />
+        <Route path="/web3/nft/:id" element={maintenanceOnly("nft_marketplace", <NftDetailPage />)} />
+        <Route path="/send" element={guarded("send", <SendMoney />)} />
+        <Route path="/send/pro" element={guarded("send", <SendToOpenPayProPage />)} />
         <Route path="/transfer-pro" element={<Navigate to="/send/pro" replace />} />
-        <Route path="/scan-qr" element={
-          <ProtectedRoute>
-            <QrScannerPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup" element={
-          <ProtectedRoute>
-            <TopUp />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-ewallet-qrph" element={
-          <ProtectedRoute>
-            <TopUpEwalletQrPh />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-paypal" element={
-          <ProtectedRoute>
-            <TopUpPaypal />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-debit" element={
-          <ProtectedRoute>
-            <TopUpDebit />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-credit" element={
-          <ProtectedRoute>
-            <TopUpCredit />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-apple-pay" element={
-          <ProtectedRoute>
-            <TopUpApplePay />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-google-pay" element={
-          <ProtectedRoute>
-            <TopUpGooglePay />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-stripe" element={
-          <ProtectedRoute>
-            <TopUpStripe />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup/stripe/return" element={
-          <ProtectedRoute>
-            <TopUpStripeReturnPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-venmo" element={
-          <ProtectedRoute>
-            <TopUpVenmo />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-usdt" element={
-          <ProtectedRoute>
-            <TopUpUSDT />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-usdc" element={
-          <ProtectedRoute>
-            <TopUpUSDC />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-mrwn" element={
-          <ProtectedRoute>
-            <TopUpMRWN />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-ousd" element={
-          <ProtectedRoute>
-            <TopUpOUSD />
-          </ProtectedRoute>
-        } />
-        <Route path="/topup-ousd-sol" element={
-          <ProtectedRoute>
-            <TopUpOUSDSol />
-          </ProtectedRoute>
-        } />
-        {isSolanaPayEnabled() ? <Route path="/topup-solana-pay" element={
-          <ProtectedRoute>
-            <TopUpSolanaPay />
-          </ProtectedRoute>
-        } /> : null}
-        <Route path="/receive" element={
-          <ProtectedRoute>
-            <ReceivePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/contacts" element={
-          <ProtectedRoute>
-            <Contacts />
-          </ProtectedRoute>
-        } />
+        <Route path="/scan-qr" element={guarded("scan", <QrScannerPage />)} />
+        <Route path="/topup" element={guarded("topup", <TopUp />)} />
+        <Route path="/topup-ewallet-qrph" element={guarded("topup", <TopUpEwalletQrPh />)} />
+        <Route path="/topup-paypal" element={guarded("topup", <TopUpPaypal />)} />
+        <Route path="/topup-debit" element={guarded("topup", <TopUpDebit />)} />
+        <Route path="/topup-credit" element={guarded("topup", <TopUpCredit />)} />
+        <Route path="/topup-apple-pay" element={guarded("topup", <TopUpApplePay />)} />
+        <Route path="/topup-google-pay" element={guarded("topup", <TopUpGooglePay />)} />
+        <Route path="/topup-stripe" element={guarded("topup", <TopUpStripe />)} />
+        <Route path="/topup/stripe/return" element={guarded("topup", <TopUpStripeReturnPage />)} />
+        <Route path="/topup-venmo" element={guarded("topup", <TopUpVenmo />)} />
+        <Route path="/topup-usdt" element={guarded("topup", <TopUpUSDT />)} />
+        <Route path="/topup-usdc" element={guarded("topup", <TopUpUSDC />)} />
+        <Route path="/topup-mrwn" element={guarded("topup", <TopUpMRWN />)} />
+        <Route path="/topup-ousd" element={guarded("topup", <TopUpOUSD />)} />
+        <Route path="/topup-ousd-sol" element={guarded("topup", <TopUpOUSDSol />)} />
+        {isSolanaPayEnabled() ? <Route path="/topup-solana-pay" element={guarded("topup", <TopUpSolanaPay />)} /> : null}
+        <Route path="/receive" element={guarded("receive", <ReceivePage />)} />
+        <Route path="/contacts" element={guarded("contacts", <Contacts />)} />
         <Route path="/menu" element={
           <ProtectedRoute>
             <MenuPage />
@@ -482,51 +411,23 @@ const AppRoutes = () => {
             <CurrencyConverterPage />
           </ProtectedRoute>
         } />
-        <Route path="/remittance-center" element={
-          <ProtectedRoute>
-            <RemittanceCenterPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/activity" element={
-          <ProtectedRoute>
-            <ActivityPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/ai" element={
-          <ProtectedRoute>
-            <OpenPayAIPage />
-          </ProtectedRoute>
-        } />
+        <Route path="/remittance-center" element={guarded("remittance", <RemittanceCenterPage />)} />
+        <Route path="/activity" element={guarded("transactions", <ActivityPage />)} />
+        <Route path="/ai" element={guarded("openpay_ai", <OpenPayAIPage />)} />
         <Route path="/mcp/callback" element={
           <ProtectedRoute>
             <McpOAuthCallbackPage />
           </ProtectedRoute>
         } />
 
-        <Route path="/request-payment" element={
-          <ProtectedRoute>
-            <RequestMoney />
-          </ProtectedRoute>
-        } />
-        <Route path="/send-invoice" element={
-          <ProtectedRoute>
-            <SendInvoice />
-          </ProtectedRoute>
-        } />
-        <Route path="/disputes" element={
-          <ProtectedRoute>
-            <DisputesPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/help-center" element={<HelpCenter />} />
+        <Route path="/request-payment" element={guarded("request", <RequestMoney />)} />
+        <Route path="/send-invoice" element={guarded("invoices", <SendInvoice />)} />
+        <Route path="/disputes" element={guarded("disputes", <DisputesPage />)} />
+        <Route path="/help-center" element={maintenanceOnly("support", <HelpCenter />)} />
         <Route path="/help" element={<HelpWikiPage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:slug" element={<BlogPostPage />} />
-        <Route path="/notifications" element={
-          <ProtectedRoute>
-            <NotificationsPage />
-          </ProtectedRoute>
-        } />
+        <Route path="/notifications" element={guarded("notifications", <NotificationsPage />)} />
         <Route path="/settings" element={
           <ProtectedRoute>
             <SettingsPage />
@@ -537,41 +438,21 @@ const AppRoutes = () => {
             <ProfilePage />
           </ProtectedRoute>
         } />
-        <Route path="/affiliate" element={
-          <ProtectedRoute>
-            <AffiliatePage />
-          </ProtectedRoute>
-        } />
+        <Route path="/affiliate" element={guarded("affiliate", <AffiliatePage />)} />
         <Route path="/admin/affiliate" element={
           <ProtectedRoute>
             <AdminAffiliatePage />
           </ProtectedRoute>
         } />
-        <Route path="/mining" element={
-          <ProtectedRoute>
-            <MiningPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/staking" element={
-          <ProtectedRoute>
-            <StakingPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/buttons" element={
-          <ProtectedRoute>
-            <ButtonsPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/buttons/payment-links" element={
-          <ProtectedRoute>
-            <ButtonsPaymentLinksPage />
-          </ProtectedRoute>
-        } />
+        <Route path="/mining" element={guarded("mining", <MiningPage />)} />
+        <Route path="/staking" element={guarded("staking", <StakingPage />)} />
+        <Route path="/buttons" element={guarded("merchant_links", <ButtonsPage />)} />
+        <Route path="/buttons/payment-links" element={guarded("merchant_links", <ButtonsPaymentLinksPage />)} />
         <Route path="/buttons/cart" element={<ButtonsCartPage />} />
         <Route path="/buttons/donate" element={<ButtonsDonatePage />} />
         <Route path="/buttons/subscribe" element={<ButtonsSubscribePage />} />
         <Route path="/buttons/embeds" element={<ButtonsEmbedsPage />} />
-        <Route path="/ledger" element={<PublicLedgerPage />} />
+        <Route path="/ledger" element={maintenanceOnly("public_ledger", <PublicLedgerPage />)} />
         <Route path="/openledger" element={<Navigate to="/ledger" replace />} />
         <Route path="/announcements" element={<AnnouncementsPage />} />
         <Route path="/openpay-guide" element={<OpenPayGuidePage />} />
@@ -585,7 +466,7 @@ const AppRoutes = () => {
         <Route path="/openpay-auth" element={<OpenPayAuthDocsPage />} />
         <Route path="/auth/docs" element={<OpenPayAuthDocsPage />} />
         <Route path="/signin/openpay" element={<Navigate to="/openpay-auth" replace />} />
-        <Route path="/partner-api" element={<PartnerApiPage />} />
+        <Route path="/partner-api" element={maintenanceOnly("partner_api", <PartnerApiPage />)} />
         <Route path="/paybutton/:chargeId" element={<PayButtonCheckoutPage />} />
         <Route path="/connect" element={<PartnerConnectPage />} />
         <Route path="/oauth/authorize" element={<Navigate to={`/connect${window.location.search}`} replace />} />
@@ -600,15 +481,15 @@ const AppRoutes = () => {
         <Route path="/gdpr" element={<GdprPage />} />
         <Route path="/legal" element={<LegalPage />} />
         <Route path="/merchant-onboarding" element={<MerchantOnboardingPage />} />
-        <Route path="/merchant-products" element={<MerchantProductCatalogPage />} />
-        <Route path="/merchant-products/create" element={<MerchantProductCreatePage />} />
-        <Route path="/merchant-pos" element={<MerchantPosPage />} />
-        <Route path="/qr-pay" element={<ProtectedRoute><QrPayDashboardPage /></ProtectedRoute>} />
-        <Route path="/qr-pay/new" element={<ProtectedRoute><QrPayCreatePage /></ProtectedRoute>} />
-        <Route path="/qr-pay/api" element={<ProtectedRoute><QrPayApiDashboardPage /></ProtectedRoute>} />
+        <Route path="/merchant-products" element={maintenanceOnly("merchant_products", <MerchantProductCatalogPage />)} />
+        <Route path="/merchant-products/create" element={maintenanceOnly("merchant_products", <MerchantProductCreatePage />)} />
+        <Route path="/merchant-pos" element={maintenanceOnly("merchant_pos", <MerchantPosPage />)} />
+        <Route path="/qr-pay" element={guarded("qr_pay", <QrPayDashboardPage />)} />
+        <Route path="/qr-pay/new" element={guarded("qr_pay", <QrPayCreatePage />)} />
+        <Route path="/qr-pay/api" element={guarded("qr_pay", <QrPayApiDashboardPage />)} />
         <Route path="/qr-pay/:token" element={<QrPayCheckoutPage />} />
         <Route path="/qr-pay/:token/success" element={<QrPaySuccessPage />} />
-        <Route path="/payment-links/create" element={<PaymentLinksCreatePage />} />
+        <Route path="/payment-links/create" element={maintenanceOnly("merchant_links", <PaymentLinksCreatePage />)} />
         <Route path="/payment-link/:token" element={<MerchantCheckoutPage />} />
         <Route path="/merchant-checkout" element={<MerchantCheckoutPage />} />
         <Route path="/public-payment" element={<PublicWalletPaymentPage />} />
@@ -616,10 +497,10 @@ const AppRoutes = () => {
         <Route path="/pay/:username" element={<UsernamePayPage />} />
         <Route path="/merchant-checkout/thank-you" element={<MerchantCheckoutThankYouPage />} />
         <Route path="/pos-thank-you" element={<PosThankYouPage />} />
-        <Route path="/virtual-card" element={<VirtualCardPage />} />
-        <Route path="/kyc" element={<KycPage />} />
-        <Route path="/kyc-status" element={<KycStatusPage />} />
-        <Route path="/kyc/piverify" element={<PiVerifyKycPage />} />
+        <Route path="/virtual-card" element={maintenanceOnly("virtual_cards", <VirtualCardPage />)} />
+        <Route path="/kyc" element={maintenanceOnly("kyc", <KycPage />)} />
+        <Route path="/kyc-status" element={maintenanceOnly("kyc", <KycStatusPage />)} />
+        <Route path="/kyc/piverify" element={maintenanceOnly("kyc", <PiVerifyKycPage />)} />
         <Route path="/developers/ledger" element={<DeveloperLedgerPage />} />
         <Route path="/admin-kyc-review" element={<AdminKycReview />} />
         <Route path="/admin-kyc-metrics" element={<AdminKycMetricsPage />} />
@@ -630,16 +511,16 @@ const AppRoutes = () => {
         <Route path="/admin-maintenance" element={<AdminMaintenancePage />} />
 
 
-        <Route path="/remittance-merchant" element={<RemittanceMerchantPage />} />
+        <Route path="/remittance-merchant" element={maintenanceOnly("remittance", <RemittanceMerchantPage />)} />
         <Route path="/openpay-official" element={<OpenPayOfficialPage />} />
         <Route path="/pitch-deck" element={<PitchDeckPage />} />
         <Route path="/openapp" element={<OpenAppPage />} />
         <Route path="/openpay-desktop" element={<OpenPayDesktopPage />} />
         <Route path="/download" element={<DownloadPage />} />
-        <Route path="/live-customer-service" element={<LiveCustomerServicePage />} />
-        <Route path="/support" element={<SupportPage />} />
-        <Route path="/topup-history" element={<TopUpHistoryPage />} />
-        <Route path="/swap-withdrawal" element={<SwapWithdrawalPage />} />
+        <Route path="/live-customer-service" element={maintenanceOnly("support", <LiveCustomerServicePage />)} />
+        <Route path="/support" element={maintenanceOnly("support", <SupportPage />)} />
+        <Route path="/topup-history" element={guarded("topup", <TopUpHistoryPage />)} />
+        <Route path="/swap-withdrawal" element={guarded("swap_withdraw", <SwapWithdrawalPage />)} />
         <Route path="/confirm-pin" element={<ConfirmPinPage />} />
         <Route path="/smart-contract-api" element={<SmartContractApiPage />} />
         <Route path="/developer-dashboard" element={<DeveloperDashboardPage />} />

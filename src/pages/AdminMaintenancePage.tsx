@@ -62,7 +62,11 @@ export default function AdminMaintenancePage() {
   const patchLocal = (key: string, patch: Partial<FeatureMaintenanceRow>) =>
     setRows((prev) => prev.map((r) => (r.feature_key === key ? { ...r, ...patch } : r)));
 
-  const persist = async (row: FeatureMaintenanceRow, maintenance: boolean) => {
+  const persist = async (
+    row: FeatureMaintenanceRow,
+    maintenance: boolean,
+    previousMaintenance?: boolean,
+  ) => {
     setSavingKey(row.feature_key);
     const { data, error } = await (supabase as any).rpc("set_feature_maintenance", {
       p_feature_key: row.feature_key,
@@ -71,12 +75,16 @@ export default function AdminMaintenancePage() {
     });
     setSavingKey(null);
     if (error) {
+      if (typeof previousMaintenance === "boolean") {
+        patchLocal(row.feature_key, { maintenance: previousMaintenance });
+      }
       toast.error(error.message || "Failed to update");
-      return;
+      return false;
     }
     clearFeatureMaintenanceCache();
     if (data) patchLocal(row.feature_key, data as FeatureMaintenanceRow);
     toast.success(`${row.label} ${maintenance ? "set to maintenance" : "is live"}`);
+    return true;
   };
 
   const setAll = async (maintenance: boolean) => {
@@ -84,11 +92,27 @@ export default function AdminMaintenancePage() {
     const { error } = await (supabase as any).rpc("set_all_feature_maintenance", {
       p_maintenance: maintenance,
     });
+
+    // Supabase pg-safeupdate blocks bulk UPDATE without WHERE; fall back per-row.
     if (error) {
-      setBulk(false);
-      toast.error(error.message || "Bulk update failed");
-      return;
+      let failed = 0;
+      for (const row of rows) {
+        const { error: rowError } = await (supabase as any).rpc("set_feature_maintenance", {
+          p_feature_key: row.feature_key,
+          p_maintenance: maintenance,
+          p_message: row.message,
+        });
+        if (rowError) failed += 1;
+      }
+      if (failed > 0) {
+        setBulk(false);
+        clearFeatureMaintenanceCache();
+        setRows(await fetchFeatureMaintenance(true));
+        toast.error(`Failed to update ${failed} feature(s)`);
+        return;
+      }
     }
+
     clearFeatureMaintenanceCache();
     setRows(await fetchFeatureMaintenance(true));
     setBulk(false);
@@ -204,8 +228,9 @@ export default function AdminMaintenancePage() {
                           <Switch
                             checked={row.maintenance}
                             onCheckedChange={(v) => {
+                              const previousMaintenance = row.maintenance;
                               patchLocal(row.feature_key, { maintenance: v });
-                              void persist({ ...row, maintenance: v }, v);
+                              void persist({ ...row, maintenance: v }, v, previousMaintenance);
                             }}
                           />
                         </div>

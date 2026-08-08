@@ -13,7 +13,7 @@ export const useFeatureMaintenance = (featureKey: string) => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const rows = await fetchFeatureMaintenance();
+      const rows = await fetchFeatureMaintenance(true);
       if (cancelled) return;
       const row = rows.find((r) => r.feature_key === featureKey);
       setMaintenance(!!row?.maintenance);

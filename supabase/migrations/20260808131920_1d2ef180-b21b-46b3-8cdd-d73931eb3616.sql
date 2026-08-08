@@ -139,6 +139,7 @@ BEGIN
   RETURN QUERY
   UPDATE public.feature_maintenance
      SET maintenance = p_maintenance, updated_by = auth.uid()
+   WHERE feature_key IS NOT NULL
   RETURNING *;
 END;
 $$;
