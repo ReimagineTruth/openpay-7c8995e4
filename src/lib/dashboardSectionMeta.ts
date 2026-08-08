@@ -66,6 +66,27 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
     description: "Pro wallet",
     href: "https://openpaypro.space/",
   },
+  {
+    key: "merchantpos",
+    label: "Merchant POS",
+    icon: Store,
+    description: "In-store checkout",
+    href: "/merchant-pos",
+  },
+  {
+    key: "paymentlinks",
+    label: "Merchant Payment Links",
+    icon: Link2,
+    description: "Create payment links",
+    href: "/payment-links/create",
+  },
+  {
+    key: "remittance",
+    label: "Remittance Center",
+    icon: Send,
+    description: "Send & cash out",
+    href: "/remittance-center",
+  },
 ];
 
 export const DASHBOARD_SECTION_TITLES: Record<DashboardSection, string> = {
