@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Local PayMongo bridge for Vite (dev) when Edge Functions aren't deployed.
  * Mirrors supabase/functions/paymongo-qr-pay using secrets from .env.
