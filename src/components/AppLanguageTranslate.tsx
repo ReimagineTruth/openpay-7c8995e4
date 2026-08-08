@@ -39,8 +39,9 @@ const AppLanguageTranslate = () => {
     }
 
     window.googleTranslateElementInit = () => {
-      if (!window.google?.translate?.TranslateElement) return;
-      new window.google.translate.TranslateElement(
+      const T = googleTranslate()?.translate?.TranslateElement;
+      if (!T) return;
+      new T(
         {
           pageLanguage: "en",
           autoDisplay: false,
@@ -51,7 +52,7 @@ const AppLanguageTranslate = () => {
 
     const existingScript = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
     if (existingScript) {
-      if (window.google?.translate?.TranslateElement) {
+      if (googleTranslate()?.translate?.TranslateElement) {
         window.googleTranslateElementInit?.();
       }
       return;
