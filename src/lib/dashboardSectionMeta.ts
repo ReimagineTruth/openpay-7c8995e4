@@ -9,6 +9,9 @@ import {
   Paintbrush,
   Pickaxe,
   QrCode,
+  Store,
+  Link2,
+  Send,
   PiggyBank,
   Scale,
   TrendingUp,
@@ -27,7 +30,15 @@ export type DashboardSection =
   | "mining"
   | "analytics";
 
-export type DashboardNavKey = DashboardSection | "opennft" | "ai" | "pro" | "qrpay";
+export type DashboardNavKey =
+  | DashboardSection
+  | "opennft"
+  | "ai"
+  | "pro"
+  | "qrpay"
+  | "merchantpos"
+  | "paymentlinks"
+  | "remittance";
 
 export type DashboardSectionNavItem = {
   key: DashboardNavKey;
@@ -57,6 +68,27 @@ export const DASHBOARD_SECTION_NAV: DashboardSectionNavItem[] = [
     icon: BadgeCheck,
     description: "Pro wallet",
     href: "https://openpaypro.space/",
+  },
+  {
+    key: "merchantpos",
+    label: "Merchant POS",
+    icon: Store,
+    description: "In-store checkout",
+    href: "/merchant-pos",
+  },
+  {
+    key: "paymentlinks",
+    label: "Merchant Payment Links",
+    icon: Link2,
+    description: "Create payment links",
+    href: "/payment-links/create",
+  },
+  {
+    key: "remittance",
+    label: "Remittance Center",
+    icon: Send,
+    description: "Send & cash out",
+    href: "/remittance-center",
   },
 ];
 
